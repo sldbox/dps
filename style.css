@@ -724,3 +724,20 @@ body.is-mobile .clean-rune-card .enchant-result-value, body.is-tablet .clean-run
 .xp-sp-card .resource-usage-row .usage-values b{display:inline!important;border:0!important;background:transparent!important;box-shadow:none!important;padding:0!important;height:auto!important;min-height:0!important;font-family:Consolas,monospace!important;font-weight:900!important;color:inherit!important}
 .xp-sp-card .resource-usage-row .usage-values em{font-style:normal!important;color:#94a3b8!important;font-weight:900!important;border:0!important;background:transparent!important;box-shadow:none!important;padding:0!important}
 .title-td-row label{white-space:nowrap!important;font-size:calc(11px * var(--app-font-scale))!important}
+
+
+/* dps-V27: V22 계산/표시 이식용 최소 보정 */
+.stat-compare-grid{display:block!important;border:0!important;background:transparent!important;overflow:hidden!important}
+.stat-compare-grid .stat-row{display:grid!important;grid-template-columns:minmax(112px,.9fr) minmax(0,1fr) minmax(0,1fr)!important;min-height:31px!important;align-items:stretch!important;border:0!important;border-bottom:1px solid #e6edf7!important;background:transparent!important}
+.stat-compare-grid .stat-row:last-child{border-bottom:0!important}
+.stat-compare-grid .stat-row .sc-name,.stat-compare-grid .stat-row .sc-val{display:flex!important;align-items:center!important;justify-content:center!important;min-height:31px!important;height:auto!important;margin:0!important;padding:0 8px!important;border:0!important;border-left:1px solid #edf1f7!important;font-size:calc(12px * var(--app-font-scale))!important;font-weight:900!important;line-height:1.2!important;text-align:center!important;text-align-last:center!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important;color:#142033!important}
+.stat-compare-grid .stat-row .sc-name{border-left:0!important;background:#eaf2ff!important;justify-content:flex-start!important;text-align:left!important}
+.stat-compare-grid .stat-row .sc-val{background:#fff!important;font-family:Consolas,monospace!important}
+.stat-compare-grid .stat-head-row .sc-name,.stat-compare-grid .stat-head-row .sc-val{background:#eaf2ff!important;color:#17336f!important;font-family:var(--font-main)!important;justify-content:center!important;text-align:center!important}
+.stat-compare-grid .stat-head-row .sc-name{color:transparent!important;font-size:0!important}
+.trait-group .tr-ctrl button{min-width:30px!important;height:28px!important;border:1px solid #bfdbfe!important;border-radius:8px!important;background:#fff!important;color:#1d4ed8!important;font-weight:900!important;line-height:1!important}
+.trait-group .tr-ctrl button:hover:not(:disabled),.trait-group .tr-ctrl button.is-pressed:not(:disabled){background:#eff6ff!important;color:#1d4ed8!important;border-color:#93c5fd!important}
+.trait-group .tr-ctrl button:disabled{opacity:.48!important;background:#f8fafc!important;color:#64748b!important;border-color:#dbeafe!important}
+.trait-group .tr-ctrl .trait-max-btn,.trait-group .tr-ctrl button[data-action="traitMax"]{min-width:46px!important;padding:0 8px!important}
+.tp-actions .mini-btn.master:hover,.trait-tools .mini-btn.master:hover{background:#eff6ff!important;color:#1d4ed8!important;border-color:#93c5fd!important}
+.tp-actions .mini-btn.reset:hover,.trait-tools .mini-btn.reset:hover{background:#fff1f2!important;color:#dc2626!important;border-color:#fecaca!important}

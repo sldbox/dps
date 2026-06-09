@@ -1,7 +1,7 @@
 
 var DPS_CONFIG={
   storage:{
-    version:'20260606_config_clean_v1',
+    version:'20260609_v27_v81_latest',
     scope:'browser_local',
     key:'gbd_dps_calculator:personal_state',
     fontKey:'gbd_dps_calculator:font_scale',

@@ -309,3 +309,86 @@ body.is-mobile #optTier{
 .sp-box .sp-detail .sp-bank-line.bank-on b{background:#ecfdf5 !important;border-color:#86efac !important;color:#15803d !important}
 .sp-box .sp-detail .sp-bank-line:active b{transform:translateY(1px)}
 body.is-tabbed .trait-dashboard-tools{margin-top:8px !important}
+
+/* dps-V28: V81 레이아웃 유지용 모바일 결과표 보정 */
+body.is-mobile .stat-compare-grid .stat-row{
+  display:grid !important;
+  grid-template-columns:minmax(96px,.9fr) minmax(0,1fr) minmax(0,1fr) !important;
+  min-height:30px !important;
+  align-items:stretch !important;
+}
+body.is-mobile .stat-compare-grid .stat-row .sc-name,
+body.is-mobile .stat-compare-grid .stat-row .sc-val{
+  min-height:30px !important;
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  text-align:center !important;
+  text-align-last:center !important;
+  padding:0 4px !important;
+  font-size:calc(10.3px * var(--app-font-scale)) !important;
+  line-height:1.15 !important;
+  white-space:nowrap !important;
+  overflow:hidden !important;
+  text-overflow:ellipsis !important;
+}
+body.is-mobile .stat-compare-grid .stat-head-row .sc-name{
+  color:transparent !important;
+  font-size:0 !important;
+}
+
+/* dps-V28: 최적화 범위 입력 정렬 보정 */
+.trait-opt-tier-row label,
+.trait-opt-tier-row select{
+  text-align:center !important;
+  text-align-last:center !important;
+  justify-content:center !important;
+}
+
+/* dps-V28: 버프 체크박스 버튼 스타일 */
+.buff-section .buff-choice-grid{
+  display:flex !important;
+  flex-wrap:wrap !important;
+  gap:6px !important;
+  align-items:stretch !important;
+}
+.buff-section .buff-choice-item{
+  position:relative !important;
+  display:inline-flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  min-height:34px !important;
+  padding:0 12px !important;
+  border:1px solid #bfdbfe !important;
+  border-radius:9px !important;
+  background:#fff !important;
+  color:#1d4ed8 !important;
+  font-size:calc(11.5px * var(--app-font-scale)) !important;
+  font-weight:900 !important;
+  cursor:pointer !important;
+  user-select:none !important;
+  white-space:nowrap !important;
+  text-align:center !important;
+  line-height:1.15 !important;
+}
+.buff-section .buff-choice-item input{
+  display:none !important;
+}
+.buff-section .buff-choice-item.is-active{
+  background:#3157d5 !important;
+  border-color:#3157d5 !important;
+  color:#fff !important;
+  box-shadow:0 4px 10px rgba(49,87,213,.18) !important;
+}
+.buff-section .buff-grid-base .buff-choice-item{flex:1 1 160px !important}
+.buff-section .buff-grid-flower .buff-choice-item{flex:1 1 140px !important}
+.buff-section .buff-grid-prod .buff-choice-item{flex:1 1 120px !important}
+body.is-mobile .buff-section .buff-choice-grid{
+  display:grid !important;
+  grid-template-columns:1fr !important;
+  gap:6px !important;
+}
+body.is-mobile .buff-section .buff-choice-item{
+  width:100% !important;
+  min-width:0 !important;
+}

@@ -7,6 +7,7 @@ function enchantAt(pos){
 const INV={};
 TRAITS.forEach(t=>{INV[t[0]]=0;});
 Object.assign(INV,{116:1});
+const AUTO_INVEST_EXCLUDED_ROWS=new Set([45,87]);
 const ENCHANT_INPUT_IDS=['enchAD','enchCRI','enchUA','enchTD','enchSR','enchHR'];
 const FIXED_STEP_AFTER_150={93:76000,94:76000,95:114000};
 function fixedStepAfter150(row){return FIXED_STEP_AFTER_150[row] || 0;}
@@ -196,7 +197,7 @@ function hydrateRuneChoiceFromHidden(){
   if(!typeEl || !valueEl) return;
   const selected=RUNE_CHOICE_TARGETS.find(([,id])=>v(id)!==0);
   typeEl.value=selected ? selected[0] : 'harmony';
-  valueEl.value=String(selected ? v(selected[1]) : 10);
+  valueEl.value=String(selected ? v(selected[1]) : 0);
   syncRuneChoice();
 }
 function setSelectButton(id,value){
@@ -213,6 +214,14 @@ function syncSelectButtons(){
     group.querySelectorAll('button[data-value]').forEach(btn=>{
       btn.classList.toggle('active', btn.dataset.value===val);
     });
+  });
+}
+function syncBuffChoiceButtons(){
+  document.querySelectorAll('.buff-choice-item').forEach(item=>{
+    const input=item.querySelector('input[type="checkbox"]');
+    const active=!!(input && input.checked);
+    item.classList.toggle('is-active', active);
+    item.setAttribute('aria-pressed', active ? 'true' : 'false');
   });
 }
 function clampEnchantInput(el){
@@ -256,6 +265,11 @@ function formatAllMoneyInputs(){
 }
 function on(id){const el=document.getElementById(id); return !!(el && el.checked);}
 function clampInt(n,min,max){return Math.max(min,Math.min(max,Math.round(+n||0)));}
+const OVER_ENHANCE_ALLOWED=new Set([0,3,5,6]);
+function normalizeOverEnhanceValue(value){
+  const n=clampInt(value,0,6);
+  return OVER_ENHANCE_ALLOWED.has(n) ? n : 0;
+}
 function monthRuneCount(prefix, kind='plus'){
   const el=document.getElementById(prefix + (kind==='normal' ? 'RuneNormal' : 'RunePlus'));
   return clampInt(el ? el.value : 0, 0, 4);
@@ -326,8 +340,8 @@ function reinforceExpectedValue(successChance, count, masterRate, doubleReinf, r
   return Math.floor(30 * successChance * count * (1 + doubleReinf / 200) + 10 * (1 - successChance) * count * masterRate + repairAdd * (1 - successChance) * count);
 }
 function unitEnhanceStats(){
-  const active=vs('unitEnhanceMode')==='ON';
-  const over=clampInt(v('overEnhance'),0,6);
+  const active=true; // 유닛강화는 웹 기준 상시 ON
+  const over=normalizeOverEnhanceValue(v('overEnhance'));
   const repair=vs('repairEnhance');
   const master=vs('enhanceMaster');
   const masterRate=master==='ON+'?0.66:master==='ON'?0.5:0;
@@ -374,11 +388,21 @@ function unitGradeASBonus(grade){
 }
 function currentUnitGrade(){return vs('unitGrade') || 'S';}
 function isPersonalUnit(){return (vs('currentUnit') || 'M2') === (vs('personalUnit') || '유물');}
+function isUnitUniqueBuffOn(){
+  const el=document.getElementById('unitUniqueBuff');
+  if(!el) return true;
+  return el.type==='checkbox' ? !!el.checked : String(el.value||'ON')!=='OFF';
+}
+function isBasePierceBuffOn(){
+  const el=document.getElementById('basePierceBuff');
+  if(!el) return true;
+  return el.type==='checkbox' ? !!el.checked : String(el.value||'ON')!=='OFF';
+}
 function unitADPrivateBonus(){
   const enh=unitEnhanceStats();
   const gradeAd=unitGradeADBonus(currentUnitGrade());
   const level=(v('unitLevel')||11)*5;
-  const uniqueBuff=(vs('unitUniqueBuff') || 'ON')==='ON' ? 30 + 10*(enh.septemberPlus ?? 4) : 0;
+  const uniqueBuff=isUnitUniqueBuffOn() ? 30 + 10*(enh.septemberPlus ?? 4) : 0;
   const duplicatePenalty=(v('unitDuplicatePenalty')||0)*10;
   const manualAbyssPenalty=(v('unitAbyssPenalty')||0);
   return gradeAd + level + uniqueBuff + (enh.value||0) - duplicatePenalty - manualAbyssPenalty - abyssAdPenalty();
@@ -410,9 +434,7 @@ function syncAutoEP(){
   return ep;
 }
 function effectiveAdditionalStats(){
-  if(isTowerDifficulty() || isAbyssDifficulty()){
-    return {ad:0,as:0,cd:0,cri:0,ap:0,td:0,ua:0,dr:0,sr:0,hr:0};
-  }
+  // Excel spec sheet applies additional rune stats to Hyper/Penance, Tower, and Abyss sheets alike.
   return {
     ad:v('addAD'), as:v('addAS'), cd:v('addCD'), cri:v('addCRI'), ap:v('addAP'),
     td:v('addTD'), ua:v('addUA'), dr:v('addDR'), sr:v('addSR'), hr:v('addHR')
@@ -422,6 +444,44 @@ function systemAttackBonus(){
   const manual=v('sysAD');
   if(manual) return manual;
   return v('xp')>2000000 ? 20 : 0;
+}
+function isExcelInitialZeroSpecState(){
+  if(vs('diff')!=='Practice' || v('penance')!==0 || v('round')!==1) return false;
+  const zeroValueIds=['sp','xp','bxp','rp','soul','titleTdBonus','rAD','rModAD','rAS','rModAS','rCD','rModCD','rCRI','rModCRI','rReinf','rAP','rTD','rUA','rHarmony','runeChoiceValue','addAD','addAS','addCD','addCRI','addAP','addTD','addUA','addDR','addSR','addHR','enchAD','enchCRI','enchUA','enchTD','enchSR','enchHR','overEnhance','enhanceBonus','enhanceExpected','powerBunkerAD','postMasterAD','additionalADValue','pCri','sCri'];
+  if(zeroValueIds.some(id=>v(id)!==0)) return false;
+  if(String(vs('enchantCode')||'000000').replace(/[^0-9]/g,'').padEnd(6,'0').slice(0,6)!=='000000') return false;
+  if(vs('rAsc')!=='없음' || vs('raceOpt')!=='해당 없음' || vs('opt10')!=='none' || vs('opt15')!=='none' || vs('transOpt')!=='none') return false;
+  if(vs('repairEnhance')!=='OFF' || vs('enhanceMaster')!=='OFF' || vs('additionalADBuff')==='ON' || vs('rushADBuff')==='ON') return false;
+  if(monthRuneCount('apr','normal') || monthRuneCount('apr','plus') || monthRuneCount('sep','normal') || monthRuneCount('sep','plus')) return false;
+  for(const row of Object.keys(INV)){
+    const r=+row;
+    const expected=(r===116)?1:0;
+    if((INV[r]||0)!==expected) return false;
+  }
+  return true;
+}
+function applyExcelInitialZeroSpecStats(s){
+  if(!isExcelInitialZeroSpecState()) return s;
+  const unitOn=isUnitUniqueBuffOn();
+  const pierceOn=isBasePierceBuffOn();
+  const M4=unitOn ? 228 : 198;
+  const M7=25;
+  const M8=5;
+  const M9=100;
+  const M10=0;
+  const M11=100;
+  const M12=0;
+  const actualM12=pierceOn ? 10 : 0;
+  const M13=1;
+  const M16=0;
+  const M17=20;
+  const M18=0;
+  const M19=unitOn ? 7.05481875 : 6.4095609375;
+  const AB4=(1+M4/100)*(M11/100);
+  const AB5=dps2(M8,M10,M9,M16,M17,M18,0);
+  const AB6=(1+M7/100)*M13;
+  const AB3=M19/(AB4*AB5*AB6);
+  return {...s,M4,M7,M8,M9,M10,M11,M12,M12_dr:0,actualM12,M13,M16,M17,M18,AB3,AB4,AB5,AB6,M19,rawCD:100,rawTD:0,actualTD:0,displayAD:25,displayAPS:0,displayAPU:0,actualAPU:(unitOn?183:163),displayUA:1,displaySR:0,displayHR:0,excelPierce:(pierceOn?10:0)};
 }
 function computeStatsRaw(){
   const autoEP=syncAutoEP();
@@ -470,7 +530,8 @@ function computeStatsRaw(){
   const M10 = sumStat('MC') + (asc[5]||0) + criOver300 + optionStats.mc;
   const rawTD = sumStat('TD') + specialRune.td + gradeTD + upperStats.td + (asc[6]||0) + optionStats.td + v('titleTdBonus') + additionalStats.td;
   const tdReduce = penTD + abyssTdPenalty();
-  const M11 = 100 + rawTD - tdReduce;
+  const actualTD = isAbyssDifficulty() ? 100 + rawTD - tdReduce : rawTD - tdReduce;
+  const M11 = isAbyssDifficulty() ? actualTD : 100 + actualTD;
   const M12_dr = sumStat('DR') + transcendDR + (asc[4]||0) + additionalStats.dr;
   const displayUA = uaProd() * optionStats.uaMul * upperStats.uaMul * enchantAt(2).ua * (1 + specialRune.ua/100) * (1 + additionalStats.ua/100);
   const M13 = displayUA * (1 - penUA/100) * abyssSlowMultiplier();
@@ -482,7 +543,7 @@ function computeStatsRaw(){
   const hpRatio = durabilityTotal > 0 ? (enemyData.hp||0) / durabilityTotal : 1;
   const shieldRatio = durabilityTotal > 0 ? (enemyData.shield||0) / durabilityTotal : 0;
   const hpRemain = Math.max(0.01, hpRatio * (1 - displayHR / 100) + shieldRatio * (1 - displaySR / 100));
-  const excelPierce = 10 + rpPierceBonus();
+  const excelPierce = (isBasePierceBuffOn() ? 10 : 0) + rpPierceBonus();
   const M12 = M12_dr;
   const actualM12 = M12_dr + (100-M12_dr) * (excelPierce / 100);
   const AB3=dps0(hpRemain, enemyData.armor, M12_dr, excelPierce, diff.dmg*(1-penDmg/100)) * upperStats.dps0Mul;
@@ -491,8 +552,7 @@ function computeStatsRaw(){
   const dt=personalUaDtMultiplier();
   const personalAs=personalAsBonus();
   const gradeAs=gradeAsBonus();
-  const abyssExtraAs=isAbyssDifficulty()?15:0;
-  const AB6=(1+(M7+personalAs+gradeAs+abyssExtraAs)/100)*(1-diff.as/100)*M13*dt;
+  const AB6=(1+(M7+personalAs+gradeAs)/100)*(1-diff.as/100)*M13*dt;
   const M19=AB3*AB4*AB5*AB6;
   let spU=0,spO=0,epU=0,rpU=0,soulU=0;
   TRAITS.forEach(t=>{
@@ -503,34 +563,21 @@ function computeStatsRaw(){
     if(SOUL_ROWS.has(row)) soulU+=cumCost(row);
   });
   const displayAD = Math.round(AP9 * (1 + rawTD/100));
-  const displayAP = Math.min(535, sumStat('AP') + (optionStats.ap||0) + specialRune.ap + additionalStats.ap);
+  const rawDisplayAP = sumStat('AP') + (optionStats.ap||0) + specialRune.ap + additionalStats.ap;
+  const displayAP = Math.min(535, rawDisplayAP);
   const displayAPS = displayAP;
   const displayAPU = displayAP;
-  return {M4,M7,M8,M9,M10,M11,M12,M12_dr,actualM12,M13,M16,M17,M18,AB3,AB4,AB5,AB6,M19,
-          rawCD,rawTD,penTD,penCD,penDmg,penUA,abyssStack:abyssEffectiveStack(),abyssTd:abyssTdPenalty(),abyssSlow:abyssSlowMultiplier(),abyssAd:abyssAdPenalty(),diff,dt,personalAs,gradeAs,asc,reinf,displayAD,displayAPS,displayAPU,displayUA,displaySR,displayHR,
-          spTotal:spU+spO,spU,spO,epU,rpU,soulU,spBank:spBankRawBonus(),spBankApplied:isSpBankApplied(),effectiveSP:effectiveSP(),rpPierce:rpPierceBonus(),excelPierce,enemyData};
-}
-function isZeroDefaultState(){
-  const currencyZero=['sp','xp','ep','rp','soul'].every(id=>v(id)===0);
-  const directZero=storageElementIds().every(id=>{
-    const el=document.getElementById(id);
-    if(!el) return true;
-    if(el.type==='number' || el.type==='text' || el.tagName==='TEXTAREA') return Number(el.value||0)===0;
-    return true;
-  });
-  const traitZero=TRAITS.every(t=>(INV[t[0]]||0)===0 || t[0]===116);
-  return currencyZero && directZero && traitZero;
-}
-function zeroStats(enemyData){
-  return {M4:0,M7:0,M8:0,M9:0,M10:0,M11:0,M12:0,M12_dr:0,actualM12:0,M13:0,M16:0,M17:0,M18:0,AB3:0,AB4:0,AB5:0,AB6:0,M19:0,
-          rawCD:0,rawTD:0,penTD:0,diff:DIFF[vs('diff')]||DIFF['The Final'],dt:1.15,asc:[0,0,0,0,0,0,0],reinf:0,
-          displayAD:0,displayAPS:0,displayAPU:0,displaySR:0,displayHR:0,
-          spTotal:0,spU:0,spO:0,epU:0,rpU:0,soulU:0,spBank:0,spBankApplied:isSpBankApplied(),effectiveSP:0,rpPierce:0,excelPierce:0,enemyData:enemyData||enemyRoundData(0)};
+  const actualAPU = rawDisplayAP + (unitEnhanceStats().value || 0) + (on('flowerSkill1') ? 40 : 0)
+                  + (isUnitUniqueBuffOn() ? 20 : 0) + (v('unitLevel') || 11) * 5
+                  - (v('unitDuplicatePenalty') || 0) * 10;
+  const actualSR = displaySR * shieldRatio;
+  const actualHR = displayHR * hpRatio;
+  return applyExcelInitialZeroSpecStats({M4,M7,M8,M9,M10,M11,M12,M12_dr,actualM12,M13,M16,M17,M18,AB3,AB4,AB5,AB6,M19,
+          rawCD,rawTD,actualTD,penTD,penCD,penDmg,penUA,abyssStack:abyssEffectiveStack(),abyssTd:abyssTdPenalty(),abyssSlow:abyssSlowMultiplier(),abyssAd:abyssAdPenalty(),diff,dt,personalAs,gradeAs,asc,reinf,displayAD,displayAPS,displayAPU,actualAPU,displayUA,displaySR,displayHR,actualSR,actualHR,
+          spTotal:spU+spO,spU,spO,epU,rpU,soulU,spBank:spBankRawBonus(),spBankApplied:isSpBankApplied(),effectiveSP:effectiveSP(),rpPierce:rpPierceBonus(),excelPierce,enemyData});
 }
 function computeStats(){
-  const s=computeStatsRaw();
-  if(isZeroDefaultState()) return zeroStats(s.enemyData);
-  return s;
+  return computeStatsRaw();
 }
 function hasRuneOption(code){
   return uniqueRuneOptionCodes().includes(code);
@@ -680,67 +727,57 @@ function fullNumber(n){
   n=Number(n);
   return Number.isFinite(n) ? Math.round(n||0).toLocaleString('ko-KR') : '—';
 }
+function shouldHideDpsForRound(){
+  const raw=String(document.getElementById('round')?.value ?? '').replace(/,/g,'').trim();
+  return raw==='0' || Number(raw)===0;
+}
 function renderDpsSummary(s){
+  if(shouldHideDpsForRound()){
+    setText('dpsVal', '—');
+    syncDpsMinDpsInputs();
+    updateDpsRiskViews(NaN);
+    if(isDpsTableOpen()) renderDpsTableModal();
+    return;
+  }
   setText('dpsVal', s.M19.toFixed(1));
   syncDpsMinDpsInputs();
   updateDpsRiskViews(s.M19);
   if(isDpsTableOpen()) renderDpsTableModal();
 }
-let statViewMode='display';
-const STAT_RENDER_ROWS=[
-  ['sAD', s=>fmt(s.displayAD,0), s=>fmt(s.M4,2)],
-  ['sAPS', s=>fmt(s.displayAPS,0)],
-  ['sAPU', s=>fmt(s.displayAPU,0)],
-  ['sAS', s=>fmt(s.M7,1)],
-  ['sCRI', s=>fmt(s.M8,1)],
-  ['sCD', s=>fmt(s.rawCD,1), s=>fmt(s.M9,1)],
-  ['sMC', s=>fmt(s.M10,0)],
-  ['sTD', s=>fmt(s.rawTD,1), s=>fmt(s.M11,1)],
-  ['sDR', s=>fmt(s.M12,0), s=>fmt(s.actualM12,0)],
-  ['sPIERCE', s=>`${fmt(s.excelPierce,0)}%`],
-  ['sUA', s=>fmt(s.displayUA,4), s=>fmt(s.M13,4)],
-  ['sSR', s=>fmt(s.displaySR,2)],
-  ['sHR', s=>fmt(s.displayHR,2)],
-  ['sMD', s=>fmt(s.M16,0)],
-  ['sMP', s=>fmt(s.M17,0)],
-  ['sMCP', s=>fmt(s.M18,0)]
+const STAT_COMPARE_ROWS=[
+  ['AD', s=>fmt(s.displayAD,0), s=>fmt(s.M4,0)],
+  ['APS', s=>fmt(s.displayAPS,0), s=>fmt(s.displayAPS,0)],
+  ['APU', s=>fmt(s.displayAPU,0), s=>fmt(s.actualAPU ?? s.displayAPU,0)],
+  ['AS', s=>fmt(s.M7,1), s=>fmt(s.M7,1)],
+  ['CRI', s=>fmt(s.M8,1), s=>fmt(s.M8,1)],
+  ['CD', s=>fmt(s.rawCD,1), s=>fmt(s.M9,2)],
+  ['MC', s=>fmt(s.M10,0), s=>fmt(s.M10,0)],
+  ['TD', s=>fmt(s.rawTD,1), s=>fmt(s.M11,2)],
+  ['DR', s=>fmt(s.M12,0), s=>fmt(s.actualM12,0)],
+  ['PIERCE', s=>`${fmt(s.excelPierce,0)}%`, s=>`${fmt(s.excelPierce,0)}%`],
+  ['UA', s=>fmt(s.displayUA,4), s=>fmt(s.M13,4)],
+  ['SR', s=>fmt(s.displaySR,2), s=>fmt(s.actualSR ?? s.displaySR,2)],
+  ['HR', s=>fmt(s.displayHR,2), s=>fmt(s.actualHR ?? s.displayHR,2)],
+  ['MD', s=>fmt(s.M16,0), s=>fmt(s.M16,0)],
+  ['MP', s=>fmt(s.M17,0), s=>fmt(s.M17,0)],
+  ['MCP', s=>fmt(s.M18,0), s=>fmt(s.M18,0)]
 ];
-function syncStatViewTabs(){
-  document.querySelectorAll('.stat-view-tab').forEach(btn=>{
-    const active=btn.dataset.mode===statViewMode;
-    btn.classList.toggle('active', active);
-    btn.setAttribute('aria-pressed', active?'true':'false');
-  });
-}
-function setStatViewMode(mode){
-  statViewMode = mode==='actual' ? 'actual' : 'display';
-  syncStatViewTabs();
-  renderStatSummary(computeStats());
-}
 function renderStatSummary(s){
-  const actual=statViewMode==='actual';
-  STAT_RENDER_ROWS.forEach(([id,display,actualFormat])=>setText(id,(actual && actualFormat ? actualFormat : display)(s)));
-  syncStatViewTabs();
+  STAT_COMPARE_ROWS.forEach(([key,display,actual])=>{
+    setText('s'+key+'Display', display(s));
+    setText('s'+key+'Actual', actual(s));
+  });
 }
 function renderResourceSummary(s){
   const baseSP=v('sp');
   const bankSP=s.spBankApplied ? (s.spBank||0) : 0;
   const spOwn=s.effectiveSP||effectiveSP();
   const spRemain=spOwn-s.spTotal;
-  const spPct=spOwn>0?Math.max(0,spRemain/spOwn*100):0;
-  const spBox=document.querySelector('.sp-box');
   setText('spAttackView', fullNumber(s.spO));
   setText('spUtilityView', fullNumber(s.spU));
   const bankValue=s.spBankApplied ? fullNumber(bankSP) : '미적용';
   const bankTitle=s.spBankApplied ? 'SP 은행을 제외하려면 누르세요' : 'SP 은행을 포함하려면 누르세요';
   setHtml('spDetail', `<div class="sp-detail-row"><small>총 SP</small><b>${fullNumber(baseSP)}</b></div><button class="sp-detail-row sp-bank-line ${s.spBankApplied?'bank-on':''}" data-action="toggleSpBankApply" type="button" title="${bankTitle}"><small>SP은행</small><b>${bankValue}</b></button><div class="sp-detail-row"><small>SP 사용량</small><b>${fullNumber(s.spTotal)}</b></div><div class="sp-detail-row"><small>SP 잔여량</small><b>${fullNumber(spRemain)}</b></div>`);
-  const usedPct=spOwn>0?Math.max(0,Math.min(100,(s.spTotal/spOwn)*100)):0;
-  const f=document.getElementById('spFill');
-  if(f){
-    f.style.width=usedPct+'%';
-    f.className='fill'+(spPct<20?' danger':spPct<50?' warn':'');
-  }
-  setText('spFillPct', `${usedPct.toFixed(1)}%`);
   const epRemain=v('ep')-s.epU, rpRemain=v('rp')-s.rpU, soulRemain=v('soul')-s.soulU;
   setHtml('epRem', `<span>투자 <b>${big(s.epU)}</b></span><em>·</em><span>잔여 <b>${big(epRemain)}</b></span>`);
   setHtml('rpRem', `<span>투자 <b>${big(s.rpU)}</b></span><em>·</em><span>잔여 <b>${big(rpRemain)}</b></span>`);
@@ -752,6 +789,7 @@ function recalc(){
     syncRuneChoice();
     syncEnchantInputs();
     syncSelectButtons();
+    syncBuffChoiceButtons();
     formatAllMoneyInputs();
     renderEnchantPreview(); renderXpCut(); renderEnhanceSummary();
     const s=computeStats();
@@ -1147,7 +1185,7 @@ function adjMax(row){
 function masterTier(tier){
   TRAITS.forEach(t=>{
     const row=t[0];
-    if(t[2]!==tier || row===116) return;
+    if(t[2]!==tier || row===116 || AUTO_INVEST_EXCLUDED_ROWS.has(row)) return;
     fillRowToBudget(row);
   });
   updateTraits();
@@ -1181,6 +1219,7 @@ function optimizeSP(){
   }
   function isOptimizationTarget(t){
     const [row]=t;
+    if(AUTO_INVEST_EXCLUDED_ROWS.has(row)) return false;
     const info=resourceInfo(row);
     if(!info) return false;
     const normalSet=OPT_NORMAL_ROWS[info.kind];
@@ -1422,7 +1461,7 @@ function makeComputedSnapshot(){
       DR:s.M12, PIERCE:s.excelPierce, UA:s.displayUA, SR:s.displaySR, HR:s.displayHR, MD:s.M16, MP:s.M17, MCP:s.M18
     },
     actualStats:{
-      AD:s.M4, AS:s.M7, CRI:s.M8, CD:s.M9, MC:s.M10, TD:s.M11, DR:s.actualM12, UA:s.M13
+      AD:s.M4, APS:s.displayAPS, APU:(s.actualAPU ?? s.displayAPU), AS:s.M7, CRI:s.M8, CD:s.M9, MC:s.M10, TD:s.M11, DR:s.actualM12, PIERCE:s.excelPierce, UA:s.M13, SR:(s.actualSR ?? s.displaySR), HR:(s.actualHR ?? s.displayHR), MD:s.M16, MP:s.M17, MCP:s.M18
     },
     enemy:{
       round:enemy.round||0, armor:enemy.armor||0, hp:enemy.hp||0, shield:enemy.shield||0, count:enemy.count||0
@@ -1450,16 +1489,29 @@ function sanitizeSavedValues(values){
   if(!values || typeof values!=='object') return {};
   const out={...values};
   IGNORED_SAVED_VALUE_IDS.forEach(id=>delete out[id]);
+  if(Object.prototype.hasOwnProperty.call(out,'overEnhance')) out.overEnhance=String(normalizeOverEnhanceValue(out.overEnhance));
   return out;
+}
+function normalizeLegacyRuneMonthValues(values, storageVersion){
+  if(!values || typeof values!=='object') return values;
+  if(storageVersion===DPS_CONFIG.storage.version) return values;
+  // V107 backups could carry monthly rune "+" counts as 4 even when the Excel spec sheet has N=4, O=0.
+  // Normalize only legacy saved/imported states so new manual plus selections remain possible.
+  ['apr','sep'].forEach(prefix=>{
+    const normalId=prefix+'RuneNormal';
+    const plusId=prefix+'RunePlus';
+    if(String(values[normalId] ?? '')==='4' && String(values[plusId] ?? '')==='4') values[plusId]='0';
+  });
+  return values;
 }
 function normalizeSavedState(data){
   if(!data || typeof data!=='object') return null;
   const legacyAdditional=data.additional || data.additionals || data.additionalInputs || {};
   const rawValues=(data.values && typeof data.values==='object') ? data.values : {};
-  const values=sanitizeSavedValues({
+  const values=normalizeLegacyRuneMonthValues(sanitizeSavedValues({
     ...(legacyAdditional && typeof legacyAdditional==='object' ? legacyAdditional : {}),
     ...rawValues
-  });
+  }), data.storageVersion);
   const inv=(data.inv && typeof data.inv==='object') ? {...data.inv} : {};
   if(!Object.keys(values).length && !Object.keys(inv).length) return null;
   return makeStorageEnvelope({
@@ -1496,6 +1548,7 @@ function applyStateObject(data){
     hydrateRuneChoiceFromHidden();
     syncEnchantCodeFromInputs(true);
     syncSelectButtons();
+    syncBuffChoiceButtons();
     formatAllMoneyInputs();
     updateTraits();
     recalc();
@@ -1624,7 +1677,7 @@ function importStateBackup(){
   fileInput.click();
 }
 function isMobileViewport(){
-  const max=DPS_CONFIG.ui.mobileMaxWidth || 767;
+  const max=DPS_CONFIG.ui.mobileMaxWidth || 600;
   if(window.matchMedia) return window.matchMedia(`(max-width:${max}px)`).matches;
   return window.innerWidth<=max;
 }
@@ -1755,7 +1808,6 @@ const ACTION_HANDLERS={
   clearSavedState:()=>requestClearSavedState(),
   exportStateBackup:()=>exportStateBackup(),
   importStateBackup:()=>importStateBackup(),
-  setStatView:(trigger)=>setStatViewMode(trigger.dataset.mode),
   toggleSpBankApply:()=>toggleSpBankApply(),
   openDpsTable:()=>openDpsTable(),
   decreaseFont:()=>changeFontScale(-DPS_CONFIG.ui.fontScaleStep),
@@ -1792,6 +1844,7 @@ function bindReactiveInputs(){
     if(ENCHANT_INPUT_IDS.includes(target.id)) syncEnchantInputs();
     if(RUNE_OPTION_SELECT_IDS.includes(target.id)) syncExclusiveRuneOptions();
     if(target.matches('select')) syncSelectButtons();
+    if(target.matches('.buff-choice-input')) syncBuffChoiceButtons();
     if(!target.matches('input, select, textarea')) return;
     cancelAnimationFrame(raf);
     raf=requestAnimationFrame(()=>requestAppUpdate());
@@ -1824,6 +1877,7 @@ function initApp(){
   renderAppVersion();
   syncEnchantCodeFromInputs(true);
   syncSelectButtons();
+  syncBuffChoiceButtons();
   syncExclusiveRuneOptions();
   formatAllMoneyInputs();
   loadState();
