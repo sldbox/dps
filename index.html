@@ -4,15 +4,18 @@
 <script>
 // index.html에서만 수동 관리하는 통합 캐시/저장소/앱 설정
 window.DPS_CACHE = {
-  style: "2606092405",
-  data: "2606092405",
-  app: "2606092405",
-  icon: "2606092405",
-  logo: "2606092405"
+  style: "2606091945",
+  responsiveStyle: "2606091945",
+  responsive: "2606091945",
+  data: "2606091945",
+  guide: "2606091945",
+  app: "2606091945",
+  icon: "2606091945",
+  logo: "2606091945"
 };
 
-window.DPS_VERSION = "2606092405";
-window.DPS_APP_VERSION = "V 2.0";
+window.DPS_VERSION = "2606091945";
+window.DPS_APP_VERSION = window.DPS_VERSION;
 
 window.DPS_STORAGE_CONFIG = {
   version: window.DPS_VERSION,
@@ -49,7 +52,7 @@ window.DPS_CONFIG = {
     fontScaleMin: 0.9,
     fontScaleMax: 2,
     fontScaleStep: 0.05,
-    mobileMaxWidth: 600
+    mobileMaxWidth: 767
   }
 };
 </script>
@@ -88,9 +91,9 @@ window.DPS_CONFIG = {
 (function(){
   var w=window.innerWidth||document.documentElement.clientWidth||0;
   var h=window.innerHeight||document.documentElement.clientHeight||0;
-  var mode=(w<=600)?'is-mobile':(w<=1024?'is-tablet':(h>w?'is-pc-portrait':'is-pc-landscape'));
+  var mode=(w<=767||(h<=430&&w<=960))?'is-mobile':((h>w&&w<=1024)?'is-tablet':(h>w?'is-pc-portrait':'is-pc-landscape'));
   var dir=h>w?' is-portrait-view':'';
-  var device=(w<=600)?' is-mobile-device':(w<=1024?' is-tablet-device':'');
+  var device=(w<=767||(h<=430&&w<=960))?' is-mobile-device':((w<=1024||(w<=1368&&h<=1024))?' is-tablet-device':'');
   var extra=w<=430?' is-narrow-mobile':'';
   document.body.className=(document.body.className+' '+mode+dir+device+extra).trim();
   document.documentElement.className=(document.documentElement.className+' '+mode+dir+device+extra).trim();
@@ -501,8 +504,11 @@ window.DPS_CONFIG = {
   var cache = window.DPS_CACHE || {};
   [
     ["style.css", cache.style, "style"],
+    ["responsive.css", cache.responsiveStyle, "style"],
+    ["responsive.js", cache.responsive, "script"],
     ["data.js", cache.data, "script"],
-    ["app.js", cache.app, "script"]
+    ["app.js", cache.app, "script"],
+    ["guide.js", cache.guide, "script"]
   ].forEach(function(item){
     var file = item[0];
     var version = encodeURIComponent(item[1] || "dev");
