@@ -1,7 +1,7 @@
 
 var DPS_CONFIG={
   storage:{
-    version:'20260609_1835_dps_v16_actual_stats_fix',
+    version:'20260609_1600_dps_v15_initial_buff_off_guide',
     scope:'browser_local',
     key:'gbd_dps_calculator:personal_state',
     fontKey:'gbd_dps_calculator:font_scale',

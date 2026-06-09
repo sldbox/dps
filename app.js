@@ -563,17 +563,11 @@ function computeStatsRaw(){
     if(SOUL_ROWS.has(row)) soulU+=cumCost(row);
   });
   const displayAD = Math.round(AP9 * (1 + rawTD/100));
-  const rawDisplayAP = sumStat('AP') + (optionStats.ap||0) + specialRune.ap + additionalStats.ap;
-  const displayAP = Math.min(535, rawDisplayAP);
+  const displayAP = Math.min(535, sumStat('AP') + (optionStats.ap||0) + specialRune.ap + additionalStats.ap);
   const displayAPS = displayAP;
   const displayAPU = displayAP;
-  const actualAPU = rawDisplayAP + (unitEnhanceStats().value || 0) + (on('flowerSkill1') ? 40 : 0)
-                  + (isUnitUniqueBuffOn() ? 20 : 0) + (v('unitLevel') || 11) * 5
-                  - (v('unitDuplicatePenalty') || 0) * 10;
-  const actualSR = displaySR * shieldRatio;
-  const actualHR = displayHR * hpRatio;
   return applyExcelInitialZeroSpecStats({M4,M7,M8,M9,M10,M11,M12,M12_dr,actualM12,M13,M16,M17,M18,AB3,AB4,AB5,AB6,M19,
-          rawCD,rawTD,actualTD,penTD,penCD,penDmg,penUA,abyssStack:abyssEffectiveStack(),abyssTd:abyssTdPenalty(),abyssSlow:abyssSlowMultiplier(),abyssAd:abyssAdPenalty(),diff,dt,personalAs,gradeAs,asc,reinf,displayAD,displayAPS,displayAPU,actualAPU,displayUA,displaySR,displayHR,actualSR,actualHR,
+          rawCD,rawTD,actualTD,penTD,penCD,penDmg,penUA,abyssStack:abyssEffectiveStack(),abyssTd:abyssTdPenalty(),abyssSlow:abyssSlowMultiplier(),abyssAd:abyssAdPenalty(),diff,dt,personalAs,gradeAs,asc,reinf,displayAD,displayAPS,displayAPU,displayUA,displaySR,displayHR,
           spTotal:spU+spO,spU,spO,epU,rpU,soulU,spBank:spBankRawBonus(),spBankApplied:isSpBankApplied(),effectiveSP:effectiveSP(),rpPierce:rpPierceBonus(),excelPierce,enemyData});
 }
 function computeStats(){
@@ -748,16 +742,16 @@ const STAT_COMPARE_ROWS=[
   ['AD', s=>fmt(s.displayAD,0), s=>fmt(s.M4,0)],
   ['APS', s=>fmt(s.displayAPS,0), s=>fmt(s.displayAPS,0)],
   ['APU', s=>fmt(s.displayAPU,0), s=>fmt(s.actualAPU ?? s.displayAPU,0)],
-  ['AS', s=>fmt(s.M7,1), s=>fmt(s.M7,1)],
-  ['CRI', s=>fmt(s.M8,1), s=>fmt(s.M8,1)],
+  ['AS', s=>fmt(s.M7,0), s=>fmt(s.M7,0)],
+  ['CRI', s=>fmt(s.M8,0), s=>fmt(s.M8,0)],
   ['CD', s=>fmt(s.rawCD,1), s=>fmt(s.M9,2)],
   ['MC', s=>fmt(s.M10,0), s=>fmt(s.M10,0)],
-  ['TD', s=>fmt(s.rawTD,1), s=>fmt(s.M11,2)],
+  ['TD', s=>fmt(s.rawTD,0), s=>fmt(s.M11,2)],
   ['DR', s=>fmt(s.M12,0), s=>fmt(s.actualM12,0)],
-  ['PIERCE', s=>`${fmt(s.excelPierce,0)}%`, s=>`${fmt(s.excelPierce,0)}%`],
+  ['PIERCE', s=>`${fmt(0,0)}%`, s=>`${fmt(s.excelPierce,0)}%`],
   ['UA', s=>fmt(s.displayUA,4), s=>fmt(s.M13,4)],
-  ['SR', s=>fmt(s.displaySR,2), s=>fmt(s.actualSR ?? s.displaySR,2)],
-  ['HR', s=>fmt(s.displayHR,2), s=>fmt(s.actualHR ?? s.displayHR,2)],
+  ['SR', s=>fmt(s.displaySR,2), s=>fmt(s.displaySR,2)],
+  ['HR', s=>fmt(s.displayHR,2), s=>fmt(s.displayHR,2)],
   ['MD', s=>fmt(s.M16,0), s=>fmt(s.M16,0)],
   ['MP', s=>fmt(s.M17,0), s=>fmt(s.M17,0)],
   ['MCP', s=>fmt(s.M18,0), s=>fmt(s.M18,0)]
@@ -1461,7 +1455,7 @@ function makeComputedSnapshot(){
       DR:s.M12, PIERCE:s.excelPierce, UA:s.displayUA, SR:s.displaySR, HR:s.displayHR, MD:s.M16, MP:s.M17, MCP:s.M18
     },
     actualStats:{
-      AD:s.M4, APS:s.displayAPS, APU:(s.actualAPU ?? s.displayAPU), AS:s.M7, CRI:s.M8, CD:s.M9, MC:s.M10, TD:s.M11, DR:s.actualM12, PIERCE:s.excelPierce, UA:s.M13, SR:(s.actualSR ?? s.displaySR), HR:(s.actualHR ?? s.displayHR), MD:s.M16, MP:s.M17, MCP:s.M18
+      AD:s.M4, APS:s.displayAPS, APU:(s.actualAPU ?? s.displayAPU), AS:s.M7, CRI:s.M8, CD:s.M9, MC:s.M10, TD:s.M11, DR:s.actualM12, PIERCE:s.excelPierce, UA:s.M13, SR:s.displaySR, HR:s.displayHR, MD:s.M16, MP:s.M17, MCP:s.M18
     },
     enemy:{
       round:enemy.round||0, armor:enemy.armor||0, hp:enemy.hp||0, shield:enemy.shield||0, count:enemy.count||0
