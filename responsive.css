@@ -14,6 +14,7 @@ body.is-tablet-device .font-scale-ctrl, body.is-mobile-device .font-scale-ctrl{d
 body.is-pc-portrait .xp-sp-split, body.is-tablet .xp-sp-split{grid-template-columns:repeat(2,minmax(0,1fr)) !important}
 body.is-pc-portrait .rune-panel.tidy-rune-panel, body.is-tablet .rune-panel.tidy-rune-panel{grid-template-columns:repeat(2,minmax(0,1fr)) !important}
 body.is-pc-portrait .rune-basic-card, body.is-tablet .rune-basic-card{grid-column:1/-1 !important}
+body.is-pc-portrait .two-panel-buff, body.is-tablet .two-panel-buff{grid-template-columns:repeat(2,minmax(0,1fr)) !important}
 body.is-pc-portrait .col-mid, body.is-tablet .col-mid{display:grid !important;grid-template-columns:repeat(2,minmax(0,1fr)) !important;gap:10px !important}
 body.is-pc-portrait .stat-dps-card, body.is-tablet .stat-dps-card{grid-column:1/-1 !important}
 body.is-pc-portrait .trait-group .tr, body.is-tablet .trait-group .tr{grid-template-columns:minmax(0,1fr) 232px !important}
@@ -23,15 +24,18 @@ body.is-tablet.is-portrait-view .clean-rune-card .rune-basic-card{grid-column:1 
 body.is-tablet.is-portrait-view .clean-rune-card .rune-option-card{grid-column:2 !important;grid-row:1 !important}
 body.is-tablet.is-portrait-view .clean-rune-card .additional-editor{grid-column:1 !important;grid-row:2 !important}
 body.is-tablet.is-portrait-view .clean-rune-card .enchant-combined{grid-column:2 !important;grid-row:2 !important}
+body.is-tablet.is-portrait-view .sg.two-panel-buff{display:block !important}
+body.is-tablet.is-portrait-view .sg.two-panel-buff .toggle-grid{display:grid !important;grid-template-columns:repeat(2,minmax(0,1fr)) !important;gap:9px 14px !important}
 body.is-mobile .hdr-brand, body.is-mobile .hdr-meta{width:100% !important;justify-content:center !important}
 body.is-mobile .font-scale-ctrl{display:none !important}
 body.is-mobile .col-work{padding:8px !important}
 body.is-mobile .sg, body.is-mobile .col-left .sg, body.is-mobile .data-card, body.is-mobile .trait-group{margin-bottom:8px !important}
+body.is-mobile .xp-sp-split, body.is-mobile .rune-panel.tidy-rune-panel, body.is-mobile .two-panel-buff, body.is-mobile .unit-enhance-main-row, body.is-mobile .unit-enhance-control-stack, body.is-mobile .month-rune-selects, body.is-mobile .buff-section .toggle-grid, body.is-mobile .two-panel-buff .toggle-grid, body.is-mobile .sp-box .sp-summary-stack, body.is-mobile .sp-box .sp-detail, body.is-mobile .skill-damage-layout{display:grid !important;grid-template-columns:1fr !important;gap:8px !important}
 body.is-mobile .col-mid{display:flex !important;flex-direction:column !important;gap:8px !important}
 body.is-mobile .ir, body.is-mobile .xp-sp-card .resource-box, body.is-mobile .xp-sp-card .difficulty-panel .ir, body.is-mobile .skill-setting-panel .skill-ir{grid-template-columns:92px minmax(0,1fr) !important;gap:6px !important}
 body.is-mobile .trait-group .tr{grid-template-columns:1fr !important;gap:6px !important}
 body.is-mobile .trait-group .tr-ctrl{grid-template-columns:30px minmax(70px,1fr) 30px 64px !important;min-width:0 !important;width:100% !important}
-body.is-mobile .save-row{grid-template-columns:1fr 1fr !important;gap:6px !important}
+body.is-mobile .btns, body.is-mobile .save-row{grid-template-columns:1fr 1fr !important;gap:6px !important}
 body.is-mobile .dps-num{font-size:calc(34px * var(--app-font-scale)) !important}
 body.is-mobile .stat-row{display:grid !important;grid-template-columns:minmax(112px,.9fr) minmax(0,1.1fr) !important}
 body.is-mobile .skill-damage-list tr, body.is-mobile .skill-list-head{display:grid !important;grid-template-columns:minmax(0,1fr) 82px !important;gap:8px !important}
@@ -42,7 +46,7 @@ body.is-mobile .sg.unit-enhance-card .unit-enhance-left .mini-ir.mini-ir-button-
 body.is-mobile .sg.unit-enhance-card .unit-enhance-left .mini-ir.mini-ir-button-row .seg-btns button[data-value="0"]{grid-column:auto !important;font-size:calc(11px * var(--app-font-scale)) !important}
 body.is-mobile .sg.unit-enhance-card .unit-enhance-left .unit-enhance-inline-controls .pill-row{grid-template-columns:1fr !important;gap:5px !important;padding:7px !important}
 body.is-mobile .sg.unit-enhance-card .unit-enhance-left .unit-enhance-inline-controls .pill-label{min-height:28px !important;height:28px !important;justify-content:flex-start !important;padding:0 10px !important;font-size:calc(11.5px * var(--app-font-scale)) !important}
-body.is-mobile .sg.unit-enhance-card .unit-enhance-left .unit-enhance-inline-controls .seg-btns[data-target="overEnhance"]{grid-template-columns:repeat(4,minmax(0,1fr)) !important;gap:5px !important}
+body.is-mobile .sg.unit-enhance-card .unit-enhance-left .unit-enhance-inline-controls .seg-btns[data-target="overEnhance"]{grid-template-columns:1.28fr repeat(6,minmax(0,1fr)) !important;gap:5px !important}
 body.is-mobile .sg.unit-enhance-card .unit-enhance-left .unit-enhance-inline-controls .seg-btns[data-target="repairEnhance"], body.is-mobile .sg.unit-enhance-card .unit-enhance-left .unit-enhance-inline-controls .seg-btns[data-target="enhanceMaster"]{grid-template-columns:repeat(3,minmax(0,1fr)) !important;gap:5px !important}
 body.is-mobile .sg.unit-enhance-card .unit-enhance-left .unit-enhance-inline-controls .seg-btns button{height:30px !important;padding:0 4px !important;font-size:calc(11px * var(--app-font-scale)) !important}
 body.is-pc-portrait .dps-table-modal, body.is-tablet .dps-table-modal{width:calc(100vw - 10px) !important;max-height:calc(100vh - 10px) !important;margin:5px auto !important}
@@ -231,6 +235,34 @@ body.is-tabbed .mobile-page > .col-right .tp-body{
 }
 body.is-tabbed .mobile-page > .col-right .tp-head{margin-top:0 !important}
 body.is-tabbed .mobile-page input[type="hidden"]{display:none !important}
+
+body.is-tabbed .sg.two-panel-buff,
+body.is-tabbed .buff-section.two-panel-buff{
+  display:block !important;
+  grid-template-columns:none !important;
+}
+body.is-tabbed .sg.two-panel-buff > .buff-card,
+body.is-tabbed .buff-section.two-panel-buff > .buff-card{
+  height:auto !important;
+  margin:0 0 10px !important;
+}
+body.is-tabbed .sg.two-panel-buff > .buff-card:last-child,
+body.is-tabbed .buff-section.two-panel-buff > .buff-card:last-child{
+  margin-bottom:0 !important;
+}
+body.is-tabbed .buff-section.two-panel-buff .toggle-grid,
+body.is-tabbed .sg.two-panel-buff .toggle-grid{
+  grid-template-columns:1fr !important;
+  gap:10px !important;
+}
+body.is-tabbed .buff-section.two-panel-buff .toggle,
+body.is-tabbed .sg.two-panel-buff .toggle{
+  min-height:42px !important;
+  height:42px !important;
+  grid-template-columns:minmax(0,1fr) 52px !important;
+  padding:0 18px !important;
+  border-bottom:0 !important;
+}
 body.is-tabbed .mobile-page-extra .skill-damage-layout{
   display:block !important;
 }
@@ -240,338 +272,40 @@ body.is-tabbed .mobile-page-extra .skill-result-panel{
   max-width:100% !important;
 }
 
-body.is-mobile .sg.priority .save-row{
+.trait-dashboard-tools{
+  width:100% !important;
+  margin:10px 0 !important;
+  padding:10px !important;
+  border:1px solid var(--ui-line) !important;
+  border-radius:12px !important;
+  background:#fff !important;
+  box-shadow:var(--ui-shadow-soft) !important;
+}
+.trait-dashboard-tools .trait-opt-tier-row{
+  display:grid !important;
+  grid-template-columns:120px minmax(0,1fr) !important;
+  gap:8px !important;
+  margin:0 0 8px !important;
+}
+.trait-dashboard-tools .trait-tool-buttons{
+  display:grid !important;
+  grid-template-columns:1fr 1fr !important;
+  gap:8px !important;
+}
+body.is-mobile .sg.priority .save-row,
+body.is-mobile .sg.priority .btns{
   grid-column:1/-1 !important;
 }
 body.is-mobile .sg.priority .sg-title span:first-child{white-space:nowrap !important}
+body.is-mobile .trait-dashboard-tools .trait-opt-tier-row select,
+body.is-mobile #optTier{
+  text-align:center !important;
+  text-align-last:center !important;
+  justify-content:center !important;
+}
+
 .sp-box .sp-detail .sp-bank-line{cursor:pointer !important;border:0 !important;background:transparent !important;font:inherit !important;color:inherit !important;width:100% !important}
 .sp-box .sp-detail .sp-bank-line b::after{content:"";display:inline-block;width:6px;height:6px;margin-left:6px;border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:rotate(45deg) translateY(-2px);opacity:.55}
 .sp-box .sp-detail .sp-bank-line.bank-on b{background:#ecfdf5 !important;border-color:#86efac !important;color:#15803d !important}
 .sp-box .sp-detail .sp-bank-line:active b{transform:translateY(1px)}
-body.is-tabbed .mobile-page{
-  box-sizing:border-box!important;
-  padding:0 1px 8px!important;
-  overflow-x:hidden!important;
-}
-body.is-tabbed .mobile-page > .sg,
-body.is-tabbed .mobile-page > .data-card,
-body.is-tabbed .mobile-page > .col-right .trait-group,
-body.is-tabbed .mobile-page > .col-right > .trait-board-summary-card{
-  border:1px solid var(--ui-line,#d9e6f5)!important;
-  border-radius:12px!important;
-  background:#fff!important;
-  box-shadow:var(--panel-shadow,0 1px 6px rgba(15,23,42,.06))!important;
-  overflow:hidden!important;
-}
-body.is-tabbed .mobile-page > .sg,
-body.is-tabbed .mobile-page > .data-card{
-  padding:10px!important;
-}
-body.is-tabbed .mobile-page .sg-title,
-body.is-tabbed .mobile-page .section-title,
-body.is-tabbed .mobile-page .data-card h3,
-body.is-tabbed .mobile-page > .col-right .trait-group h4{
-  display:flex!important;
-  align-items:center!important;
-  justify-content:flex-start!important;
-  width:auto!important;
-  height:auto!important;
-  min-height:32px!important;
-  margin:0 0 10px!important;
-  padding:6px 10px!important;
-  border:1px solid #d8e8fb!important;
-  border-radius:9px!important;
-  background:linear-gradient(180deg,#f4f9ff 0%,#eaf4ff 100%)!important;
-  color:#12336b!important;
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.9)!important;
-  font-size:calc(12.5px * var(--app-font-scale))!important;
-  font-weight:900!important;
-  line-height:1.25!important;
-  letter-spacing:0!important;
-  text-transform:none!important;
-  white-space:normal!important;
-  word-break:keep-all!important;
-}
-body.is-tabbed .sg.unit-enhance-card,
-body.is-tabbed .sg.unit-enhance-card.spec-unit-enhance{
-  padding:10px!important;
-}
-body.is-tabbed .mobile-page > .col-right{
-  padding:0!important;
-  border:0!important;
-  background:transparent!important;
-  box-shadow:none!important;
-  overflow:visible!important;
-}
-body.is-tabbed .mobile-page > .col-right > .trait-board-summary-card{
-  margin:0 0 10px!important;
-  padding:10px!important;
-}
-body.is-tabbed .mobile-page > .col-right > .trait-board-summary-card > .trait-dashboard-tools{
-  margin:0 0 8px!important;
-  padding:0!important;
-  border:0!important;
-  background:transparent!important;
-  box-shadow:none!important;
-}
-body.is-tabbed .mobile-page > .col-right > .trait-board-summary-card > .sp-box{
-  display:grid!important;
-  grid-template-columns:1fr!important;
-  gap:7px!important;
-  margin:8px 0 0!important;
-  padding:0!important;
-  border:0!important;
-  border-radius:0!important;
-  background:transparent!important;
-  box-shadow:none!important;
-}
-body.is-tabbed .mobile-page > .col-right > .trait-board-summary-card > .sp-box .sp-summary-stack,
-body.is-tabbed .mobile-page > .col-right > .trait-board-summary-card > .sp-box .sp-detail{
-  display:contents!important;
-  margin:0!important;
-  padding:0!important;
-  border:0!important;
-  background:transparent!important;
-  box-shadow:none!important;
-}
-body.is-tabbed .mobile-page > .col-right > .trait-board-summary-card > .sp-box .sp-summary-line,
-body.is-tabbed .mobile-page > .col-right > .trait-board-summary-card > .sp-box .sp-detail-row{
-  display:grid!important;
-  grid-template-columns:92px minmax(0,1fr)!important;
-  gap:7px!important;
-  margin:0!important;
-  padding:0!important;
-  border:0!important;
-  background:transparent!important;
-  box-shadow:none!important;
-}
-body.is-tabbed .mobile-page > .col-right > .trait-board-summary-card > .sp-box .sp-summary-line .lbl,
-body.is-tabbed .mobile-page > .col-right > .trait-board-summary-card > .sp-box .sp-detail-row small{
-  min-width:0!important;
-  height:31px!important;
-  min-height:31px!important;
-  display:flex!important;
-  align-items:center!important;
-  justify-content:center!important;
-  padding:0 8px!important;
-  border:1px solid var(--role-label-bd,#c5d3e6)!important;
-  border-radius:8px!important;
-  background:var(--role-label-bg,#f8fbff)!important;
-  color:#334155!important;
-  font-size:calc(11.5px * var(--app-font-scale))!important;
-  font-weight:900!important;
-  text-align:center!important;
-  white-space:nowrap!important;
-}
-body.is-tabbed .mobile-page > .col-right > .trait-board-summary-card > .sp-box .sp-summary-line .val,
-body.is-tabbed .mobile-page > .col-right > .trait-board-summary-card > .sp-box .sp-detail-row b{
-  min-width:0!important;
-  height:31px!important;
-  min-height:31px!important;
-  display:flex!important;
-  align-items:center!important;
-  justify-content:flex-end!important;
-  padding:0 10px!important;
-  border:1px solid var(--role-readonly-bd,#9ec5ff)!important;
-  border-radius:8px!important;
-  background:var(--role-readonly-bg,#eef6ff)!important;
-  color:#111827!important;
-  font-family:Consolas,monospace!important;
-  font-size:calc(12px * var(--app-font-scale))!important;
-  font-weight:900!important;
-  text-align:right!important;
-  white-space:nowrap!important;
-  overflow:hidden!important;
-  text-overflow:ellipsis!important;
-}
-body.is-tabbed .mobile-page > .col-right > .tp-body{
-  margin:0!important;
-  padding:0!important;
-}
-body.is-tabbed .mobile-page > .col-right .trait-group{
-  padding:10px!important;
-}
-body.is-tabbed .mobile-page > .sg.priority > .sg-title.trait-work-head{
-  display:flex!important;
-  justify-content:flex-end!important;
-  align-items:center!important;
-  min-height:0!important;
-  height:auto!important;
-  margin:0 0 8px!important;
-  padding:0!important;
-  border:0!important;
-  border-radius:0!important;
-  background:transparent!important;
-  box-shadow:none!important;
-}
-body.is-tabbed .mobile-page > .sg.priority > .sg-title.trait-work-head > span:first-child{
-  display:none!important;
-}
-body.is-tabbed .mobile-page > .sg.priority > .sg-title.trait-work-head .storage-status{
-  margin:0!important;
-}
-body.is-tabbed .mobile-page > .col-right > .trait-board-summary-card{
-  margin-top:0!important;
-}
-body.is-mobile .bus-cut-title .bus-cut-note{
-  color:#64748b !important;
-  font-weight:800 !important;
-  text-shadow:none !important;
-  opacity:1 !important;
-}
-
-/* dps-V4 responsive stat comparison */
-body.is-pc-portrait .stat-compare-grid .stat-row, body.is-tablet .stat-compare-grid .stat-row{grid-template-columns:minmax(120px,.9fr) minmax(0,1fr) minmax(0,1fr)!important}
-body.is-mobile .stat-compare-grid .stat-row{grid-template-columns:minmax(84px,.86fr) minmax(0,.9fr) minmax(0,.9fr)!important;min-height:30px!important}
-body.is-mobile .stat-compare-grid .stat-row .sc-name, body.is-mobile .stat-compare-grid .stat-row .sc-val{font-size:calc(10.5px * var(--app-font-scale))!important;padding:0 5px!important}
-body.is-mobile .base-option-grid{grid-template-columns:1fr!important}
-body.is-tablet .base-option-grid, body.is-pc-portrait .base-option-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}
-body.is-pc-portrait .stat-compare-grid .stat-row,
-body.is-tablet .stat-compare-grid .stat-row{
-  grid-template-columns:minmax(110px,.88fr) minmax(0,1fr) minmax(0,1fr)!important;
-}
-body.is-mobile .stat-compare-grid .stat-row{
-  grid-template-columns:minmax(96px,.9fr) minmax(0,1fr) minmax(0,1fr)!important;
-}
-body.is-mobile .stat-compare-grid .stat-row .sc-name,
-body.is-mobile .stat-compare-grid .stat-row .sc-val{
-  justify-content:center!important;
-  text-align:center!important;
-  font-size:calc(10.5px * var(--app-font-scale))!important;
-  padding:0 4px!important;
-}
-body.is-mobile .stat-compare-grid .stat-row .sc-name{
-  justify-content:flex-start!important;
-  text-align:left!important;
-}
-body.is-pc-portrait .stat-compare-grid .stat-row,
-body.is-tablet .stat-compare-grid .stat-row{
-  grid-template-columns:minmax(118px,.9fr) minmax(0,1fr) minmax(0,1fr)!important;
-}
-body.is-mobile .stat-compare-grid .stat-row{
-  grid-template-columns:minmax(98px,.9fr) minmax(0,1fr) minmax(0,1fr)!important;
-  min-height:30px!important;
-}
-body.is-mobile .stat-compare-grid .stat-row .sc-name,
-body.is-mobile .stat-compare-grid .stat-row .sc-val{
-  min-height:30px!important;
-  padding:0 4px!important;
-  font-size:calc(10.3px * var(--app-font-scale))!important;
-  justify-content:center!important;
-  text-align:center!important;
-}
-body.is-mobile .sg.unit-enhance-card .unit-enhance-left .mini-ir.mini-ir-button-row label,
-body.is-tabbed .sg.unit-enhance-card .unit-enhance-left .mini-ir.mini-ir-button-row label,
-body.is-mobile .sg.unit-enhance-card .unit-enhance-left .unit-enhance-inline-controls .pill-label,
-body.is-tabbed .sg.unit-enhance-card .unit-enhance-left .unit-enhance-inline-controls .pill-label{
-  background:#fff!important;
-  border-color:#bfdbfe!important;
-  color:#142033!important;
-}
-body.is-mobile .sg.unit-enhance-card .unit-enhance-left .mini-ir.mini-ir-button-row label,
-body.is-tabbed .sg.unit-enhance-card .unit-enhance-left .mini-ir.mini-ir-button-row label,
-body.is-mobile .sg.unit-enhance-card .unit-enhance-left .unit-enhance-inline-controls .pill-label,
-body.is-tabbed .sg.unit-enhance-card .unit-enhance-left .unit-enhance-inline-controls .pill-label{
-  min-height:20px!important;
-  height:auto!important;
-  padding:0 2px!important;
-  border:0!important;
-  border-radius:0!important;
-  background:transparent!important;
-  color:#17336f!important;
-  justify-content:flex-start!important;
-  text-align:left!important;
-  font-size:calc(12px * var(--app-font-scale))!important;
-  font-weight:900!important;
-  box-shadow:none!important;
-}
-
-/* dps-V10: merged rune-effect/buff layout */
-body.is-mobile .sg.unit-enhance-card .unit-enhance-summary-inline,
-body.is-tabbed .sg.unit-enhance-card .unit-enhance-summary-inline{grid-template-columns:1fr !important}
-body.is-mobile .sg.unit-enhance-card .buff-inline-row,
-body.is-tabbed .sg.unit-enhance-card .buff-inline-row{grid-template-columns:1fr !important;gap:5px !important}
-body.is-mobile .sg.unit-enhance-card .buff-choice-grid,
-body.is-tabbed .sg.unit-enhance-card .buff-choice-grid{display:grid !important;grid-template-columns:1fr !important;gap:6px !important}
-body.is-mobile .sg.unit-enhance-card .buff-choice-item,
-body.is-tabbed .sg.unit-enhance-card .buff-choice-item{width:100% !important;min-width:0 !important;justify-content:center !important}
-body.is-mobile .sg.unit-enhance-card .unit-enhance-left .mini-ir.mini-ir-button-row label,
-body.is-mobile .sg.unit-enhance-card .unit-enhance-left .unit-enhance-inline-controls .pill-label,
-body.is-tabbed .sg.unit-enhance-card .unit-enhance-left .mini-ir.mini-ir-button-row label,
-body.is-tabbed .sg.unit-enhance-card .unit-enhance-left .unit-enhance-inline-controls .pill-label{background:transparent !important;border:0 !important;justify-content:flex-start !important;padding:0 !important;height:auto !important;min-height:0 !important;border-radius:0 !important}
-body.is-mobile .sg.unit-enhance-card .buff-inline-title,
-body.is-tabbed .sg.unit-enhance-card .buff-inline-title{background:transparent !important;border:0 !important;justify-content:flex-start !important;padding:0 !important;height:auto !important;min-height:0 !important;border-radius:0 !important}
-body.is-tablet .sg.unit-enhance-card .buff-inline-row,
-body.is-pc-portrait .sg.unit-enhance-card .buff-inline-row{grid-template-columns:112px minmax(0,1fr) !important}
-body.is-tablet .sg.unit-enhance-card .buff-grid-base .buff-choice-item,
-body.is-pc-portrait .sg.unit-enhance-card .buff-grid-base .buff-choice-item{flex:1 1 180px !important}
-body.is-tablet .sg.unit-enhance-card .buff-grid-flower .buff-choice-item,
-body.is-pc-portrait .sg.unit-enhance-card .buff-grid-flower .buff-choice-item{flex:1 1 150px !important}
-body.is-tablet .sg.unit-enhance-card .buff-grid-prod .buff-choice-item,
-body.is-pc-portrait .sg.unit-enhance-card .buff-grid-prod .buff-choice-item{flex:1 1 140px !important}
-
-
-/* dps-V11: 모바일 룬효과/버프 섹션 간격 정리 */
-body.is-mobile .sg.unit-enhance-card .unit-enhance-control-stack,
-body.is-tabbed .sg.unit-enhance-card .unit-enhance-control-stack{
-  gap:12px !important;
-}
-
-body.is-mobile .sg.unit-enhance-card .month-rune-selects,
-body.is-tabbed .sg.unit-enhance-card .month-rune-selects,
-body.is-mobile .sg.unit-enhance-card .unit-enhance-inline-controls,
-body.is-tabbed .sg.unit-enhance-card .unit-enhance-inline-controls,
-body.is-mobile .sg.unit-enhance-card .buff-inline-groups,
-body.is-tabbed .sg.unit-enhance-card .buff-inline-groups{
-  gap:10px !important;
-}
-
-body.is-mobile .sg.unit-enhance-card .buff-inline-row,
-body.is-tabbed .sg.unit-enhance-card .buff-inline-row{
-  margin-top:12px !important;
-}
-
-body.is-mobile .sg.unit-enhance-card .buff-inline-row:first-child,
-body.is-tabbed .sg.unit-enhance-card .buff-inline-row:first-child{
-  margin-top:6px !important;
-}
-
-body.is-mobile .sg.unit-enhance-card .buff-inline-title,
-body.is-tabbed .sg.unit-enhance-card .buff-inline-title{
-  margin-bottom:4px !important;
-  color:#0f2f73 !important;
-  font-weight:900 !important;
-  text-align:left !important;
-}
-
-body.is-mobile .sg.unit-enhance-card .buff-choice-grid,
-body.is-tabbed .sg.unit-enhance-card .buff-choice-grid{
-  gap:8px !important;
-}
-
-body.is-mobile .sg.unit-enhance-card .buff-choice-item,
-body.is-tabbed .sg.unit-enhance-card .buff-choice-item{
-  min-height:34px !important;
-  padding:0 10px !important;
-}
-
-body.is-mobile .sg.unit-enhance-card .unit-enhance-summary-inline,
-body.is-tabbed .sg.unit-enhance-card .unit-enhance-summary-inline{
-  gap:8px !important;
-  margin:12px 0 10px !important;
-}
-
-body.is-mobile .sg.unit-enhance-card .unit-enhance-summary-inline .enhance-summary-card,
-body.is-tabbed .sg.unit-enhance-card .unit-enhance-summary-inline .enhance-summary-card{
-  min-height:56px !important;
-  align-items:center !important;
-  text-align:center !important;
-}
-
-body.is-mobile .sg.unit-enhance-card .mini-ir.mini-ir-button-row label,
-body.is-mobile .sg.unit-enhance-card .unit-enhance-inline-controls .pill-label,
-body.is-tabbed .sg.unit-enhance-card .mini-ir.mini-ir-button-row label,
-body.is-tabbed .sg.unit-enhance-card .unit-enhance-inline-controls .pill-label{
-  color:#0f2f73 !important;
-  font-weight:900 !important;
-}
+body.is-tabbed .trait-dashboard-tools{margin-top:8px !important}

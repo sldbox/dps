@@ -4,10 +4,11 @@
   const MODES = ['is-pc-landscape', 'is-pc-portrait', 'is-tablet', 'is-mobile', 'is-portrait-view', 'is-mobile-device', 'is-tablet-device', 'is-narrow-mobile', 'is-tabbed'];
   const MOBILE_PAGES = [
     { key: 'spec', label: '기본정보', selectors: ['.xp-sp-card'] },
-    { key: 'rune-spec', label: '룬스펙', selectors: ['.clean-rune-card'] },
-    { key: 'rune-effect', label: '룬효과/버프', selectors: ['.unit-enhance-card'] },
     { key: 'trait', label: '특성보드', selectors: ['.col-right'] },
-    { key: 'result', label: '스텟보드', selectors: ['.stat-dps-card'] },
+    { key: 'rune-effect', label: '룬효과', selectors: ['.unit-enhance-card'] },
+    { key: 'rune-spec', label: '룬스펙', selectors: ['.clean-rune-card'] },
+    { key: 'buff', label: '버프', selectors: ['.two-panel-buff'] },
+    { key: 'result', label: '결과', selectors: ['.stat-dps-card'] },
     { key: 'save', label: '저장복구', selectors: ['.sg.priority'] },
     { key: 'extra', label: '기타', selectors: ['.bus-cut-card', '.final-damage-card'] }
   ];
