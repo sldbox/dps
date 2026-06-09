@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<script>
+window.DPS_VERSION = "2606100015";
+window.DPS_APP_VERSION = "V 2.0";
+</script>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/>
+<meta content="no-cache, no-store, must-revalidate" http-equiv="Cache-Control"/>
+<meta content="no-cache" http-equiv="Pragma"/>
+<meta content="0" http-equiv="Expires"/>
+<title>개복디 특성 계산기</title>
+<meta content="#f5f7fb" name="theme-color"/>
+<meta content="특성 투자, 재화 사용량, 표기 스탯, 총데미지, DPS를 한 번에 계산할 수 있는 개복디 전용 계산기입니다." name="description"/>
+<meta content="website" property="og:type"/>
+<meta content="https://sldbox.github.io/dps/" property="og:url"/>
+<meta content="개복디 특성 계산기" property="og:title"/>
+<meta content="특성 투자, 재화 사용량, 표기 스탯, 총데미지, DPS를 한 번에 계산할 수 있는 개복디 전용 계산기입니다." property="og:description"/>
+<meta content="summary_large_image" name="twitter:card"/>
+<meta content="개복디 특성 계산기" name="twitter:title"/>
+<meta content="특성 투자, 재화 사용량, 표기 스탯, 총데미지, DPS를 한 번에 계산할 수 있는 개복디 전용 계산기입니다." name="twitter:description"/>
+<link href="https://cdn.jsdelivr.net" rel="preconnect"/>
+<link crossorigin="" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" rel="stylesheet"/>
+<script>
+(function(){
+  var version=window.DPS_VERSION || 'dev';
+  var logo='https://sldbox.github.io/dps/logo/logo.png?v=' + version;
+  var icon='https://sldbox.github.io/dps/logo/icon.png?v=' + version;
+  try{
+    var key='gaebokdi_dps_asset_version';
+    var prev=localStorage.getItem(key);
+    if(prev && prev!==version && 'caches' in window){
+      caches.keys().then(function(keys){
+        return Promise.all(keys.map(function(k){ return caches.delete(k); }));
+      }).catch(function(){});
+    }
+    localStorage.setItem(key, version);
+  }catch(e){}
+  document.write('<meta content="' + logo + '" property="og:image">');
+  document.write('<meta content="' + logo + '" name="twitter:image">');
+  document.write('<link href="' + icon + '" rel="icon" type="image/png">');
+  document.write('<link href="' + icon + '" rel="apple-touch-icon">');
+  document.write('<link rel="stylesheet" href="./style.css?v=' + version + '">');
+  document.write('<link rel="stylesheet" href="./responsive.css?v=' + version + '">');
+})();
+</script>
+</head>
+<body>
+<script>
+(function(){
+  var w=window.innerWidth||document.documentElement.clientWidth||0;
+  var h=window.innerHeight||document.documentElement.clientHeight||0;
+  var mode=(w<=600)?'is-mobile':(w<=1024?'is-tablet':(h>w?'is-pc-portrait':'is-pc-landscape'));
+  var dir=h>w?' is-portrait-view':'';
+  var device=(w<=600)?' is-mobile-device':(w<=1024?' is-tablet-device':'');
+  var extra=w<=430?' is-narrow-mobile':'';
+  document.body.className=(document.body.className+' '+mode+dir+device+extra).trim();
+  document.documentElement.className=(document.documentElement.className+' '+mode+dir+device+extra).trim();
+})();
+</script>
+<div class="wrap">
+<div class="hdr app-header">
+<div class="hdr-brand">
+<div aria-label="DPS 로고" class="hdr-logo">DPS</div>
+<div class="hdr-title-wrap">
+<div class="hdr-title-line">
+<h1>개복디 특성 계산기</h1>
+<b class="app-version-badge" id="appVersionView">—</b>
+</div>
+<div aria-label="제작자 정보" class="hdr-creator-line">
+<span>제작자 <b>회장</b></span>
+<span>3-S2-1-2461127</span>
+</div>
+</div>
+</div>
+<div class="hdr-meta">
+<div aria-label="글씨 크기 조절" class="font-scale-ctrl">
+<button class="font-scale-btn" data-action="decreaseFont" title="글씨 축소" type="button">A-</button>
+<button class="font-scale-value" data-action="resetFont" id="fontScaleLabel" title="기본 크기로 복원" type="button">100%</button>
+<button class="font-scale-btn" data-action="increaseFont" title="글씨 확대" type="button">A+</button>
+</div>
+</div>
+</div>
+<div class="col-work">
+<div class="col-left">
+<div class="sg priority">
+<div class="sg-title trait-work-head"><span>저장복구</span><span aria-live="polite" class="storage-status idle" id="storageStatusView">저장 대기</span></div>
+<div class="save-row">
+<button class="btn subtle" data-action="saveState" type="button">현재값 저장</button>
+<button class="btn subtle" data-action="clearSavedState" type="button">저장값 삭제</button>
+</div>
+<div class="save-row">
+<button class="btn subtle" data-action="exportStateBackup" type="button">입력값 백업</button>
+<button class="btn subtle" data-action="importStateBackup" type="button">입력값 복원</button>
+<input accept=".txt,.json,application/json,text/plain" class="hidden-field" id="backupFileInput" type="file"/>
+</div>
+</div>
+<div class="sg xp-sp-card">
+<div class="sg-title">기본정보</div>
+<div class="xp-sp-split">
+<div class="xp-sp-panel resource-panel">
+<div class="resource-six-grid">
+<div class="resource-box manual-resource">
+<label>총 SP</label>
+<input class="money-input" id="sp" inputmode="numeric" type="text" value="0"/>
+</div>
+<div class="resource-box manual-resource">
+<label>보유 XP</label>
+<input class="money-input" id="xp" inputmode="numeric" type="text" value="0"/>
+</div>
+<div class="resource-box manual-resource">
+<label>보유 BXP</label>
+<input class="money-input" id="bxp" inputmode="numeric" type="text" value="0"/>
+</div>
+<div class="resource-box readonly-resource auto-resource">
+<label>EP</label>
+<b id="autoEpView" title="XP/BXP 기준 자동 계산">0</b>
+</div>
+<div class="resource-box manual-resource">
+<label>RP</label>
+<input class="money-input" id="rp" inputmode="numeric" type="text" value="0"/>
+</div>
+<div class="resource-box manual-resource">
+<label>심연의 혼</label>
+<input class="money-input" id="soul" inputmode="numeric" type="text" value="0"/>
+</div>
+</div>
+<div class="resource-usage-stack">
+<div class="resource-usage-row">
+<span class="usage-name">EP</span>
+<span class="usage-values" id="epRem">—</span>
+</div>
+<div class="resource-usage-row">
+<span class="usage-name">RP</span>
+<span class="usage-values" id="rpRem">—</span>
+</div>
+<div class="resource-usage-row">
+<span class="usage-name">심연의 혼</span>
+<span class="usage-values" id="soulRem">—</span>
+</div>
+</div>
+<input id="ep" type="hidden" value="0"/>
+</div>
+<div class="xp-sp-panel difficulty-panel">
+<div class="ir"><label>난이도</label>
+<select id="diff">
+<option selected="">Practice</option><option>Very Easy</option><option>Easy</option>
+<option>Normal</option><option>Hard</option><option>Very Hard</option>
+<option>Hell</option><option>Inferno</option><option>Lunatic</option>
+<option>Holic</option><option>Epic</option><option>Ultimate</option>
+<option>Impossible</option><option>The Final</option>
+<option>Hall Of Fame</option><option>Abyss road</option><option>Deep Abyss</option><option>도전의 탑</option>
+</select></div>
+<div class="ir"><label>고행 단계</label><select id="penance"><option selected="" value="0">0 고행</option><option value="1">1 고행</option><option value="2">2 고행</option><option value="3">3 고행</option><option value="4">4 고행</option><option value="5">5 고행</option><option value="6">6 고행</option><option value="7">7 고행</option><option value="8">8 고행</option><option value="9">9 고행</option><option value="10">10 고행</option><option value="11">11 고행</option><option value="12">12 고행</option><option value="13">13 고행</option><option value="14">14 고행</option><option value="15">15 고행</option><option value="16">16 고행</option><option value="17">17 고행</option><option value="18">18 고행</option><option value="19">19 고행</option><option value="20">20 고행</option></select></div>
+<div class="ir"><label>목표 라운드</label><input id="round" min="1" type="number" value="1"/></div>
+<div class="ir title-td-row"><label>승단 총데미지</label><select id="titleTdBonus"><option selected="" value="0">선택안함</option><option value="2">전문 · +2%</option><option value="4">장인 · +4%</option><option value="6">명장 · +6%</option><option value="8">도인 · +8%</option><option value="10">지존 · +10%</option><option value="12">패왕 · +12%</option><option value="13">패왕+ · +13%</option><option value="14">제왕 · +14%</option><option value="15">제왕+ · +15%</option><option value="16">신황 · +16%</option><option value="17">신황+ · +17%</option></select></div>
+<div class="ir dps-min-main-row"><label>도전할 최소 DPS</label><input id="dpsTableMinDpsMain" inputmode="decimal" placeholder="예시) 3.0" type="text"/></div>
+<input id="enemyArmor" type="hidden" value="0"/>
+<input id="dt" type="hidden" value="ON"/>
+<div class="buff-subcard resist-buff-card">
+<div class="ir"><label>침식 스택</label><input id="erosionStack" min="0" type="number" value="0"/></div>
+<div class="ir"><label>침식 내성</label><input id="jewelErosionRes" max="100" min="0" type="number" value="0"/></div>
+<div class="ir"><label>파워 블레스</label><input id="pbless" type="number" value="0"/></div>
+<div class="ir"><label>출발지원 인원수</label><input id="team" max="4" min="1" type="number" value="1"/></div>
+</div>
+</div>
+</div>
+<div class="sg unit-enhance-card spec-unit-enhance">
+<input id="unitEnhanceMode" type="hidden" value="OFF"/>
+<div class="sg-title">룬효과</div>
+<div class="unit-enhance-main-row">
+<div class="unit-enhance-left">
+<div class="unit-enhance-control-stack">
+<div class="month-rune-selects">
+<div class="mini-ir mini-ir-button-row"><label>4월 일반</label><div class="seg-btns" data-target="aprRuneNormal"><button data-action="selectButton" data-value="0" type="button">없음</button><button data-action="selectButton" data-value="1" type="button">1</button><button data-action="selectButton" data-value="2" type="button">2</button><button data-action="selectButton" data-value="3" type="button">3</button><button data-action="selectButton" data-value="4" type="button">4</button></div><select class="hidden-field" id="aprRuneNormal"><option selected="" value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option></select></div>
+<div class="mini-ir mini-ir-button-row"><label>4월 강화(+)</label><div class="seg-btns" data-target="aprRunePlus"><button data-action="selectButton" data-value="0" type="button">없음</button><button data-action="selectButton" data-value="1" type="button">1</button><button data-action="selectButton" data-value="2" type="button">2</button><button data-action="selectButton" data-value="3" type="button">3</button><button data-action="selectButton" data-value="4" type="button">4</button></div><select class="hidden-field" id="aprRunePlus"><option selected="" value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option></select></div>
+<div class="mini-ir mini-ir-button-row"><label>9월 일반</label><div class="seg-btns" data-target="sepRuneNormal"><button data-action="selectButton" data-value="0" type="button">없음</button><button data-action="selectButton" data-value="1" type="button">1</button><button data-action="selectButton" data-value="2" type="button">2</button><button data-action="selectButton" data-value="3" type="button">3</button><button data-action="selectButton" data-value="4" type="button">4</button></div><select class="hidden-field" id="sepRuneNormal"><option selected="" value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option></select></div>
+<div class="mini-ir mini-ir-button-row"><label>9월 강화(+)</label><div class="seg-btns" data-target="sepRunePlus"><button data-action="selectButton" data-value="0" type="button">없음</button><button data-action="selectButton" data-value="1" type="button">1</button><button data-action="selectButton" data-value="2" type="button">2</button><button data-action="selectButton" data-value="3" type="button">3</button><button data-action="selectButton" data-value="4" type="button">4</button></div><select class="hidden-field" id="sepRunePlus"><option selected="" value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option></select></div>
+</div>
+<div class="enhance-controls unit-enhance-inline-controls">
+<div class="pill-row">
+<div class="pill-label">오버핸스</div>
+<div class="seg-btns" data-target="overEnhance">
+<button data-action="selectButton" data-value="0" type="button">없음</button>
+<button data-action="selectButton" data-value="3" type="button">3</button>
+<button data-action="selectButton" data-value="5" type="button">5</button>
+<button data-action="selectButton" data-value="6" type="button">6</button>
+</div>
+<select class="hidden-field" id="overEnhance"><option selected="" value="0">0</option><option value="3">3</option><option value="5">5</option><option value="6">6</option></select>
+</div>
+<div class="pill-row">
+<div class="pill-label">리페핸스</div>
+<div class="seg-btns" data-target="repairEnhance">
+<button data-action="selectButton" data-value="OFF" type="button">없음</button>
+<button data-action="selectButton" data-value="ON" type="button">리페핸스</button>
+<button data-action="selectButton" data-value="ON+" type="button">리페핸스+</button>
+</div>
+<select class="hidden-field" id="repairEnhance"><option selected="" value="OFF">OFF</option><option value="ON">ON</option><option value="ON+">ON+</option></select>
+</div>
+<div class="pill-row">
+<div class="pill-label">강화의 달인</div>
+<div class="seg-btns" data-target="enhanceMaster">
+<button data-action="selectButton" data-value="OFF" type="button">없음</button>
+<button data-action="selectButton" data-value="ON" type="button">전체활성화</button>
+<button data-action="selectButton" data-value="ON+" type="button">선택강화</button>
+</div>
+<select class="hidden-field" id="enhanceMaster"><option selected="" value="OFF">OFF</option><option value="ON">ON</option><option value="ON+">ON+</option></select>
+</div>
+</div>
+</div>
+</div>
+<div class="unit-enhance-right">
+<div class="unit-enhance-summary-stack">
+<div class="enhance-summary-card"><span>강화확률</span><b id="enhanceChanceView">—</b></div>
+<div class="enhance-summary-card"><span>강화횟수</span><b id="enhanceCountView">—</b></div>
+<div class="enhance-summary-card"><span>강화 기대값</span><b id="enhanceValueView">—</b></div>
+</div>
+<input id="enhanceBonus" type="hidden" value="0"/>
+<input id="enhanceExpected" type="hidden" value="0"/>
+<input id="unitGrade" type="hidden" value=""/>
+<input id="unitLevel" type="hidden" value="0"/>
+<input id="currentUnit" type="hidden" value=""/>
+<input id="personalUnit" type="hidden" value=""/>
+<input id="personalASBuff" type="hidden" value="OFF"/>
+<input id="personalLimitBreak" type="hidden" value="0"/>
+<input id="personalJewel" type="hidden" value="0"/>
+<input id="powerBunkerAD" type="hidden" value="0"/>
+<input id="postMasterAD" type="hidden" value="0"/>
+<input id="additionalADBuff" type="hidden" value="OFF"/>
+<input id="additionalADValue" type="hidden" value="0"/>
+<input id="rushADBuff" type="hidden" value="OFF"/>
+</div>
+</div>
+</div>
+</div>
+<div class="sg rune-spec clean-rune-card">
+<div class="sg-title">룬스펙</div>
+<div class="rune-panel tidy-rune-panel">
+<div class="rune-basic-card">
+<div class="rune-panel-title">기본 스탯 / 개조</div>
+<div class="rune-stat-row rune-stat-head">
+<div></div><div>기본</div><div>개조</div>
+</div>
+<div class="rune-stat-row">
+<label>AD</label>
+<input id="rAD" type="number" value="0"/>
+<input id="rModAD" type="number" value="0"/>
+</div>
+<div class="rune-stat-row">
+<select id="runeChoiceType">
+<option selected="" value="ap">AP</option>
+<option value="ua">UA</option>
+<option value="td">TD</option>
+<option value="harmony">TD&amp;UA</option>
+</select>
+<input id="runeChoiceValue" type="number" value="0"/>
+<div class="rune-empty"></div>
+</div>
+<div class="rune-stat-row">
+<label>AS</label>
+<input id="rAS" type="number" value="0"/>
+<input id="rModAS" type="number" value="0"/>
+</div>
+<div class="rune-stat-row">
+<label>CD</label>
+<input id="rCD" type="number" value="0"/>
+<input id="rModCD" type="number" value="0"/>
+</div>
+<div class="rune-stat-row">
+<label>CRI</label>
+<input id="rCRI" type="number" value="0"/>
+<input id="rModCRI" type="number" value="0"/>
+</div>
+</div>
+<div class="rune-option-card">
+<div class="rune-panel-title">강화 / 옵션</div>
+<div class="rune-option-grid">
+<label>룬 강화 수</label>
+<select id="rReinf"><option selected="">0</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option><option>9</option><option>10</option><option>11</option><option>12</option><option>13</option><option>14</option><option>15</option></select>
+<label>룬 각성</label>
+<select id="rAsc"><option selected="" value="없음">없음</option><option>a</option><option>b</option><option>c</option><option>d</option><option>e</option><option>f</option><option value="g">g</option></select>
+<label>종족 업그레이드</label>
+<select class="choice-input" id="raceOpt"><option selected="">해당 없음</option><option>저그</option><option>테란 바이오닉</option><option>테란 메카닉</option><option>플토 바이오닉</option><option>플토 메카닉</option><option>중립</option><option>중장갑</option><option>경장갑</option><option>사이오닉</option></select>
+<label>10강 옵션</label>
+<select class="choice-input" id="opt10"><option selected="" value="none">해당 없음</option><option value="cd50">크리티컬 피해량 +50%</option><option value="ua15">유닛 가속 +15%</option><option value="cri22">크리티컬 확률 +22%</option><option value="dr25">적 방어력 감소 25%</option><option value="mc3">다중 크리 +3</option><option value="reinf5">유닛 최대 강화수 +5</option><option value="removeBuff">적버프 50% 확률로 제거</option><option value="raceAll1">모든 종족업 +1(최대21)</option><option value="ad15">공격력 +15%</option><option value="td2">총 데미지 2배</option><option value="shieldImmune">슈퍼쉴드 면역</option></select>
+<label>15강 옵션</label>
+<select class="choice-input" id="opt15"><option selected="" value="none">해당 없음</option><option value="cd50">크리티컬 피해량 +50%</option><option value="ua15">유닛 가속 +15%</option><option value="cri22">크리티컬 확률 +22%</option><option value="dr25">적 방어력 감소 25%</option><option value="mc3">다중 크리 +3</option><option value="reinf5">유닛 최대 강화수 +5</option><option value="removeBuff">적버프 50% 확률로 제거</option><option value="raceAll1">모든 종족업 +1(최대21)</option><option value="ad15">공격력 +15%</option></select>
+<label>초월 옵션</label>
+<select class="choice-input" id="transOpt"><option selected="" value="none">해당 없음</option><option value="cd50">크리티컬 피해량 +50%</option><option value="ua15">유닛 가속 +15%</option><option value="cri22">크리티컬 확률 +22%</option><option value="dr25">적 방어력 감소 25%</option><option value="mc3">다중 크리 +3</option><option value="reinf5">유닛 최대 강화수 +5</option><option value="removeBuff">적버프 50% 확률로 제거</option><option value="raceAll1">모든 종족업 +1(최대21)</option><option value="ad15">공격력 +15%</option></select>
+</div>
+</div>
+<div class="additional-editor">
+<div class="rune-panel-title">에디셔널</div>
+<div class="additional-help">에디셔널 평균값을 입력하면 표기 스탯에 반영됩니다.</div>
+<div class="additional-list">
+<div class="additional-row"><label>공격력</label><input id="addAD" type="number" value="0"/></div>
+<div class="additional-row"><label>공격속도</label><input id="addAS" type="number" value="0"/></div>
+<div class="additional-row"><label>크리티컬 데미지</label><input id="addCD" type="number" value="0"/></div>
+<div class="additional-row"><label>크리티컬 확률</label><input id="addCRI" type="number" value="0"/></div>
+<div class="additional-row"><label>마법 공격력</label><input id="addAP" type="number" value="0"/></div>
+<div class="additional-row"><label>총데미지</label><input id="addTD" type="number" value="0"/></div>
+<div class="additional-row"><label>가속</label><input id="addUA" type="number" value="0"/></div>
+</div>
+<input id="addDR" type="hidden" value="0"/>
+<input id="addSR" type="hidden" value="0"/>
+<input id="addHR" type="hidden" value="0"/>
+</div>
+<div class="enchant-combined">
+<div class="rune-panel-title">인챈트 레벨 / 결과</div>
+<div class="enchant-combined-grid">
+<div class="enchant-combined-row">
+<label class="enchant-result-label"><span>공격력</span><b id="enchOutAD" class="enchant-result-value">65</b></label>
+<input id="enchAD" max="9" min="0" type="number" value="0"/>
+</div>
+<div class="enchant-combined-row">
+<label class="enchant-result-label"><span>크리티컬 확률</span><b id="enchOutCRI" class="enchant-result-value">24</b></label>
+<input id="enchCRI" max="9" min="0" type="number" value="0"/>
+</div>
+<div class="enchant-combined-row">
+<label class="enchant-result-label"><span>유닛 가속</span><b id="enchOutUA" class="enchant-result-value">1.16×</b></label>
+<input id="enchUA" max="9" min="0" type="number" value="0"/>
+</div>
+<div class="enchant-combined-row">
+<label class="enchant-result-label"><span>총 데미지</span><b id="enchOutTD" class="enchant-result-value">7</b></label>
+<input id="enchTD" max="9" min="0" type="number" value="0"/>
+</div>
+<div class="enchant-combined-row">
+<label class="enchant-result-label"><span>실드 감소</span><b id="enchOutSR" class="enchant-result-value">16.02</b></label>
+<input id="enchSR" max="9" min="0" type="number" value="0"/>
+</div>
+<div class="enchant-combined-row">
+<label class="enchant-result-label"><span>체력 감소</span><b id="enchOutHR" class="enchant-result-value">16.02</b></label>
+<input id="enchHR" max="9" min="0" type="number" value="0"/>
+</div>
+</div>
+<input id="enchantCode" type="hidden" value="0"/>
+<div class="enchant-preview compact-enchant hidden-field" id="enchantPreview"></div>
+</div>
+</div>
+<input id="rAP" type="hidden" value="0"/>
+<input id="rTD" type="hidden" value="0"/>
+<input id="rUA" type="hidden" value="0"/>
+<input id="rHarmony" type="hidden" value="0"/>
+<input id="sysAD" type="hidden" value="0"/>
+</div>
+<div class="sg buff-section two-panel-buff"><div class="sg-title">버프</div>
+<div class="buff-card base-buff-card">
+<div class="buff-choice-grid buff-grid-base">
+<label class="buff-choice-item"><input class="buff-choice-input" id="unitUniqueBuff" type="checkbox"/><span>단일유닛버프</span></label>
+<label class="buff-choice-item"><input class="buff-choice-input" id="basePierceBuff" type="checkbox" checked/><span>방어력관통 10%</span></label>
+</div>
+</div>
+<div class="buff-card flower-card">
+<div class="buff-choice-grid buff-grid-flower">
+<label class="buff-choice-item"><input class="buff-choice-input" id="flowerSkill1" type="checkbox"/><span>근성의 꽃가루</span></label>
+<label class="buff-choice-item"><input class="buff-choice-input" id="flowerSkill2" type="checkbox"/><span>바람의 꽃가루</span></label>
+<label class="buff-choice-item"><input class="buff-choice-input" id="flowerSkill3" type="checkbox"/><span>안개의 꽃가루</span></label>
+</div>
+</div>
+<div class="buff-card prod-card">
+<div class="buff-choice-grid buff-grid-prod">
+<label class="buff-choice-item"><input class="buff-choice-input" id="prodNova" type="checkbox"/><span>비밀 작전 노바</span></label>
+<label class="buff-choice-item"><input class="buff-choice-input" id="prodTeratron" type="checkbox"/><span>테라트론</span></label>
+<label class="buff-choice-item"><input class="buff-choice-input" id="prodAmon" type="checkbox"/><span>아몬</span></label>
+<label class="buff-choice-item"><input class="buff-choice-input" id="prodAdun" type="checkbox"/><span>아둔의 창</span></label>
+<label class="buff-choice-item"><input class="buff-choice-input" id="prodKerrigan" type="checkbox"/><span>불새 케리건</span></label>
+<label class="buff-choice-item"><input class="buff-choice-input" id="prodOvermind" type="checkbox"/><span>초월체</span></label>
+<label class="buff-choice-item"><input class="buff-choice-input" id="prodNarud" type="checkbox"/><span>나루드</span></label>
+<label class="buff-choice-item"><input class="buff-choice-input" id="prodArtifact" type="checkbox"/><span>유물</span></label>
+</div>
+</div>
+</div>
+<input id="pCri" type="hidden" value="0"/>
+<input id="sCri" type="hidden" value="0"/>
+<input id="coupon" type="hidden" value="0"/>
+</div>
+<div class="col-right">
+<div class="tp-head">
+<h3>특성보드</h3>
+<div class="tp-actions"></div>
+</div>
+<div class="sp-box">
+<div class="sp-summary-stack">
+<div class="sp-summary-line sp-attack-line"><span class="lbl">공격 특성</span><span class="val" id="spAttackView">—</span></div>
+<div class="sp-summary-line sp-utility-line"><span class="lbl">유틸 특성</span><span class="val" id="spUtilityView">—</span></div>
+</div>
+<div class="sp-detail" id="spDetail">—</div>
+<div class="track"><div class="fill" id="spFill"></div><span class="sp-track-label" id="spFillPct">0%</span></div>
+</div>
+<div class="trait-dashboard-tools">
+<input class="hidden-field" id="spBankApply" type="checkbox"/>
+<div class="ir trait-opt-tier-row"><label>최적화 범위</label><select id="optTier"><option>루키</option><option>비기너</option><option>아마추어</option><option>프로</option><option>엑스퍼트</option><option>마스터</option><option>디바인</option><option>더원1</option><option>더원2</option><option selected="">무한∞</option><option>EP특성</option><option>RP특성</option><option>심연특성</option></select></div>
+<div class="trait-tool-buttons">
+<button class="btn pri" data-action="optimizeSP" type="button">특성 최적화</button>
+<button class="btn danger" data-action="clearAll" type="button">특성 초기화</button>
+</div>
+</div>
+<div class="tp-body" id="traitBody"></div>
+</div>
+<div class="col-mid">
+<div class="data-card stat-dps-card">
+<div class="section-title stat-dps-title">결과</div>
+<div class="dps-card stat-dps-summary">
+<div class="dps-lbl">DPS</div>
+<div class="dps-num" id="dpsVal">—</div>
+</div>
+<div class="stat-grid stat-compare-grid">
+<div class="stat-row stat-head-row"><div class="sc-name" aria-label="스탯명"></div><div class="sc-val">표기 스탯</div><div class="sc-val">실질 스탯</div></div>
+<div class="stat-row"><div class="sc-name">공격력</div><div class="sc-val" id="sADDisplay">—</div><div class="sc-val" id="sADActual">—</div></div>
+<div class="stat-row"><div class="sc-name">성소 마법공격력</div><div class="sc-val" id="sAPSDisplay">—</div><div class="sc-val" id="sAPSActual">—</div></div>
+<div class="stat-row"><div class="sc-name">유닛 마법공격력</div><div class="sc-val" id="sAPUDisplay">—</div><div class="sc-val" id="sAPUActual">—</div></div>
+<div class="stat-row"><div class="sc-name">공격속도</div><div class="sc-val" id="sASDisplay">—</div><div class="sc-val" id="sASActual">—</div></div>
+<div class="stat-row"><div class="sc-name">크리티컬 확률</div><div class="sc-val" id="sCRIDisplay">—</div><div class="sc-val" id="sCRIActual">—</div></div>
+<div class="stat-row"><div class="sc-name">크리티컬 데미지</div><div class="sc-val" id="sCDDisplay">—</div><div class="sc-val" id="sCDActual">—</div></div>
+<div class="stat-row"><div class="sc-name">다중 크리티컬</div><div class="sc-val" id="sMCDisplay">—</div><div class="sc-val" id="sMCActual">—</div></div>
+<div class="stat-row"><div class="sc-name">총 데미지</div><div class="sc-val" id="sTDDisplay">—</div><div class="sc-val" id="sTDActual">—</div></div>
+<div class="stat-row"><div class="sc-name">방어력 감소</div><div class="sc-val" id="sDRDisplay">—</div><div class="sc-val" id="sDRActual">—</div></div>
+<div class="stat-row"><div class="sc-name">방어력 관통</div><div class="sc-val" id="sPIERCEDisplay">—</div><div class="sc-val" id="sPIERCEActual">—</div></div>
+<div class="stat-row"><div class="sc-name">유닛 가속</div><div class="sc-val" id="sUADisplay">—</div><div class="sc-val" id="sUAActual">—</div></div>
+<div class="stat-row"><div class="sc-name">실드 감소</div><div class="sc-val" id="sSRDisplay">—</div><div class="sc-val" id="sSRActual">—</div></div>
+<div class="stat-row"><div class="sc-name">체력 감소</div><div class="sc-val" id="sHRDisplay">—</div><div class="sc-val" id="sHRActual">—</div></div>
+<div class="stat-row"><div class="sc-name">멀티 타겟</div><div class="sc-val" id="sMDDisplay">—</div><div class="sc-val" id="sMDActual">—</div></div>
+<div class="stat-row"><div class="sc-name">멀티 확률</div><div class="sc-val" id="sMPDisplay">—</div><div class="sc-val" id="sMPActual">—</div></div>
+<div class="stat-row"><div class="sc-name">멀티 크리 확률</div><div class="sc-val" id="sMCPDisplay">—</div><div class="sc-val" id="sMCPActual">—</div></div>
+</div>
+<div class="enemy-info-grid">
+<div class="enemy-info-title">적 기준</div>
+<div class="stat-row enemy-info-row"><div class="sc-name">방어력</div><div class="sc-val" id="enemyArmorQuick">0</div></div>
+<div class="stat-row enemy-info-row"><div class="sc-name">체력</div><div class="sc-val" id="enemyHpQuick">0</div></div>
+<div class="stat-row enemy-info-row"><div class="sc-name">실드</div><div class="sc-val" id="enemyShieldQuick">0</div></div>
+<div class="stat-row enemy-info-row"><div class="sc-name">물량</div><div class="sc-val" id="enemyCountQuick">0</div></div>
+<span id="enemyQuickView" class="enemy-quick-hidden" aria-hidden="true">방어 0 / 체력 0 / 실드 0</span>
+</div>
+</div>
+<div class="data-card bus-cut-card">
+<h3 class="bus-cut-title"><span>버스 승객 컷</span><small class="bus-cut-note">총 SP에 비례하여 계산됨</small></h3>
+<table class="mini-table"><thead><tr><th>버스 단계</th><th>2인 협동</th><th>3인 협동</th></tr></thead><tbody id="xpCutRows"></tbody></table>
+</div>
+<div class="data-card final-damage-card">
+<h3 class="skill-damage-title"><span>필살기 데미지</span><b id="skillAPView">AP : 자동</b></h3>
+<div class="skill-damage-layout">
+<div class="skill-setting-panel">
+<div class="ir skill-ir"><label>더블스페</label><select id="skillDouble"><option selected="" value="1">1</option><option value="1.5">1.5</option><option value="1.67">1.67</option></select></div>
+<div class="ir skill-ir"><label>모드</label><select id="skillMode"><option selected="" value="normal">일반모드</option><option value="tower">도전의 탑</option></select></div>
+<div class="ir skill-ir"><label>라운드</label><input id="skillRound" min="1" type="number" value="0"/></div>
+<div class="skill-note" id="skillPenaltyView">라운드별 데미지 감소: —</div>
+</div>
+<div class="skill-result-panel">
+<div class="skill-list-head"><span>스킬</span><span>피해량</span></div>
+<table class="mini-table skill-damage-list"><thead><tr><th>스킬</th><th>총 피해량(%)</th><th>설정</th></tr></thead><tbody id="skillRows"></tbody></table>
+</div>
+</div>
+</div>
+</div></div>
+</div>
+<div aria-live="polite" class="toast-root" id="toastRoot"></div>
+<script>
+['responsive','data','config','app','guide'].forEach(function(name){
+  document.write('<script src="./' + name + '.js?v=' + window.DPS_VERSION + '" defer><\/script>');
+});
+</script>
+</body>
+</html>
