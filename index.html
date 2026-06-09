@@ -2,59 +2,8 @@
 <html lang="ko">
 <head>
 <script>
-// index.html에서만 수동 관리하는 통합 캐시/저장소/앱 설정
-window.DPS_CACHE = {
-  style: "2606091945",
-  responsiveStyle: "2606091945",
-  responsive: "2606091945",
-  data: "2606091945",
-  guide: "2606091945",
-  app: "2606091945",
-  icon: "2606091945",
-  logo: "2606091945"
-};
-
-window.DPS_VERSION = "2606091945";
-window.DPS_APP_VERSION = window.DPS_VERSION;
-
-window.DPS_STORAGE_CONFIG = {
-  version: window.DPS_VERSION,
-  scope: "browser_local",
-  key: "gbd_dps_calculator:personal_state",
-  fontKey: "gbd_dps_calculator:font_scale",
-  clientKey: "gbd_dps_calculator:client_id"
-};
-
-window.DPS_CONFIG = {
-  storage: window.DPS_STORAGE_CONFIG,
-
-  state: {
-    skipElementIds: ["backupFileInput", "dpsTableMinDpsMain", "ep"]
-  },
-
-  dpsTable: {
-    difficulties: ["Practice", "Very Easy", "Easy", "Normal", "Hard", "Very Hard", "Hell", "Inferno", "Lunatic", "Holic", "Epic", "Ultimate", "Impossible", "The Final"],
-    rounds: [{round: 270, armor: 1570}, {round: 300, armor: 2470}],
-    defaultRound: 270,
-    penanceMin: 0,
-    penanceMax: 20,
-    decimals: 1
-  },
-
-  ui: {
-    updateDelay: 16,
-    confirmDelayMs: 1600,
-    traitHoldInitialDelay: 320,
-    traitHoldRepeatMs: 55,
-    traitHoldAccelEvery: 7,
-    traitHoldMaxStep: 50,
-    fontScaleDefault: 1,
-    fontScaleMin: 0.9,
-    fontScaleMax: 2,
-    fontScaleStep: 0.05,
-    mobileMaxWidth: 767
-  }
-};
+window.DPS_VERSION = "2606091835";
+window.DPS_APP_VERSION = "V 2.1";
 </script>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/>
@@ -73,18 +22,19 @@ window.DPS_CONFIG = {
 <meta content="특성 투자, 재화 사용량, 표기 스탯, 총데미지, DPS를 한 번에 계산할 수 있는 개복디 전용 계산기입니다." name="twitter:description"/>
 <link href="https://cdn.jsdelivr.net" rel="preconnect"/>
 <link crossorigin="" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" rel="stylesheet"/>
-<script>
-(function(){
-  var cache = window.DPS_CACHE || {};
-  var base = "https://sldbox.github.io/dps/logo/";
-  document.write('<link rel="icon" href="' + base + 'icon.png?v=' + encodeURIComponent(cache.icon || 'dev') + '" type="image/png">');
-  document.write('<link rel="apple-touch-icon" href="' + base + 'icon.png?v=' + encodeURIComponent(cache.icon || 'dev') + '">');
-  document.write('<meta property="og:image" content="' + base + 'logo.png?v=' + encodeURIComponent(cache.logo || 'dev') + '">');
-  document.write('<meta name="twitter:image" content="' + base + 'logo.png?v=' + encodeURIComponent(cache.logo || 'dev') + '">');
-})();
-</script>
+<link href="https://sldbox.github.io/dps/logo/icon.png?v=2606091835" rel="icon" type="image/png"/>
+<link href="https://sldbox.github.io/dps/logo/icon.png?v=2606091835" rel="apple-touch-icon"/>
+<meta content="https://sldbox.github.io/dps/logo/logo.png?v=2606091835" property="og:image"/>
+<meta content="https://sldbox.github.io/dps/logo/logo.png?v=2606091835" name="twitter:image"/>
 <meta content="1200" property="og:image:width"/>
 <meta content="630" property="og:image:height"/>
+<script>
+(function(){
+  var version=encodeURIComponent(window.DPS_VERSION || 'dev');
+  document.write('<link rel="stylesheet" href="./style.css?v=' + version + '">');
+  document.write('<link rel="stylesheet" href="./responsive.css?v=' + version + '">');
+})();
+</script>
 </head>
 <body>
 <script>
@@ -500,25 +450,9 @@ window.DPS_CONFIG = {
 </div>
 <div aria-live="polite" class="toast-root" id="toastRoot"></div>
 <script>
-(function(){
-  var cache = window.DPS_CACHE || {};
-  [
-    ["style.css", cache.style, "style"],
-    ["responsive.css", cache.responsiveStyle, "style"],
-    ["responsive.js", cache.responsive, "script"],
-    ["data.js", cache.data, "script"],
-    ["app.js", cache.app, "script"],
-    ["guide.js", cache.guide, "script"]
-  ].forEach(function(item){
-    var file = item[0];
-    var version = encodeURIComponent(item[1] || "dev");
-    if(item[2] === "style"){
-      document.write('<link rel="stylesheet" href="./' + file + '?v=' + version + '">');
-    }else{
-      document.write('<script src="./' + file + '?v=' + version + '"><\/script>');
-    }
-  });
-})();
+['responsive','data','config','app','guide'].forEach(function(name){
+  document.write('<script src="./' + name + '.js?v=' + window.DPS_VERSION + '" defer><\/script>');
+});
 </script>
 </body>
 </html>
