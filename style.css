@@ -1938,3 +1938,13 @@ body.is-mobile .mobile-page > .sg.priority > .sg-title.trait-work-head > span:fi
 body.is-tabbed .mobile-page > .sg.priority > .sg-title.trait-work-head > span:first-child{
   color:#fff !important;
 }
+
+/* Keep the sanctuary skill result readable in the narrow PC result column. */
+body.is-pc-landscape .col-mid .final-damage-card .skill-damage-layout{
+  grid-template-columns:minmax(0,1fr) !important;
+}
+body.is-pc-landscape .col-mid .final-damage-card .skill-setting-panel,
+body.is-pc-landscape .col-mid .final-damage-card .skill-result-panel{
+  width:100% !important;
+  min-width:0 !important;
+}
