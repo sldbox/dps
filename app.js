@@ -370,9 +370,7 @@ function showToast(message, type='ok'){
       el.classList.remove('show');
       setTimeout(()=>el.remove(), 220);
     }, 2200);
-  }catch(e){
-    console.log('[toast]', message);
-  }
+  }catch(e){}
 }
 function v(id){const el=document.getElementById(id); if(!el) return 0; const raw=String(el.value??'').replace(/,/g,'').trim(); return +raw||0;}
 function vs(id){const el=document.getElementById(id); return el ? el.value : '';}
@@ -683,12 +681,14 @@ function upperOptionStats(){
   const prodCRI = (prod.teratron?10:0) + (prod.kerrigan?10:0) + (prod.artifact?20:0);
   const prodCD = (prod.adun?30:0) + (prod.overmind?30:0);
   return {
-    ad: prodAD + (flower1?20:0),
-    as: prodAS + (flower2?15:0),
+    ad: prodAD,
+    as: prodAS,
     cri: prodCRI,
     cd: prodCD,
     td: 0,
-    uaMul: 1 + (flower2?0.15:0),
+    actualAd: flower1 ? 20 : 0,
+    actualAs: flower2 ? 15 : 0,
+    uaMul: 1,
     dps0Mul: flower3 ? 1.15 : 1
   };
 }
@@ -811,7 +811,7 @@ function computeStatsRaw(){
             + ((vs('rushADBuff')==='ON') ? 50 : 0)
             + growthGraduationAttackBonus() + additionalStats.ad;
   const AP10 = -diff.ad;
-  const M4 = AP9 + AP10 + unitADBonus;
+  const M4 = AP9 + AP10 + unitADBonus + upperStats.actualAd;
   const M7_base = BASE_DISPLAY_STATS.as + sumStat('AS') + v('rAS') + upperStats.as + ascVlookup4 + reinf + shareAS + xpStat.as + v('rModAS') + additionalStats.as;
   const M7 = isPersonalUnit() ? 0 : M7_base;
   const M8 = BASE_DISPLAY_STATS.cri + sumStat('CRI') + v('rCRI') + v('rModCRI') + reinf + dailyCouponCRI + shareCRI + xpStat.cri + gradeCri + optionStats.cri + upperStats.cri + additionalStats.cri;
@@ -844,7 +844,7 @@ function computeStatsRaw(){
   const dt=personalUaDtMultiplier();
   const personalAs=personalAsBonus();
   const gradeAs=gradeAsBonus();
-  const AB6=(1+(M7+personalAs+gradeAs)/100)*(1-diff.as/100)*M13*dt;
+  const AB6=(1+(M7+upperStats.actualAs+personalAs+gradeAs)/100)*(1-diff.as/100)*M13*dt;
   const M19=AB3*AB4*AB5*AB6;
   let spU=0,spO=0,epU=0,rpU=0,soulU=0;
   TRAITS.forEach(t=>{
@@ -1050,7 +1050,7 @@ function renderDpsSummary(s){
     if(isDpsTableOpen()) renderDpsTableModal();
     return;
   }
-  setText('dpsVal', s.M19.toFixed(1));
+  setText('dpsVal', s.M19.toFixed(3));
   syncDpsMinDpsInputs();
   updateDpsRiskViews(s.M19);
   if(isDpsTableOpen()) renderDpsTableModal();
@@ -1341,6 +1341,277 @@ function installDpsTableButton(){
   btn.dataset.action='openDpsTable';
   btn.textContent='DPS표';
   target.insertBefore(btn, target.firstChild);
+}
+const EXCEL_COMPARE_STATS=[
+  ['AD','공격력','L4','M4',s=>s.displayAD,s=>s.M4],
+  ['APS','AP(성소)','L5','M5',s=>s.displayAPS,s=>s.displayAPS],
+  ['APU','AP(유닛)','L6','M6',s=>s.displayAPU,s=>s.actualAPU],
+  ['AS','공격속도','L7','M7',s=>s.M7,s=>s.M7],
+  ['CRI','크리티컬 확률','L8','M8',s=>s.M8,s=>s.M8],
+  ['CD','크리티컬 데미지','L9','M9',s=>s.rawCD,s=>s.M9],
+  ['MC','다중 크리티컬','L10','M10',s=>s.M10,s=>s.M10],
+  ['TD','총 데미지','L11','M11',s=>s.rawTD,s=>s.M11],
+  ['DR','방어력 감소','L12','M12',s=>s.M12,s=>s.actualM12],
+  ['UA','유닛 가속','L13','M13',s=>s.displayUA,s=>s.M13],
+  ['SR','쉴드 감소','L14','M14',s=>s.displaySR,s=>s.actualSR],
+  ['HR','체력 감소','L15','M15',s=>s.displayHR,s=>s.actualHR],
+  ['MD','멀티 타겟','L16','M16',s=>s.M16,s=>s.M16],
+  ['MP','멀티 확률','L17','M17',s=>s.M17,s=>s.M17],
+  ['MCP','멀티 크리 확률','L18','M18',s=>s.M18,s=>s.M18]
+];
+function readU16(view, offset){ return view.getUint16(offset,true); }
+function readU32(view, offset){ return view.getUint32(offset,true); }
+async function inflateZipEntry(bytes){
+  if(typeof DecompressionStream!=='function') throw new Error('이 브라우저는 XLSM 압축 해제를 지원하지 않습니다.');
+  const stream=new Blob([bytes]).stream().pipeThrough(new DecompressionStream('deflate-raw'));
+  return new Uint8Array(await new Response(stream).arrayBuffer());
+}
+async function readZipEntries(file){
+  const bytes=new Uint8Array(await file.arrayBuffer());
+  const view=new DataView(bytes.buffer,bytes.byteOffset,bytes.byteLength);
+  let eocd=-1;
+  for(let i=bytes.length-22;i>=Math.max(0,bytes.length-65557);i--){
+    if(readU32(view,i)===0x06054b50){ eocd=i; break; }
+  }
+  if(eocd<0) throw new Error('올바른 Excel 파일이 아닙니다.');
+  const count=readU16(view,eocd+10);
+  let pos=readU32(view,eocd+16);
+  const decoder=new TextDecoder();
+  const entries=new Map();
+  for(let i=0;i<count;i++){
+    if(readU32(view,pos)!==0x02014b50) throw new Error('Excel ZIP 목록을 읽을 수 없습니다.');
+    const method=readU16(view,pos+10);
+    const compressedSize=readU32(view,pos+20);
+    const nameLength=readU16(view,pos+28);
+    const extraLength=readU16(view,pos+30);
+    const commentLength=readU16(view,pos+32);
+    const localOffset=readU32(view,pos+42);
+    const name=decoder.decode(bytes.slice(pos+46,pos+46+nameLength));
+    const localNameLength=readU16(view,localOffset+26);
+    const localExtraLength=readU16(view,localOffset+28);
+    const start=localOffset+30+localNameLength+localExtraLength;
+    const compressed=bytes.slice(start,start+compressedSize);
+    let data;
+    if(method===0) data=compressed;
+    else if(method===8) data=await inflateZipEntry(compressed);
+    else throw new Error(`지원하지 않는 Excel 압축 방식입니다. (${method})`);
+    entries.set(name,data);
+    pos+=46+nameLength+extraLength+commentLength;
+  }
+  return entries;
+}
+function parseXml(bytes){
+  const xml=new TextDecoder('utf-8').decode(bytes);
+  const doc=new DOMParser().parseFromString(xml,'application/xml');
+  if(doc.querySelector('parsererror')) throw new Error('Excel XML을 해석하지 못했습니다.');
+  return doc;
+}
+function xmlLocalAll(root,name){ return [...root.getElementsByTagNameNS('*',name)]; }
+function excelCellMap(sheetDoc, sharedStrings){
+  const cells={};
+  xmlLocalAll(sheetDoc,'c').forEach(cell=>{
+    const ref=cell.getAttribute('r');
+    const value=xmlLocalAll(cell,'v')[0]?.textContent ?? '';
+    const type=cell.getAttribute('t');
+    cells[ref]=type==='s' ? (sharedStrings[Number(value)] ?? '') : value;
+  });
+  return cells;
+}
+async function readExcelWorkbook(file){
+  const zip=await readZipEntries(file);
+  const workbook=parseXml(zip.get('xl/workbook.xml'));
+  const rels=parseXml(zip.get('xl/_rels/workbook.xml.rels'));
+  const relMap={};
+  xmlLocalAll(rels,'Relationship').forEach(rel=>{ relMap[rel.getAttribute('Id')]=rel.getAttribute('Target'); });
+  const shared=[];
+  if(zip.has('xl/sharedStrings.xml')){
+    const sharedDoc=parseXml(zip.get('xl/sharedStrings.xml'));
+    xmlLocalAll(sharedDoc,'si').forEach(si=>shared.push(xmlLocalAll(si,'t').map(t=>t.textContent||'').join('')));
+  }
+  const sheets=xmlLocalAll(workbook,'sheet').map(node=>{
+    const name=node.getAttribute('name');
+    const relId=node.getAttributeNS('http://schemas.openxmlformats.org/officeDocument/2006/relationships','id') || node.getAttribute('r:id');
+    const target=relMap[relId];
+    const path=target?.startsWith('/') ? target.slice(1) : `xl/${target}`;
+    return {name,path};
+  }).filter(sheet=>sheet.name&&sheet.path&&zip.has(sheet.path));
+  if(!sheets.length) throw new Error('비교할 Excel 시트를 찾을 수 없습니다.');
+  return {
+    fileName:file.name,
+    sheets,
+    getCells(sheetName){
+      const sheet=sheets.find(item=>item.name===sheetName);
+      if(!sheet) throw new Error('선택한 시트를 찾을 수 없습니다.');
+      return excelCellMap(parseXml(zip.get(sheet.path)),shared);
+    }
+  };
+}
+function compareNumber(excel, web, tolerance=0.0005){
+  const a=Number(excel), b=Number(web);
+  if(!Number.isFinite(a)||!Number.isFinite(b)) return {diff:null,status:'warn'};
+  const diff=b-a;
+  const limit=Math.max(tolerance,Math.abs(a)*0.00005);
+  return {diff,status:Math.abs(diff)<=limit?'same':Math.abs(diff)<=limit*10?'near':'diff'};
+}
+function formatCompareNumber(value){
+  const n=Number(value);
+  return Number.isFinite(n) ? parseFloat(n.toFixed(6)).toLocaleString('ko-KR') : '—';
+}
+function formatCompareDiff(diff){
+  if(!Number.isFinite(diff)) return '확인 불가';
+  if(Math.abs(diff)<0.0000005) return '일치';
+  const value=parseFloat(diff.toFixed(6));
+  return `${value>0?'+':''}${value.toLocaleString('ko-KR')}`;
+}
+function escapeCompareHtml(value){
+  return String(value??'').replace(/[&<>"']/g,char=>({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+  }[char]));
+}
+function buildExcelComparison(cells, fileName, sheetName){
+  if(!Number.isFinite(Number(cells.M19))||!Number.isFinite(Number(cells.L4))){
+    throw new Error(`"${sheetName}" 시트는 현재 계산기와 비교할 수 있는 셀 구조가 아닙니다.`);
+  }
+  const stats=computeStats();
+  const statRows=EXCEL_COMPARE_STATS.map(([code,name,displayCell,actualCell,getDisplay,getActual])=>{
+    const excelDisplay=Number(cells[displayCell]);
+    const excelActual=Number(cells[actualCell]);
+    const webDisplay=getDisplay(stats);
+    const webActual=getActual(stats);
+    const displayCompare=compareNumber(excelDisplay,webDisplay);
+    const actualCompare=compareNumber(excelActual,webActual);
+    const status=displayCompare.status==='diff'||actualCompare.status==='diff'?'diff':
+      displayCompare.status==='near'||actualCompare.status==='near'?'near':'same';
+    return {kind:'스탯',name:`${name} (${code})`,excel:`${formatCompareNumber(excelDisplay)} / ${formatCompareNumber(excelActual)}`,
+      web:`${formatCompareNumber(webDisplay)} / ${formatCompareNumber(webActual)}`,
+      difference:`${formatCompareDiff(displayCompare.diff)} / ${formatCompareDiff(actualCompare.diff)}`,status};
+  });
+  const dpsCompare=compareNumber(Number(cells.M19),stats.M19);
+  const traitRows=TRAITS.filter(t=>t[0]>=42&&t[0]<=138).map(t=>{
+    const row=t[0], excel=Number(cells[`H${row}`]||0), web=Number(INV[row]||0);
+    return {kind:'특성',name:`${t[1]} (${row})`,excel:formatCompareNumber(excel),web:formatCompareNumber(web),
+      difference:formatCompareDiff(web-excel),status:excel===web?'same':'diff'};
+  }).filter(row=>row.status!=='same');
+  return {
+    fileName,
+    sheetName,
+    summary:{
+      dps:{excel:Number(cells.M19),web:stats.M19,status:dpsCompare.status},
+      statDiffs:statRows.filter(r=>r.status!=='same').length,
+      traitDiffs:traitRows.length
+    },
+    rows:[
+      {kind:'DPS',name:'기본 DPS',excel:formatCompareNumber(cells.M19),web:formatCompareNumber(stats.M19),
+        difference:formatCompareDiff(dpsCompare.diff),status:dpsCompare.status},
+      ...statRows,
+      ...traitRows
+    ]
+  };
+}
+function createExcelCompareModal(){
+  if(document.getElementById('excelCompareModal')) return;
+  const modal=document.createElement('div');
+  modal.id='excelCompareModal';
+  modal.className='excel-compare-shell';
+  modal.setAttribute('aria-hidden','true');
+  modal.innerHTML=`
+    <div class="excel-compare-backdrop" data-excel-compare-close="1"></div>
+    <section class="excel-compare-modal" role="dialog" aria-modal="true" aria-labelledby="excelCompareTitle">
+      <header class="excel-compare-head">
+        <div><p>선택한 시트의 저장값 기준</p><h2 id="excelCompareTitle">엑셀 비교</h2></div>
+        <div class="excel-compare-controls">
+          <select id="excelCompareSheet" aria-label="비교할 Excel 시트" disabled><option>시트 선택</option></select>
+          <label class="excel-compare-file-btn">XLSM 선택<input id="excelCompareFile" type="file" accept=".xlsm,.xlsx,application/vnd.ms-excel.sheet.macroEnabled.12"></label>
+        </div>
+        <button type="button" class="excel-compare-close" data-excel-compare-close="1" aria-label="엑셀 비교 닫기">×</button>
+      </header>
+      <div class="excel-compare-body" id="excelCompareBody">
+        <div class="excel-compare-empty">비교할 Excel 파일을 선택하세요.<small>파일을 불러온 뒤 비교할 시트를 선택할 수 있습니다.</small></div>
+      </div>
+    </section>`;
+  document.body.appendChild(modal);
+}
+function renderExcelComparison(result){
+  const body=document.getElementById('excelCompareBody');
+  if(!body) return;
+  const {summary}=result;
+  body.innerHTML=`
+    <div class="excel-compare-summary">
+      <div><span>파일 / 시트</span><b>${escapeCompareHtml(result.fileName)} / ${escapeCompareHtml(result.sheetName)}</b></div>
+      <div class="${summary.dps.status}"><span>DPS</span><b>${formatCompareNumber(summary.dps.excel)} → ${formatCompareNumber(summary.dps.web)}</b></div>
+      <div class="${summary.statDiffs?'diff':'same'}"><span>스탯 차이</span><b>${summary.statDiffs}개</b></div>
+      <div class="${summary.traitDiffs?'diff':'same'}"><span>특성 차이</span><b>${summary.traitDiffs}개</b></div>
+    </div>
+    <div class="excel-compare-table-wrap">
+      <table class="excel-compare-table"><thead><tr><th>구분</th><th>항목</th><th>Excel</th><th>웹</th><th>상태</th></tr></thead>
+      <tbody>${result.rows.map(row=>`<tr class="${row.status}"><td>${row.kind}</td><th>${escapeCompareHtml(row.name)}</th><td>${row.excel}</td><td>${row.web}</td><td>${row.status==='same'?'일치':row.difference}</td></tr>`).join('')}</tbody></table>
+    </div>`;
+}
+function openExcelCompare(){
+  createExcelCompareModal();
+  const modal=document.getElementById('excelCompareModal');
+  modal.classList.add('is-open');
+  modal.setAttribute('aria-hidden','false');
+  document.body.classList.add('excel-compare-open');
+}
+function closeExcelCompare(){
+  const modal=document.getElementById('excelCompareModal');
+  if(!modal) return;
+  modal.classList.remove('is-open');
+  modal.setAttribute('aria-hidden','true');
+  document.body.classList.remove('excel-compare-open');
+}
+let excelCompareWorkbook=null;
+function compareSelectedExcelSheet(){
+  const select=document.getElementById('excelCompareSheet');
+  if(!excelCompareWorkbook||!select?.value) return;
+  const body=document.getElementById('excelCompareBody');
+  try{
+    const cells=excelCompareWorkbook.getCells(select.value);
+    renderExcelComparison(buildExcelComparison(cells,excelCompareWorkbook.fileName,select.value));
+  }catch(e){
+    console.error('[Excel compare failed]',e);
+    if(body) body.innerHTML=`<div class="excel-compare-error">${escapeCompareHtml(e?.message||String(e))}</div>`;
+  }
+}
+async function handleExcelCompareFile(file){
+  const body=document.getElementById('excelCompareBody');
+  if(body) body.innerHTML='<div class="excel-compare-empty">Excel 파일을 분석하고 있습니다.</div>';
+  try{
+    excelCompareWorkbook=await readExcelWorkbook(file);
+    const select=document.getElementById('excelCompareSheet');
+    const preferred=excelCompareWorkbook.sheets.some(sheet=>sheet.name==='고행')?'고행':excelCompareWorkbook.sheets[0].name;
+    select.innerHTML=excelCompareWorkbook.sheets.map(sheet=>`<option value="${escapeCompareHtml(sheet.name)}">${escapeCompareHtml(sheet.name)}</option>`).join('');
+    select.disabled=false;
+    select.value=preferred;
+    compareSelectedExcelSheet();
+  }catch(e){
+    console.error('[Excel compare failed]',e);
+    if(body) body.innerHTML=`<div class="excel-compare-error">${escapeCompareHtml(e?.message||String(e))}</div>`;
+  }
+}
+function installExcelCompareButton(){
+  const target=document.querySelector('.hdr-meta');
+  if(!target||document.getElementById('excelCompareOpenBtn')) return;
+  const btn=document.createElement('button');
+  btn.type='button';
+  btn.id='excelCompareOpenBtn';
+  btn.className='excel-compare-open-btn';
+  btn.dataset.action='openExcelCompare';
+  btn.textContent='엑셀 비교';
+  const dpsButton=document.getElementById('dpsTableOpenBtn');
+  if(dpsButton) dpsButton.insertAdjacentElement('afterend',btn);
+  else target.insertBefore(btn,target.firstChild);
+}
+function bindExcelCompareEvents(){
+  document.addEventListener('click',e=>{
+    if(e.target.closest('[data-excel-compare-close]')) closeExcelCompare();
+  });
+  document.addEventListener('change',e=>{
+    if(e.target.id==='excelCompareFile'&&e.target.files?.[0]) handleExcelCompareFile(e.target.files[0]);
+    if(e.target.id==='excelCompareSheet') compareSelectedExcelSheet();
+  });
+  document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeExcelCompare(); });
 }
 function bindDpsTableEvents(){
   document.addEventListener('click', function(e){
@@ -2113,6 +2384,7 @@ const ACTION_HANDLERS={
   importStateBackup:()=>importStateBackup(),
   toggleSpBankApply:()=>toggleSpBankApply(),
   openDpsTable:()=>openDpsTable(),
+  openExcelCompare:()=>openExcelCompare(),
   decreaseFont:()=>changeFontScale(-DPS_CONFIG.ui.fontScaleStep),
   increaseFont:()=>changeFontScale(DPS_CONFIG.ui.fontScaleStep),
   resetFont:()=>resetFontScale(),
@@ -2173,6 +2445,7 @@ function bindAppEvents(){
   bindTraitHoldEvents();
   bindTraitInputEvents();
   bindDpsTableEvents();
+  bindExcelCompareEvents();
   bindReactiveInputs();
   bindButtonPressFeedback();
 }
@@ -2180,6 +2453,7 @@ function initApp(){
   loadFontScale();
   bindAppEvents();
   installDpsTableButton();
+  installExcelCompareButton();
   renderAppVersion();
   syncEnchantCodeFromInputs(true);
   syncSelectButtons();
