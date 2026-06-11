@@ -474,6 +474,15 @@ setTimeout(function(){
         </div>
         <div class="zero-calc-table-wrap">
           <table class="zero-calc-table">
+            <colgroup>
+              <col class="zero-calc-col-name"/>
+              <col class="zero-calc-col-data"/>
+              <col class="zero-calc-col-data"/>
+              <col class="zero-calc-col-data"/>
+              <col class="zero-calc-col-data"/>
+              <col class="zero-calc-col-data"/>
+              <col class="zero-calc-col-data"/>
+            </colgroup>
             <thead><tr><th>난이도</th><th>현재</th><th>목표</th><th>24스타</th><th>현재 명예</th><th>목표 명예</th><th>추가</th></tr></thead>
             <tbody>
           <tr class="zero-calc-row" data-row-type="penance">
@@ -606,18 +615,14 @@ setTimeout(function(){
             <td class="zero-calc-name">도전의 탑</td>
             <td><input class="zero-calc-current" inputmode="numeric" min="0" max="90" type="number" value="0"/></td>
             <td><input class="zero-calc-target" inputmode="numeric" min="0" max="90" type="number" value="0"/></td>
-            <td><span class="zero-calc-note">층수 입력</span></td>
-            <td><span class="zero-calc-dash">—</span></td>
-            <td><span class="zero-calc-dash">—</span></td>
+            <td class="zero-calc-unused" colspan="3" aria-hidden="true"></td>
             <td><b class="zero-row-score">0</b></td>
           </tr>
           <tr class="zero-calc-row zero-calc-tower-row" data-row-type="honorTower">
             <td class="zero-calc-name">명예 도탑</td>
             <td><input class="zero-calc-current" inputmode="numeric" min="0" max="90" type="number" value="0"/></td>
             <td><input class="zero-calc-target" inputmode="numeric" min="0" max="90" type="number" value="0"/></td>
-            <td><span class="zero-calc-note">층수 입력</span></td>
-            <td><span class="zero-calc-dash">—</span></td>
-            <td><span class="zero-calc-dash">—</span></td>
+            <td class="zero-calc-unused" colspan="3" aria-hidden="true"></td>
             <td><b class="zero-row-score">0</b></td>
           </tr>
             </tbody>

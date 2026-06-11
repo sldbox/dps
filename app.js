@@ -1809,20 +1809,31 @@ function zeroScoreStateFromExcel(zeroCells){
 }
 function zeroScoreRowCalculation(row){
   const type=row?.type || 'penance';
-  let currentScore=0, targetScore=0;
+  let currentScore=0, targetScore=0, score=0;
   if(type==='penance'){
     const cur=zeroScoreNumber(row.current,0,20);
     const tar=zeroScoreNumber(row.target,0,20);
-    currentScore=zeroPenanceScore(cur)+zeroHonorScore(row.currentHonor||'',cur)+(row.star?2:0);
-    targetScore=zeroPenanceScore(tar)+zeroHonorScore(row.targetHonor||'',tar);
+    const currentPenanceScore=zeroPenanceScore(cur);
+    const targetPenanceScore=zeroPenanceScore(tar);
+    const currentHonorScore=zeroHonorScore(row.currentHonor||'');
+    const targetHonorScore=zeroHonorScore(row.targetHonor||'');
+    const star=row.star ? 2 : 0;
+
+    // 24스타는 현재 승단점수에만 포함한다.
+    // 추가점수는 고행 차이와 명예 차이를 항목별로 계산하며 24스타로 차감하지 않는다.
+    currentScore=currentPenanceScore+currentHonorScore+star;
+    targetScore=targetPenanceScore+targetHonorScore;
+    score=Math.max(0,targetPenanceScore-currentPenanceScore)+Math.max(0,targetHonorScore-currentHonorScore);
   }else if(type==='tower'){
     currentScore=zeroTowerScore(row.current);
     targetScore=zeroTowerScore(row.target);
+    score=Math.max(0,targetScore-currentScore);
   }else if(type==='honorTower'){
     currentScore=zeroHonorTowerScore(row.current);
     targetScore=zeroHonorTowerScore(row.target);
+    score=Math.max(0,targetScore-currentScore);
   }
-  return {currentScore,targetScore,score:Math.max(0,targetScore-currentScore)};
+  return {currentScore,targetScore,score};
 }
 function zeroScoreSummaryFromState(zeroScore){
   const rows=Array.isArray(zeroScore?.rows) ? zeroScore.rows : [];
@@ -3025,16 +3036,14 @@ function zeroPenanceScore(level){
   return sum;
 }
 const ZERO_HONOR_STAGES=[
-  {key:'b', level:0, point:2},
-  {key:'a', level:10, point:2},
-  {key:'s', level:17, point:2},
-  {key:'x', level:19, point:2}
+  {key:'b', point:2},
+  {key:'a', point:4},
+  {key:'s', point:6},
+  {key:'x', point:8}
 ];
-function zeroHonorScore(stage, penanceLevel){
-  const idx=ZERO_HONOR_STAGES.findIndex(item=>item.key===stage);
-  if(idx<0) return 0;
-  const penance=zeroScoreNumber(penanceLevel,0,20);
-  return ZERO_HONOR_STAGES.slice(0,idx+1).reduce((sum,item)=>sum+(penance>=item.level?item.point:0),0);
+function zeroHonorScore(stage){
+  const found=ZERO_HONOR_STAGES.find(item=>item.key===stage);
+  return found ? found.point : 0;
 }
 function zeroTowerScore(floor){
   let sum=0;
@@ -3165,22 +3174,32 @@ function updateZeroScoreCalculator(){
     const target=row.querySelector('.zero-calc-target')?.value;
     let currentScore=0;
     let targetScore=0;
+    let score=0;
     if(type==='penance'){
       const cur=zeroScoreNumber(current,0,20);
       const tar=zeroScoreNumber(target,0,20);
       const star=row.querySelector('.zero-star-toggle.active') ? 2 : 0;
       const currentHonor=normalizeZeroHonorValue(row.querySelector('.zero-current-honor')?.value || '');
       const targetHonor=normalizeZeroHonorValue(row.querySelector('.zero-target-honor')?.value || '');
-      currentScore=zeroPenanceScore(cur)+zeroHonorScore(currentHonor,cur)+star;
-      targetScore=zeroPenanceScore(tar)+zeroHonorScore(targetHonor,tar);
+      const currentPenanceScore=zeroPenanceScore(cur);
+      const targetPenanceScore=zeroPenanceScore(tar);
+      const currentHonorScore=zeroHonorScore(currentHonor);
+      const targetHonorScore=zeroHonorScore(targetHonor);
+
+      // 현재 승단점수에는 24스타를 표시 반영한다.
+      // 추가점수는 고행/명예 차이만 항목별로 합산하고 24스타는 제외한다.
+      currentScore=currentPenanceScore+currentHonorScore+star;
+      targetScore=targetPenanceScore+targetHonorScore;
+      score=Math.max(0,targetPenanceScore-currentPenanceScore)+Math.max(0,targetHonorScore-currentHonorScore);
     }else if(type==='tower'){
       currentScore=zeroTowerScore(current);
       targetScore=zeroTowerScore(target);
+      score=Math.max(0, targetScore-currentScore);
     }else if(type==='honorTower'){
       currentScore=zeroHonorTowerScore(current);
       targetScore=zeroHonorTowerScore(target);
+      score=Math.max(0, targetScore-currentScore);
     }
-    const score=Math.max(0, targetScore-currentScore);
     currentTotal+=currentScore;
     total+=score;
     const out=row.querySelector('.zero-row-score');
@@ -3233,6 +3252,7 @@ function applyZeroScoreState(zeroScore){
     if(starBtn){
       const active=!!saved.star;
       starBtn.classList.toggle('active', active);
+      starBtn.classList.toggle('is-active', active);
       starBtn.setAttribute('aria-pressed', active ? 'true' : 'false');
       starBtn.textContent=active ? 'ON +2' : '+2';
     }
@@ -3243,9 +3263,11 @@ function toggleZeroScoreStar(trigger){
   if(!trigger) return;
   const active=!trigger.classList.contains('active');
   trigger.classList.toggle('active', active);
+  trigger.classList.toggle('is-active', active);
   trigger.setAttribute('aria-pressed', active ? 'true' : 'false');
   trigger.textContent=active ? 'ON +2' : '+2';
   updateZeroScoreCalculator();
+  if(!isLoadingState && !suppressSave) saveState({silent:true});
 }
 function normalizeZeroHonorInputElement(el){
   if(!el || !el.classList?.contains('zero-honor-input')) return;
@@ -3271,6 +3293,7 @@ function setZeroRankTab(trigger){
   card.querySelectorAll('.zero-rank-tab').forEach(btn=>{
     const active=btn.dataset.zeroRankTab===key;
     btn.classList.toggle('active', active);
+    btn.classList.toggle('is-active', active);
     btn.setAttribute('aria-selected', active ? 'true' : 'false');
   });
   card.querySelectorAll('.zero-rank-panel').forEach(panel=>{
