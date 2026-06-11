@@ -1237,6 +1237,12 @@ function syncDpsMinDpsInputs(){
     const el=document.getElementById(id);
     if(el && el.value!==dpsTableMinDps) el.value=dpsTableMinDps;
   });
+  const state=document.getElementById('dpsTableMinState');
+  if(state){
+    const minDps=parseDpsTableMinDps();
+    state.textContent=minDps===null ? '위험 기준 미설정' : `최소 DPS ${formatDpsTableValue(minDps)} 적용 중`;
+    state.classList.toggle('is-active', minDps!==null);
+  }
 }
 function setDpsTableMinDps(value){
   dpsTableMinDps=String(value ?? '');
@@ -1252,6 +1258,17 @@ function parseDpsTableMinDps(){
 function formatDpsTableValue(value){
   if(!Number.isFinite(value)) return '—';
   return value.toLocaleString('ko-KR',{minimumFractionDigits:DPS_TABLE_DECIMALS, maximumFractionDigits:DPS_TABLE_DECIMALS});
+}
+function dpsTableRiskCompareValue(value){
+  if(!Number.isFinite(value)) return NaN;
+  const factor=10**DPS_TABLE_DECIMALS;
+  return Math.round(value*factor)/factor;
+}
+function dpsTablePenanceTierClass(penanceLevel){
+  if(penanceLevel>=18) return 'dps-penance-tier-4';
+  if(penanceLevel>=14) return 'dps-penance-tier-3';
+  if(penanceLevel>=8) return 'dps-penance-tier-2';
+  return 'dps-penance-tier-1';
 }
 function updateDpsRiskViews(currentDps){
   const card=document.querySelector('.dps-card');
@@ -1298,19 +1315,19 @@ function buildDpsTable(round){
   const currentDiff=vs('diff');
   const currentPen=Math.max(DPS_TABLE_PENANCE_MIN, Math.min(DPS_TABLE_PENANCE_MAX, Math.round(v('penance'))));
   const currentRound=Math.round(v('round'));
-  const head=DPS_TABLE_DIFFICULTIES.map(d=>`<th class="${d===currentDiff?'dps-current-col':''}">${d}</th>`).join('');
+  const head=DPS_TABLE_DIFFICULTIES.map(d=>`<th>${d}</th>`).join('');
   const rows=[];
   for(let pen=DPS_TABLE_PENANCE_MIN; pen<=DPS_TABLE_PENANCE_MAX; pen++){
     const rowCurrent=pen===currentPen;
     const cells=DPS_TABLE_DIFFICULTIES.map(diff=>{
       const value=computeDpsPreview(diff, pen, round);
-      const danger=minDps!==null && Number.isFinite(value) && value<=minDps;
+      const danger=minDps!==null && dpsTableRiskCompareValue(value)<=minDps;
       const currentCell=rowCurrent && diff===currentDiff;
-      const classes=[danger?'dps-risk-cell':'', diff===currentDiff?'dps-current-col':'', currentCell?'dps-current-cell':''].filter(Boolean).join(' ');
+      const classes=[danger?'dps-risk-cell':'', currentCell?'dps-current-cell':''].filter(Boolean).join(' ');
       const title=currentCell ? `현재 선택: ${diff} ${pen}고행${currentRound===round?' / 현재 라운드':''}` : '';
       return `<td class="${classes}"${title?` title="${title}"`:''}>${formatDpsTableValue(value)}</td>`;
     }).join('');
-    rows.push(`<tr class="${rowCurrent?'dps-current-row':''}"><th>${pen}</th>${cells}</tr>`);
+    rows.push(`<tr class="${dpsTablePenanceTierClass(pen)}"><th>${pen}</th>${cells}</tr>`);
   }
   return `<table class="dps-matrix"><thead><tr><th>고행</th>${head}</tr></thead><tbody>${rows.join('')}</tbody></table>`;
 }
@@ -1353,6 +1370,7 @@ function createDpsTableModal(){
         <label class="dps-table-min-box" for="dpsTableMinDps">
           <span>도전할 최소 DPS</span>
           <input id="dpsTableMinDps" type="text" inputmode="decimal" autocomplete="off" placeholder="예시) 3.0">
+          <small id="dpsTableMinState">위험 기준 미설정</small>
         </label>
         <button type="button" class="dps-table-close-btn" data-dps-table-close="1" aria-label="DPS표 닫기">×</button>
       </header>
@@ -1981,7 +1999,7 @@ function installExcelCompareButton(){
   btn.id='excelCompareOpenBtn';
   btn.className='excel-compare-open-btn';
   btn.dataset.action='openExcelCompare';
-  btn.textContent='엑셀 비교';
+  btn.textContent='엑셀비교';
   const dpsButton=document.getElementById('dpsTableOpenBtn');
   if(dpsButton) dpsButton.insertAdjacentElement('afterend',btn);
   else target.insertBefore(btn,target.firstChild);
