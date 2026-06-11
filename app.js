@@ -1818,9 +1818,6 @@ function zeroScoreRowCalculation(row){
     const currentHonorScore=zeroHonorScore(row.currentHonor||'');
     const targetHonorScore=zeroHonorScore(row.targetHonor||'');
     const star=row.star ? 2 : 0;
-
-    // 24스타는 현재 승단점수에만 포함한다.
-    // 추가점수는 고행 차이와 명예 차이를 항목별로 계산하며 24스타로 차감하지 않는다.
     currentScore=currentPenanceScore+currentHonorScore+star;
     targetScore=targetPenanceScore+targetHonorScore;
     score=Math.max(0,targetPenanceScore-currentPenanceScore)+Math.max(0,targetHonorScore-currentHonorScore);
@@ -3185,9 +3182,6 @@ function updateZeroScoreCalculator(){
       const targetPenanceScore=zeroPenanceScore(tar);
       const currentHonorScore=zeroHonorScore(currentHonor);
       const targetHonorScore=zeroHonorScore(targetHonor);
-
-      // 현재 승단점수에는 24스타를 표시 반영한다.
-      // 추가점수는 고행/명예 차이만 항목별로 합산하고 24스타는 제외한다.
       currentScore=currentPenanceScore+currentHonorScore+star;
       targetScore=targetPenanceScore+targetHonorScore;
       score=Math.max(0,targetPenanceScore-currentPenanceScore)+Math.max(0,targetHonorScore-currentHonorScore);
