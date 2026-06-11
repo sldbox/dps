@@ -23,6 +23,7 @@
     { key: 'rune-effect', label: '룬효과/버프', selectors: ['.unit-enhance-card'] },
     { key: 'trait', label: '특성보드', selectors: ['.col-right'] },
     { key: 'result', label: '스탯보드', selectors: ['.stat-dps-card'] },
+    { key: 'zero-rank', label: '승단', selectors: ['.zero-rank-card'] },
     { key: 'save', label: '기타', selectors: ['.sg.priority', '.bus-cut-card', '.final-damage-card'] }
   ];
 
@@ -1315,10 +1316,11 @@ function buildDpsTable(round){
   const currentDiff=vs('diff');
   const currentPen=Math.max(DPS_TABLE_PENANCE_MIN, Math.min(DPS_TABLE_PENANCE_MAX, Math.round(v('penance'))));
   const currentRound=Math.round(v('round'));
-  const head=DPS_TABLE_DIFFICULTIES.map(d=>`<th>${d}</th>`).join('');
+  const roundCurrent=currentRound===round;
+  const head=DPS_TABLE_DIFFICULTIES.map(d=>`<th class="${roundCurrent && d===currentDiff?'dps-current-column':''}">${d}</th>`).join('');
   const rows=[];
   for(let pen=DPS_TABLE_PENANCE_MIN; pen<=DPS_TABLE_PENANCE_MAX; pen++){
-    const rowCurrent=pen===currentPen;
+    const rowCurrent=roundCurrent && pen===currentPen;
     const cells=DPS_TABLE_DIFFICULTIES.map(diff=>{
       const value=computeDpsPreview(diff, pen, round);
       const danger=minDps!==null && dpsTableRiskCompareValue(value)<=minDps;
@@ -1327,7 +1329,7 @@ function buildDpsTable(round){
       const title=currentCell ? `현재 선택: ${diff} ${pen}고행${currentRound===round?' / 현재 라운드':''}` : '';
       return `<td class="${classes}"${title?` title="${title}"`:''}>${formatDpsTableValue(value)}</td>`;
     }).join('');
-    rows.push(`<tr class="${dpsTablePenanceTierClass(pen)}"><th>${pen}</th>${cells}</tr>`);
+    rows.push(`<tr class="${dpsTablePenanceTierClass(pen)} ${rowCurrent?'dps-current-row':''}"><th>${pen}</th>${cells}</tr>`);
   }
   return `<table class="dps-matrix"><thead><tr><th>고행</th>${head}</tr></thead><tbody>${rows.join('')}</tbody></table>`;
 }
@@ -1380,6 +1382,8 @@ function createDpsTableModal(){
 }
 function openDpsTable(){
   createDpsTableModal();
+  const currentRound=Math.round(v('round'));
+  if(DPS_TABLE_ROUNDS.some(item=>item.round===currentRound)) activeDpsTableRound=currentRound;
   renderDpsTableModal();
   const modal=document.getElementById('dpsTableModal');
   if(!modal) return;
@@ -1404,6 +1408,99 @@ function installDpsTableButton(){
   btn.dataset.action='openDpsTable';
   btn.textContent='DPS표';
   target.insertBefore(btn, target.firstChild);
+}
+
+function monthRunePairs(items){
+  const pairs=[];
+  for(let i=0;i<items.length;i+=2) pairs.push([items[i]||'',items[i+1]||'']);
+  return pairs;
+}
+function renderMonthRuneRows(items, mode){
+  return monthRunePairs(items).map(([code,desc])=>`
+    <div class="month-rune-effect-row">
+      <b>${escapeCompareHtml(code)}</b>
+      <span>${escapeCompareHtml(desc)}</span>
+    </div>
+  `).join('');
+}
+function renderMonthRuneCard(item){
+  return `
+    <article class="month-rune-card">
+      <header class="month-rune-card-head">
+        <b>${item.month}월</b>
+        <span>${escapeCompareHtml(item.title)}</span>
+      </header>
+      <div class="month-rune-compare">
+        <section class="month-rune-side normal">
+          <h3>일반 <em>RP+1</em></h3>
+          <div class="month-rune-effects">${renderMonthRuneRows(item.normal,'normal')}</div>
+        </section>
+        <section class="month-rune-side plus">
+          <h3>플러스 <em>RP+2</em></h3>
+          <div class="month-rune-effects">${renderMonthRuneRows(item.plus,'plus')}</div>
+        </section>
+      </div>
+    </article>
+  `;
+}
+function createMonthRuneModal(){
+  if(document.getElementById('monthRuneModal')) return;
+  const info=(typeof MONTHLY_RUNE_INFO!=='undefined' && MONTHLY_RUNE_INFO) || window.MONTHLY_RUNE_INFO || {months:[]};
+  const modal=document.createElement('div');
+  modal.id='monthRuneModal';
+  modal.className='month-rune-modal-shell';
+  modal.setAttribute('aria-hidden','true');
+  modal.innerHTML=`
+    <div class="month-rune-backdrop" data-month-rune-close="1"></div>
+    <section class="month-rune-modal" role="dialog" aria-modal="true" aria-labelledby="monthRuneTitle">
+      <header class="month-rune-head">
+        <div class="month-rune-titlebox">
+          <h2 id="monthRuneTitle">이달의 룬</h2>
+        </div>
+        <button type="button" class="month-rune-close" data-month-rune-close="1" aria-label="이달의 룬 닫기">×</button>
+      </header>
+      <div class="month-rune-body">
+        <div class="month-rune-grid">${(info.months||[]).map(renderMonthRuneCard).join('')}</div>
+      </div>
+    </section>`;
+  document.body.appendChild(modal);
+}
+function openMonthRune(){
+  createMonthRuneModal();
+  const modal=document.getElementById('monthRuneModal');
+  if(!modal) return;
+  modal.classList.add('is-open');
+  modal.setAttribute('aria-hidden','false');
+  document.body.classList.add('month-rune-modal-open');
+}
+function closeMonthRune(){
+  const modal=document.getElementById('monthRuneModal');
+  if(!modal) return;
+  modal.classList.remove('is-open');
+  modal.setAttribute('aria-hidden','true');
+  document.body.classList.remove('month-rune-modal-open');
+}
+function installMonthRuneButton(){
+  const target=document.querySelector('.hdr-meta');
+  if(!target || document.getElementById('monthRuneOpenBtn')) return;
+  const btn=document.createElement('button');
+  btn.type='button';
+  btn.id='monthRuneOpenBtn';
+  btn.className='month-rune-open-btn';
+  btn.dataset.action='openMonthRune';
+  btn.textContent='이달의룬';
+  btn.title='이달의 룬 정보 보기';
+  const excelButton=document.getElementById('excelCompareOpenBtn');
+  const nexusLink=target.querySelector('.global-site-link');
+  if(excelButton) excelButton.insertAdjacentElement('afterend',btn);
+  else if(nexusLink) target.insertBefore(btn,nexusLink);
+  else target.appendChild(btn);
+}
+function bindMonthRuneEvents(){
+  document.addEventListener('click',e=>{
+    if(e.target.closest('[data-month-rune-close]')) closeMonthRune();
+  });
+  document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeMonthRune(); });
 }
 /* Excel workbook import, comparison, and apply */
 
@@ -1664,6 +1761,119 @@ function buildExcelInputRows(cells,specCells){
       difference:same?'일치':`${excelValue} / ${webValue}`,status:same?'same':'diff'};
   });
 }
+const ZERO_EXCEL_SHEET_NAME='더제로 승단';
+const ZERO_EXCEL_PENANCE_ROWS=[
+  'Practice','Very Easy','Easy','Normal','Hard','Very Hard','Hell','Inferno','Lunatic','Holic','Epic','Ultimate','Impossible','The Final'
+].map((name,index)=>({name,row:13+index}));
+function getZeroScoreSheetCells(workbook){
+  try{
+    return workbook?.sheets?.some(sheet=>sheet.name===ZERO_EXCEL_SHEET_NAME) ? workbook.getCells(ZERO_EXCEL_SHEET_NAME) : null;
+  }catch(_e){ return null; }
+}
+function normalizeZeroHonorValue(value){
+  const text=excelText(value).toLowerCase().replace(/명예/g,'').trim();
+  const first=text.charAt(0);
+  if(['b','a','s','x'].includes(first)) return first;
+  if(['없음','none','off','n','0','-',''].includes(text)) return '';
+  return '';
+}
+function zeroHonorDisplay(value){
+  return value ? String(value).toUpperCase() : '없음';
+}
+function zeroScoreStateFromExcel(zeroCells){
+  if(!zeroCells) return null;
+  const rows=[];
+  ZERO_EXCEL_PENANCE_ROWS.forEach(({row})=>{
+    rows.push({
+      type:'penance',
+      current:String(Math.max(0,Math.min(20,Math.round(excelNumber(zeroCells[`B${row}`]) ?? 0)))),
+      target:String(Math.max(0,Math.min(20,Math.round(excelNumber(zeroCells[`C${row}`]) ?? 0)))),
+      star:excelFlag(zeroCells[`D${row}`]),
+      currentHonor:normalizeZeroHonorValue(zeroCells[`E${row}`]),
+      targetHonor:normalizeZeroHonorValue(zeroCells[`F${row}`])
+    });
+  });
+  rows.push({
+    type:'tower',
+    current:String(Math.max(0,Math.min(90,Math.round(excelNumber(zeroCells.B27) ?? 0)))),
+    target:String(Math.max(0,Math.min(90,Math.round(excelNumber(zeroCells.C27) ?? 0)))),
+    star:false,currentHonor:'',targetHonor:''
+  });
+  rows.push({
+    type:'honorTower',
+    current:String(Math.max(0,Math.min(90,Math.round(excelNumber(zeroCells.B28) ?? 0)))),
+    target:String(Math.max(0,Math.min(90,Math.round(excelNumber(zeroCells.C28) ?? 0)))),
+    star:false,currentHonor:'',targetHonor:''
+  });
+  return {rows};
+}
+function zeroScoreRowCalculation(row){
+  const type=row?.type || 'penance';
+  let currentScore=0, targetScore=0;
+  if(type==='penance'){
+    const cur=zeroScoreNumber(row.current,0,20);
+    const tar=zeroScoreNumber(row.target,0,20);
+    currentScore=zeroPenanceScore(cur)+zeroHonorScore(row.currentHonor||'',cur)+(row.star?2:0);
+    targetScore=zeroPenanceScore(tar)+zeroHonorScore(row.targetHonor||'',tar);
+  }else if(type==='tower'){
+    currentScore=zeroTowerScore(row.current);
+    targetScore=zeroTowerScore(row.target);
+  }else if(type==='honorTower'){
+    currentScore=zeroHonorTowerScore(row.current);
+    targetScore=zeroHonorTowerScore(row.target);
+  }
+  return {currentScore,targetScore,score:Math.max(0,targetScore-currentScore)};
+}
+function zeroScoreSummaryFromState(zeroScore){
+  const rows=Array.isArray(zeroScore?.rows) ? zeroScore.rows : [];
+  let currentTotal=0,total=0;
+  rows.forEach(row=>{
+    const calc=zeroScoreRowCalculation(row);
+    currentTotal+=calc.currentScore;
+    total+=calc.score;
+  });
+  return {currentTotal,total,targetScore:currentTotal+total};
+}
+function compareZeroTextRow(name, excelValue, webValue){
+  const excelTextValue=String(excelValue??'').trim();
+  const webTextValue=String(webValue??'').trim();
+  const same=excelTextValue.toLowerCase()===webTextValue.toLowerCase();
+  return {kind:'승단계산',name,excel:escapeCompareHtml(excelTextValue||'—'),web:escapeCompareHtml(webTextValue||'—'),
+    difference:same?'일치':`${excelTextValue||'—'} / ${webTextValue||'—'}`,status:same?'same':'diff'};
+}
+function compareZeroNumberRow(kind,name,excelValue,webValue){
+  const compare=compareNumber(excelValue,webValue,0.0001);
+  return {kind,name,excel:formatCompareNumber(excelValue),web:formatCompareNumber(webValue),
+    difference:formatCompareDiff(compare.diff),status:compare.status};
+}
+function buildZeroScoreCompareRows(zeroCells){
+  if(!zeroCells) return [];
+  const excelState=zeroScoreStateFromExcel(zeroCells);
+  const webState=collectZeroScoreState() || {rows:[]};
+  const rows=[];
+  ZERO_EXCEL_PENANCE_ROWS.forEach(({name,row},index)=>{
+    const web=webState.rows[index] || {};
+    const webCalc=zeroScoreRowCalculation(web);
+    rows.push(compareZeroNumberRow('승단계산',`${name} 현재 고행`,zeroCells[`B${row}`],web.current ?? 0));
+    rows.push(compareZeroNumberRow('승단계산',`${name} 목표 고행`,zeroCells[`C${row}`],web.target ?? 0));
+    rows.push(compareZeroTextRow(`${name} 24스타`,excelFlag(zeroCells[`D${row}`])?'ON':'OFF',web.star?'ON':'OFF'));
+    rows.push(compareZeroTextRow(`${name} 현재 명예`,zeroHonorDisplay(normalizeZeroHonorValue(zeroCells[`E${row}`])),zeroHonorDisplay(web.currentHonor||'')));
+    rows.push(compareZeroTextRow(`${name} 목표 명예`,zeroHonorDisplay(normalizeZeroHonorValue(zeroCells[`F${row}`])),zeroHonorDisplay(web.targetHonor||'')));
+    rows.push(compareZeroNumberRow('승단계산 결과',`${name} 추가점수`,zeroCells[`G${row}`],webCalc.score));
+  });
+  const towerWeb=webState.rows[14] || {};
+  const honorTowerWeb=webState.rows[15] || {};
+  rows.push(compareZeroNumberRow('승단계산','도전의 탑 현재층',zeroCells.B27,towerWeb.current ?? 0));
+  rows.push(compareZeroNumberRow('승단계산','도전의 탑 목표층',zeroCells.C27,towerWeb.target ?? 0));
+  rows.push(compareZeroNumberRow('승단계산 결과','도전의 탑 추가점수',zeroCells.G27,zeroScoreRowCalculation(towerWeb).score));
+  rows.push(compareZeroNumberRow('승단계산','명예 도탑 현재층',zeroCells.B28,honorTowerWeb.current ?? 0));
+  rows.push(compareZeroNumberRow('승단계산','명예 도탑 목표층',zeroCells.C28,honorTowerWeb.target ?? 0));
+  rows.push(compareZeroNumberRow('승단계산 결과','명예 도탑 추가점수',zeroCells.G28,zeroScoreRowCalculation(honorTowerWeb).score));
+  const webSummary=zeroScoreSummaryFromState(webState);
+  rows.push(compareZeroNumberRow('승단계산 결과','현재 승단점수',zeroCells.H28,webSummary.currentTotal));
+  rows.push(compareZeroNumberRow('승단계산 결과','목표 완료 시',zeroCells.I28,webSummary.targetScore));
+  return rows;
+}
 function validateExcelCompareSheet(cells,sheetName){
   if(!Number.isFinite(Number(cells.M19))||!Number.isFinite(Number(cells.L4))){
     throw new Error(`"${sheetName}" 시트는 현재 계산기와 비교할 수 있는 셀 구조가 아닙니다.`);
@@ -1717,7 +1927,7 @@ function buildExcelBuffRows(cells,specCells){
     buildExcelChoiceRow('안개의 꽃가루',cells.F15,'flowerSkill3',{boolean:true})
   ];
 }
-function buildExcelComparison(cells, specCells, fileName, sheetName){
+function buildExcelComparison(cells, specCells, zeroCells, fileName, sheetName){
   validateExcelCompareSheet(cells,sheetName);
   const stats=computeStats();
   const dpsCompare=compareNumber(cells.M19,stats.M19);
@@ -1725,6 +1935,7 @@ function buildExcelComparison(cells, specCells, fileName, sheetName){
   const statRows=buildExcelStatRows(cells,stats);
   const buffRows=buildExcelBuffRows(cells,specCells);
   const traitRows=buildExcelTraitRows(cells);
+  const zeroRows=buildZeroScoreCompareRows(zeroCells);
   return {
     fileName,
     sheetName,
@@ -1733,7 +1944,8 @@ function buildExcelComparison(cells, specCells, fileName, sheetName){
       statDiffs:statRows.filter(r=>r.status!=='same').length,
       inputDiffs:inputRows.filter(r=>r.status!=='same').length,
       traitDiffs:traitRows.length,
-      buffDiffs:buffRows.filter(r=>r.status!=='same').length
+      buffDiffs:buffRows.filter(r=>r.status!=='same').length,
+      zeroDiffs:zeroRows.filter(r=>r.status!=='same').length
     },
     rows:[
       {kind:'DPS',name:'기본 DPS',excel:formatCompareNumber(cells.M19),web:formatCompareNumber(stats.M19),
@@ -1741,6 +1953,7 @@ function buildExcelComparison(cells, specCells, fileName, sheetName){
       ...inputRows,
       ...statRows,
       ...buffRows,
+      ...zeroRows,
       ...traitRows
     ]
   };
@@ -1784,6 +1997,7 @@ function renderExcelComparison(result){
       <div class="${summary.inputDiffs?'diff':'same'}"><span>입력값 차이</span><b>${summary.inputDiffs}개</b></div>
       <div class="${summary.buffDiffs?'diff':'same'}"><span>룬/버프 차이</span><b>${summary.buffDiffs}개</b></div>
       <div class="${summary.traitDiffs?'diff':'same'}"><span>특성 차이</span><b>${summary.traitDiffs}개</b></div>
+      <div class="${summary.zeroDiffs?'diff':'same'}"><span>승단 차이</span><b>${summary.zeroDiffs}개</b></div>
     </div>
     <div class="excel-compare-table-wrap">
       <table class="excel-compare-table"><thead><tr><th>구분</th><th>항목</th><th>Excel</th><th>웹</th><th>상태</th></tr></thead>
@@ -1863,7 +2077,7 @@ function excelStateValue(id, value, options={}){
   }
   return String(value);
 }
-function buildExcelState(cells, specCells){
+function buildExcelState(cells, specCells, zeroCells){
   const state=makeStateObject();
   const values={...state.values};
   const assign=(id,value,options={})=>{
@@ -1922,7 +2136,9 @@ function buildExcelState(cells, specCells){
     applied++;
   });
   inv[116]=1;
-  return {state:makeStorageEnvelope({...state,values,inv}),applied};
+  const zeroScore=zeroScoreStateFromExcel(zeroCells) || state.zeroScore;
+  if(zeroScore?.rows?.length) applied+=zeroScore.rows.reduce((sum,row)=>sum+(row.type==='penance'?5:2),0);
+  return {state:makeStorageEnvelope({...state,values,inv,zeroScore}),applied};
 }
 function applySelectedExcelSheet(){
   const select=document.getElementById('excelCompareSheet');
@@ -1931,9 +2147,10 @@ function applySelectedExcelSheet(){
     const cells=excelCompareWorkbook.getCells(select.value);
     validateExcelCompareSheet(cells,select.value);
     const specCells=excelCompareWorkbook.getCells('스펙');
+    const zeroCells=getZeroScoreSheetCells(excelCompareWorkbook);
     const additionalInfo=inspectSpecAdditionalStructure(specCells);
     if(!additionalInfo.valid) throw new Error(additionalInfo.message);
-    const imported=buildExcelState(cells,specCells);
+    const imported=buildExcelState(cells,specCells,zeroCells);
     applyStateObject(imported.state);
     saveState({silent:true});
     compareSelectedExcelSheet();
@@ -1952,6 +2169,7 @@ function compareSelectedExcelSheet(){
   try{
     const cells=excelCompareWorkbook.getCells(select.value);
     const specCells=excelCompareWorkbook.getCells('스펙');
+    const zeroCells=getZeroScoreSheetCells(excelCompareWorkbook);
     const additionalInfo=inspectSpecAdditionalStructure(specCells);
     if(!additionalInfo.valid){
       if(apply) apply.disabled=true;
@@ -1959,7 +2177,7 @@ function compareSelectedExcelSheet(){
       if(body) body.innerHTML=`<div class="excel-compare-error">${renderExcelWarning(additionalInfo.message)}</div>`;
       return;
     }
-    renderExcelComparison(buildExcelComparison(cells,specCells,excelCompareWorkbook.fileName,select.value));
+    renderExcelComparison(buildExcelComparison(cells,specCells,zeroCells,excelCompareWorkbook.fileName,select.value));
     if(apply) apply.disabled=false;
     if(reset) reset.disabled=false;
   }catch(e){
@@ -2418,6 +2636,7 @@ function makePublicDefaultState(){
   return makeStorageEnvelope({
     values,
     inv,
+    zeroScore:collectZeroScoreState(),
     savedAt:0,
     scope:'public_default'
   });
@@ -2427,6 +2646,7 @@ function makeStorageEnvelope(partial){
   return {
     values:partial.values || {},
     inv:partial.inv || {},
+    zeroScore:partial.zeroScore || undefined,
     computed:partial.computed || undefined,
     savedAt:+partial.savedAt || Date.now(),
     storageVersion:partial.storageVersion || STORAGE_VERSION,
@@ -2465,6 +2685,7 @@ function makeStateObject(){
   return makeStorageEnvelope({
     values,
     inv:{...INV},
+    zeroScore:collectZeroScoreState(),
     computed:makeComputedSnapshot(),
     savedAt:Date.now(),
     ui:{fontScale:getFontScale()}
@@ -2492,6 +2713,7 @@ function normalizeSavedState(data){
   return makeStorageEnvelope({
     values,
     inv,
+    zeroScore:data.zeroScore,
     savedAt:data.savedAt,
     storageVersion:data.storageVersion,
     scope:data.scope,
@@ -2522,6 +2744,7 @@ function applyStateObject(data){
     INV[116]=1;
     enforceBudgets();
     hydrateRuneChoiceFromHidden();
+    applyZeroScoreState(data.zeroScore);
     syncEnchantCodeFromInputs(true);
     syncSelectButtons();
     syncBuffChoiceButtons();
@@ -2785,6 +3008,275 @@ function bindTraitHoldEvents(){
 /* =========================================================
    12. 이벤트 바인딩 / 앱 초기화
    ========================================================= */
+function zeroScoreNumber(value, min, max){
+  const n=Number(value);
+  if(!Number.isFinite(n)) return min;
+  return Math.max(min, Math.min(max, Math.floor(n)));
+}
+function zeroPenanceScore(level){
+  let sum=0;
+  const max=zeroScoreNumber(level,0,20);
+  for(let i=1;i<=max;i++){
+    if(i<=13) sum+=1;
+    else if(i<=16) sum+=2;
+    else if(i===17) sum+=3;
+    else sum+=7;
+  }
+  return sum;
+}
+const ZERO_HONOR_STAGES=[
+  {key:'b', level:0, point:2},
+  {key:'a', level:10, point:2},
+  {key:'s', level:17, point:2},
+  {key:'x', level:19, point:2}
+];
+function zeroHonorScore(stage, penanceLevel){
+  const idx=ZERO_HONOR_STAGES.findIndex(item=>item.key===stage);
+  if(idx<0) return 0;
+  const penance=zeroScoreNumber(penanceLevel,0,20);
+  return ZERO_HONOR_STAGES.slice(0,idx+1).reduce((sum,item)=>sum+(penance>=item.level?item.point:0),0);
+}
+function zeroTowerScore(floor){
+  let sum=0;
+  const max=zeroScoreNumber(floor,0,90);
+  for(let i=41;i<=max;i++){
+    if(i<=60) sum+=1;
+    else if(i<=70) sum+=2;
+    else sum+=3;
+  }
+  return sum;
+}
+function zeroHonorTowerScore(floor){
+  let sum=0;
+  const max=zeroScoreNumber(floor,0,90);
+  for(let i=50;i<=max;i++){
+    if(i<=68){
+      if(i%2===0) sum+=1;
+    }else if(i>=70 && i<=79){
+      sum+=1;
+    }else if(i>=80){
+      sum+=2;
+    }
+  }
+  return sum;
+}
+const ZERO_RANK_FALLBACK_TABLE=[
+  {name:'입문',score:0},{name:'견습',score:100},{name:'숙련',score:150},{name:'전문',score:200},
+  {name:'장인',score:250},{name:'명장',score:300},{name:'명장+',score:350},{name:'도인',score:400},
+  {name:'도인+',score:450},{name:'지존',score:500},{name:'지존+',score:550},{name:'패왕',score:600},
+  {name:'패왕+',score:650},{name:'제왕',score:700},{name:'제왕+',score:750},{name:'신황',score:800},{name:'신황+',score:850}
+];
+function getZeroRankTable(){
+  const rows=[...document.querySelectorAll('.zero-rank-table tbody tr')].map(row=>{
+    const cells=row.querySelectorAll('td');
+    const name=excelText(cells[0]?.textContent);
+    const score=excelNumber(cells[2]?.textContent);
+    return name && score!==null ? {name,score,row} : null;
+  }).filter(Boolean);
+  return rows.length ? rows : ZERO_RANK_FALLBACK_TABLE;
+}
+function zeroRankEntry(score){
+  const value=Number(score)||0;
+  return getZeroRankTable().reduce((best,item)=>value>=item.score ? item : best, getZeroRankTable()[0] || ZERO_RANK_FALLBACK_TABLE[0]);
+}
+function zeroRankName(score){
+  return zeroRankEntry(score)?.name || '입문';
+}
+function zeroBenefitRankName(article){
+  const text=excelText(article?.querySelector('h4 span')?.textContent);
+  return text.replace(/^\[/,'').replace(/\]$/,'').trim();
+}
+function updateZeroRankHighlights(currentRank, targetRank){
+  const current=excelText(currentRank);
+  const target=excelText(targetRank);
+  document.querySelectorAll('.zero-rank-table tbody tr').forEach(row=>{
+    const name=excelText(row.querySelector('td')?.textContent);
+    row.classList.toggle('zero-rank-current', !!current && name===current);
+    row.classList.toggle('zero-rank-target', !!target && name===target);
+    row.classList.toggle('zero-rank-same', !!current && current===target && name===current);
+  });
+  document.querySelectorAll('.zero-benefit-rank').forEach(article=>{
+    const name=zeroBenefitRankName(article);
+    article.classList.toggle('zero-rank-current', !!current && name===current);
+    article.classList.toggle('zero-rank-target', !!target && name===target);
+    article.classList.toggle('zero-rank-same', !!current && current===target && name===current);
+  });
+  const card=document.querySelector('.zero-rank-result-card');
+  if(card){
+    card.classList.toggle('zero-rank-same', !!current && current===target);
+    card.classList.toggle('zero-rank-upgrade', !!current && !!target && current!==target);
+  }
+  updateMobileZeroRankSummary(current,target);
+}
+function updateMobileZeroRankSummary(currentRank, targetRank){
+  const card=document.querySelector('.zero-rank-card');
+  if(!card) return;
+  const rankPanel=card.querySelector('[data-zero-rank-panel="rank"]');
+  const benefitPanel=card.querySelector('[data-zero-rank-panel="benefit"]');
+  const rows=[...card.querySelectorAll('.zero-rank-table tbody tr')];
+  const benefits=[...card.querySelectorAll('.zero-benefit-rank')];
+  const currentIndex=Math.max(0,rows.findIndex(row=>excelText(row.querySelector('td')?.textContent)===currentRank));
+  const start=Math.max(0,Math.min(currentIndex-2,rows.length-6));
+  const visibleRanks=new Set(rows.slice(start,start+6).map(row=>excelText(row.querySelector('td')?.textContent)));
+  const rankExpanded=rankPanel?.classList.contains('zero-mobile-expanded');
+  const benefitExpanded=benefitPanel?.classList.contains('zero-mobile-expanded');
+  rows.forEach(row=>{
+    const name=excelText(row.querySelector('td')?.textContent);
+    row.classList.toggle('zero-mobile-summary-hidden', !rankExpanded && !visibleRanks.has(name));
+  });
+  benefits.forEach(article=>{
+    const name=zeroBenefitRankName(article);
+    const highlighted=name===currentRank || name===targetRank;
+    article.classList.toggle('zero-mobile-summary-hidden', !benefitExpanded && !highlighted);
+  });
+  ensureMobileZeroToggle(rankPanel,'승단표',rows.length,rankExpanded);
+  ensureMobileZeroToggle(benefitPanel,'혜택',benefits.length,benefitExpanded);
+}
+function ensureMobileZeroToggle(panel,label,total,expanded){
+  if(!panel) return;
+  let button=panel.querySelector('.zero-mobile-expand-btn');
+  if(!button){
+    button=document.createElement('button');
+    button.type='button';
+    button.className='zero-mobile-expand-btn';
+    button.dataset.action='toggleZeroMobileSummary';
+    panel.appendChild(button);
+  }
+  button.textContent=expanded ? `${label} 요약 보기` : `전체 ${label} 보기 (${total})`;
+  button.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+}
+function toggleZeroMobileSummary(trigger){
+  const panel=trigger?.closest('.zero-rank-panel');
+  if(!panel) return;
+  panel.classList.toggle('zero-mobile-expanded');
+  const calc=document.querySelector('.zero-score-calc');
+  const current=excelText(calc?.querySelector('.zero-current-rank')?.textContent) || '입문';
+  const target=excelText(calc?.querySelector('.zero-target-rank')?.textContent) || current;
+  updateMobileZeroRankSummary(current,target);
+}
+function updateZeroScoreCalculator(){
+  const calc=document.querySelector('.zero-score-calc');
+  if(!calc) return;
+  let total=0;
+  let currentTotal=0;
+  calc.querySelectorAll('.zero-calc-row').forEach(row=>{
+    const type=row.dataset.rowType || 'penance';
+    const current=row.querySelector('.zero-calc-current')?.value;
+    const target=row.querySelector('.zero-calc-target')?.value;
+    let currentScore=0;
+    let targetScore=0;
+    if(type==='penance'){
+      const cur=zeroScoreNumber(current,0,20);
+      const tar=zeroScoreNumber(target,0,20);
+      const star=row.querySelector('.zero-star-toggle.active') ? 2 : 0;
+      const currentHonor=normalizeZeroHonorValue(row.querySelector('.zero-current-honor')?.value || '');
+      const targetHonor=normalizeZeroHonorValue(row.querySelector('.zero-target-honor')?.value || '');
+      currentScore=zeroPenanceScore(cur)+zeroHonorScore(currentHonor,cur)+star;
+      targetScore=zeroPenanceScore(tar)+zeroHonorScore(targetHonor,tar);
+    }else if(type==='tower'){
+      currentScore=zeroTowerScore(current);
+      targetScore=zeroTowerScore(target);
+    }else if(type==='honorTower'){
+      currentScore=zeroHonorTowerScore(current);
+      targetScore=zeroHonorTowerScore(target);
+    }
+    const score=Math.max(0, targetScore-currentScore);
+    currentTotal+=currentScore;
+    total+=score;
+    const out=row.querySelector('.zero-row-score');
+    if(out) out.textContent=String(score);
+  });
+  const targetScore=currentTotal+total;
+  const currentEl=calc.querySelector('.zero-current-score');
+  const totalEl=calc.querySelector('.zero-total-add');
+  const targetEl=calc.querySelector('.zero-target-score');
+  const currentRankEl=calc.querySelector('.zero-current-rank');
+  const targetRankEl=calc.querySelector('.zero-target-rank');
+  const currentRank=zeroRankName(currentTotal);
+  const targetRank=zeroRankName(targetScore);
+  if(currentEl) currentEl.textContent=String(currentTotal);
+  if(totalEl) totalEl.textContent=String(total);
+  if(targetEl) targetEl.textContent=String(targetScore);
+  if(currentRankEl) currentRankEl.textContent=currentRank;
+  if(targetRankEl) targetRankEl.textContent=targetRank;
+  updateZeroRankHighlights(currentRank,targetRank);
+}
+function collectZeroScoreState(){
+  const calc=document.querySelector('.zero-score-calc');
+  if(!calc) return null;
+  return {
+    rows:Array.from(calc.querySelectorAll('.zero-calc-row')).map(row=>({
+      type:row.dataset.rowType || 'penance',
+      current:row.querySelector('.zero-calc-current')?.value ?? '0',
+      target:row.querySelector('.zero-calc-target')?.value ?? '0',
+      star:!!row.querySelector('.zero-star-toggle.active'),
+      currentHonor:normalizeZeroHonorValue(row.querySelector('.zero-current-honor')?.value ?? ''),
+      targetHonor:normalizeZeroHonorValue(row.querySelector('.zero-target-honor')?.value ?? '')
+    }))
+  };
+}
+function applyZeroScoreState(zeroScore){
+  const calc=document.querySelector('.zero-score-calc');
+  if(!calc) return;
+  const rows=Array.isArray(zeroScore?.rows) ? zeroScore.rows : [];
+  calc.querySelectorAll('.zero-calc-row').forEach((row,idx)=>{
+    const saved=rows[idx] || {};
+    const current=row.querySelector('.zero-calc-current');
+    const target=row.querySelector('.zero-calc-target');
+    const currentHonor=row.querySelector('.zero-current-honor');
+    const targetHonor=row.querySelector('.zero-target-honor');
+    const starBtn=row.querySelector('.zero-star-toggle');
+    if(current) current.value=String(saved.current ?? '0');
+    if(target) target.value=String(saved.target ?? '0');
+    if(currentHonor) currentHonor.value=normalizeZeroHonorValue(saved.currentHonor ?? '').toUpperCase();
+    if(targetHonor) targetHonor.value=normalizeZeroHonorValue(saved.targetHonor ?? '').toUpperCase();
+    if(starBtn){
+      const active=!!saved.star;
+      starBtn.classList.toggle('active', active);
+      starBtn.setAttribute('aria-pressed', active ? 'true' : 'false');
+      starBtn.textContent=active ? 'ON +2' : '+2';
+    }
+  });
+  updateZeroScoreCalculator();
+}
+function toggleZeroScoreStar(trigger){
+  if(!trigger) return;
+  const active=!trigger.classList.contains('active');
+  trigger.classList.toggle('active', active);
+  trigger.setAttribute('aria-pressed', active ? 'true' : 'false');
+  trigger.textContent=active ? 'ON +2' : '+2';
+  updateZeroScoreCalculator();
+}
+function normalizeZeroHonorInputElement(el){
+  if(!el || !el.classList?.contains('zero-honor-input')) return;
+  const normalized=normalizeZeroHonorValue(el.value);
+  el.value=normalized ? normalized.toUpperCase() : '';
+}
+function bindZeroScoreCalculator(){
+  if(document.documentElement.dataset.zeroScoreCalcBound==='1') return;
+  document.documentElement.dataset.zeroScoreCalcBound='1';
+  const updateAndSave=(target)=>{
+    if(!(target && target.closest && target.closest('.zero-score-calc'))) return;
+    normalizeZeroHonorInputElement(target);
+    updateZeroScoreCalculator();
+    if(!isLoadingState && !suppressSave) saveState({silent:true});
+  };
+  document.addEventListener('input', e=>updateAndSave(e.target), true);
+  document.addEventListener('change', e=>updateAndSave(e.target), true);
+}
+function setZeroRankTab(trigger){
+  const card=trigger && trigger.closest ? trigger.closest('.zero-rank-card') : null;
+  if(!card) return;
+  const key=trigger.dataset.zeroRankTab || 'rank';
+  card.querySelectorAll('.zero-rank-tab').forEach(btn=>{
+    const active=btn.dataset.zeroRankTab===key;
+    btn.classList.toggle('active', active);
+    btn.setAttribute('aria-selected', active ? 'true' : 'false');
+  });
+  card.querySelectorAll('.zero-rank-panel').forEach(panel=>{
+    panel.classList.toggle('active', panel.dataset.zeroRankPanel===key);
+  });
+}
 let appEventsBound=false;
 const ACTION_HANDLERS={
   optimizeSP:()=>optimizeSP(),
@@ -2796,6 +3288,10 @@ const ACTION_HANDLERS={
   toggleSpBankApply:()=>toggleSpBankApply(),
   openDpsTable:()=>openDpsTable(),
   openExcelCompare:()=>openExcelCompare(),
+  openMonthRune:()=>openMonthRune(),
+  zeroRankTab:(trigger)=>setZeroRankTab(trigger),
+  zeroScoreStar:(trigger)=>toggleZeroScoreStar(trigger),
+  toggleZeroMobileSummary:(trigger)=>toggleZeroMobileSummary(trigger),
   decreaseFont:()=>changeFontScale(-DPS_CONFIG.ui.fontScaleStep),
   increaseFont:()=>changeFontScale(DPS_CONFIG.ui.fontScaleStep),
   resetFont:()=>resetFontScale(),
@@ -2870,6 +3366,8 @@ function bindAppEvents(){
   bindTraitInputEvents();
   bindDpsTableEvents();
   bindExcelCompareEvents();
+  bindMonthRuneEvents();
+  bindZeroScoreCalculator();
   bindReactiveInputs();
   bindButtonPressFeedback();
 }
@@ -2878,11 +3376,13 @@ function initApp(){
   bindAppEvents();
   installDpsTableButton();
   installExcelCompareButton();
+  installMonthRuneButton();
   renderAppVersion();
   syncEnchantCodeFromInputs(true);
   syncSelectButtons();
   syncBuffChoiceButtons();
   syncExclusiveRuneOptions();
+  updateZeroScoreCalculator();
   formatAllMoneyInputs();
   loadState();
 }

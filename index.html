@@ -3,7 +3,7 @@
 <head>
 <script>
 window.DPS_APP_VERSION = "V 2.0";
-window.DPS_BUILD_VERSION = "2606111918";
+window.DPS_BUILD_VERSION = "2606112105";
 </script>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/>
@@ -95,7 +95,7 @@ setTimeout(function(){
 </div>
 </div>
 <div class="hdr-meta">
-<a class="global-site-link" href="https://sldbox.github.io/site/" rel="noopener noreferrer" target="_blank" title="개복디 넥서스 열기">✨넥서스</a>
+<a class="global-site-link" href="https://sldbox.github.io/site/" rel="noopener noreferrer" target="_blank" title="개복디 넥서스 열기">넥서스 <span aria-hidden="true">↗</span></a>
 <div aria-label="글씨 크기 조절" class="font-scale-ctrl">
 <button class="font-scale-btn" data-action="decreaseFont" title="글씨 축소" type="button">A-</button>
 <button class="font-scale-value" data-action="resetFont" id="fontScaleLabel" title="기본 크기로 복원" type="button">100%</button>
@@ -397,7 +397,238 @@ setTimeout(function(){
 <input id="pCri" type="hidden" value="0"/>
 <input id="sCri" type="hidden" value="0"/>
 <input id="coupon" type="hidden" value="0"/>
+
+<div class="data-card zero-rank-card">
+  <h3 class="zero-rank-title">더제로 승단 정보</h3>
+  <div class="zero-rank-tabs" role="tablist" aria-label="더제로 승단 정보 탭">
+    <button class="zero-rank-tab active" data-action="zeroRankTab" data-zero-rank-tab="rank" type="button" role="tab" aria-selected="true" title="승단표">승단표</button>
+    <button class="zero-rank-tab" data-action="zeroRankTab" data-zero-rank-tab="score" type="button" role="tab" aria-selected="false" title="점수획득">점수</button>
+    <button class="zero-rank-tab" data-action="zeroRankTab" data-zero-rank-tab="benefit" type="button" role="tab" aria-selected="false" title="혜택정보">혜택</button>
+    <button class="zero-rank-tab" data-action="zeroRankTab" data-zero-rank-tab="calc" type="button" role="tab" aria-selected="false" title="점수계산">계산</button>
+  </div>
+  <div class="zero-rank-content">
+    <section class="zero-rank-panel active" data-zero-rank-panel="rank">
+      <div class="zero-table-wrap">
+        <table class="zero-rank-table">
+          <thead><tr><th>승단명</th><th>단계</th><th>필요한 점수</th></tr></thead>
+          <tbody>
+            <tr><td>입문</td><td>1</td><td>0</td></tr>
+<tr><td>견습</td><td>2</td><td>100</td></tr>
+<tr><td>숙련</td><td>3</td><td>150</td></tr>
+<tr><td>전문</td><td>4</td><td>200</td></tr>
+<tr><td>장인</td><td>5</td><td>250</td></tr>
+<tr><td>명장</td><td>6</td><td>300</td></tr>
+<tr><td>명장+</td><td>6+</td><td>350</td></tr>
+<tr><td>도인</td><td>7</td><td>400</td></tr>
+<tr><td>도인+</td><td>7+</td><td>450</td></tr>
+<tr><td>지존</td><td>8</td><td>500</td></tr>
+<tr><td>지존+</td><td>8+</td><td>550</td></tr>
+<tr><td>패왕</td><td>9</td><td>600</td></tr>
+<tr><td>패왕+</td><td>9+</td><td>650</td></tr>
+<tr><td>제왕</td><td>10</td><td>700</td></tr>
+<tr><td>제왕+</td><td>10+</td><td>750</td></tr>
+<tr><td>신황</td><td>11</td><td>800</td></tr>
+<tr><td>신황+</td><td>11+</td><td>850</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+    <section class="zero-rank-panel" data-zero-rank-panel="score">
+      <div class="zero-score-list">
+        <article><h4>고행</h4><ul><li>1~13고행: 1고행당 1점</li><li>14~16고행: 1고행당 2점</li><li>17고행: 3점</li><li>18~20고행: 1고행당 7점</li></ul></article>
+        <article><h4>명예</h4><ul><li>명예 B / A / S / X: 단계별로 2점</li></ul></article>
+        <article><h4>도전의 탑 <small>시즌 3 기준</small></h4><ul><li>41~60층: 1층당 1점</li><li>61~70층: 1층당 2점</li><li>71~90층: 1층당 3점</li></ul></article>
+        <article><h4>명예 도전의 탑</h4><ul><li>50~68층: 2층당 1점</li><li>70~79층: 1층당 1점</li><li>80~90층: 1층당 2점</li></ul></article>
+        <article><h4>기타</h4><ul><li>24스타: 한 난이도 내 협동, DT / RS, 퍼펙트 모두 8별 달성 시 2점</li></ul></article>
+      </div>
+    </section>
+    <section class="zero-rank-panel" data-zero-rank-panel="benefit">
+      <div class="zero-benefit-list">
+        <article class="zero-benefit-rank"><h4><span>[입문]</span><em>0 ~ 99</em></h4><ul><li>룬 강화 성공 보정 +10% 버프 부여</li><li>쥬얼 9개 사용 가능</li></ul></article>
+<article class="zero-benefit-rank"><h4><span>[견습]</span><em>100 ~ 149</em></h4><ul><li>룬 강화 성공 보정 +30% 버프 부여</li><li>쥬얼 10개 사용 가능</li><li>인챈트북 점수 +20%</li></ul></article>
+<article class="zero-benefit-rank"><h4><span>[숙련]</span><em>150 ~ 199</em></h4><ul><li>전설 쥬얼 기본 드랍률 보정 +10%</li><li>룬 강화 성공 보정 +50% 버프 부여</li><li>쥬얼 11개 사용 가능</li><li>인챈트북 점수 +30%</li><li>300라운드 도달 시 각성석 1개 추가 지급</li></ul></article>
+<article class="zero-benefit-rank"><h4><span>[전문]</span><em>200 ~ 249</em></h4><ul><li>전설 쥬얼 기본 드랍률 보정 +20%</li><li>룬 강화 성공 보정 +75% 버프 부여</li><li>쥬얼 12개 사용 가능</li><li>총 데미지 +2%</li><li>인챈트북 점수 +40%</li><li>300라운드 도달 시 각성석 1개 추가 지급</li><li>일일쿠폰 등록 시 인챈트북 1개 추가 지급</li></ul></article>
+<article class="zero-benefit-rank"><h4><span>[장인]</span><em>250 ~ 299</em></h4><ul><li>전설 쥬얼 기본 드랍률 보정 +30%</li><li>룬 강화 성공 보정 +100% 버프 부여</li><li>쥬얼 13개 사용 가능</li><li>총 데미지 +4%</li><li>인챈트북 점수 +50%</li><li>300라운드 도달 시 각성석 1개 추가 지급</li><li>일일쿠폰 등록 시 인챈트북 1개 추가 지급</li></ul></article>
+<article class="zero-benefit-rank"><h4><span>[명장]</span><em>300 ~ 349</em></h4><ul><li>전설 쥬얼 기본 드랍률 보정 +40%</li><li>룬 강화 성공 보정 +125% 버프 부여</li><li>쥬얼 14개 사용 가능</li><li>라운드 한계 경험치 +1</li><li>총 데미지 +6%</li><li>인챈트북 점수 +60%</li><li>300라운드 도달 시 각성석 2개 추가 지급</li><li>일일쿠폰 등록 시 인챈트북 1개 추가 지급</li><li>고철 획득시 50% 확률로 1개 추가획득</li></ul></article>
+<article class="zero-benefit-rank"><h4><span>[명장+]</span><em>350 ~ 399</em></h4><ul><li>전설 쥬얼 기본 드랍률 보정 +45%</li><li>룬 강화 성공 보정 +125% 버프 부여</li><li>쥬얼 15개 사용 가능</li><li>라운드 한계 경험치 +1</li><li>총 데미지 +6%</li><li>인챈트북 점수 +70%</li><li>XP5 +1</li><li>300라운드 도달 시 각성석 2개 추가 지급</li><li>일일쿠폰 등록 시 인챈트북 1개 추가 지급</li><li>고철 획득시 50% 확률로 1개 추가획득</li></ul></article>
+<article class="zero-benefit-rank"><h4><span>[도인]</span><em>400 ~ 449</em></h4><ul><li>전설 쥬얼 기본 드랍률 보정 +50%</li><li>룬 강화 성공 보정 +150% 버프 부여</li><li>쥬얼 16개 사용 가능</li><li>라운드 한계 경험치 +2</li><li>총 데미지 +8%</li><li>인챈트북 점수 +80%</li><li>XP5 +1</li><li>300라운드에 각성석 2개 추가 지급</li><li>일일 쿠폰 등록 시 인챈트북 2개 추가 지급</li><li>고철 획득시 50% 확률로 1개 추가획득</li><li>카오스 · 코스모스 룬 옵션 최소치 추가 보정</li></ul></article>
+<article class="zero-benefit-rank"><h4><span>[도인+]</span><em>450 ~ 499</em></h4><ul><li>전설 쥬얼 기본 드랍률 보정 +55%</li><li>룬 강화 성공 보정 +150% 버프 부여</li><li>쥬얼 17개 사용 가능</li><li>라운드 한계 경험치 +2</li><li>총 데미지 +8%</li><li>인챈트북 점수 +90%</li><li>XP5 +2</li><li>300라운드에 각성석 2개 추가 지급</li><li>일일 쿠폰 등록 시 인챈트북 2개 추가 지급</li><li>고철 획득시 50% 확률로 1개 추가획득</li><li>카오스 · 코스모스 룬 옵션 최소치 추가 보정</li></ul></article>
+<article class="zero-benefit-rank"><h4><span>[지존]</span><em>500 ~ 549</em></h4><ul><li>전설 쥬얼 기본 드랍률 보정 +60%</li><li>룬 강화 성공 보정 +200% 버프 부여</li><li>쥬얼 18개 사용 가능</li><li>라운드 한계 경험치 +3</li><li>총 데미지 +10%</li><li>인챈트북 점수 +100%</li><li>XP5 +2</li><li>300라운드에 각성석 2개 추가 지급</li><li>일일 쿠폰 등록 시 인챈트북 2개 추가 지급</li><li>고철 획득시 50% 확률로 1개 추가획득</li><li>카오스 · 코스모스 룬 옵션 최소치 추가 보정</li><li>고유룬 6개 장착 가능</li></ul></article>
+<article class="zero-benefit-rank"><h4><span>[지존+]</span><em>550 ~ 599</em></h4><ul><li>전설 쥬얼 기본 드랍률 보정 +65%</li><li>룬 강화 성공 보정 +200% 버프 부여</li><li>쥬얼 19개 사용 가능</li><li>라운드 한계 경험치 +3</li><li>총 데미지 +10%</li><li>인챈트북 점수 +110%</li><li>XP5 +3</li><li>300라운드에 각성석 2개 추가 지급</li><li>일일 쿠폰 등록 시 인챈트북 2개 추가 지급</li><li>고철 획득시 50% 확률로 1개 추가획득</li><li>카오스 · 코스모스 룬 옵션 최소치 추가 보정</li><li>고유룬 6개 장착 가능</li></ul></article>
+<article class="zero-benefit-rank"><h4><span>[패왕]</span><em>600 ~ 649</em></h4><ul><li>전설 쥬얼 기본 드랍률 보정 +70%</li><li>룬 강화 성공 보정 +250% 버프 부여</li><li>쥬얼 20개 사용 가능</li><li>라운드 한계 경험치 +4</li><li>총 데미지 +12%</li><li>인챈트북 점수 +120%</li><li>XP5 +3</li><li>300라운드에 각성석 3개 추가 지급</li><li>일일 쿠폰 등록 시 인챈트북 2개 추가 지급</li><li>고철 획득시 100% 확률로 1개 추가획득</li><li>카오스 · 코스모스 룬 옵션 최소치 추가 보정</li><li>고유룬 6개 장착 가능</li><li>고철 상점의 부적 효과 1.5배 증폭</li></ul></article>
+<article class="zero-benefit-rank"><h4><span>[패왕+]</span><em>650 ~ 699</em></h4><ul><li>전설 쥬얼 기본 드랍률 보정 +80%</li><li>룬 강화 성공 보정 +250% 버프 부여</li><li>쥬얼 21개 사용 가능</li><li>라운드 한계 경험치 +4</li><li>총 데미지 +13%</li><li>인챈트북 점수 +130%</li><li>XP5 +4</li><li>300라운드에 각성석 3개 추가 지급</li><li>일일 쿠폰 등록 시 인챈트북 2개 추가 지급</li><li>고철 획득시 100% 확률로 1개 추가획득</li><li>카오스 · 코스모스 룬 옵션 최소치 추가 보정</li><li>고유룬 6개 장착 가능</li><li>고철 상점의 부적 효과 1.5배 증폭</li></ul></article>
+<article class="zero-benefit-rank"><h4><span>[제왕]</span><em>700 ~ 749</em></h4><ul><li>전설 쥬얼 기본 드랍률 보정 +100%</li><li>룬 강화 성공 보정 +300% 버프 부여</li><li>쥬얼 22개 사용 가능</li><li>라운드 한계 경험치 +5</li><li>총 데미지 +14%</li><li>인챈트북 점수 +140%</li><li>XP5 +4</li><li>300라운드에 각성석 3개 추가 지급</li><li>일일 쿠폰 등록 시 인챈트북 3개 추가 지급</li><li>고철 획득시 100% 확률로 1개 추가획득</li><li>카오스 · 코스모스 룬 옵션 최소치 추가 보정</li><li>고유룬 6개 장착 가능</li><li>고철 상점의 부적 효과 1.5배 증폭</li><li>카오스 · 코스모스 룬 최종 드랍 확률 2배</li></ul></article>
+<article class="zero-benefit-rank"><h4><span>[제왕+]</span><em>750 ~ 799</em></h4><ul><li>전설 쥬얼 기본 드랍률 보정 +120%</li><li>룬 강화 성공 보정 +300% 버프 부여</li><li>쥬얼 23개 사용 가능</li><li>라운드 한계 경험치 +5</li><li>총 데미지 +15%</li><li>인챈트북 점수 +150%</li><li>XP5 +5</li><li>300라운드에 각성석 3개 추가 지급</li><li>일일 쿠폰 등록 시 인챈트북 3개 추가 지급</li><li>고철 획득시 100% 확률로 1개 추가획득</li><li>카오스 · 코스모스 룬 옵션 최소치 추가 보정</li><li>고유룬 6개 장착 가능</li><li>고철 상점의 부적 효과 1.5배 증폭</li><li>카오스 · 코스모스 룬 최종 드랍 확률 2배</li></ul></article>
+<article class="zero-benefit-rank"><h4><span>[신황]</span><em>800 ~ 849</em></h4><ul><li>전설 쥬얼 기본 드랍률 보정 +140%</li><li>룬 강화 성공 보정 +350% 버프 부여</li><li>쥬얼 25개 사용 가능</li><li>라운드 한계 경험치 +6</li><li>총 데미지 +16%</li><li>인챈트북 점수 +160%</li><li>XP5 +5</li><li>300라운드에 각성석 3개 추가 지급</li><li>일일 쿠폰 등록 시 인챈트북 4개 추가 지급</li><li>고철 획득시 100% 확률로 1개 추가획득</li><li>카오스 · 코스모스 룬 옵션 최소치 추가 보정</li><li>고유룬 7개 장착 가능</li><li>고철 상점의 부적 효과 1.5배 증폭</li><li>카오스 · 코스모스 룬 최종 드랍 확률 2배</li></ul></article>
+<article class="zero-benefit-rank"><h4><span>[신황+]</span><em>850 ~</em></h4><ul><li>전설 쥬얼 기본 드랍률 보정 +160%</li><li>룬 강화 성공 보정 +350% 버프 부여</li><li>쥬얼 26개 사용 가능</li><li>라운드 한계 경험치 +6</li><li>총 데미지 +17%</li><li>인챈트북 점수 +170%</li><li>XP5 +6</li><li>300라운드에 각성석 3개 추가 지급</li><li>일일 쿠폰 등록 시 인챈트북 4개 추가 지급</li><li>고철 획득시 100% 확률로 1개 추가획득</li><li>카오스 · 코스모스 룬 옵션 최소치 추가 보정</li><li>고유룬 7개 장착 가능</li><li>고철 상점의 부적 효과 1.5배 증폭</li><li>카오스 · 코스모스 룬 최종 드랍 확률 2배</li></ul></article>
+      </div>
+    </section>
+
+    <section class="zero-rank-panel" data-zero-rank-panel="calc">
+      <div class="zero-score-calc">
+        <div class="zero-calc-summary">
+          <div class="zero-calc-result-card zero-current-score-box"><span>현재 승단점수</span><b class="zero-current-score">0</b></div>
+          <div class="zero-calc-result-card"><span>목표 추가점수</span><b class="zero-total-add">0</b></div>
+          <div class="zero-calc-result-card"><span>목표 완료</span><b class="zero-target-score">0</b></div>
+          <div class="zero-calc-result-card zero-rank-result-card"><span>현재 / 목표 승단</span><b><em class="zero-current-rank">입문</em><i>→</i><em class="zero-target-rank">입문</em></b></div>
+        </div>
+        <div class="zero-calc-table-wrap">
+          <table class="zero-calc-table">
+            <thead><tr><th>난이도</th><th>현재</th><th>목표</th><th>24스타</th><th>현재 명예</th><th>목표 명예</th><th>추가</th></tr></thead>
+            <tbody>
+          <tr class="zero-calc-row" data-row-type="penance">
+            <td class="zero-calc-name">Practice</td>
+            <td><input class="zero-calc-current" inputmode="numeric" min="0" max="20" type="number" value="0"/></td>
+            <td><input class="zero-calc-target" inputmode="numeric" min="0" max="20" type="number" value="0"/></td>
+            <td><button class="zero-star-toggle" data-action="zeroScoreStar" type="button" aria-pressed="false">+2</button></td>
+            <td><input class="zero-current-honor zero-honor-input" inputmode="latin" maxlength="1" placeholder="B" type="text" value=""/></td>
+            <td><input class="zero-target-honor zero-honor-input" inputmode="latin" maxlength="1" placeholder="X" type="text" value=""/></td>
+            <td><b class="zero-row-score">0</b></td>
+          </tr>
+          <tr class="zero-calc-row" data-row-type="penance">
+            <td class="zero-calc-name">Very Easy</td>
+            <td><input class="zero-calc-current" inputmode="numeric" min="0" max="20" type="number" value="0"/></td>
+            <td><input class="zero-calc-target" inputmode="numeric" min="0" max="20" type="number" value="0"/></td>
+            <td><button class="zero-star-toggle" data-action="zeroScoreStar" type="button" aria-pressed="false">+2</button></td>
+            <td><input class="zero-current-honor zero-honor-input" inputmode="latin" maxlength="1" placeholder="B" type="text" value=""/></td>
+            <td><input class="zero-target-honor zero-honor-input" inputmode="latin" maxlength="1" placeholder="X" type="text" value=""/></td>
+            <td><b class="zero-row-score">0</b></td>
+          </tr>
+          <tr class="zero-calc-row" data-row-type="penance">
+            <td class="zero-calc-name">Easy</td>
+            <td><input class="zero-calc-current" inputmode="numeric" min="0" max="20" type="number" value="0"/></td>
+            <td><input class="zero-calc-target" inputmode="numeric" min="0" max="20" type="number" value="0"/></td>
+            <td><button class="zero-star-toggle" data-action="zeroScoreStar" type="button" aria-pressed="false">+2</button></td>
+            <td><input class="zero-current-honor zero-honor-input" inputmode="latin" maxlength="1" placeholder="B" type="text" value=""/></td>
+            <td><input class="zero-target-honor zero-honor-input" inputmode="latin" maxlength="1" placeholder="X" type="text" value=""/></td>
+            <td><b class="zero-row-score">0</b></td>
+          </tr>
+          <tr class="zero-calc-row" data-row-type="penance">
+            <td class="zero-calc-name">Normal</td>
+            <td><input class="zero-calc-current" inputmode="numeric" min="0" max="20" type="number" value="0"/></td>
+            <td><input class="zero-calc-target" inputmode="numeric" min="0" max="20" type="number" value="0"/></td>
+            <td><button class="zero-star-toggle" data-action="zeroScoreStar" type="button" aria-pressed="false">+2</button></td>
+            <td><input class="zero-current-honor zero-honor-input" inputmode="latin" maxlength="1" placeholder="B" type="text" value=""/></td>
+            <td><input class="zero-target-honor zero-honor-input" inputmode="latin" maxlength="1" placeholder="X" type="text" value=""/></td>
+            <td><b class="zero-row-score">0</b></td>
+          </tr>
+          <tr class="zero-calc-row" data-row-type="penance">
+            <td class="zero-calc-name">Hard</td>
+            <td><input class="zero-calc-current" inputmode="numeric" min="0" max="20" type="number" value="0"/></td>
+            <td><input class="zero-calc-target" inputmode="numeric" min="0" max="20" type="number" value="0"/></td>
+            <td><button class="zero-star-toggle" data-action="zeroScoreStar" type="button" aria-pressed="false">+2</button></td>
+            <td><input class="zero-current-honor zero-honor-input" inputmode="latin" maxlength="1" placeholder="B" type="text" value=""/></td>
+            <td><input class="zero-target-honor zero-honor-input" inputmode="latin" maxlength="1" placeholder="X" type="text" value=""/></td>
+            <td><b class="zero-row-score">0</b></td>
+          </tr>
+          <tr class="zero-calc-row" data-row-type="penance">
+            <td class="zero-calc-name">Very Hard</td>
+            <td><input class="zero-calc-current" inputmode="numeric" min="0" max="20" type="number" value="0"/></td>
+            <td><input class="zero-calc-target" inputmode="numeric" min="0" max="20" type="number" value="0"/></td>
+            <td><button class="zero-star-toggle" data-action="zeroScoreStar" type="button" aria-pressed="false">+2</button></td>
+            <td><input class="zero-current-honor zero-honor-input" inputmode="latin" maxlength="1" placeholder="B" type="text" value=""/></td>
+            <td><input class="zero-target-honor zero-honor-input" inputmode="latin" maxlength="1" placeholder="X" type="text" value=""/></td>
+            <td><b class="zero-row-score">0</b></td>
+          </tr>
+          <tr class="zero-calc-row" data-row-type="penance">
+            <td class="zero-calc-name">Hell</td>
+            <td><input class="zero-calc-current" inputmode="numeric" min="0" max="20" type="number" value="0"/></td>
+            <td><input class="zero-calc-target" inputmode="numeric" min="0" max="20" type="number" value="0"/></td>
+            <td><button class="zero-star-toggle" data-action="zeroScoreStar" type="button" aria-pressed="false">+2</button></td>
+            <td><input class="zero-current-honor zero-honor-input" inputmode="latin" maxlength="1" placeholder="B" type="text" value=""/></td>
+            <td><input class="zero-target-honor zero-honor-input" inputmode="latin" maxlength="1" placeholder="X" type="text" value=""/></td>
+            <td><b class="zero-row-score">0</b></td>
+          </tr>
+          <tr class="zero-calc-row" data-row-type="penance">
+            <td class="zero-calc-name">Inferno</td>
+            <td><input class="zero-calc-current" inputmode="numeric" min="0" max="20" type="number" value="0"/></td>
+            <td><input class="zero-calc-target" inputmode="numeric" min="0" max="20" type="number" value="0"/></td>
+            <td><button class="zero-star-toggle" data-action="zeroScoreStar" type="button" aria-pressed="false">+2</button></td>
+            <td><input class="zero-current-honor zero-honor-input" inputmode="latin" maxlength="1" placeholder="B" type="text" value=""/></td>
+            <td><input class="zero-target-honor zero-honor-input" inputmode="latin" maxlength="1" placeholder="X" type="text" value=""/></td>
+            <td><b class="zero-row-score">0</b></td>
+          </tr>
+          <tr class="zero-calc-row" data-row-type="penance">
+            <td class="zero-calc-name">Lunatic</td>
+            <td><input class="zero-calc-current" inputmode="numeric" min="0" max="20" type="number" value="0"/></td>
+            <td><input class="zero-calc-target" inputmode="numeric" min="0" max="20" type="number" value="0"/></td>
+            <td><button class="zero-star-toggle" data-action="zeroScoreStar" type="button" aria-pressed="false">+2</button></td>
+            <td><input class="zero-current-honor zero-honor-input" inputmode="latin" maxlength="1" placeholder="B" type="text" value=""/></td>
+            <td><input class="zero-target-honor zero-honor-input" inputmode="latin" maxlength="1" placeholder="X" type="text" value=""/></td>
+            <td><b class="zero-row-score">0</b></td>
+          </tr>
+          <tr class="zero-calc-row" data-row-type="penance">
+            <td class="zero-calc-name">Holic</td>
+            <td><input class="zero-calc-current" inputmode="numeric" min="0" max="20" type="number" value="0"/></td>
+            <td><input class="zero-calc-target" inputmode="numeric" min="0" max="20" type="number" value="0"/></td>
+            <td><button class="zero-star-toggle" data-action="zeroScoreStar" type="button" aria-pressed="false">+2</button></td>
+            <td><input class="zero-current-honor zero-honor-input" inputmode="latin" maxlength="1" placeholder="B" type="text" value=""/></td>
+            <td><input class="zero-target-honor zero-honor-input" inputmode="latin" maxlength="1" placeholder="X" type="text" value=""/></td>
+            <td><b class="zero-row-score">0</b></td>
+          </tr>
+          <tr class="zero-calc-row" data-row-type="penance">
+            <td class="zero-calc-name">Epic</td>
+            <td><input class="zero-calc-current" inputmode="numeric" min="0" max="20" type="number" value="0"/></td>
+            <td><input class="zero-calc-target" inputmode="numeric" min="0" max="20" type="number" value="0"/></td>
+            <td><button class="zero-star-toggle" data-action="zeroScoreStar" type="button" aria-pressed="false">+2</button></td>
+            <td><input class="zero-current-honor zero-honor-input" inputmode="latin" maxlength="1" placeholder="B" type="text" value=""/></td>
+            <td><input class="zero-target-honor zero-honor-input" inputmode="latin" maxlength="1" placeholder="X" type="text" value=""/></td>
+            <td><b class="zero-row-score">0</b></td>
+          </tr>
+          <tr class="zero-calc-row" data-row-type="penance">
+            <td class="zero-calc-name">Ultimate</td>
+            <td><input class="zero-calc-current" inputmode="numeric" min="0" max="20" type="number" value="0"/></td>
+            <td><input class="zero-calc-target" inputmode="numeric" min="0" max="20" type="number" value="0"/></td>
+            <td><button class="zero-star-toggle" data-action="zeroScoreStar" type="button" aria-pressed="false">+2</button></td>
+            <td><input class="zero-current-honor zero-honor-input" inputmode="latin" maxlength="1" placeholder="B" type="text" value=""/></td>
+            <td><input class="zero-target-honor zero-honor-input" inputmode="latin" maxlength="1" placeholder="X" type="text" value=""/></td>
+            <td><b class="zero-row-score">0</b></td>
+          </tr>
+          <tr class="zero-calc-row" data-row-type="penance">
+            <td class="zero-calc-name">Impossible</td>
+            <td><input class="zero-calc-current" inputmode="numeric" min="0" max="20" type="number" value="0"/></td>
+            <td><input class="zero-calc-target" inputmode="numeric" min="0" max="20" type="number" value="0"/></td>
+            <td><button class="zero-star-toggle" data-action="zeroScoreStar" type="button" aria-pressed="false">+2</button></td>
+            <td><input class="zero-current-honor zero-honor-input" inputmode="latin" maxlength="1" placeholder="B" type="text" value=""/></td>
+            <td><input class="zero-target-honor zero-honor-input" inputmode="latin" maxlength="1" placeholder="X" type="text" value=""/></td>
+            <td><b class="zero-row-score">0</b></td>
+          </tr>
+          <tr class="zero-calc-row" data-row-type="penance">
+            <td class="zero-calc-name">The Final</td>
+            <td><input class="zero-calc-current" inputmode="numeric" min="0" max="20" type="number" value="0"/></td>
+            <td><input class="zero-calc-target" inputmode="numeric" min="0" max="20" type="number" value="0"/></td>
+            <td><button class="zero-star-toggle" data-action="zeroScoreStar" type="button" aria-pressed="false">+2</button></td>
+            <td><input class="zero-current-honor zero-honor-input" inputmode="latin" maxlength="1" placeholder="B" type="text" value=""/></td>
+            <td><input class="zero-target-honor zero-honor-input" inputmode="latin" maxlength="1" placeholder="X" type="text" value=""/></td>
+            <td><b class="zero-row-score">0</b></td>
+          </tr>
+          <tr class="zero-calc-row zero-calc-tower-row" data-row-type="tower">
+            <td class="zero-calc-name">도전의 탑</td>
+            <td><input class="zero-calc-current" inputmode="numeric" min="0" max="90" type="number" value="0"/></td>
+            <td><input class="zero-calc-target" inputmode="numeric" min="0" max="90" type="number" value="0"/></td>
+            <td><span class="zero-calc-note">층수 입력</span></td>
+            <td><span class="zero-calc-dash">—</span></td>
+            <td><span class="zero-calc-dash">—</span></td>
+            <td><b class="zero-row-score">0</b></td>
+          </tr>
+          <tr class="zero-calc-row zero-calc-tower-row" data-row-type="honorTower">
+            <td class="zero-calc-name">명예 도탑</td>
+            <td><input class="zero-calc-current" inputmode="numeric" min="0" max="90" type="number" value="0"/></td>
+            <td><input class="zero-calc-target" inputmode="numeric" min="0" max="90" type="number" value="0"/></td>
+            <td><span class="zero-calc-note">층수 입력</span></td>
+            <td><span class="zero-calc-dash">—</span></td>
+            <td><span class="zero-calc-dash">—</span></td>
+            <td><b class="zero-row-score">0</b></td>
+          </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </div>
 </div>
+</div>
+
 <div class="col-right">
 <div class="trait-board-panel">
 <div class="tp-head">
@@ -457,6 +688,7 @@ setTimeout(function(){
 <span id="enemyQuickView" class="enemy-quick-hidden" aria-hidden="true">방어 0 / 체력 0 / 실드 0</span>
 </div>
 </div>
+
 <div class="data-card bus-cut-card">
 <h3 class="bus-cut-title"><span>버스보드</span><small class="bus-cut-note">총 SP에 비례하여 계산됨</small></h3>
 <table class="mini-table"><thead><tr><th>버스 단계</th><th>2인 협동</th><th>3인 협동</th></tr></thead><tbody id="xpCutRows"></tbody></table>
