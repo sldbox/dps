@@ -3,7 +3,29 @@
 <head>
 <script>
 window.DPS_APP_VERSION = "V 2.1";
-window.DPS_BUILD_VERSION = "2606130125";
+window.DPS_BUILD_VERSION = "2606130200";
+window.DPS_ASSET_VERSIONS = {
+  "app.js": "2606130200",
+  "style.css": "2606130200",
+  "data.js": "2606130200",
+  "image/logo.png": "2606130200",
+  "image/icon.png": "2606130200"
+};
+window.dpsAssetVersion = function(key){
+  var versions = window.DPS_ASSET_VERSIONS || {};
+  return versions[key] || 'dev';
+};
+window.dpsAssetUrl = function(src, key){
+  var version = window.dpsAssetVersion(key || src.replace(/^\.\//, ''));
+  var separator = src.indexOf('?') === -1 ? '?' : '&';
+  return src + separator + 'v=' + encodeURIComponent(version);
+};
+window.dpsCacheSignature = function(){
+  var keys = ['app.js', 'style.css', 'data.js', 'image/logo.png', 'image/icon.png'];
+  return keys.map(function(key){
+    return key + ':' + window.dpsAssetVersion(key);
+  }).join('|');
+};
 </script>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/>
@@ -39,27 +61,28 @@ setTimeout(function(){
 <link crossorigin="" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" rel="stylesheet"/>
 <script>
 (function(){
-  var version=window.DPS_BUILD_VERSION || 'dev';
-  var logo='https://sldbox.github.io/dps/logo/logo.png?v=' + version;
-  var icon='https://sldbox.github.io/dps/logo/icon.png?v=' + version;
+  var assetUrl = window.dpsAssetUrl;
+  var versionSignature = window.dpsCacheSignature();
+  var logo = assetUrl('https://sldbox.github.io/dps/logo/logo.png', 'image/logo.png');
+  var icon = assetUrl('https://sldbox.github.io/dps/logo/icon.png', 'image/icon.png');
   try{
-    var key='gaebokdi_dps_build_version';
+    var key='gaebokdi_dps_asset_versions';
     var prev=localStorage.getItem(key);
-    if(prev && prev!==version){
-      localStorage.setItem(key, version);
+    if(prev && prev!==versionSignature){
+      localStorage.setItem(key, versionSignature);
       if('caches' in window){
         caches.keys().then(function(keys){
           return Promise.all(keys.map(function(k){ return caches.delete(k); }));
         }).catch(function(){});
       }
     }
-    localStorage.setItem(key, version);
+    localStorage.setItem(key, versionSignature);
   }catch(e){}
   document.write('<meta content="' + logo + '" property="og:image">');
   document.write('<meta content="' + logo + '" name="twitter:image">');
   document.write('<link href="' + icon + '" rel="icon" type="image/png">');
   document.write('<link href="' + icon + '" rel="apple-touch-icon">');
-  document.write('<link rel="stylesheet" href="./style.css?v=' + version + '">');
+  document.write('<link rel="stylesheet" href="' + assetUrl('./style.css', 'style.css') + '">');
 })();
 </script>
 </head>
@@ -713,7 +736,8 @@ setTimeout(function(){
 <div aria-live="polite" class="toast-root" id="toastRoot"></div>
 <script>
 ['data','app'].forEach(function(name){
-  document.write('<script src="./' + name + '.js?v=' + (window.DPS_BUILD_VERSION || 'dev') + '" defer><\/script>');
+  var fileName = name + '.js';
+  document.write('<script src="' + window.dpsAssetUrl('./' + fileName, fileName) + '" defer><\/script>');
 });
 </script>
 </body>
