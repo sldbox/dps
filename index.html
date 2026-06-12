@@ -2,8 +2,8 @@
 <html lang="ko" class="dps-booting">
 <head>
 <script>
-window.DPS_APP_VERSION = "V 2.0";
-window.DPS_BUILD_VERSION = "2606112315";
+window.DPS_APP_VERSION = "V 2.13";
+window.DPS_BUILD_VERSION = "2606130045";
 </script>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/>
@@ -95,7 +95,6 @@ setTimeout(function(){
 </div>
 </div>
 <div class="hdr-meta">
-<a class="global-site-link" href="https://sldbox.github.io/site/" rel="noopener noreferrer" title="개복디 넥서스 열기">넥서스 <span aria-hidden="true">↗</span></a>
 <div aria-label="글씨 크기 조절" class="font-scale-ctrl">
 <button class="font-scale-btn" data-action="decreaseFont" title="글씨 축소" type="button">A-</button>
 <button class="font-scale-value" data-action="resetFont" id="fontScaleLabel" title="기본 크기로 복원" type="button">100%</button>
@@ -106,12 +105,16 @@ setTimeout(function(){
 <div class="col-work">
 <div class="col-left">
 <div class="sg priority">
-<div class="sg-title trait-work-head"><span>저장복구</span><span aria-live="polite" class="storage-status idle" id="storageStatusView">저장 대기</span></div>
-<div class="save-row">
-<button class="btn subtle" data-action="saveState" type="button">현재값 저장</button>
-<button class="btn subtle" data-action="clearSavedState" type="button">저장값 삭제</button>
+<div class="sg-title trait-work-head"><span>편의기능</span><span aria-live="polite" class="storage-status idle" id="storageStatusView">저장 대기</span></div>
+<div class="save-row convenience-row convenience-tools-row">
+<button class="btn subtle" data-action="openDpsTable" id="dpsTableOpenBtn" type="button">DPS표</button>
+<button class="btn subtle" data-action="openExcelCompare" id="excelCompareOpenBtn" type="button">비교하기</button>
+<button class="btn subtle" data-action="openMonthRune" id="monthRuneOpenBtn" title="이달의 룬 정보 보기" type="button">이달의룬</button>
+<a class="btn subtle convenience-link global-site-link" href="https://sldbox.github.io/site/" rel="noopener noreferrer" target="_blank" title="개복디 넥서스 이동">넥서스 <span aria-hidden="true">↗</span></a>
 </div>
-<div class="save-row">
+<div class="save-row convenience-row convenience-storage-row">
+<button class="btn subtle" data-action="saveState" type="button">입력값 저장</button>
+<button class="btn subtle" data-action="clearSavedState" type="button">입력값 삭제</button>
 <button class="btn subtle" data-action="exportStateBackup" type="button">입력값 백업</button>
 <button class="btn subtle" data-action="importStateBackup" type="button">입력값 복원</button>
 <input accept=".txt,.json,application/json,text/plain" class="hidden-field" id="backupFileInput" type="file"/>

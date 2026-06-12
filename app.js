@@ -6,7 +6,7 @@
    05. 핵심 계산 엔진
    06. 메인 화면 렌더링 / 재계산
    07. DPS 표 모달
-   08. 엑셀 비교 / 엑셀 적용
+   08. 비교하기 / 변경값 적용
    09. 특성보드 / 최적화 / 초기화
    10. 저장 / 복구 / JSON 백업
    11. 화면 제어 / 글자 크기 / 위험 작업 확인
@@ -18,13 +18,14 @@
 
   const MODES = ['is-pc-landscape', 'is-pc-portrait', 'is-tablet', 'is-mobile', 'is-portrait-view', 'is-mobile-device', 'is-tablet-device', 'is-narrow-mobile', 'is-tabbed'];
   const MOBILE_PAGES = [
+    { key: 'convenience', label: '편의기능', selectors: ['.sg.priority'] },
     { key: 'spec', label: '기본정보', selectors: ['.xp-sp-card'] },
     { key: 'rune-spec', label: '룬정보', selectors: ['.clean-rune-card'] },
     { key: 'rune-effect', label: '룬효과/버프', selectors: ['.unit-enhance-card'] },
     { key: 'trait', label: '특성보드', selectors: ['.col-right'] },
     { key: 'result', label: '스탯보드', selectors: ['.stat-dps-card'] },
     { key: 'zero-rank', label: '승단', selectors: ['.zero-rank-card'] },
-    { key: 'save', label: '기타', selectors: ['.sg.priority', '.bus-cut-card', '.final-damage-card'] }
+    { key: 'save', label: '기타', selectors: ['.bus-cut-card', '.final-damage-card'] }
   ];
 
   const state = {
@@ -298,9 +299,8 @@ var DPS_CONFIG={
   },
 
   dpsTable:{
-    difficulties:['Practice','Very Easy','Easy','Normal','Hard','Very Hard','Hell','Inferno','Lunatic','Holic','Epic','Ultimate','Impossible','The Final'],
-    rounds:[{round:270,armor:1570},{round:300,armor:2470}],
-    defaultRound:270,
+    difficulties:['Practice','Very Easy','Easy','Normal','Hard','Very Hard','Hell','Inferno','Lunatic','Holic','Epic','Ultimate','Impossible','The Final','Hall Of Fame','Abyss road','Deep Abyss'],
+    tower:{minFloor:1,maxFloor:90},
     penanceMin:0,
     penanceMax:20,
     decimals:1
@@ -1221,29 +1221,45 @@ function requestAppUpdate(){
    07. DPS 표 모달
    ========================================================= */
 const DPS_TABLE_DIFFICULTIES=DPS_CONFIG.dpsTable.difficulties;
-const DPS_TABLE_ROUNDS=DPS_CONFIG.dpsTable.rounds;
 const DPS_TABLE_PENANCE_MIN=DPS_CONFIG.dpsTable.penanceMin ?? 0;
 const DPS_TABLE_PENANCE_MAX=DPS_CONFIG.dpsTable.penanceMax ?? 20;
 const DPS_TABLE_DECIMALS=DPS_CONFIG.dpsTable.decimals ?? 1;
-let activeDpsTableRound=DPS_CONFIG.dpsTable.defaultRound;
+let activeDpsTableMode='round';
 let dpsTableMinDps='';
 function isDpsTableOpen(){
   return document.getElementById('dpsTableModal')?.classList.contains('is-open') || false;
 }
-function getActiveDpsTableRoundInfo(){
-  return DPS_TABLE_ROUNDS.find(r=>r.round===activeDpsTableRound) || DPS_TABLE_ROUNDS[0];
+function getDpsTableCurrentRound(){
+  return Math.max(1, Math.min(300, Math.round(v('round') || 1)));
+}
+function getDpsTableTowerRange(){
+  const tower=DPS_CONFIG.dpsTable.tower || {};
+  return {
+    min: Math.max(1, Math.round(tower.minFloor || 1)),
+    max: Math.max(1, Math.round(tower.maxFloor || 90))
+  };
+}
+function getDpsTableTowerGroupSize(){
+  const body=document.body;
+  if(body?.classList.contains('is-mobile') || window.innerWidth<=600) return 90;
+  if(body?.classList.contains('is-tablet') || body?.classList.contains('is-pc-portrait') || window.innerWidth<=1024) return 45;
+  return 30;
+}
+function chunkDpsTowerFloors(minFloor, maxFloor, groupSize){
+  const chunks=[];
+  for(let start=minFloor; start<=maxFloor; start+=groupSize){
+    const end=Math.min(maxFloor, start+groupSize-1);
+    const floors=[];
+    for(let floor=start; floor<=end; floor++) floors.push(floor);
+    chunks.push(floors);
+  }
+  return chunks;
 }
 function syncDpsMinDpsInputs(){
   ['dpsTableMinDps','dpsTableMinDpsMain'].forEach(id=>{
     const el=document.getElementById(id);
     if(el && el.value!==dpsTableMinDps) el.value=dpsTableMinDps;
   });
-  const state=document.getElementById('dpsTableMinState');
-  if(state){
-    const minDps=parseDpsTableMinDps();
-    state.textContent=minDps===null ? '위험 기준 미설정' : `최소 DPS ${formatDpsTableValue(minDps)} 적용 중`;
-    state.classList.toggle('is-active', minDps!==null);
-  }
 }
 function setDpsTableMinDps(value){
   dpsTableMinDps=String(value ?? '');
@@ -1264,12 +1280,6 @@ function dpsTableRiskCompareValue(value){
   if(!Number.isFinite(value)) return NaN;
   const factor=10**DPS_TABLE_DECIMALS;
   return Math.round(value*factor)/factor;
-}
-function dpsTablePenanceTierClass(penanceLevel){
-  if(penanceLevel>=18) return 'dps-penance-tier-4';
-  if(penanceLevel>=14) return 'dps-penance-tier-3';
-  if(penanceLevel>=8) return 'dps-penance-tier-2';
-  return 'dps-penance-tier-1';
 }
 function updateDpsRiskViews(currentDps){
   const card=document.querySelector('.dps-card');
@@ -1315,45 +1325,103 @@ function buildDpsTable(round){
   const minDps=parseDpsTableMinDps();
   const currentDiff=vs('diff');
   const currentPen=Math.max(DPS_TABLE_PENANCE_MIN, Math.min(DPS_TABLE_PENANCE_MAX, Math.round(v('penance'))));
-  const currentRound=Math.round(v('round'));
-  const roundCurrent=currentRound===round;
-  const head=DPS_TABLE_DIFFICULTIES.map(d=>`<th class="${roundCurrent && d===currentDiff?'dps-current-column':''}">${d}</th>`).join('');
+  const head=DPS_TABLE_DIFFICULTIES.map(d=>`<th class="${d===currentDiff?'dps-current-column':''}">${d}</th>`).join('');
   const rows=[];
   for(let pen=DPS_TABLE_PENANCE_MIN; pen<=DPS_TABLE_PENANCE_MAX; pen++){
-    const rowCurrent=roundCurrent && pen===currentPen;
+    const rowCurrent=pen===currentPen;
     const cells=DPS_TABLE_DIFFICULTIES.map(diff=>{
       const value=computeDpsPreview(diff, pen, round);
       const danger=minDps!==null && dpsTableRiskCompareValue(value)<=minDps;
       const currentCell=rowCurrent && diff===currentDiff;
       const classes=[danger?'dps-risk-cell':'', currentCell?'dps-current-cell':''].filter(Boolean).join(' ');
-      const title=currentCell ? `현재 선택: ${diff} ${pen}고행${currentRound===round?' / 현재 라운드':''}` : '';
+      const title=currentCell ? `현재 선택: ${diff} ${pen}고행 / ${round}라운드` : '';
       return `<td class="${classes}"${title?` title="${title}"`:''}>${formatDpsTableValue(value)}</td>`;
     }).join('');
-    rows.push(`<tr class="${dpsTablePenanceTierClass(pen)} ${rowCurrent?'dps-current-row':''}"><th>${pen}</th>${cells}</tr>`);
+    rows.push(`<tr${rowCurrent?' class="dps-current-row"':''}><th>${pen}</th>${cells}</tr>`);
   }
-  return `<table class="dps-matrix"><thead><tr><th>고행</th>${head}</tr></thead><tbody>${rows.join('')}</tbody></table>`;
+  return `<table class="dps-matrix dps-round-matrix"><thead><tr><th>고행</th>${head}</tr></thead><tbody>${rows.join('')}</tbody></table>`;
+}
+function towerEnemyData(floor){
+  const r=Math.max(1, Math.min(90, Math.round(+floor||1)));
+  const armorRow=lookupFloor(TOWER_ARMOR_TABLE, r);
+  const unitRow=lookupFloor(TOWER_UNIT_TABLE, r);
+  return {
+    round:r,
+    armor:armorRow && armorRow[0]<=r ? armorRow[1] : 0,
+    count:unitRow ? unitRow[1] : 0,
+    hp:unitRow ? unitRow[2] : 0,
+    shield:unitRow ? unitRow[3] : 0
+  };
+}
+function towerEnemySummaryItems(floor){
+  const enemy=towerEnemyData(floor);
+  return [
+    ['방어력', big(enemy.armor)],
+    ['체력', big(enemy.hp)],
+    ['실드', big(enemy.shield)],
+    ['물량', big(enemy.count)]
+  ];
+}
+function formatTowerEnemySummary(floor){
+  return towerEnemySummaryItems(floor).map(([label,value])=>`${label} ${value}`).join('   ');
+}
+function formatTowerEnemySummaryHtml(floor){
+  return towerEnemySummaryItems(floor)
+    .map(([label,value])=>`<span class="dps-tower-enemy-item"><em>${label}</em><b>${value}</b></span>`)
+    .join('');
+}
+function buildDpsTowerTable(){
+  const minDps=parseDpsTableMinDps();
+  const currentDiff=vs('diff');
+  const currentFloor=Math.max(1, Math.round(v('round') || 1));
+  const range=getDpsTableTowerRange();
+  const groupSize=getDpsTableTowerGroupSize();
+  const chunks=chunkDpsTowerFloors(range.min, range.max, groupSize);
+  const blocks=chunks.map(floors=>{
+    const rows=floors.map(floor=>{
+      const value=computeDpsPreview('도전의 탑', 0, floor);
+      const danger=minDps!==null && dpsTableRiskCompareValue(value)<=minDps;
+      const currentCell=currentDiff==='도전의 탑' && currentFloor===floor;
+      const classes=[danger?'dps-risk-cell':'', currentCell?'dps-current-cell':''].filter(Boolean).join(' ');
+      const enemySummary=formatTowerEnemySummary(floor);
+      const enemySummaryHtml=formatTowerEnemySummaryHtml(floor);
+      return `<tr${currentCell?' class="dps-current-row"':''}><th>${floor}층</th><td class="${classes}" title="${enemySummary}"><b class="dps-tower-value">${formatDpsTableValue(value)}</b><span class="dps-tower-enemy">${enemySummaryHtml}</span></td></tr>`;
+    }).join('');
+    const first=floors[0], last=floors[floors.length-1];
+    return `<div class="dps-tower-block" aria-label="도전의탑 ${first}층부터 ${last}층까지"><table class="dps-matrix dps-tower-matrix"><thead><tr><th>층</th><th>필요 DPS</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+  }).join('');
+  return `<div class="dps-tower-grid" data-tower-group-size="${groupSize}">${blocks}</div>`;
 }
 function renderDpsTableModal(){
   const mount=document.getElementById('dpsTableMount');
   const tabs=document.getElementById('dpsTableTabsMount');
   if(!mount) return;
-  const info=getActiveDpsTableRoundInfo();
+  const round=getDpsTableCurrentRound();
   if(tabs){
-    tabs.innerHTML=DPS_TABLE_ROUNDS.map(r=>`
-      <button type="button" class="dps-table-tab ${r.round===info.round?'is-active':''}" data-dps-table-round="${r.round}" role="tab" aria-selected="${r.round===info.round?'true':'false'}">
-        <b>${r.round}라운드</b>
-        </button>
+    tabs.innerHTML=[
+      {key:'round',label:'라운드 기준',sub:`${round}라운드`},
+      {key:'tower',label:'도전의탑',sub:'1~90층'}
+    ].map(tab=>`
+      <button type="button" class="dps-table-tab ${activeDpsTableMode===tab.key?'is-active':''}" data-dps-table-mode="${tab.key}" role="tab" aria-selected="${activeDpsTableMode===tab.key?'true':'false'}">
+        <b>${tab.label}</b><span>${tab.sub}</span>
+      </button>
     `).join('');
   }
   syncDpsMinDpsInputs();
-  mount.innerHTML=`<section class="dps-table-panel dps-table-panel-animated"><div class="dps-table-scroll">${buildDpsTable(info.round)}</div></section>`;
+  const tableHtml=activeDpsTableMode==='tower' ? buildDpsTowerTable() : buildDpsTable(round);
+  mount.innerHTML=`<section class="dps-table-panel dps-table-panel-animated"><div class="dps-table-scroll">${tableHtml}</div></section>`;
 }
-function switchDpsTableRound(round){
-  const next=Number(round);
-  if(!DPS_TABLE_ROUNDS.some(r=>r.round===next) || activeDpsTableRound===next) return;
-  activeDpsTableRound=next;
+function switchDpsTableMode(mode){
+  if(!['round','tower'].includes(mode) || activeDpsTableMode===mode) return;
+  activeDpsTableMode=mode;
   renderDpsTableModal();
 }
+let dpsTowerResizeTimer=0;
+window.addEventListener('resize', ()=>{
+  if(!isDpsTableOpen() || activeDpsTableMode!=='tower') return;
+  clearTimeout(dpsTowerResizeTimer);
+  dpsTowerResizeTimer=setTimeout(renderDpsTableModal, 120);
+}, {passive:true});
 function createDpsTableModal(){
   if(document.getElementById('dpsTableModal')) return;
   const modal=document.createElement('div');
@@ -1368,11 +1436,10 @@ function createDpsTableModal(){
           <p class="dps-table-kicker">현재 입력값 기준</p>
           <h2 id="dpsTableTitle">DPS표</h2>
         </div>
-        <div class="dps-table-tabs" id="dpsTableTabsMount" role="tablist" aria-label="DPS표 라운드 선택"></div>
+        <div class="dps-table-tabs" id="dpsTableTabsMount" role="tablist" aria-label="DPS표 기준 선택"></div>
         <label class="dps-table-min-box" for="dpsTableMinDps">
           <span>도전할 최소 DPS</span>
           <input id="dpsTableMinDps" type="text" inputmode="decimal" autocomplete="off" placeholder="예시) 3.0">
-          <small id="dpsTableMinState">위험 기준 미설정</small>
         </label>
         <button type="button" class="dps-table-close-btn" data-dps-table-close="1" aria-label="DPS표 닫기">×</button>
       </header>
@@ -1382,8 +1449,7 @@ function createDpsTableModal(){
 }
 function openDpsTable(){
   createDpsTableModal();
-  const currentRound=Math.round(v('round'));
-  if(DPS_TABLE_ROUNDS.some(item=>item.round===currentRound)) activeDpsTableRound=currentRound;
+  activeDpsTableMode=isTowerDifficulty() ? 'tower' : 'round';
   renderDpsTableModal();
   const modal=document.getElementById('dpsTableModal');
   if(!modal) return;
@@ -1502,10 +1568,10 @@ function bindMonthRuneEvents(){
   });
   document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeMonthRune(); });
 }
-/* Excel workbook import, comparison, and apply */
+/* Comparison file import, preview, and apply */
 
 /* =========================================================
-   08. 엑셀 비교 / 엑셀 적용
+   08. 비교하기 / 변경값 적용
    - 5.4392 구조만 지원
    - 비교는 읽기 전용
    - 적용 버튼에서만 웹 상태 변경
@@ -1625,11 +1691,11 @@ function excelCompareRound(value, digits=6){
   const factor=10**digits;
   return Math.round((n + Number.EPSILON) * factor) / factor;
 }
-function compareNumber(excel, web, tolerance=0.0005){
-  const a=excelCompareNumberValue(excel), b=excelCompareNumberValue(web);
-  if(a===null||b===null) return {diff:null,status:'warn'};
-  const diff=b-a;
-  const limit=Math.max(tolerance,Math.abs(a)*0.00005);
+function compareNumber(change, current, tolerance=0.0005){
+  const target=excelCompareNumberValue(change), base=excelCompareNumberValue(current);
+  if(target===null||base===null) return {diff:null,status:'warn'};
+  const diff=target-base;
+  const limit=Math.max(tolerance,Math.abs(target)*0.00005);
   return {diff,status:Math.abs(diff)<=limit?'same':Math.abs(diff)<=limit*10?'near':'diff'};
 }
 function formatCompareNumber(value){
@@ -1647,6 +1713,62 @@ function escapeCompareHtml(value){
     '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
   }[char]));
 }
+const COMPARE_SPECIAL_RUNE_LABELS={
+  ap:'파이널룬',ua:'코스모스룬',td:'카오스룬',harmony:'하모니룬',
+  'td&ua':'하모니룬','td＆ua':'하모니룬'
+};
+function compareNormalizedText(value){
+  return String(value??'').trim().replace(/\s+/g,'').toLowerCase();
+}
+function compareSelectDisplayText(value,id){
+  const text=String(value??'').trim();
+  if(id==='runeChoiceType'){
+    const runeLabel=COMPARE_SPECIAL_RUNE_LABELS[compareNormalizedText(text)];
+    if(runeLabel) return runeLabel;
+  }
+  const select=document.getElementById(id);
+  if(select?.tagName==='SELECT'){
+    const normalized=compareNormalizedText(text);
+    const option=[...select.options].find(item=>{
+      const optionValue=String(item.value??'').trim();
+      const optionText=String(item.textContent??'').trim();
+      return optionValue===text || optionText===text ||
+        compareNormalizedText(optionValue)===normalized ||
+        compareNormalizedText(optionText)===normalized;
+    });
+    if(option) return String(option.textContent||option.value||'').trim() || '—';
+  }
+  return text || '—';
+}
+function compareDisplayText(value,id){
+  if(typeof value==='boolean') return value?'ON':'OFF';
+  if(id) return compareSelectDisplayText(value,id);
+  const text=String(value??'').trim();
+  return text || '—';
+}
+function renderCompareTransition(current, change){
+  return `${escapeCompareHtml(compareDisplayText(current))} → ${escapeCompareHtml(compareDisplayText(change))}`;
+}
+function compareNumberDiffClass(diff){
+  if(!Number.isFinite(diff)) return 'diff-warn';
+  if(Math.abs(diff)<0.0000005) return 'diff-same';
+  return diff>0 ? 'diff-positive' : 'diff-negative';
+}
+function buildCompareTextRow(kind, name, changeValue, currentValue, options={}){
+  const id=options.id;
+  const changeText=compareDisplayText(changeValue,id);
+  const currentText=compareDisplayText(currentValue,id);
+  const same=compareNormalizedText(changeText)===compareNormalizedText(currentText);
+  return {kind,name,current:escapeCompareHtml(currentText),change:escapeCompareHtml(changeText),
+    difference:same?'일치':escapeCompareHtml(changeText),status:same?'same':'diff',diffClass:same?'diff-same':'diff-text'};
+}
+function buildCompareNumberRow(kind, name, changeValue, currentValue, tolerance=0.0005){
+  const compare=compareNumber(changeValue,currentValue,tolerance);
+  const currentText=formatCompareNumber(currentValue);
+  const changeText=formatCompareNumber(changeValue);
+  return {kind,name,current:currentText,change:changeText,difference:formatCompareDiff(compare.diff),
+    status:compare.status,diffClass:compareNumberDiffClass(compare.diff)};
+}
 function excelFlag(value){
   const text=excelText(value).toLowerCase();
   const number=excelNumber(value);
@@ -1661,8 +1783,26 @@ function webControlDisplay(id){
 }
 const EXCEL_TITLE_BONUS_MAP={'패왕':'12','패왕+':'13','제왕':'14','제왕+':'15','신황':'16','신황+':'17'};
 const EXCEL_RUNE_TYPE_MAP={'AP':'ap','UA':'ua','TD':'td','TD&UA':'harmony','TD＆UA':'harmony'};
-const EXCEL_NUMERIC_INPUT_IDS=new Set(['sp','xp','bxp','rp','soul','penance','round','titleTdBonus','erosionStack','jewelErosionRes','pbless','team','rAD','rModAD','runeChoiceValue','rAS','rModAS','rCD','rModCD','rCRI','rModCRI','rReinf','addAD','addAS','addCD','addCRI','addAP','addTD','addUA']);
+const EXCEL_NUMERIC_INPUT_IDS=new Set(['sp','xp','bxp','rp','soul','penance','round','titleTdBonus','erosionStack','jewelErosionRes','pbless','team','rAD','rModAD','runeChoiceValue','rAS','rModAS','rCD','rModCD','rCRI','rModCRI','rReinf','addAD','addAS','addCD','addCRI','addAP','addTD','addUA','addDR','addSR','addHR','dpsTableMinDps','enchAD','enchCRI','enchUA','enchTD','enchSR','enchHR']);
 const EXCEL_SELECT_INPUT_IDS=new Set(['diff','runeChoiceType','rAsc','raceOpt','opt10','opt15','transOpt']);
+const COMPARE_VALUE_META={
+  sp:{kind:'기본정보',name:'총 SP'},xp:{kind:'기본정보',name:'XP'},bxp:{kind:'기본정보',name:'BXP'},rp:{kind:'기본정보',name:'RP'},soul:{kind:'기본정보',name:'심연의 혼'},
+  diff:{kind:'기본정보',name:'난이도'},penance:{kind:'기본정보',name:'고행'},round:{kind:'기본정보',name:'라운드'},titleTdBonus:{kind:'기본정보',name:'승단 총데미지'},
+  erosionStack:{kind:'기본정보',name:'침식 스택'},jewelErosionRes:{kind:'기본정보',name:'침식 내성'},pbless:{kind:'기본정보',name:'파워 블레스'},team:{kind:'기본정보',name:'출발지원 인원수'},
+  rAD:{kind:'룬정보',name:'AD'},rModAD:{kind:'룬정보',name:'AD 개조'},runeChoiceType:{kind:'룬정보',name:'특수룬 종류'},runeChoiceValue:{kind:'룬정보',name:'특수룬 수치'},
+  rAS:{kind:'룬정보',name:'AS'},rModAS:{kind:'룬정보',name:'AS 개조'},rCD:{kind:'룬정보',name:'CD'},rModCD:{kind:'룬정보',name:'CD 개조'},rCRI:{kind:'룬정보',name:'CRI'},rModCRI:{kind:'룬정보',name:'CRI 개조'},
+  rReinf:{kind:'룬정보',name:'룬 강화 수'},rAsc:{kind:'룬정보',name:'룬 각성'},raceOpt:{kind:'룬정보',name:'종족 업그레이드'},opt10:{kind:'룬정보',name:'10강 옵션'},opt15:{kind:'룬정보',name:'15강 옵션'},transOpt:{kind:'룬정보',name:'초월 옵션'},
+  addAD:{kind:'에디셔널',name:'공격력'},addAS:{kind:'에디셔널',name:'공격속도'},addCD:{kind:'에디셔널',name:'크리티컬 데미지'},addCRI:{kind:'에디셔널',name:'크리티컬 확률'},addAP:{kind:'에디셔널',name:'마법 공격력'},addTD:{kind:'에디셔널',name:'총데미지'},addUA:{kind:'에디셔널',name:'가속'},addDR:{kind:'에디셔널',name:'방어력 감소'},addSR:{kind:'에디셔널',name:'실드 감소'},addHR:{kind:'에디셔널',name:'체력 감소'},
+  currentUnit:{kind:'유닛정보',name:'현재 유닛'},personalUnit:{kind:'유닛정보',name:'개인 유닛'},unitGrade:{kind:'유닛정보',name:'유닛 등급'},unitLevel:{kind:'유닛정보',name:'유닛 레벨'},
+  unitUniqueBuff:{kind:'룬효과/버프',name:'단일유닛버프'},basePierceBuff:{kind:'룬효과/버프',name:'방어력관통 10%'},overEnhance:{kind:'룬효과/버프',name:'오버핸스'},repairEnhance:{kind:'룬효과/버프',name:'리페핸스'},enhanceMaster:{kind:'룬효과/버프',name:'강화의 달인'},
+  shareUserBuff:{kind:'룬효과/버프',name:'나눔유저'},dailyCouponBuff:{kind:'룬효과/버프',name:'일일쿠폰'},aprRuneNormal:{kind:'룬효과/버프',name:'4월 일반'},aprRunePlus:{kind:'룬효과/버프',name:'4월 강화(+)'},sepRuneNormal:{kind:'룬효과/버프',name:'9월 일반'},sepRunePlus:{kind:'룬효과/버프',name:'9월 강화(+)'},
+  prodNova:{kind:'룬효과/버프',name:'노바'},prodTeratron:{kind:'룬효과/버프',name:'테라트론'},prodAmon:{kind:'룬효과/버프',name:'아몬'},prodAdun:{kind:'룬효과/버프',name:'아둔의 창'},prodKerrigan:{kind:'룬효과/버프',name:'불새 케리건'},prodOvermind:{kind:'룬효과/버프',name:'초월체'},prodNarud:{kind:'룬효과/버프',name:'나루드'},prodArtifact:{kind:'룬효과/버프',name:'유물'},
+  flowerSkill1:{kind:'룬효과/버프',name:'근성의 꽃가루'},flowerSkill2:{kind:'룬효과/버프',name:'바람의 꽃가루'},flowerSkill3:{kind:'룬효과/버프',name:'안개의 꽃가루'},
+  dpsTableMinDps:{kind:'DPS표',name:'도전할 최소 DPS'}
+};
+const ENCHANT_COMPARE_ITEMS=[
+  ['enchAD','공격력'],['enchCRI','크리티컬 확률'],['enchUA','유닛 가속'],['enchTD','총 데미지'],['enchSR','실드 감소'],['enchHR','체력 감소']
+];
 const LATEST_SPEC_ADDITIONAL_LABELS=[
   ['Q36','AD'],['Q37','AS'],['Q38','CD'],['Q39','CRI'],['Q40','AP'],['Q41','TD'],['Q42','UA']
 ];
@@ -1677,7 +1817,7 @@ function inspectSpecAdditionalStructure(specCells){
   return {
     valid:mismatches.length===0,
     mismatches,
-    message:'현재 엑셀은 5.4392 버전 구조와 다릅니다. 구버전 엑셀은 엑셀 비교 기능을 사용할 수 없습니다.'
+    message:'불러온 Excel 파일은 5.4392 버전과 구조가 달라 비교하기 기능을 사용할 수 없습니다.'
   };
 }
 function getSpecAdditionalValue(specCells, id){
@@ -1690,6 +1830,27 @@ function getSpecEnchantCode(specCells){
     return String(Math.max(0,Math.min(9,Math.round(value??0))));
   }).join('');
 }
+function normalizeEnchantCompareCode(code){
+  return String(code??'').replace(/[^0-9]/g,'').padEnd(6,'0').slice(0,6);
+}
+function enchantCompareCodeFromValues(values={}){
+  const saved=normalizeEnchantCompareCode(values.enchantCode);
+  if(saved.replace(/0/g,'')) return saved;
+  return ENCHANT_COMPARE_ITEMS.map(([id])=>{
+    const n=parseInt(String(values[id]??'0').replace(/[^0-9]/g,''),10);
+    return String(Math.max(0,Math.min(9,Number.isFinite(n)?n:0)));
+  }).join('');
+}
+function buildEnchantCompareRows(changeCode,currentCode){
+  const change=normalizeEnchantCompareCode(changeCode);
+  const current=normalizeEnchantCompareCode(currentCode);
+  return ENCHANT_COMPARE_ITEMS.map(([,name],index)=>
+    buildCompareNumberRow('인첸트',name,change[index]||0,current[index]||0,0.0001)
+  );
+}
+function buildExcelEnchantRows(specCells){
+  return buildEnchantCompareRows(getSpecEnchantCode(specCells),webControlDisplay('enchantCode'));
+}
 function applyRuneChoiceState(values, cells){
   const type=excelStateValue('runeChoiceType', cells.I6, {valueMap:EXCEL_RUNE_TYPE_MAP}) || 'harmony';
   const value=excelNumber(cells.J6) ?? 0;
@@ -1698,11 +1859,9 @@ function applyRuneChoiceState(values, cells){
   RUNE_CHOICE_TARGETS.forEach(([kind,id])=>{ values[id]=String(kind===type ? value : 0); });
 }
 function buildExcelChoiceRow(name, excel, id, options={}){
-  const excelValue=options.boolean ? excelDisplayFlag(excel) : String(excel??'');
-  const webValue=options.boolean ? webControlDisplay(id) : webControlDisplay(id);
-  const same=excelValue.trim().toLowerCase()===webValue.trim().toLowerCase();
-  return {kind:'룬효과/버프',name,excel:escapeCompareHtml(excelValue),web:escapeCompareHtml(webValue),
-    difference:same?'일치':`${excelValue} → ${webValue}`,status:same?'same':'diff'};
+  const changeValue=options.boolean ? excelDisplayFlag(excel) : String(excel??'');
+  const currentValue=options.boolean ? webControlDisplay(id) : webControlDisplay(id);
+  return buildCompareTextRow('룬효과/버프',name,changeValue,currentValue,{id});
 }
 function compareExcelInputValue(value,id){
   if(EXCEL_NUMERIC_INPUT_IDS.has(id)) return formatCompareNumber(value);
@@ -1754,11 +1913,10 @@ function buildExcelInputSpecs(cells,specCells){
 }
 function buildExcelInputRows(cells,specCells){
   return buildExcelInputSpecs(cells,specCells).map(([kind,name,excel,id])=>{
-    const excelValue=compareExcelInputValue(excel,id);
-    const webValue=EXCEL_NUMERIC_INPUT_IDS.has(id) ? formatCompareNumber(webControlDisplay(id)) : String(webControlDisplay(id)).replace(/,/g,'').trim();
-    const same=excelValue.toLowerCase()===webValue.toLowerCase();
-    return {kind,name,id,excel:escapeCompareHtml(excelValue),web:escapeCompareHtml(webValue),
-      difference:same?'일치':`${excelValue} / ${webValue}`,status:same?'same':'diff'};
+    const changeValue=compareExcelInputValue(excel,id);
+    const currentValue=EXCEL_NUMERIC_INPUT_IDS.has(id) ? formatCompareNumber(webControlDisplay(id)) : String(webControlDisplay(id)).replace(/,/g,'').trim();
+    if(EXCEL_NUMERIC_INPUT_IDS.has(id)) return buildCompareNumberRow(kind,name,changeValue,currentValue);
+    return buildCompareTextRow(kind,name,changeValue,currentValue,{id});
   });
 }
 const ZERO_EXCEL_SHEET_NAME='더제로 승단';
@@ -1842,17 +2000,11 @@ function zeroScoreSummaryFromState(zeroScore){
   });
   return {currentTotal,total,targetScore:currentTotal+total};
 }
-function compareZeroTextRow(name, excelValue, webValue){
-  const excelTextValue=String(excelValue??'').trim();
-  const webTextValue=String(webValue??'').trim();
-  const same=excelTextValue.toLowerCase()===webTextValue.toLowerCase();
-  return {kind:'승단계산',name,excel:escapeCompareHtml(excelTextValue||'—'),web:escapeCompareHtml(webTextValue||'—'),
-    difference:same?'일치':`${excelTextValue||'—'} / ${webTextValue||'—'}`,status:same?'same':'diff'};
+function compareZeroTextRow(name, changeValue, currentValue){
+  return buildCompareTextRow('승단계산',name,changeValue,currentValue);
 }
-function compareZeroNumberRow(kind,name,excelValue,webValue){
-  const compare=compareNumber(excelValue,webValue,0.0001);
-  return {kind,name,excel:formatCompareNumber(excelValue),web:formatCompareNumber(webValue),
-    difference:formatCompareDiff(compare.diff),status:compare.status};
+function compareZeroNumberRow(kind,name,changeValue,currentValue){
+  return buildCompareNumberRow(kind,name,changeValue,currentValue,0.0001);
 }
 function buildZeroScoreCompareRows(zeroCells){
   if(!zeroCells) return [];
@@ -1888,25 +2040,18 @@ function validateExcelCompareSheet(cells,sheetName){
   }
 }
 function buildExcelStatRows(cells,stats){
-  return EXCEL_COMPARE_STATS.map(([code,name,displayCell,actualCell,getDisplay,getActual])=>{
+  return EXCEL_COMPARE_STATS.map(([code,name,displayCell,actualCell,getDisplay])=>{
     const excelDisplay=excelCompareNumberValue(cells[displayCell]);
-    const excelActual=excelCompareNumberValue(cells[actualCell]);
     const webDisplay=excelCompareRound(getDisplay(stats),6);
-    const webActual=excelCompareRound(getActual(stats),6);
     const displayCompare=compareNumber(excelDisplay,webDisplay);
-    const actualCompare=compareNumber(excelActual,webActual);
-    const status=displayCompare.status==='diff'||actualCompare.status==='diff'?'diff':
-      displayCompare.status==='near'||actualCompare.status==='near'?'near':'same';
-    return {kind:'스탯',name,excel:`${formatCompareNumber(excelDisplay)} / ${formatCompareNumber(excelActual)}`,
-      web:`${formatCompareNumber(webDisplay)} / ${formatCompareNumber(webActual)}`,
-      difference:`${formatCompareDiff(displayCompare.diff)} / ${formatCompareDiff(actualCompare.diff)}`,status};
+    return {kind:'스탯',name,current:formatCompareNumber(webDisplay),change:formatCompareNumber(excelDisplay),
+      difference:formatCompareDiff(displayCompare.diff),status:displayCompare.status,diffClass:compareNumberDiffClass(displayCompare.diff)};
   });
 }
 function buildExcelTraitRows(cells){
   return TRAITS.filter(t=>t[0]>=42&&t[0]<=138).map(t=>{
-    const row=t[0], excel=excelCompareNumberValue(cells[`H${row}`]), web=Number(INV[row]||0);
-    return {kind:'특성',name:t[1],excel:formatCompareNumber(excel),web:formatCompareNumber(web),
-      difference:formatCompareDiff(web-excel),status:excel===web?'same':'diff'};
+    const row=t[0], changeValue=excelCompareNumberValue(cells[`H${row}`]), currentValue=Number(INV[row]||0);
+    return buildCompareNumberRow('특성',t[1],changeValue,currentValue,0.0001);
   }).filter(row=>row.status!=='same');
 }
 function buildExcelBuffRows(cells,specCells){
@@ -1940,25 +2085,28 @@ function buildExcelComparison(cells, specCells, zeroCells, fileName, sheetName){
   const stats=computeStats();
   const dpsCompare=compareNumber(cells.M19,stats.M19);
   const inputRows=buildExcelInputRows(cells,specCells);
+  const enchantRows=buildExcelEnchantRows(specCells);
   const statRows=buildExcelStatRows(cells,stats);
   const buffRows=buildExcelBuffRows(cells,specCells);
   const traitRows=buildExcelTraitRows(cells);
   const zeroRows=buildZeroScoreCompareRows(zeroCells);
+  const dpsRow=buildCompareNumberRow('DPS','기본 DPS',cells.M19,stats.M19);
   return {
     fileName,
     sheetName,
+    sourceType:'excel',
     summary:{
-      dps:{excel:excelCompareNumberValue(cells.M19),web:stats.M19,status:dpsCompare.status},
+      dps:{change:excelCompareNumberValue(cells.M19),current:stats.M19,diff:dpsCompare.diff,status:dpsCompare.status},
       statDiffs:statRows.filter(r=>r.status!=='same').length,
-      inputDiffs:inputRows.filter(r=>r.status!=='same').length,
+      inputDiffs:inputRows.filter(r=>r.status!=='same').length + enchantRows.filter(r=>r.status!=='same').length,
       traitDiffs:traitRows.length,
       buffDiffs:buffRows.filter(r=>r.status!=='same').length,
       zeroDiffs:zeroRows.filter(r=>r.status!=='same').length
     },
     rows:[
-      {kind:'DPS',name:'기본 DPS',excel:formatCompareNumber(cells.M19),web:formatCompareNumber(stats.M19),
-        difference:formatCompareDiff(dpsCompare.diff),status:dpsCompare.status},
+      dpsRow,
       ...inputRows,
+      ...enchantRows,
       ...statRows,
       ...buffRows,
       ...zeroRows,
@@ -1976,17 +2124,17 @@ function createExcelCompareModal(){
     <div class="excel-compare-backdrop" data-excel-compare-close="1"></div>
     <section class="excel-compare-modal" role="dialog" aria-modal="true" aria-labelledby="excelCompareTitle">
       <header class="excel-compare-head">
-        <div><p>선택한 시트의 저장값 기준</p><h2 id="excelCompareTitle">엑셀 비교</h2></div>
+        <div><p>불러온 파일의 저장값 기준</p><h2 id="excelCompareTitle">비교하기</h2></div>
         <div class="excel-compare-controls">
-          <select id="excelCompareSheet" aria-label="비교할 Excel 시트" disabled><option>시트 선택</option></select>
-          <label class="excel-compare-file-btn">XLSM 선택<input id="excelCompareFile" type="file" accept=".xlsm,.xlsx,application/vnd.ms-excel.sheet.macroEnabled.12"></label>
-          <button id="excelCompareApplyBtn" class="excel-compare-apply-btn" type="button" data-excel-compare-apply="1" disabled>엑셀값 적용</button>
+          <select id="excelCompareSheet" aria-label="비교할 시트 또는 백업 데이터" disabled><option>시트 선택</option></select>
+          <label class="excel-compare-file-btn">파일 선택<input id="excelCompareFile" type="file" accept=".xlsm,.xlsx,.json,.txt,application/json,text/plain,application/vnd.ms-excel.sheet.macroEnabled.12"></label>
+          <button id="excelCompareApplyBtn" class="excel-compare-apply-btn" type="button" data-excel-compare-apply="1" disabled>변경값 적용</button>
           <button id="excelCompareResetBtn" class="excel-compare-reset-btn" type="button" data-excel-compare-reset="1" disabled>초기화</button>
         </div>
-        <button type="button" class="excel-compare-close" data-excel-compare-close="1" aria-label="엑셀 비교 닫기">×</button>
+        <button type="button" class="excel-compare-close" data-excel-compare-close="1" aria-label="비교하기 닫기">×</button>
       </header>
       <div class="excel-compare-body" id="excelCompareBody">
-        <div class="excel-compare-empty">비교할 Excel 파일을 선택하세요.<small>파일을 불러온 뒤 비교할 시트를 선택할 수 있습니다.</small></div>
+        <div class="excel-compare-empty">비교할 Excel 또는 웹백업 파일을 선택하세요.<small>Excel 파일은 시트를 선택할 수 있고, 웹백업 파일은 백업 데이터를 바로 비교합니다.</small></div>
       </div>
     </section>`;
   document.body.appendChild(modal);
@@ -1998,9 +2146,13 @@ function renderExcelComparison(result){
   const body=document.getElementById('excelCompareBody');
   if(!body) return;
   const {summary}=result;
+  const dpsDiff=summary.dps.diff===null ? '확인 불가' : formatCompareDiff(summary.dps.diff);
+  const dpsApply=(summary.dps.change===null || summary.dps.current===null) ? '확인 불가' :
+    renderCompareTransition(formatCompareNumber(summary.dps.current),formatCompareNumber(summary.dps.change));
+  const compareColgroup='<colgroup><col class="compare-col-kind"><col class="compare-col-name"><col class="compare-col-current"><col class="compare-col-change"><col class="compare-col-diff"></colgroup>';
   body.innerHTML=`
     <div class="excel-compare-summary">
-      <div class="${summary.dps.status}"><span>DPS</span><b>${formatCompareNumber(summary.dps.excel)} → ${formatCompareNumber(summary.dps.web)}</b></div>
+      <div class="${summary.dps.status}"><span>DPS</span><b>차이 ${dpsDiff}</b><small>${dpsApply}</small></div>
       <div class="${summary.statDiffs?'diff':'same'}"><span>스탯 차이</span><b>${summary.statDiffs}개</b></div>
       <div class="${summary.inputDiffs?'diff':'same'}"><span>입력값 차이</span><b>${summary.inputDiffs}개</b></div>
       <div class="${summary.buffDiffs?'diff':'same'}"><span>룬/버프 차이</span><b>${summary.buffDiffs}개</b></div>
@@ -2008,8 +2160,10 @@ function renderExcelComparison(result){
       <div class="${summary.zeroDiffs?'diff':'same'}"><span>승단 차이</span><b>${summary.zeroDiffs}개</b></div>
     </div>
     <div class="excel-compare-table-wrap">
-      <table class="excel-compare-table"><thead><tr><th>구분</th><th>항목</th><th>Excel</th><th>웹</th><th>상태</th></tr></thead>
-      <tbody>${result.rows.map(row=>`<tr class="${row.status}"><td>${row.kind}</td><th>${escapeCompareHtml(row.name)}</th><td>${row.excel}</td><td>${row.web}</td><td>${row.status==='same'?'일치':row.difference}</td></tr>`).join('')}</tbody></table>
+      <table class="excel-compare-table excel-compare-table-head">${compareColgroup}<thead><tr><th>구분</th><th>항목</th><th>현재값</th><th>변경값</th><th>차이</th></tr></thead></table>
+      <div class="excel-compare-table-scroll">
+        <table class="excel-compare-table excel-compare-table-body">${compareColgroup}<tbody>${result.rows.map(row=>`<tr class="${row.status}"><td>${row.kind}</td><th>${escapeCompareHtml(row.name)}</th><td>${row.current}</td><td>${row.change}</td><td class="compare-diff ${row.diffClass||''}">${row.difference}</td></tr>`).join('')}</tbody></table>
+      </div>
     </div>`;
 }
 function openExcelCompare(){
@@ -2019,7 +2173,8 @@ function openExcelCompare(){
   modal.setAttribute('aria-hidden','false');
   document.body.classList.add('excel-compare-open');
   const select=document.getElementById('excelCompareSheet');
-  if(excelCompareWorkbook && select && !select.disabled && select.value) compareSelectedExcelSheet();
+  if(compareSourceType==='json' && compareBackupState) renderJsonComparison(compareBackupState);
+  else if(excelCompareWorkbook && select && !select.disabled && select.value) compareSelectedExcelSheet();
 }
 function closeExcelCompare(){
   const modal=document.getElementById('excelCompareModal');
@@ -2029,8 +2184,12 @@ function closeExcelCompare(){
   document.body.classList.remove('excel-compare-open');
 }
 let excelCompareWorkbook=null;
+let compareBackupState=null;
+let compareSourceType=null;
 function resetExcelComparison(options={}){
   excelCompareWorkbook=null;
+  compareBackupState=null;
+  compareSourceType=null;
   const select=document.getElementById('excelCompareSheet');
   const file=document.getElementById('excelCompareFile');
   const apply=document.getElementById('excelCompareApplyBtn');
@@ -2043,7 +2202,7 @@ function resetExcelComparison(options={}){
   if(file) file.value='';
   if(apply) apply.disabled=true;
   if(reset) reset.disabled=true;
-  if(body) body.innerHTML='<div class="excel-compare-empty">비교할 Excel 파일을 선택하세요.<small>파일을 불러온 뒤 비교할 시트를 선택할 수 있습니다.</small></div>';
+  if(body) body.innerHTML='<div class="excel-compare-empty">비교할 Excel 또는 웹백업 파일을 선택하세요.<small>Excel 파일은 시트를 선택할 수 있고, 웹백업 파일은 백업 데이터를 바로 비교합니다.</small></div>';
   if(options.close) closeExcelCompare();
 }
 function excelText(value){ return String(value??'').trim(); }
@@ -2148,6 +2307,139 @@ function buildExcelState(cells, specCells, zeroCells){
   if(zeroScore?.rows?.length) applied+=zeroScore.rows.reduce((sum,row)=>sum+(row.type==='penance'?5:2),0);
   return {state:makeStorageEnvelope({...state,values,inv,zeroScore}),applied};
 }
+
+function isCompareBackupFile(file){
+  const name=String(file?.name||'').toLowerCase();
+  const type=String(file?.type||'').toLowerCase();
+  return name.endsWith('.json') || name.endsWith('.txt') || type.includes('json') || type.startsWith('text/');
+}
+function readFileAsText(file){
+  return new Promise((resolve,reject)=>{
+    const reader=new FileReader();
+    reader.onload=()=>resolve(String(reader.result||''));
+    reader.onerror=()=>reject(new Error('파일을 읽지 못했습니다.'));
+    reader.readAsText(file,'utf-8');
+  });
+}
+async function readCompareBackupState(file){
+  const raw=await readFileAsText(file);
+  const parsed=safeJsonParse(raw);
+  if(!parsed) throw new Error('웹백업 파일 형식이 아닙니다.');
+  const state=normalizeSavedState(parsed);
+  if(!state) throw new Error('계산기 저장값 형식이 아닙니다.');
+  return {...state,fileName:file.name};
+}
+function compareValueMeta(id){
+  return COMPARE_VALUE_META[id] || {kind:'입력값',name:id};
+}
+function compareSavedValueDisplay(value,id){
+  if(EXCEL_NUMERIC_INPUT_IDS.has(id)) return formatCompareNumber(value);
+  return compareDisplayText(value,id);
+}
+function buildSavedValueCompareRows(changeState,currentState){
+  const ordered=storageElementIds().filter(id=>id!=='calcMode');
+  const skipped=new Set(['backupFileInput','excelCompareFile','excelCompareSheet','enchantCode',...ENCHANT_INPUT_IDS]);
+  const ids=[...new Set([...ordered,'dpsTableMinDps',...Object.keys(currentState.values||{}),...Object.keys(changeState.values||{})])]
+    .filter(id=>id && id!=='calcMode' && !skipped.has(id));
+  return ids.map(id=>{
+    const meta=compareValueMeta(id);
+    const changeValue=compareSavedValueDisplay(changeState.values?.[id],id);
+    const currentValue=compareSavedValueDisplay(currentState.values?.[id],id);
+    if(EXCEL_NUMERIC_INPUT_IDS.has(id)) return buildCompareNumberRow(meta.kind,meta.name,changeValue,currentValue);
+    return buildCompareTextRow(meta.kind,meta.name,changeValue,currentValue);
+  }).filter(row=>row.status!=='same');
+}
+function buildSavedTraitCompareRows(changeState){
+  return TRAITS.filter(t=>t[0]>=42&&t[0]<=138).map(t=>{
+    const row=t[0], changeValue=Number(changeState.inv?.[row]||0), currentValue=Number(INV[row]||0);
+    return buildCompareNumberRow('특성',t[1],changeValue,currentValue,0.0001);
+  }).filter(row=>row.status!=='same');
+}
+function buildSavedZeroScoreCompareRows(changeZeroScore,currentZeroScore){
+  const changeRows=Array.isArray(changeZeroScore?.rows) ? changeZeroScore.rows : [];
+  const currentRows=Array.isArray(currentZeroScore?.rows) ? currentZeroScore.rows : [];
+  const rows=[];
+  ZERO_EXCEL_PENANCE_ROWS.forEach(({name},index)=>{
+    const change=changeRows[index] || {};
+    const current=currentRows[index] || {};
+    const currentCalc=zeroScoreRowCalculation(current);
+    const changeCalc=zeroScoreRowCalculation(change);
+    rows.push(compareZeroNumberRow('승단계산',`${name} 현재 고행`,change.current ?? 0,current.current ?? 0));
+    rows.push(compareZeroNumberRow('승단계산',`${name} 목표 고행`,change.target ?? 0,current.target ?? 0));
+    rows.push(compareZeroTextRow(`${name} 24스타`,change.star?'ON':'OFF',current.star?'ON':'OFF'));
+    rows.push(compareZeroTextRow(`${name} 현재 명예`,zeroHonorDisplay(change.currentHonor||''),zeroHonorDisplay(current.currentHonor||'')));
+    rows.push(compareZeroTextRow(`${name} 목표 명예`,zeroHonorDisplay(change.targetHonor||''),zeroHonorDisplay(current.targetHonor||'')));
+    rows.push(compareZeroNumberRow('승단계산 결과',`${name} 추가점수`,changeCalc.score,currentCalc.score));
+  });
+  const changeTower=changeRows[14] || {}, currentTower=currentRows[14] || {};
+  const changeHonorTower=changeRows[15] || {}, currentHonorTower=currentRows[15] || {};
+  rows.push(compareZeroNumberRow('승단계산','도전의 탑 현재층',changeTower.current ?? 0,currentTower.current ?? 0));
+  rows.push(compareZeroNumberRow('승단계산','도전의 탑 목표층',changeTower.target ?? 0,currentTower.target ?? 0));
+  rows.push(compareZeroNumberRow('승단계산 결과','도전의 탑 추가점수',zeroScoreRowCalculation(changeTower).score,zeroScoreRowCalculation(currentTower).score));
+  rows.push(compareZeroNumberRow('승단계산','명예 도탑 현재층',changeHonorTower.current ?? 0,currentHonorTower.current ?? 0));
+  rows.push(compareZeroNumberRow('승단계산','명예 도탑 목표층',changeHonorTower.target ?? 0,currentHonorTower.target ?? 0));
+  rows.push(compareZeroNumberRow('승단계산 결과','명예 도탑 추가점수',zeroScoreRowCalculation(changeHonorTower).score,zeroScoreRowCalculation(currentHonorTower).score));
+  const changeSummary=zeroScoreSummaryFromState({rows:changeRows});
+  const currentSummary=zeroScoreSummaryFromState({rows:currentRows});
+  rows.push(compareZeroNumberRow('승단계산 결과','현재 승단점수',changeSummary.currentTotal,currentSummary.currentTotal));
+  rows.push(compareZeroNumberRow('승단계산 결과','목표 완료 시',changeSummary.targetScore,currentSummary.targetScore));
+  return rows.filter(row=>row.status!=='same');
+}
+function buildSavedComputedStatRows(changeComputed,currentComputed){
+  if(!changeComputed?.displayStats || !currentComputed?.displayStats) return [];
+  return EXCEL_COMPARE_STATS.map(([code,name])=>{
+    const changeDisplay=changeComputed.displayStats?.[code];
+    const currentDisplay=currentComputed.displayStats?.[code];
+    const displayCompare=compareNumber(changeDisplay,currentDisplay);
+    return {kind:'스탯',name,current:formatCompareNumber(currentDisplay),change:formatCompareNumber(changeDisplay),
+      difference:formatCompareDiff(displayCompare.diff),status:displayCompare.status,diffClass:compareNumberDiffClass(displayCompare.diff)};
+  });
+}
+function buildJsonComparison(changeState){
+  const currentState=makeStateObject();
+  const currentComputed=makeComputedSnapshot();
+  const changeComputed=changeState.computed || {};
+  const dpsCompare=compareNumber(changeComputed.dps,currentComputed.dps);
+  const inputRows=buildSavedValueCompareRows(changeState,currentState);
+  const enchantRows=buildEnchantCompareRows(enchantCompareCodeFromValues(changeState.values),enchantCompareCodeFromValues(currentState.values));
+  const statRows=buildSavedComputedStatRows(changeComputed,currentComputed);
+  const traitRows=buildSavedTraitCompareRows(changeState);
+  const zeroRows=buildSavedZeroScoreCompareRows(changeState.zeroScore,currentState.zeroScore);
+  const dpsRow=buildCompareNumberRow('DPS','기본 DPS',changeComputed.dps,currentComputed.dps);
+  return {
+    fileName:changeState.fileName || '웹백업',
+    sheetName:'웹백업',
+    sourceType:'json',
+    summary:{
+      dps:{change:excelCompareNumberValue(changeComputed.dps),current:currentComputed.dps,diff:dpsCompare.diff,status:dpsCompare.status},
+      statDiffs:statRows.filter(r=>r.status!=='same').length,
+      inputDiffs:inputRows.filter(r=>r.status!=='same').length + enchantRows.filter(r=>r.status!=='same').length,
+      traitDiffs:traitRows.length,
+      buffDiffs:inputRows.filter(r=>r.kind==='룬효과/버프').length,
+      zeroDiffs:zeroRows.length
+    },
+    rows:[dpsRow,...inputRows,...enchantRows,...statRows,...zeroRows,...traitRows]
+  };
+}
+function renderJsonComparison(changeState){
+  renderExcelComparison(buildJsonComparison(changeState));
+}
+function applySelectedComparison(){
+  if(compareSourceType==='json') return applySelectedJsonBackup();
+  return applySelectedExcelSheet();
+}
+function applySelectedJsonBackup(){
+  if(!compareBackupState) return;
+  try{
+    applyStateObject(compareBackupState);
+    saveState({silent:true});
+    renderJsonComparison(compareBackupState);
+    showToast('변경값 적용 완료','ok');
+  }catch(e){
+    console.error('[backup apply failed]',e);
+    showToast(e?.message||String(e),'err');
+  }
+}
 function applySelectedExcelSheet(){
   const select=document.getElementById('excelCompareSheet');
   if(!excelCompareWorkbook||!select?.value) return;
@@ -2162,7 +2454,7 @@ function applySelectedExcelSheet(){
     applyStateObject(imported.state);
     saveState({silent:true});
     compareSelectedExcelSheet();
-    showToast(`Excel 상태 ${imported.applied}개 적용 완료`,'ok');
+    showToast(`변경값 ${imported.applied}개 적용 완료`,'ok');
   }catch(e){
     console.error('[Excel apply failed]',e);
     showToast(e?.message||String(e),'err');
@@ -2185,6 +2477,7 @@ function compareSelectedExcelSheet(){
       if(body) body.innerHTML=`<div class="excel-compare-error">${renderExcelWarning(additionalInfo.message)}</div>`;
       return;
     }
+    compareSourceType='excel';
     renderExcelComparison(buildExcelComparison(cells,specCells,zeroCells,excelCompareWorkbook.fileName,select.value));
     if(apply) apply.disabled=false;
     if(reset) reset.disabled=false;
@@ -2197,19 +2490,36 @@ function compareSelectedExcelSheet(){
 }
 async function handleExcelCompareFile(file){
   const body=document.getElementById('excelCompareBody');
-  if(body) body.innerHTML='<div class="excel-compare-empty">Excel 파일을 분석하고 있습니다.</div>';
+  if(body) body.innerHTML='<div class="excel-compare-empty">파일을 분석하고 있습니다.</div>';
   try{
-    excelCompareWorkbook=await readExcelWorkbook(file);
     const select=document.getElementById('excelCompareSheet');
+    const apply=document.getElementById('excelCompareApplyBtn');
+    const reset=document.getElementById('excelCompareResetBtn');
+    if(isCompareBackupFile(file)){
+      compareBackupState=await readCompareBackupState(file);
+      compareSourceType='json';
+      excelCompareWorkbook=null;
+      if(select){
+        select.innerHTML='<option value="webBackup">웹백업</option>';
+        select.value='webBackup';
+        select.disabled=true;
+      }
+      renderJsonComparison(compareBackupState);
+      if(apply) apply.disabled=false;
+      if(reset) reset.disabled=false;
+      return;
+    }
+    excelCompareWorkbook=await readExcelWorkbook(file);
+    compareBackupState=null;
+    compareSourceType='excel';
     const preferred=excelCompareWorkbook.sheets.some(sheet=>sheet.name==='고행')?'고행':excelCompareWorkbook.sheets[0].name;
     select.innerHTML=excelCompareWorkbook.sheets.map(sheet=>`<option value="${escapeCompareHtml(sheet.name)}">${escapeCompareHtml(sheet.name)}</option>`).join('');
     select.disabled=false;
     select.value=preferred;
-    const reset=document.getElementById('excelCompareResetBtn');
     if(reset) reset.disabled=false;
     compareSelectedExcelSheet();
   }catch(e){
-    console.error('[Excel compare failed]',e);
+    console.error('[compare file failed]',e);
     const apply=document.getElementById('excelCompareApplyBtn');
     const reset=document.getElementById('excelCompareResetBtn');
     if(apply) apply.disabled=true;
@@ -2225,7 +2535,7 @@ function installExcelCompareButton(){
   btn.id='excelCompareOpenBtn';
   btn.className='excel-compare-open-btn';
   btn.dataset.action='openExcelCompare';
-  btn.textContent='엑셀비교';
+  btn.textContent='비교하기';
   const dpsButton=document.getElementById('dpsTableOpenBtn');
   if(dpsButton) dpsButton.insertAdjacentElement('afterend',btn);
   else target.insertBefore(btn,target.firstChild);
@@ -2233,20 +2543,20 @@ function installExcelCompareButton(){
 function bindExcelCompareEvents(){
   document.addEventListener('click',e=>{
     if(e.target.closest('[data-excel-compare-close]')) closeExcelCompare();
-    if(e.target.closest('[data-excel-compare-apply]')) applySelectedExcelSheet();
+    if(e.target.closest('[data-excel-compare-apply]')) applySelectedComparison();
     if(e.target.closest('[data-excel-compare-reset]')) resetExcelComparison();
   });
   document.addEventListener('change',e=>{
     if(e.target.id==='excelCompareFile'&&e.target.files?.[0]) handleExcelCompareFile(e.target.files[0]);
-    if(e.target.id==='excelCompareSheet') compareSelectedExcelSheet();
+    if(e.target.id==='excelCompareSheet' && compareSourceType==='excel') compareSelectedExcelSheet();
   });
   document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeExcelCompare(); });
 }
 function bindDpsTableEvents(){
   document.addEventListener('click', function(e){
-    const roundTarget=e.target.closest('[data-dps-table-round]');
-    if(roundTarget){
-      switchDpsTableRound(roundTarget.getAttribute('data-dps-table-round'));
+    const modeTarget=e.target.closest('[data-dps-table-mode]');
+    if(modeTarget){
+      switchDpsTableMode(modeTarget.getAttribute('data-dps-table-mode'));
       return;
     }
     if(e.target.closest('[data-dps-table-close]')) closeDpsTable();
@@ -2722,6 +3032,7 @@ function normalizeSavedState(data){
     values,
     inv,
     zeroScore:data.zeroScore,
+    computed:data.computed && typeof data.computed==='object' ? data.computed : undefined,
     savedAt:data.savedAt,
     storageVersion:data.storageVersion,
     scope:data.scope,
@@ -2795,7 +3106,7 @@ function saveState(options={}){
     storageSaveFailCount=0;
     setStorageStatus('저장됨', 'ok', {time:state.savedAt, scope:'현재 브라우저'});
     if(!silent){
-      try{showToast('현재값 저장 완료','ok');}catch(e){}
+      try{showToast('입력값 저장 완료','ok');}catch(e){}
     }
     return true;
   }catch(e){
@@ -2826,7 +3137,7 @@ function loadState(){
 }
 function clearSavedState(){
   clearCurrentCalculatorStorage();
-  setStorageStatus('저장값 삭제됨', 'warn', {time:Date.now(), scope:'현재 입력값 유지'});
+  setStorageStatus('입력값 삭제됨', 'warn', {time:Date.now(), scope:'현재 입력값 유지'});
 }
 function exportStateBackup(){
   try{
@@ -2970,7 +3281,7 @@ function requestClearAll(){
   return requestDangerAction('clearAll','한 번 더 누르면 특성 전체 초기화', clearAll);
 }
 function requestClearSavedState(){
-  return requestDangerAction('clearSavedState','한 번 더 누르면 저장값 삭제', clearSavedState);
+  return requestDangerAction('clearSavedState','한 번 더 누르면 입력값 삭제', clearSavedState);
 }
 let traitHoldTimer=null;
 let traitHoldRepeatTimer=null;
