@@ -1509,10 +1509,23 @@ function renderMonthRuneCard(item){
     </article>
   `;
 }
+function getJewelImageKey(name){
+  return `image/jw/${String(name||'').trim()}.png`;
+}
 function getJewelImageSrc(name){
   const safeName=encodeURIComponent(String(name||'').trim());
+  const key=getJewelImageKey(name);
+  const assetUrl=typeof window.dpsAssetUrl==='function' ? window.dpsAssetUrl : null;
+  if(assetUrl) return assetUrl(`./image/jw/${safeName}.png`, key);
   const version=encodeURIComponent(window.DPS_BUILD_VERSION || 'dev');
   return `./image/jw/${safeName}.png?v=${version}`;
+}
+function getJewelImageFallbackSrc(name){
+  const key=getJewelImageKey(name);
+  if(typeof window.dpsRemoteAssetUrl==='function') return window.dpsRemoteAssetUrl(key, key);
+  const safeName=encodeURIComponent(String(name||'').trim());
+  const version=encodeURIComponent(window.DPS_BUILD_VERSION || 'dev');
+  return `https://sldbox.github.io/dps/image/jw/${safeName}.png?v=${version}`;
 }
 function renderJewelAbility(label, text){
   const value=String(text||'').trim();
@@ -1529,11 +1542,14 @@ function renderJewelCard(row){
   const legendary=String(row?.[1]||'');
   const mythic=String(row?.[2]||'');
   const initial=name ? name.charAt(0) : '?';
+  const imageSrc=getJewelImageSrc(name);
+  const fallbackSrc=getJewelImageFallbackSrc(name);
+  const fallbackAttr=fallbackSrc && fallbackSrc!==imageSrc ? ` data-fallback-src="${escapeCompareHtml(fallbackSrc)}"` : '';
   return `
     <article class="jewel-card">
       <header class="jewel-card-head">
         <div class="jewel-card-visual" aria-hidden="true">
-          <img src="${getJewelImageSrc(name)}" alt="" loading="lazy" onerror="this.closest('.jewel-card-visual').classList.add('is-missing');this.remove();">
+          <img src="${escapeCompareHtml(imageSrc)}"${fallbackAttr} alt="" loading="lazy" onerror="var f=this.dataset.fallbackSrc;if(f){this.dataset.fallbackSrc='';this.src=f;return;}this.closest('.jewel-card-visual').classList.add('is-missing');this.remove();">
           <span>${escapeCompareHtml(initial)}</span>
         </div>
         <b>${escapeCompareHtml(name)}</b>
@@ -1592,12 +1608,10 @@ function createMonthRuneModal(){
     <div class="month-rune-backdrop" data-month-rune-close="1"></div>
     <section class="month-rune-modal" role="dialog" aria-modal="true" aria-labelledby="monthRuneTitle">
       <header class="month-rune-head">
-        <div class="month-rune-titlebox">
-          <h2 id="monthRuneTitle">이달룬 / 쥬얼</h2>
-          <div class="month-rune-tabs" role="tablist" aria-label="이달룬과 쥬얼 정보 선택">
-            <button type="button" id="monthRuneTabRunes" class="month-rune-tab is-active" data-month-rune-tab="runes" role="tab" aria-selected="true">이달룬</button>
-            <button type="button" id="monthRuneTabJewels" class="month-rune-tab" data-month-rune-tab="jewels" role="tab" aria-selected="false" tabindex="-1">쥬얼</button>
-          </div>
+        <h2 id="monthRuneTitle" class="month-rune-sr-title">이달룬 / 쥬얼</h2>
+        <div class="month-rune-tabs" role="tablist" aria-label="이달룬과 쥬얼 정보 선택">
+          <button type="button" id="monthRuneTabRunes" class="month-rune-tab is-active" data-month-rune-tab="runes" role="tab" aria-selected="true">이달의룬</button>
+          <button type="button" id="monthRuneTabJewels" class="month-rune-tab" data-month-rune-tab="jewels" role="tab" aria-selected="false" tabindex="-1">쥬얼</button>
         </div>
         <button type="button" class="month-rune-close" data-month-rune-close="1" aria-label="이달룬/쥬얼 닫기">×</button>
       </header>

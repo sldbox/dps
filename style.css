@@ -442,26 +442,26 @@ select.choice-input,.rune-stat-row select,.ir select{background:#ffffff !importa
 .month-rune-modal-shell.is-open{display:block}
 .month-rune-backdrop{position:absolute;inset:0;background:rgba(15,23,42,.44);backdrop-filter:blur(2px)}
 .month-rune-modal{position:relative;width:min(1120px,calc(100vw - 18px));max-height:calc(100vh - 18px);margin:9px auto;overflow:hidden;display:flex;flex-direction:column;border:1px solid #d8e4f0;border-radius:16px;background:#fff;box-shadow:0 24px 70px rgba(15,23,42,.24)}
-.month-rune-head{display:grid;grid-template-columns:minmax(0,1fr) 38px;align-items:center;gap:12px;padding:12px 14px;border-bottom:1px solid #e2e8f0;background:linear-gradient(180deg,#fffaf0 0%,#f8fbff 100%)}
-.month-rune-titlebox{min-width:0}
-.month-rune-titlebox h2{margin:0;color:#0f172a;font-size:calc(20px * var(--app-font-scale));line-height:1.15;font-weight:900}
-.month-rune-tabs{display:flex;align-items:center;gap:7px;margin-top:9px;flex-wrap:wrap}
+.month-rune-head{display:grid;grid-template-columns:38px minmax(0,1fr) 38px;align-items:center;gap:12px;padding:10px 14px;border-bottom:1px solid #e2e8f0;background:linear-gradient(180deg,#fffaf0 0%,#f8fbff 100%)}
+.month-rune-sr-title{position:absolute !important;width:1px !important;height:1px !important;padding:0 !important;margin:-1px !important;overflow:hidden !important;clip:rect(0,0,0,0) !important;white-space:nowrap !important;border:0 !important}
+.month-rune-tabs{grid-column:2;display:flex;align-items:center;justify-content:center;gap:7px;margin:0;flex-wrap:wrap}
 .month-rune-tab{display:inline-flex;align-items:center;justify-content:center;min-width:92px;height:32px;padding:0 14px;border:1px solid #cbd5e1;border-radius:999px;background:#fff;color:#334155;font-size:calc(12px * var(--app-font-scale));font-weight:900;cursor:pointer;box-shadow:inset 0 1px 0 rgba(255,255,255,.9);transition:background .14s ease,border-color .14s ease,color .14s ease}
 .month-rune-tab.is-active{border-color:#1d4ed8;background:#2563eb;color:#fff}
 .month-rune-tab:not(.is-active):hover{border-color:#94a3b8;background:#f1f5f9;color:#0f172a}
-.month-rune-close{width:34px;height:34px;border:1px solid #cbd5e1;border-radius:10px;background:#fff;color:#0f172a;font-size:calc(22px * var(--app-font-scale));font-weight:900;line-height:1;cursor:pointer}
+.month-rune-close{grid-column:3;justify-self:end;width:34px;height:34px;border:1px solid #cbd5e1;border-radius:10px;background:#fff;color:#0f172a;font-size:calc(22px * var(--app-font-scale));font-weight:900;line-height:1;cursor:pointer}
 .month-rune-close:hover{background:#f1f5f9;border-color:#94a3b8}
 .month-rune-body{padding:12px;overflow:auto;background:#f8fafc}
 .month-rune-panel{display:block}
 .month-rune-panel[hidden]{display:none !important}
 .month-rune-note,.month-rune-empty{margin:0 0 10px;padding:9px 11px;border:1px solid #dbeafe;border-radius:11px;background:#eff6ff;color:#1e3a8a;font-size:calc(12px * var(--app-font-scale));font-weight:900;line-height:1.35}
 .month-rune-empty{text-align:center;color:#64748b;background:#f8fafc;border-style:dashed}
+/* Jewel tab keeps the original compact card style. Only the thumbnail box is dark. */
 .jewel-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
 .jewel-card{min-width:0;overflow:hidden;border:1px solid #dbe3ee;border-radius:14px;background:#fff;box-shadow:0 3px 10px rgba(15,23,42,.045)}
-.jewel-card-head{display:flex;align-items:center;gap:9px;padding:10px;border-bottom:1px solid #e2e8f0;background:linear-gradient(180deg,#fff 0%,#f8fbff 100%)}
+.jewel-card-head{display:flex;align-items:center;gap:10px;padding:10px;border-bottom:1px solid #e2e8f0;background:linear-gradient(180deg,#fff 0%,#f8fbff 100%)}
 .jewel-card-head>b{min-width:0;color:#0f172a;font-size:calc(13.5px * var(--app-font-scale));font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.jewel-card-visual{position:relative;display:inline-flex;align-items:center;justify-content:center;flex:0 0 42px;width:42px;height:42px;border:1px solid #dbeafe;border-radius:12px;background:#eff6ff;color:#1d4ed8;font-size:calc(15px * var(--app-font-scale));font-weight:900;overflow:hidden}
-.jewel-card-visual img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background:#fff}
+.jewel-card-visual{position:relative;display:inline-flex;align-items:center;justify-content:center;flex:0 0 56px;width:56px;height:56px;border:1px solid #1f2937;border-radius:12px;background:#000;color:#facc15;font-size:calc(16px * var(--app-font-scale));font-weight:900;overflow:hidden}
+.jewel-card-visual img{display:block;position:relative;width:auto;height:auto;max-width:88%;max-height:88%;object-fit:contain;background:transparent}
 .jewel-card-visual span{display:none}
 .jewel-card-visual.is-missing span{display:inline}
 .jewel-ability-list{display:grid;gap:7px;padding:9px}
@@ -471,9 +471,6 @@ select.choice-input,.rune-stat-row select,.ir select{background:#ffffff !importa
 .jewel-ability:first-child>b{background:#fff7ed;color:#b45309}
 .jewel-ability:nth-child(2)>b{background:#eef2ff;color:#4338ca}
 .jewel-ability.is-unreleased{border-color:#e2e8f0;background:#f8fafc;color:#64748b}
-.jewel-ability.is-unreleased span{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
-.jewel-ability.is-unreleased em{font-style:normal;display:inline-flex;align-items:center;justify-content:center;padding:2px 7px;border-radius:999px;background:#e2e8f0;color:#475569;font-size:calc(10.5px * var(--app-font-scale));font-weight:900}
-.jewel-ability.is-unreleased small{color:#64748b;font-size:calc(10px * var(--app-font-scale));font-weight:900}
 .month-rune-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
 .month-rune-card{min-width:0;overflow:hidden;border:1px solid #dbe3ee;border-radius:14px;background:#fff;box-shadow:0 3px 10px rgba(15,23,42,.045)}
 .month-rune-card-head{display:flex;align-items:center;gap:8px;padding:9px 10px;border-bottom:1px solid #e2e8f0;background:#f8fbff}
@@ -3932,17 +3929,17 @@ body.is-mobile .mobile-page-zero-rank .zero-rank-table{
 
 
 body.is-mobile .month-rune-modal{width:calc(100vw - 10px);max-height:calc(var(--mobile-vh, 100vh) - 10px);margin:5px auto;border-radius:14px}
-body.is-mobile .month-rune-head{position:relative;grid-template-columns:1fr;gap:7px;padding:9px 48px 9px 9px}
-body.is-mobile .month-rune-titlebox h2{font-size:calc(16px * var(--app-font-scale))}
-body.is-mobile .month-rune-tabs{gap:5px;margin-top:7px}
-body.is-mobile .month-rune-tab{min-width:72px;height:29px;padding:0 10px;font-size:calc(11px * var(--app-font-scale))}
-body.is-mobile .month-rune-close{position:absolute;right:8px;top:8px;width:32px;height:32px}
+body.is-mobile .month-rune-head{position:relative;grid-template-columns:32px minmax(0,1fr) 32px;gap:6px;padding:8px}
+body.is-mobile .month-rune-tabs{grid-column:2;justify-content:center;gap:5px;margin:0}
+body.is-mobile .month-rune-tab{min-width:78px;height:29px;padding:0 10px;font-size:calc(11px * var(--app-font-scale))}
+body.is-mobile .month-rune-close{grid-column:3;position:static;justify-self:end;width:32px;height:32px}
 body.is-mobile .month-rune-body{padding:8px}
 body.is-mobile .month-rune-grid{grid-template-columns:1fr;gap:8px}
 body.is-mobile .month-rune-note,body.is-mobile .month-rune-empty{margin-bottom:8px;padding:8px;font-size:calc(11px * var(--app-font-scale))}
 body.is-mobile .jewel-grid{grid-template-columns:1fr;gap:8px}
 body.is-mobile .jewel-card-head{padding:8px}
-body.is-mobile .jewel-card-visual{flex-basis:36px;width:36px;height:36px;border-radius:10px}
+body.is-mobile .jewel-card-visual{flex-basis:64px;width:64px;height:64px;border-radius:12px}
+body.is-mobile .jewel-card-visual img{max-width:88%;max-height:88%;width:auto;height:auto}
 body.is-mobile .jewel-ability-list{padding:8px;gap:6px}
 body.is-mobile .jewel-ability{grid-template-columns:39px minmax(0,1fr);padding:6px;font-size:calc(10.5px * var(--app-font-scale))}
 body.is-mobile .month-rune-card-head{padding:8px}
@@ -3964,8 +3961,8 @@ body.is-narrow-mobile .month-rune-open-btn,
 body.is-narrow-mobile .global-site-link{font-size:calc(9px * var(--app-font-scale)) !important;padding:0 2px !important;letter-spacing:-.7px !important}
 body.is-tablet .month-rune-modal{width:calc(100vw - 24px);max-height:calc(100vh - 24px);margin:12px auto}
 body.is-tablet .month-rune-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
-body.is-tablet .jewel-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
-body.is-tablet .month-rune-head{grid-template-columns:minmax(0,1fr) 34px;gap:8px;padding:10px}
+body.is-tablet .jewel-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+body.is-tablet .month-rune-head{grid-template-columns:34px minmax(0,1fr) 34px;gap:8px;padding:10px}
 
 /* Mobile Zero rank: focused summary and card-form calculator. */
 body.is-mobile .zero-mobile-summary-hidden{display:none !important}

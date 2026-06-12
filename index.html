@@ -2,23 +2,44 @@
 <html lang="ko" class="dps-booting">
 <head>
 <script>
-window.DPS_APP_VERSION = "V 2.1";
-window.DPS_BUILD_VERSION = "2606130500";
+window.DPS_APP_VERSION = "V148";
+window.DPS_BUILD_VERSION = "2606131000";
 window.DPS_ASSET_VERSIONS = {
-  "app.js": "2606130500",
-  "style.css": "2606130500",
-  "data.js": "2606130500",
-  "image/logo/logo.png": "2606130500",
-  "image/logo/icon.png": "2606130500"
+  "app.js": "2606131000",
+  "style.css": "2606131000",
+  "data.js": "2606131000",
+  "image/logo/logo.png": "2606131000",
+  "image/logo/icon.png": "2606131000"
 };
 window.dpsAssetVersion = function(key){
   var versions = window.DPS_ASSET_VERSIONS || {};
-  return versions[key] || 'dev';
+  return versions[key] || window.DPS_BUILD_VERSION || 'dev';
 };
 window.dpsAssetUrl = function(src, key){
   var version = window.dpsAssetVersion(key || src.replace(/^\.\//, ''));
   var separator = src.indexOf('?') === -1 ? '?' : '&';
   return src + separator + 'v=' + encodeURIComponent(version);
+};
+window.DPS_REMOTE_ASSET_BASE = 'https://sldbox.github.io/dps/';
+window.dpsNormalizeAssetPath = function(src){
+  return String(src || '').replace(/^\.\//, '').replace(/^\//, '');
+};
+window.dpsEncodeAssetPath = function(path){
+  return window.dpsNormalizeAssetPath(path).split('/').map(function(part){
+    return encodeURIComponent(part);
+  }).join('/');
+};
+window.dpsRemoteAssetUrl = function(src, key){
+  var path = window.dpsNormalizeAssetPath(key || src);
+  var version = window.dpsAssetVersion(path);
+  var base = window.DPS_REMOTE_ASSET_BASE || 'https://sldbox.github.io/dps/';
+  return base.replace(/\/$/, '/') + window.dpsEncodeAssetPath(path) + '?v=' + encodeURIComponent(version);
+};
+window.dpsImageAssetUrl = function(src, key){
+  if(window.location && window.location.protocol === 'file:'){
+    return window.dpsRemoteAssetUrl(src, key);
+  }
+  return window.dpsAssetUrl(src, key);
 };
 window.dpsCacheSignature = function(){
   var keys = ['app.js', 'style.css', 'data.js', 'image/logo/logo.png', 'image/logo/icon.png'];
@@ -63,8 +84,9 @@ setTimeout(function(){
 (function(){
   var assetUrl = window.dpsAssetUrl;
   var versionSignature = window.dpsCacheSignature();
-  var logo = assetUrl('./image/logo/logo.png', 'image/logo/logo.png');
-  var icon = assetUrl('./image/logo/icon.png', 'image/logo/icon.png');
+  var imageAssetUrl = window.dpsImageAssetUrl || assetUrl;
+  var logo = imageAssetUrl('./image/logo/logo.png', 'image/logo/logo.png');
+  var icon = imageAssetUrl('./image/logo/icon.png', 'image/logo/icon.png');
   try{
     var key='gaebokdi_dps_asset_versions';
     var prev=localStorage.getItem(key);
