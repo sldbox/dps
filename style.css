@@ -1,4 +1,9 @@
-/* 1. Foundation: tokens, shell, and desktop layout */
+/* =========================================================
+   style.css
+   역할: 전역 토큰, 레이아웃, 입력/버튼, 모달, 반응형 화면 스타일 관리
+   관리 기준: 관련 선택자 위치에서 직접 교체하고, 하단 누적 override 추가 금지
+   구역: Foundation → Components → Tables/Modals → Storage actions → Responsive
+   ========================================================= */
 :root{--app-font-scale:1;--font-main:"Pretendard","Malgun Gothic","Apple SD Gothic Neo",sans-serif;--bg:#f5f7fb;--bg2:#ffffff;--bg4:#eef2f7;--bd:#d8dee9;--bd2:#b8c2d2;--tx:#172033;--tx3:#69758a;--acc:#3157d5;--panel-shadow:0 1px 6px rgba(15,23,42,.06);--ui-sub:#5d6b80;--ui-soft:#f8fbff;--ui-line2:#c5d3e6;--ui-card:#ffffff;--ui-card2:#d9ecff;--ui-title:#17336f;--state-warn-bg:#fffbeb;--state-warn-line:#fde68a;--state-warn-text:#b45309;--state-danger-bg:#fff1f2;--state-danger-line:#fecdd3;--state-danger-text:#be123c;--ui-line-soft:#eaf1f9}
 *{box-sizing:border-box;margin:0;padding:0}
 body{font:calc(14px * var(--app-font-scale))/1.55 var(--font-main);min-height:100vh;overflow:hidden !important;color:var(--ui-text) !important;font-size:calc(13px * var(--app-font-scale)) !important}
@@ -3190,27 +3195,51 @@ html body .trait-board-panel > .sp-box > .trait-dashboard-tools .trait-opt-tier-
 }
 
 /* Storage actions. */
-html body .sg.priority .save-row .btn.subtle{
+html body .sg.priority .save-row .btn.subtle,
+html[class] body[class] .wrap .col-work .col-left > .sg.priority .save-row > button.btn.subtle{
   height:36px !important;
   min-height:36px !important;
-  border:1px solid #b7c7dc !important;
   border-radius:9px !important;
-  background:linear-gradient(180deg,#fff 0%,#f5f8fc 72%,#edf2f8 100%) !important;
-  color:#244a8f !important;
   font-weight:900 !important;
-  box-shadow:0 2px 0 #aebdd1,0 4px 8px rgba(27,52,87,.08),inset 0 1px 0 rgba(255,255,255,.95) !important;
 }
-html body .sg.priority .save-row .btn.subtle:hover{
+html body .sg.priority .convenience-tools-row .btn.subtle,
+html[class] body[class] .wrap .col-work .col-left > .sg.priority .convenience-tools-row > button.btn.subtle{
+  border:1px solid #aac6ee !important;
+  background:linear-gradient(180deg,#fafdff 0%,#edf5ff 100%) !important;
+  color:#1f4d8f !important;
+  box-shadow:0 2px 0 #9bb7dd,0 4px 8px rgba(31,77,143,.08),inset 0 1px 0 #fff !important;
+}
+html body .sg.priority .convenience-tools-row .btn.subtle:hover,
+html[class] body[class] .wrap .col-work .col-left > .sg.priority .convenience-tools-row > button.btn.subtle:hover{
   border-color:#7fa3df !important;
-  background:linear-gradient(180deg,#fff 0%,#edf4ff 100%) !important;
-  color:#1f4ca3 !important;
-  box-shadow:0 2px 0 #88a5d2,0 5px 10px rgba(39,81,145,.13),inset 0 1px 0 #fff !important;
+  background:linear-gradient(180deg,#fff 0%,#e5f0ff 100%) !important;
+  color:#1d4ed8 !important;
 }
-html[class] body[class] .wrap .col-work .col-left > .sg.priority .save-row > button.btn.subtle{
-  border:1px solid #b7c7dc !important;
-  background:linear-gradient(180deg,#fff 0%,#f5f8fc 72%,#edf2f8 100%) !important;
-  color:#244a8f !important;
-  box-shadow:0 2px 0 #aebdd1,0 4px 8px rgba(27,52,87,.08),inset 0 1px 0 rgba(255,255,255,.95) !important;
+html body .sg.priority .convenience-storage-row .btn.subtle,
+html[class] body[class] .wrap .col-work .col-left > .sg.priority .convenience-storage-row > button.btn.subtle{
+  border:1px solid #a9d8c2 !important;
+  background:linear-gradient(180deg,#fbfffd 0%,#eefbf5 100%) !important;
+  color:#12613c !important;
+  box-shadow:0 2px 0 #9bcbb5,0 4px 8px rgba(18,97,60,.08),inset 0 1px 0 #fff !important;
+}
+html body .sg.priority .convenience-storage-row .btn.subtle:hover,
+html[class] body[class] .wrap .col-work .col-left > .sg.priority .convenience-storage-row > button.btn.subtle:hover{
+  border-color:#75bd9b !important;
+  background:linear-gradient(180deg,#fff 0%,#e4f8ef 100%) !important;
+  color:#047857 !important;
+}
+html body .sg.priority button.btn.subtle[data-action="clearSavedState"],
+html[class] body[class] .wrap .col-work .col-left > .sg.priority button.btn.subtle[data-action="clearSavedState"]{
+  border-color:#e8b5bd !important;
+  background:linear-gradient(180deg,#fff 0%,#fff3f5 100%) !important;
+  color:#bd3144 !important;
+  box-shadow:0 2px 0 #df9faa,0 4px 8px rgba(145,38,55,.07),inset 0 1px 0 #fff !important;
+}
+html body .sg.priority button.btn.subtle[data-action="clearSavedState"]:hover,
+html[class] body[class] .wrap .col-work .col-left > .sg.priority button.btn.subtle[data-action="clearSavedState"]:hover{
+  border-color:#e38b99 !important;
+  background:linear-gradient(180deg,#fff 0%,#ffe9ed 100%) !important;
+  color:#a81e31 !important;
 }
 html[class] body[class] .wrap .col-work .col-left > .sg.priority .save-row > a.btn.subtle.convenience-link,
 html[class] body.is-mobile[class] .wrap .col-work .sg.priority .save-row > a.btn.subtle.convenience-link{
@@ -3231,34 +3260,6 @@ html[class] body.is-mobile[class] .wrap .col-work .sg.priority .save-row > a.btn
   margin-left:4px !important;
   font-size:.9em !important;
   line-height:1 !important;
-}
-html[class] body[class] .wrap .col-work .col-left > .sg.priority button.btn.subtle[data-action="clearSavedState"]{
-  border-color:#e8b5bd !important;
-  background:linear-gradient(180deg,#fff 0%,#fff3f5 100%) !important;
-  color:#bd3144 !important;
-  box-shadow:0 2px 0 #df9faa,0 4px 8px rgba(145,38,55,.07),inset 0 1px 0 #fff !important;
-}
-html[class] body.is-mobile[class] .wrap .col-work .sg.priority .save-row > button.btn.subtle,
-html[class] body.is-tablet[class] .wrap .col-work .sg.priority .save-row > button.btn.subtle{
-  border:1px solid #b7c7dc !important;
-  background:linear-gradient(180deg,#fff 0%,#f5f8fc 72%,#edf2f8 100%) !important;
-  color:#244a8f !important;
-  box-shadow:0 2px 0 #aebdd1,0 4px 8px rgba(27,52,87,.08),inset 0 1px 0 rgba(255,255,255,.95) !important;
-}
-html[class] body.is-mobile[class] .wrap .col-work .sg.priority button.btn.subtle[data-action="saveState"],
-html[class] body.is-mobile[class] .wrap .col-work .sg.priority button.btn.subtle[data-action="exportStateBackup"],
-html[class] body.is-tablet[class] .wrap .col-work .sg.priority button.btn.subtle[data-action="saveState"],
-html[class] body.is-tablet[class] .wrap .col-work .sg.priority button.btn.subtle[data-action="exportStateBackup"]{
-  border-color:#86a8e8 !important;
-  background:linear-gradient(180deg,#f9fbff 0%,#eaf1ff 100%) !important;
-  color:#234f9f !important;
-}
-html[class] body.is-mobile[class] .wrap .col-work .sg.priority button.btn.subtle[data-action="clearSavedState"],
-html[class] body.is-tablet[class] .wrap .col-work .sg.priority button.btn.subtle[data-action="clearSavedState"]{
-  border-color:#e8b5bd !important;
-  background:linear-gradient(180deg,#fff 0%,#fff3f5 100%) !important;
-  color:#bd3144 !important;
-  box-shadow:0 2px 0 #df9faa,0 4px 8px rgba(145,38,55,.07),inset 0 1px 0 #fff !important;
 }
 
 /* Shared clean edges */
