@@ -1,3825 +1,1573 @@
-/* app.js 구역 목차
-   01. 설정 / 기준 데이터
-   02. 전역 상태 / 특성 투자 상태
-   03. 공통 UI 유틸 / 입력값 유틸
-   04. 계산 보조 함수 / 난이도 / 룬 / 특성 효과
-   05. 핵심 계산 엔진
-   06. 메인 화면 렌더링 / 재계산
-   07. DPS 표 모달
-   08. 비교하기 / 변경값 적용
-   09. 특성보드 / 최적화 / 초기화
-   10. 저장 / 복구 / JSON 백업
-   11. 화면 제어 / 글자 크기 / 위험 작업 확인
-   12. 이벤트 바인딩 / 앱 초기화
-*/
+// [1]  도구 유닛
+// [2]  특수 동작
+// [3]  특수 조건
+// [3-2] 유닛 자체 조합 규칙
+// [4]  검색 규칙
+// [5]  정수 세팅
+// [6]  정렬 우선순위
+// [7]  체크리스트 그룹
+// [8]  등급·색상
+// [9] 종족 탭
+// [10] 기초 재료 순서
+// [11] 통합 보드 슬롯
+// [12] 로컬스토리지 키
+// [13] 프리셋
+// [14] 파싱 규칙
+// [15] 정책
+
+const SYSTEM_CONFIG = {
+
+    // [1] 도구 유닛
+    // 조합 재료이지만 1회만 필요한 유닛 (장착형 도구 개념)
+    // 형식: "상위유닛": ["도구유닛1", "도구유닛2"]
+    tools: {
+        "로리스완": ["낮까마귀", "자동포탑"],
+        "말라쉬": ["드라켄레이저천공기"]
+    },
+
+    // [2] 유닛별 특수 동작
+    // presetNoStack: true → 프리셋 실행 시 이미 장바구니에 있으면 중복 추가 방지
+    // specialRender: true → 체크리스트에 완료 버튼 없이 "자동 완료됨" 텍스트로만 표시
+    // comboSlot:     true → 통합 보드에서 갓오타/메시브 콤보 슬롯으로 표시
+    // batch:         N    → specialRender 유닛의 "+ N개 완료" 버튼 단위 수량
+    unitBehaviors: {
+        "갓오타": { specialRender: true, comboSlot: true, batch: 1 },
+        "메시브": { specialRender: true, comboSlot: true, batch: 1 },
+        "자동포탑": { specialRender: true, batch: 5 },
+        "유물조각": { specialRender: true, batch: 5 },
+        "자이언트플라워": { presetNoStack: true },
+    },
+
+    // 장바구니·프리셋에 1개만 담기며 수량 스테퍼가 숨겨지는 유닛 목록
+    // (슈퍼히든 등급 이상도 코드에서 자동으로 동일하게 처리됨)
+    oneTimeIds: ["데하카", "데하카고치", "유물", "드라켄레이저천공기"],
+
+    // [3] 특수 조건
+    // 툴팁에 노란 뱃지로 표시될 조건 텍스트
+    // 형식: "유닛명": "조건 설명"
+    specialConditions: {
+        "데하카의오른팔": "100R↓ 저그업 20회, 역전복권 10회, 인생복권 3회"
+    },
+
+    // [3-2] 유닛 자체 조합 규칙 (툴팁·도감 카드에 노란 배지로 표시)
+    // specialConditions(재료에 붙는 조건)과 달리, 해당 유닛의 조합 방식 자체를 설명
+    // 형식: "유닛명": "조건 설명"
+    unitConditions: {
+        "홀로그램네메시스": "재료 3개 중 1개의 조건만 충족해도 조합 가능"
+    },
+
+    // [4] 검색 및 도감 규칙
+    search: {
+        // 도감·검색에서 완전히 숨길 유닛
+        excludeIds: ["데하카고치"],
+        // 검색창에서 허용하는 최소 등급
+        minGradeForSearch: "레전드",
+        // 등급 미달이어도 검색·도감 허용할 유닛
+        searchAllowIds: ["자이언트플라워"]
+    },
+
+    // [5] 정수(에센스) 세팅
+    essence: {
+        // 종족 탭 → 정수 종류 매핑
+        mapping: { "테바": "코랄", "테메": "코랄", "토바": "아이어", "토메": "아이어", "저그중립": "제루스", "혼종": "혼종" },
+        // 통합 보드에 표시할 정수 슬롯 목록
+        display: [
+            { id: "coral",  color: "#FF6B6B",               name: "코랄" },
+            { id: "aiur",   color: "var(--grade-rare)",      name: "아이어" },
+            { id: "zerus",  color: "var(--grade-legend)",    name: "제루스" },
+            { id: "hybrid", color: "var(--grade-hidden)",    name: "혼종" }
+        ]
+    },
+
+    // [6] 정렬 우선순위
+    // 숫자가 클수록 체크리스트 상단에 배치
+    sorting: { order: { "아몬": 100, "나루드": 97, "유물": 96 } },
+
+    // [7] 체크리스트 그룹 정의
+    // isCol:      true → 기본 접힘
+    // alwaysShow: true → 슬롯 없어도 항상 표시
+    // alwaysOpen: true → 슬롯 있으면 항상 펼침
+    groupDefs: [
+        { id: 'group-target',       pid: 'grid-target',       title: '최종 목표', resetLevel: 5, isCol: false, alwaysShow: false, alwaysOpen: true,  resetLabel: '최종 복구' },
+        { id: 'group-special',      pid: 'grid-special',      title: '직속 재료', resetLevel: 4, isCol: false, alwaysShow: false, alwaysOpen: true,  resetLabel: '직속 복구' },
+        { id: 'group-upper-hidden', pid: 'grid-upper-hidden', title: '상위 재료', resetLevel: 3, isCol: true,  alwaysShow: false, alwaysOpen: false, resetLabel: '상위 복구' },
+        { id: 'group-basic-hidden', pid: 'grid-basic-hidden', title: '하위 재료', resetLevel: 2, isCol: true,  alwaysShow: false, alwaysOpen: false, resetLabel: '하위 복구' },
+        { id: 'group-top',          pid: 'grid-top',          title: '기초 재료', resetLevel: 1, isCol: true,  alwaysShow: true,  alwaysOpen: false, resetLabel: '기초 복구' }
+    ],
+
+    // [8] 등급 정의 및 색상
+    grades: {
+        order: ["매직", "레어", "에픽", "유니크", "헬", "레전드", "히든", "슈퍼히든"],
+        colors: {
+            "매직": "var(--grade-magic)", "레어": "var(--grade-rare)", "에픽": "var(--grade-epic)", "유니크": "var(--grade-unique)",
+            "헬": "var(--grade-hell)", "레전드": "var(--grade-legend)", "히든": "var(--grade-hidden)", "슈퍼히든": "var(--grade-super)"
+        },
+        // 프리셋 버튼에서 텍스트를 어둡게 강제 적용할 밝은 배경색 목록
+        brightColors: ["노랑", "연두", "하늘", "흰색", "금색"]
+    },
+
+    // [9] 종족 탭 목록
+    tabs: [
+        { key: "테바", name: "테바" }, { key: "테메", name: "테메" },
+        { key: "토바", name: "토바" }, { key: "토메", name: "토메" },
+        { key: "저그중립", name: "저그중립" }, { key: "혼종", name: "혼종" }
+    ],
+
+    // [10] 기초 재료 고정 표시 순서 (5열 고정 — 수정 금지)
+    topFixedOrder: [
+        ["죽음의머리", "검은망치", "광전사석상", "교란기", "라바사우르스"],
+        ["악령", "ARES", "정화자사도", "선동자", "브루탈리스크"],
+        ["짐레이너", "대천사", "제라툴", "거신", "케리건"],
+        ["스투코프", "오딘", "혼종파멸자", "분노수호자", "혼종약탈자"],
+        ["공허포격기", "우르사돈수", "우르사돈암", "테이스틀로프", "아토실로프"],
+        ["노바", "히페리온", "보라준", "공허의구도자", "거대괴수"],
+        ["특공대레이너", "고르곤전투순양함", "아르타니스", "셀렌디스", "원시케리건"],
+        ["자이언트플라워", "유물조각", "자동포탑", "갓오타", "메시브"]
+    ],
+
+    // [11] 통합 보드 슬롯 목록 (4행 × 5열 = 20슬롯, 마지막 1칸은 갓오타/메시브 콤보)
+    dashboardAtoms: [
+        "전쟁광", "스파르타중대", "암흑광전사", "암흑파수기", "원시바퀴",
+        "저격수", "코브라", "암흑고위기사", "암흑추적자", "변종가시지옥",
+        "망치경호대", "공성파괴단", "암흑집정관", "암흑불멸자", "원시히드라리스크",
+        "땅거미지뢰", "자동포탑", "우르사돈암", "우르사돈수", "갓오타/메시브"
+    ],
+
+    // [12] 로컬스토리지 키
+    storageKeys: window.NEXUS_STORAGE_KEYS || {
+        saveData:  "nexusSaveData",
+        favorites: "nexusFavorites",
+        fontScale: "nexusFontScale"
+    },
+
+    // [13] 프리셋 버튼 목록
+    // hidden: "비활성" 으로 버튼 비활성화 가능
+    // oneTime: true → 1회 실행 후 버튼 비활성 (통합 초기화로 재활성)
+    presets: [
+        // 일반 프리셋
+        { label: "불나아", group: "일반 프리셋", command: "불새케리건/나루드/아몬/자이언트플라워*3/유물", tooltip: "불새 나루드 아몬", oneTime: true, 배경색: "보라", 글씨색: "흰색" },
+        { label: "불나비", group: "일반 프리셋", command: "불새케리건/나루드/비밀작전노바/자이언트플라워*3/유물", tooltip: "불새 나루드 비밀작전노바", oneTime: true, 배경색: "빨강", 글씨색: "흰색" },
+        { label: "불아비", group: "일반 프리셋", command: "불새케리건/아몬/비밀작전노바/자이언트플라워*3/유물", tooltip: "불새 아몬 비밀작전노바", oneTime: true, 배경색: "파랑", 글씨색: "흰색" },
+        { label: "땅굴*8", group: "일반 프리셋", command: "땅굴파괴자*8", tooltip: "땅굴파괴자 8마리", oneTime: true, 배경색: "검정", 글씨색: "금색" },
+
+        // 정수 프리셋
+        { label: "코랄정수[9종]", group: "정수 프리셋", command: "비밀작전노바/테라트론/아우구스트그라드의자랑/제우스폭격기/창공의분노/마일스블레이즈루이스/핵의원천/광부/드라켄레이저천공기", tooltip: "코랄의정수 9종", oneTime: true, 배경색: "빨강", 글씨색: "흰색" },
+        { label: "아이어정수[8종]", group: "정수 프리셋", command: "아몬/아둔의창/하늘군주/정화자감시자/말라쉬/라사라/케이다란초석/모한다르", tooltip: "아이어 정수 8종", oneTime: true, 배경색: "파랑", 글씨색: "흰색" },
+        { label: "제루스정수[8종]", group: "정수 프리셋", command: "불새케리건/초월체/알렉산더/아포칼리스크/데하카/땅굴파괴자/포자주둥이/무리군주", tooltip: "제루스 정수 8종", oneTime: true, 배경색: "초록", 글씨색: "흰색" },
+        { label: "혼종정수[7종]", group: "정수 프리셋", command: "나루드/혼종종언자/아몬의젤나가피조물/혼종뫼비우스/티라노조르/홀로그램네메시스/유물", tooltip: "혼종 정수 7종", oneTime: true, 배경색: "보라", 글씨색: "흰색" },
+        { label: "통합정수[30종]", group: "정수 프리셋", command: "비밀작전노바/테라트론/아우구스트그라드의자랑/제우스폭격기/마일스블레이즈루이스/핵의원천/창공의분노/광부/아몬/아둔의창/하늘군주/정화자감시자/말라쉬/라사라/케이다란초석/초월체/불새케리건/알렉산더/아포칼리스크/데하카/땅굴파괴자/포자주둥이/무리군주/나루드/혼종종언자/아몬의젤나가피조물/혼종뫼비우스/티라노조르/홀로그램네메시스/유물", tooltip: "통합정수 30종", oneTime: true, 배경색: "검정", 글씨색: "흰색" }
+    ],
+
+    // [14] 파싱 규칙
+    parsing: {
+        // recipe/cost 파싱 시 유닛 없음으로 처리할 값 목록
+        ignoreValues: ["미발견", "없음", ""]
+    },
+
+    // [15] 정책(Policy) — 수치·타이머·안전장치
+    // 앱 동작에 영향을 주는 숫자값 모음. 새 상수 추가 시 이곳에 추가.
+    policy: {
+        // ── 수량 제한 ──
+        // 유닛 1종당 최대 담기 수량
+        maxUnitCapacity: 16,
+        // 혼종 정수 가중치 (1개 = 일반 N개)
+        hybridWeight: 3,
+
+        // ── 안전장치 (루프 상한) ──
+        // BFS 루프 상한 (무한루프 방지)
+        maxLoopQueue: 1000,
+        // 완료 역산 재귀 상한
+        maxLoopMerge: 30,
+        // 유닛 BFS 깊이 상한 (체크리스트 슬롯 배치용)
+        maxBfsDepth: 30,
+
+        // ── 등급 기준 ──
+        // 체크리스트 표시 최소 등급
+        minGradeForChecklist: "레어",
+        // oneTime 자동 적용 최소 등급 (이 등급 이상은 1개 고정)
+        oneTimeMinGrade: "슈퍼히든",
+        // 체크리스트 히든그룹 판정 최소 등급
+        hiddenGroupMinGrade: "히든",
+        // 히든그룹 내 상위(직속) 판정 깊이 임계값 (이하 = 상위, 초과 = 하위)
+        hiddenUpperDepthMax: 2,
+
+        // ── 입력 UX 타이머 (ms) ──
+        // 꾹 누르기 가속 시작 간격
+        accelInterval: 80,
+        // 꾹 누르기 가속 최솟값
+        accelMinInterval: 20,
+        // 꾹 누르기 가속 감소 단계
+        accelDecreaseStep: 5,
+        // 꾹 누르기 가속 단계 구간 (N회마다 1단계 상승)
+        accelStepUnit: 6,
+        // Shift 꾹 누르기 가속 배수
+        accelShiftMultiplier: 5,
+        // 꾹 누르기 시작 딜레이
+        holdStartDelay: 400,
+        // 완료 잠금 해제 딜레이
+        completeLockDelay: 300,
+        // 마우스·터치 중복 방지 간격
+        mouseAfterTouchDelay: 500,
+
+        // ── 폰트 조절 ──
+        // 꾹 누르기 시작 딜레이
+        fontHoldStartDelay: 600,
+        // 꾹 누르기 반복 간격
+        fontHoldRepeatDelay: 300,
+        // 스케일 범위 및 단계
+        fontScaleMin: 0.8,
+        fontScaleMax: 2.0,
+        fontScaleStep: 0.05,
+        // 모바일 브레이크포인트 (이 미만은 비활성)
+        mobileBreakpoint: 768,
+        // 태블릿 세로 최대 너비
+        tabletPortraitMax: 1024,
+
+        // ── UI 피드백 타이머 (ms) ──
+        // 햅틱 진동 지속시간(ms)
+        hapticDuration: 15,
+        searchFailFeedbackDelay: 1500,
+        // 툴팁 크기 fallback (getBoundingClientRect 실패 시, px)
+        tooltipFallbackWidth: 290,
+        tooltipFallbackHeight: 150,
+        // 툴팁 화면 여백 offset (px)
+        tooltipOffset: 15,
+        // 툴팁 스크롤 최소 여백 (px)
+        tooltipScrollPad: 10,
+        // 툴팁 최대 너비 계산 여백 (px)
+        tooltipMaxWidthPad: 20,
+
+        // ── 콤보 슬롯 ──
+        // 통합 보드 갓오타/메시브 콤보 슬롯 키
+        magicComboKey: "갓오타/메시브",
+
+        // ── 체크리스트 표시 ──
+        // "완료 숨기기"에서 제외할 그룹
+        hideCompletedExcludeGroups: ["최종 목표", "기초 재료"],
+
+        // ── 통합 초기화 버튼 ──
+        restoreAllBtn: {
+            idBtn: "btnRestoreAll",
+            idLabel: "btnRestoreAllLabel",
+            labelDefault: "통합 초기화",
+            labelDone: "초기화됨 ✓",
+            classDone: "reset-btn-done",
+            // 완료 표시 유지 시간(ms)
+            resetDelay: 1500,
+            // 첫 클릭 후 실행까지 대기 시간(ms)
+            pendingDelay: 2000
+        }
+    }
+};
+
+// ==========================================================================
+// [ 넥서스 앱 (app.js) — config 통합본 ]
+//  1. 전역 상태 및 설정      (State & Config)
+//  2. 핵심 유틸 및 캐시      (Core Utils)
+//  3. 데이터 저장 및 복원    (Storage)
+//  4. 로직: 검색 및 커맨드   (Search & Command)
+//  5. 로직: 정수 및 코스트   (Calculation)  ← 파싱·계산 헬퍼 포함
+//  6. 로직: 완료 및 역산     (Crafting & Restore)
+//  7. UI: 대시보드           (Dashboard)
+//  8. UI: 체크리스트         (Checklist Board)
+//  9. UI: 탭 및 도감 카드    (Tabs & Unit Cards)
+// 10. UI: 장바구니           (Cart)
+// 11. UI: 프리셋 및 제어     (Presets & Controls)
+// 12. UI: 모달 및 툴팁       (Modals & Tooltips)
+// 13. 전역 이벤트 위임       (Global Events)
+// 14. 앱 초기화 부트스트랩   (Initialization)
+// ==========================================================================
 
 (() => {
-  'use strict';
+    // ── [1] 전역 상태 및 설정 ──
+    const IGNORE_PARSE_RECIPES = SYSTEM_CONFIG.parsing.ignoreValues;
+    const clean = (s) => s ? s.replace(/\s+/g, '').toLowerCase() : '';
+    const ATOM_HASH = Object.fromEntries(SYSTEM_CONFIG.dashboardAtoms.map(a => [clean(a), a]));
+    const CLEAN_TOOLS_MAP = Object.fromEntries(Object.entries(SYSTEM_CONFIG.tools).map(([k, v]) => [clean(k), v.map(clean)]));
+    const CLEAN_EXCLUDE_IDS = new Set(SYSTEM_CONFIG.search.excludeIds.map(clean));
+    const CLEAN_SEARCH_ALLOW_IDS = new Set((SYSTEM_CONFIG.search.searchAllowIds || []).map(clean));
+    const _behaviors = SYSTEM_CONFIG.unitBehaviors || {};
+    const SPECIAL_RENDER_LIST = Object.entries(_behaviors).filter(([, b]) => b.specialRender).map(([id, b]) => ({ id: clean(id), raw: id, batch: b.batch || 1 }));
+    const COMBO_SLOT_SET = new Set(Object.entries(_behaviors).filter(([, b]) => b.comboSlot).map(([id]) => clean(id)));
+    const COMBO_SLOT_RAWS = Object.entries(_behaviors).filter(([, b]) => b.comboSlot).map(([id]) => id);
+    const CLEAN_ONE_TIME_UNITS = new Set((SYSTEM_CONFIG.oneTimeIds || []).map(clean));
+    const CLEAN_PRESET_NOSTACK = new Set(Object.entries(_behaviors).filter(([, b]) => b.presetNoStack).map(([id]) => clean(id)));
+    const CLEAN_CRAFT_BATCH = Object.fromEntries(SPECIAL_RENDER_LIST.map(e => [e.id, e.batch]));
+    const AUTO_COMPLETE_IDS = SPECIAL_RENDER_LIST.filter(e => !COMBO_SLOT_SET.has(e.id)).map(e => e.id);
+    const CLEAN_SPECIAL_CONDITIONS = Object.fromEntries(Object.entries(SYSTEM_CONFIG.specialConditions).map(([k, v]) => [clean(k), v]));
+    const CLEAN_UNIT_CONDITIONS = Object.fromEntries(Object.entries(SYSTEM_CONFIG.unitConditions || {}).map(([k, v]) => [clean(k), v]));
+    const GROUP_DEFS = SYSTEM_CONFIG.groupDefs;
+    const titleToGridId = Object.fromEntries(GROUP_DEFS.map(g => [g.title, g.pid]));
 
-  const MODES = ['is-pc-landscape', 'is-pc-portrait', 'is-tablet', 'is-mobile', 'is-portrait-view', 'is-mobile-device', 'is-tablet-device', 'is-narrow-mobile', 'is-tabbed'];
-  const MOBILE_PAGES = [
-    { key: 'convenience', label: '편의기능', selectors: ['.sg.priority'] },
-    { key: 'spec', label: '기본정보', selectors: ['.xp-sp-card'] },
-    { key: 'rune-spec', label: '룬정보', selectors: ['.clean-rune-card'] },
-    { key: 'rune-effect', label: '룬효과/버프', selectors: ['.unit-enhance-card'] },
-    { key: 'trait', label: '특성보드', selectors: ['.col-right'] },
-    { key: 'result', label: '스탯보드', selectors: ['.stat-dps-card'] },
-    { key: 'zero-rank', label: '승단', selectors: ['.zero-rank-card'] },
-    { key: 'save', label: '기타', selectors: ['.bus-cut-card', '.final-damage-card'] }
-  ];
+    // 데이터 맵
+    const unitMap = new Map(), activeUnits = new Map(), completedUnits = new Map(), depCache = new Map();
+    const completedTargets = new Map(), _unitNativeLevels = new Map();
+    const JEWEL_DATABASE = [];
+    const PRESET_COLOR_MAP = {
+        '빨강':'red', '주황':'orange', '노랑':'yellow', '연두':'lime', '초록':'green', '하늘':'sky',
+        '파랑':'blue', '남색':'navy', '보라':'purple', '분홍':'pink', '청록':'cyan', '흰색':'white',
+        '검정':'black', '회색':'gray', '금색':'gold'
+    };
 
-  const state = {
-    tabs: null,
-    pages: [],
-    restore: new Map(),
-    raf: 0,
-    arrangedMobile: false,
-    layoutWidth: 0,
-    layoutPortrait: null
-  };
+    // 즐겨찾기
+    const FAVORITES_KEY = SYSTEM_CONFIG.storageKeys.favorites;
+    const _favorites = new Set((() => { try { return JSON.parse(localStorage.getItem(FAVORITES_KEY) || '[]'); } catch(e) { return []; } })());
+    // UI 상태
+    let _activeTabIdx = 0, _currentViewMode = 'codex', _currentHighlight = null, _hideCompleted = false;
+    let _cartTab = 'active', _cartCollapsed = false, _jewelPanelOpen = false, _isCodexContentInitialized = false, _previousFocus = null;
+    let _presetTab = '일반 프리셋';
+    let _fontScale = 1.0;
 
-  function getMode() {
-    const w = window.innerWidth || document.documentElement.clientWidth || 0;
-    const h = window.innerHeight || document.documentElement.clientHeight || 0;
-    const shortSide = Math.min(w, h);
-    const longSide = Math.max(w, h);
-    const portrait = h > w;
+    // 타이머 및 락 상태
+    let repeatTimer = null, repeatDelayTimer = null, _lastInteractionTime = 0, _currentAccelInterval = SYSTEM_CONFIG.policy.accelInterval, _touchHoldCount = 0;
+    let updateTimer = null, _completeLock = new Set(), _presetUsed = new Map(), _restoreAllCooldown = false;
+    let _fontRepeatTimer = null, _fontRepeatDelayTimer = null;
+    let _saveFailCount = 0, _restoreAllPendingTimer = null;
+    let _lastCalcResult = null; // 마지막 calculateDeductedRequirements 결과 캐시
+    const _depVisiting = new Set();
 
-    if (shortSide <= 600) return 'is-mobile';
-    if (shortSide <= 1024 && longSide <= 1200) return 'is-tablet';
-    if (portrait) return 'is-pc-portrait';
-    return 'is-pc-landscape';
-  }
+    // ── [2] 핵심 유틸 및 캐시 ──
+    const getEl = (id) => document.getElementById(id);
+    const triggerHaptic = () => navigator.vibrate?.(SYSTEM_CONFIG.policy.hapticDuration);
+    const virtualUnitIds = new Set(AUTO_COMPLETE_IDS);
+    const isToolRequirement = (parent, child) => CLEAN_TOOLS_MAP[parent]?.includes(child);
+    const getToolNeed = (parent) => CLEAN_TOOLS_MAP[parent] || [];
+    const isSpecialRender = (id) => SPECIAL_RENDER_LIST.some(e => e.id === id);
+    const isSearchAllowed = (id) => CLEAN_SEARCH_ALLOW_IDS.has(id);
+    const getGradeIndex = (grade) => Math.max(SYSTEM_CONFIG.grades.order.indexOf(grade), -99);
+    const isOneTime = (u) => u && (CLEAN_ONE_TIME_UNITS.has(u.id) || getGradeIndex(u.grade) >= getGradeIndex(SYSTEM_CONFIG.policy.oneTimeMinGrade));
+    const getUnitId = (rawName) => clean(rawName);
+    const calculateTotalCostScore = (u) => u?.parsedCost?.reduce((sum, pc) => sum + (pc.qty || 0), 0) || 0;
+    const isBrightColor = (name) => SYSTEM_CONFIG.grades.brightColors.includes(name);
 
-  function updateMobileOffsets() {
-    const header = document.querySelector('.hdr');
-    const tabs = document.querySelector('.mobile-swipe-tabs');
-    const headerHeight = header ? Math.ceil(header.getBoundingClientRect().height) : 0;
-    const tabsHeight = tabs ? Math.ceil(tabs.getBoundingClientRect().height) : 0;
-    const viewportHeight = window.innerHeight || document.documentElement.clientHeight || 0;
-    document.documentElement.style.setProperty('--mobile-header-h', `${headerHeight}px`);
-    document.documentElement.style.setProperty('--mobile-tabs-h', `${tabsHeight}px`);
-    document.documentElement.style.setProperty('--mobile-vh', `${viewportHeight}px`);
-  }
-
-  function applyMode() {
-    const mode = getMode();
-    const w = window.innerWidth || document.documentElement.clientWidth || 0;
-    const h = window.innerHeight || document.documentElement.clientHeight || 0;
-    const shortSide = Math.min(w, h);
-    const direction = h > w ? 'is-portrait-view' : '';
-    const deviceClass = mode === 'is-mobile' ? 'is-mobile-device' : (mode === 'is-tablet' ? 'is-tablet-device' : '');
-    const widthClass = mode === 'is-mobile' && shortSide <= 430 ? 'is-narrow-mobile' : '';
-
-    document.body.classList.remove(...MODES);
-    document.documentElement.classList.remove(...MODES);
-    document.body.classList.add(mode);
-    document.documentElement.classList.add(mode);
-    if (mode === 'is-mobile') {
-      document.body.classList.add('is-tabbed');
-      document.documentElement.classList.add('is-tabbed');
-    }
-    if (direction) {
-      document.body.classList.add(direction);
-      document.documentElement.classList.add(direction);
-    }
-    if (deviceClass) {
-      document.body.classList.add(deviceClass);
-      document.documentElement.classList.add(deviceClass);
-    }
-    if (widthClass) {
-      document.body.classList.add(widthClass);
-      document.documentElement.classList.add(widthClass);
-    }
-
-    state.layoutWidth = w;
-    state.layoutPortrait = h > w;
-    syncMobileLayout();
-    updateMobileOffsets();
-  }
-
-  function rememberPosition(el) {
-    if (!el || state.restore.has(el)) return;
-    const marker = document.createComment(`mobile-restore:${el.className || el.tagName}`);
-    el.parentNode.insertBefore(marker, el);
-    state.restore.set(el, marker);
-  }
-
-  function getOrCreatePage(key) {
-    let page = document.querySelector(`.mobile-page[data-mobile-page="${key}"]`);
-    if (!page) {
-      page = document.createElement('div');
-      page.className = `mobile-page mobile-page-${key}`;
-      page.dataset.mobilePage = key;
-    }
-    return page;
-  }
-
-  function buildTabs(colWork, pages) {
-    if (!state.tabs) {
-      state.tabs = document.createElement('div');
-      state.tabs.className = 'mobile-swipe-tabs';
-      state.tabs.setAttribute('aria-label', '모바일 섹션 이동');
-      colWork.parentNode.insertBefore(state.tabs, colWork);
+    // ── [3] 데이터 저장 및 복원 ──
+    function loadNexusState() {
+        const data = localStorage.getItem(SYSTEM_CONFIG.storageKeys.saveData);
+        if (!data) return;
+        let state;
+        try { state = JSON.parse(data); }
+        catch(e) { console.warn("[오류] 저장 데이터 파싱 실패 — 초기화합니다.", e); activeUnits.clear(); completedUnits.clear(); completedTargets.clear(); return; }
+        try { state.active?.forEach(([k, v]) => unitMap.has(k) && activeUnits.set(k, v)); } catch(e) { console.warn("[오류] active 복원 실패 — 건너뜁니다.", e); }
+        try { state.completed?.forEach(([k, v]) => (unitMap.has(k) || COMBO_SLOT_SET.has(k)) && completedUnits.set(k, v)); } catch(e) { console.warn("[오류] completed 복원 실패 — 건너뜁니다.", e); }
+        try { state.completedTargets?.forEach(([k, v]) => unitMap.has(k) && completedTargets.set(k, v)); } catch(e) { console.warn("[오류] completedTargets 복원 실패 — 건너뜁니다.", e); }
+        try { _cartTab = ['active', 'done'].includes(state.cartTab) ? state.cartTab : 'active'; } catch(e) { /* 기본값 유지 */ }
+        try { state.presetUsed?.forEach(([k,v]) => _presetUsed.set(Number(k), v)); } catch(e) { console.warn("[오류] presetUsed 복원 실패 — 건너뜁니다.", e); }
+        try { _hideCompleted = !!state.hideCompleted; _cartCollapsed = !!state.cartCollapsed; } catch(e) { /* 기본값 유지 */ }
+        completedTargets.forEach((_, uid) => activeUnits.delete(uid));
+        completedUnits.forEach((v, k) => v <= 0 && completedUnits.delete(k));
     }
 
-    state.tabs.textContent = '';
-    pages.forEach((page, idx) => {
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = 'mobile-swipe-tab';
-      btn.textContent = page.label;
-      btn.setAttribute('aria-pressed', idx === 0 ? 'true' : 'false');
-      btn.addEventListener('click', () => {
-        page.el.scrollTop = 0;
-        colWork.scrollTo({ left: page.el.offsetLeft, top: 0, behavior: 'auto' });
-        setActiveTab(idx);
-        btn.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'auto' });
-      });
-      state.tabs.appendChild(btn);
-    });
-  }
-
-  function setActiveTab(activeIndex) {
-    if (!state.tabs) return;
-    state.tabs.querySelectorAll('.mobile-swipe-tab').forEach((btn, idx) => {
-      const active = idx === activeIndex;
-      btn.classList.toggle('active', active);
-      btn.setAttribute('aria-pressed', active ? 'true' : 'false');
-    });
-  }
-
-  function arrangeMobile(colWork) {
-    const pages = [];
-
-    MOBILE_PAGES.forEach((config) => {
-      const elements = config.selectors.map(selector => document.querySelector(selector)).filter(Boolean);
-      if (!elements.length) return;
-
-      const page = getOrCreatePage(config.key);
-      page.textContent = '';
-      page.dataset.mobileLabel = config.label;
-
-      elements.forEach((el) => {
-        rememberPosition(el);
-        page.appendChild(el);
-      });
-
-      colWork.appendChild(page);
-      pages.push({ ...config, el: page });
-    });
-
-    state.pages = pages;
-    buildTabs(colWork, pages);
-    setActiveTab(0);
-    colWork.scrollTo({ left: 0, top: 0, behavior: 'auto' });
-    state.arrangedMobile = true;
-  }
-
-  function restoreDesktop() {
-    if (!state.arrangedMobile) return;
-
-    state.restore.forEach((marker, el) => {
-      if (marker.parentNode) marker.parentNode.insertBefore(el, marker.nextSibling);
-    });
-
-    document.querySelectorAll('.mobile-page').forEach(page => page.remove());
-    if (state.tabs) state.tabs.remove();
-    state.tabs = null;
-    state.pages = [];
-    state.arrangedMobile = false;
-  }
-
-  function syncMobileLayout() {
-    const colWork = document.querySelector('.col-work');
-    if (!colWork) return;
-
-    if (document.body.classList.contains('is-tabbed')) {
-      if (!state.arrangedMobile) arrangeMobile(colWork);
-    } else {
-      restoreDesktop();
+    function saveNexusState() {
+        try {
+            localStorage.setItem(SYSTEM_CONFIG.storageKeys.saveData, JSON.stringify({ active: [...activeUnits], completed: [...completedUnits], completedTargets: [...completedTargets], cartTab: _cartTab, presetUsed: [..._presetUsed], hideCompleted: _hideCompleted, cartCollapsed: _cartCollapsed }));
+            _saveFailCount = 0;
+        } catch(e) {
+            console.warn("[오류] 데이터 저장 실패", e);
+            _saveFailCount++;
+            if (_saveFailCount === 1) console.error("[경고] 브라우저 저장공간 부족으로 진행상황이 저장되지 않을 수 있습니다.");
+        }
     }
-  }
 
-  function isTextInput(el) {
-    if (!el || el.disabled || el.readOnly) return false;
-    if (el.tagName === 'TEXTAREA') return true;
-    if (el.tagName !== 'INPUT') return false;
-    return !['button', 'checkbox', 'color', 'file', 'hidden', 'image', 'radio', 'range', 'reset', 'submit'].includes((el.type || '').toLowerCase());
-  }
+    function saveFavorites() {
+        try { localStorage.setItem(FAVORITES_KEY, JSON.stringify([..._favorites])); } catch(e) {}
+    }
 
-  function bindInputAutoSelect() {
-    if (document.documentElement.dataset.inputAutoSelectBound === '1') return;
-    document.documentElement.dataset.inputAutoSelectBound = '1';
-
-    document.addEventListener('focusin', (event) => {
-      const el = event.target;
-      if (!isTextInput(el)) return;
-      requestAnimationFrame(() => {
-        try { el.select(); } catch (e) {}
-      });
-    });
-  }
-
-  function bindMobileScroll() {
-    const colWork = document.querySelector('.col-work');
-    if (!colWork || colWork.dataset.mobileScrollBound === '1') return;
-    colWork.dataset.mobileScrollBound = '1';
-
-    colWork.addEventListener('scroll', () => {
-      if (!document.body.classList.contains('is-tabbed') || !state.pages.length) return;
-      if (state.raf) return;
-      state.raf = requestAnimationFrame(() => {
-        state.raf = 0;
-        let bestIndex = 0;
-        let bestDistance = Infinity;
-        state.pages.forEach((page, idx) => {
-          const distance = Math.abs(page.el.offsetLeft - colWork.scrollLeft);
-          if (distance < bestDistance) {
-            bestDistance = distance;
-            bestIndex = idx;
-          }
+    // ── [4] 로직: 검색 및 커맨드 ──
+    function setupSearchEngine() {
+        const inp = getEl('unitSearchInput');
+        if (!inp) return;
+        inp.addEventListener('keydown', e => {
+            if (e.isComposing || e.keyCode === 229) return;
+            if (e.key === 'Enter') { e.preventDefault(); processCommand(e.target.value); inp.blur(); }
         });
-        setActiveTab(bestIndex);
-        const activeBtn = state.tabs && state.tabs.querySelectorAll('.mobile-swipe-tab')[bestIndex];
-        if (activeBtn) activeBtn.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'auto' });
-      });
-    }, { passive: true });
-  }
+    }
 
-  function scheduleApply() {
-    if (state.raf) cancelAnimationFrame(state.raf);
-    state.raf = requestAnimationFrame(() => {
-      state.raf = 0;
-      const w = window.innerWidth || document.documentElement.clientWidth || 0;
-      const h = window.innerHeight || document.documentElement.clientHeight || 0;
-      const portrait = h > w;
-      const widthChanged = Math.abs(w - state.layoutWidth) > 1;
-      const orientationChanged = state.layoutPortrait !== portrait;
-      if (!widthChanged && !orientationChanged) {
-        updateMobileOffsets();
-        return;
-      }
-      applyMode();
+    function findUnitFlexible(rawName) {
+        let cleaned = clean(rawName);
+        if (!cleaned) return null;
+        const minGradeIdx = getGradeIndex(SYSTEM_CONFIG.search.minGradeForSearch || '레전드');
+        let best = null, bestScore = -1;
+        for (let [id, u] of unitMap) {
+            if (CLEAN_EXCLUDE_IDS.has(id) || (getGradeIndex(u.grade) < minGradeIdx && !isSearchAllowed(id))) continue;
+            if (id === cleaned) return u;
+            if (id.includes(cleaned)) {
+                const score = 100 - id.indexOf(cleaned) * 10 - (id.length - cleaned.length);
+                if (score > bestScore) { bestScore = score; best = u; }
+            }
+        }
+        return best;
+    }
+
+    function processCommand(val, fromPreset = false) {
+        if (!val.trim()) return;
+        let successCount = 0;
+        val.split('/').filter(c => c.trim()).forEach(cmd => {
+            let parts = cmd.split('*'), targetName = parts[0].trim();
+            if (!targetName) return;
+            let qtyRaw = parseInt(parts[1], 10);
+            let qty = (isNaN(qtyRaw) || qtyRaw < 1) ? 1 : Math.min(qtyRaw, SYSTEM_CONFIG.policy.maxUnitCapacity);
+            const match = findUnitFlexible(targetName);
+            if (match) {
+                if (fromPreset && CLEAN_PRESET_NOSTACK.has(match.id) && activeUnits.has(match.id)) { successCount++; return; }
+                activeUnits.set(match.id, isOneTime(match) ? 1 : Math.min((activeUnits.get(match.id) || 0) + qty, SYSTEM_CONFIG.policy.maxUnitCapacity));
+                successCount++;
+            }
+        });
+        if (successCount > 0) {
+            debouncedUpdateAllPanels();
+            const searchInp = getEl('unitSearchInput');
+            if (searchInp) searchInp.value = '';
+            if (_currentViewMode === 'deduct') switchLayout('codex');
+        } else {
+            const inp = getEl('unitSearchInput');
+            if (inp) {
+                inp.value = '';
+                const orig = inp.placeholder;
+                inp.placeholder = '유닛을 찾을 수 없습니다.';
+                inp.style.transition = 'border-color 0.15s';
+                inp.style.borderColor = 'rgba(239,68,68,0.7)';
+                setTimeout(() => { inp.placeholder = orig; inp.style.borderColor = ''; }, SYSTEM_CONFIG.policy.searchFailFeedbackDelay);
+            }
+        }
+    }
+
+    // ── [5] 로직: 정수 및 코스트 계산 ──
+
+    // recipe 문자열을 + 구분자로 분리 (괄호 depth 고려)
+    function splitRecipe(recipeStr) {
+        let parts = [], current = '', depth = 0;
+        for (let char of recipeStr) {
+            if (char === '(' || char === '[') depth++;
+            else if (char === ')' || char === ']') depth = Math.max(0, depth - 1);
+            if (char === '+' && depth === 0) { if (current.trim()) parts.push(current.trim()); current = ''; }
+            else current += char;
+        }
+        if (current.trim()) parts.push(current.trim());
+        if (depth > 0 && parts.length === 1 && recipeStr.includes('+')) return recipeStr.split('+').map(s => s.trim()).filter(Boolean);
+        return parts;
+    }
+
+    // unitMap 전체의 parsedRecipe / parsedCost를 초기화 (앱 시작 시 1회 실행)
+    function initializeCacheEngine() {
+        depCache.clear();
+        unitMap.forEach(u => {
+            u.parsedCost = [];
+            if (u.cost && !IGNORE_PARSE_RECIPES.includes(u.cost)) {
+                u.cost.replace(/\//g, '+').split('+').forEach(p => {
+                    const m = p.match(/(.+?)\[(\d+)\]/);
+                    let cName = clean(m ? m[1].trim() : p.trim()), qty = m ? parseInt(m[2], 10) : 1;
+                    let type = 'atom', key = cName;
+                    if (COMBO_SLOT_SET.has(cName)) { type = 'special'; }
+                    else {
+                        const spKey = AUTO_COMPLETE_IDS.find(k => k === cName || cName.includes(k));
+                        if (spKey) key = spKey; else key = ATOM_HASH[getUnitId(cName)] || getUnitId(cName);
+                    }
+                    u.parsedCost.push({ type, key, qty, name: u.name });
+                });
+            }
+            u.parsedRecipe = [];
+            if (u.recipe && !IGNORE_PARSE_RECIPES.includes(u.recipe)) {
+                splitRecipe(u.recipe).forEach(p => {
+                    const m = p.match(/^([^(\[ ]+)(?:\(([^)]+)\))?(?:\[(\d+)\])?/);
+                    if (m) u.parsedRecipe.push({ id: getUnitId(m[1]), qty: m[3] ? parseInt(m[3], 10) : 1, cond: m[2] || '' });
+                });
+            }
+        });
+    }
+
+    // 재귀로 트리를 탐색해 히든 이상 유닛 ID를 중복 없이 수집 (유닛당 1회 = 공식 룰)
+    function collectHiddenUnitIds(uid, resultSet) {
+        if (resultSet.has(uid)) return;
+        resultSet.add(uid);
+        const u = unitMap.get(uid); if (!u) return;
+        u.parsedRecipe?.forEach(pr => pr.id && collectHiddenUnitIds(pr.id, resultSet));
+    }
+
+    function getEssenceCount(sourceMap) {
+        // 1단계: 관련 유닛 ID를 중복 없이 수집 (같은 유닛이 몇 개든 1회로 처리)
+        const uniqueUnitIds = new Set();
+        sourceMap.forEach((qty, uid) => { if (uid && qty > 0) collectHiddenUnitIds(uid, uniqueUnitIds); });
+
+        // 2단계: 수집된 유니크 유닛 중 히든 이상만 정수 카운팅
+        let counts = {};
+        Object.values(SYSTEM_CONFIG.essence.mapping).forEach(v => counts[v] = 0);
+        try {
+            uniqueUnitIds.forEach(uid => {
+                const u = unitMap.get(uid); if (!u) return;
+                if (getGradeIndex(u.grade) >= getGradeIndex(SYSTEM_CONFIG.policy.hiddenGroupMinGrade)) {
+                    const tEssence = SYSTEM_CONFIG.essence.mapping[u.category];
+                    if (tEssence && counts[tEssence] !== undefined) counts[tEssence]++;
+                }
+            });
+        } catch(e) { console.warn('[정수계산 오류]', e); }
+        Object.keys(counts).forEach(k => { if (isNaN(counts[k]) || counts[k] < 0) counts[k] = 0; });
+        return counts;
+    }
+
+    // depCache는 앱 생애주기 동안 unitMap이 불변이므로 영구 캐시가 정상 — 무효화 로직 추가 금지
+    function getDependencies(uid) {
+        if (depCache.has(uid)) return depCache.get(uid);
+        if (_depVisiting.has(uid)) return new Set([uid]);
+        _depVisiting.add(uid);
+        let deps = new Set([uid]);
+        try {
+            const u = unitMap.get(uid);
+            if (u) {
+                u.parsedRecipe?.forEach(child => child.id && getDependencies(child.id).forEach(d => deps.add(d)));
+                u.parsedCost?.forEach(pc => COMBO_SLOT_SET.has(pc.key) && deps.add(pc.key));
+            }
+            depCache.set(uid, deps);
+        } finally { _depVisiting.delete(uid); }
+        return deps;
+    }
+
+    // oneTime 유닛(슈퍼히든 등)은 몇 개가 필요하더라도 최대 1개로 고정 — 공식 룰, 수량 반영으로 변경 금지
+    function clampOneTimeQty(uid, qty) {
+        return isOneTime(unitMap.get(uid)) ? Math.min(qty, 1) : qty;
+    }
+
+    // mergedActive(장바구니에 동시 담긴 상위·하위 유닛) 는 하위가 상위의 재료로 처리되므로
+    // 하위 유닛의 completedUnits를 BFS 차감에서 제외 — 상위 완료 흐름으로만 처리되는 것이 정상
+    function getEffectiveCompletedQty(uid, mergedActive) {
+        return mergedActive.has(uid) ? 0 : (completedUnits.get(uid) || 0);
+    }
+
+    // 갓오타/메시브(콤보슬롯)는 recipe가 아닌 parsedCost에 정의되어 있어 BFS 트리에 포함되지 않음
+    // 별도로 parsedCost를 순회해 누적하고, 완료 차감도 별도 처리 — 일반 유닛과 계산 경로가 다른 것이 정상
+    function accumulateComboSlotRequirements(bfsMap, reqObj) {
+        bfsMap.forEach((needed, uid) => unitMap.get(uid)?.parsedCost?.forEach(pc => {
+            if (COMBO_SLOT_SET.has(pc.key)) reqObj[pc.key] += pc.qty * needed;
+        }));
+    }
+
+    function calculateDeductedRequirements() {
+        let reqMap = new Map(), baseMap = new Map(), reasonMap = new Map();
+        let specialReq = {}, baseSpecialReq = {}, specialReason = {};
+        COMBO_SLOT_RAWS.forEach(k => { specialReq[k] = 0; baseSpecialReq[k] = 0; specialReason[k] = new Map(); });
+
+        let mergedActive = new Set();
+        activeUnits.forEach((_, uid) => unitMap.get(uid)?.parsedRecipe?.forEach(pr => pr.id && activeUnits.has(pr.id) && mergedActive.add(pr.id)));
+
+        const calcBFS = (isDeficit) => {
+            let map = new Map(), processed = new Map(), queue = [], inQueue = new Set();
+            activeUnits.forEach((qty, uid) => { map.set(uid, clampOneTimeQty(uid, qty)); queue.push(uid); inQueue.add(uid); });
+            let loopCount = 0; const maxLoop = SYSTEM_CONFIG.policy.maxLoopQueue;
+            while(queue.length > 0) {
+                if (++loopCount > maxLoop) { console.warn('[안전장치] BFS 루프 한계 도달'); break; }
+                let uid = queue.shift(); inQueue.delete(uid);
+                let tNeed = map.get(uid) || 0;
+                if ((!unitMap.has(uid) && !virtualUnitIds.has(uid)) || tNeed <= 0) continue;
+                const completedQty = isDeficit ? getEffectiveCompletedQty(uid, mergedActive) : 0;
+                let eNeed = tNeed - Math.min(completedQty, tNeed);
+                let delta = eNeed - (processed.get(uid) || 0);
+                if (delta <= 0) continue;
+                processed.set(uid, eNeed);
+                getToolNeed(uid).forEach(tid => {
+                    if (eNeed > 0) { const nv = (map.get(tid) || 0) + 1; map.set(tid, nv); if (!inQueue.has(tid)) { queue.push(tid); inQueue.add(tid); } }
+                });
+                unitMap.get(uid)?.parsedRecipe?.forEach(c => {
+                    if (c.id && !isToolRequirement(uid, c.id) && (unitMap.has(c.id) || virtualUnitIds.has(c.id))) {
+                        let nv = clampOneTimeQty(c.id, (map.get(c.id) || 0) + (delta * c.qty));
+                        map.set(c.id, nv); if (!inQueue.has(c.id)) { queue.push(c.id); inQueue.add(c.id); }
+                    }
+                });
+            }
+            return map;
+        };
+
+        let baseDeficits = calcBFS(false), deficits = calcBFS(true);
+        baseDeficits.forEach((val, k) => val > 0 && baseMap.set(k, val));
+        deficits.forEach((val, k) => val > 0 && reqMap.set(k, Math.max(0, val - (completedUnits.get(k) || 0))));
+
+        accumulateComboSlotRequirements(baseDeficits, baseSpecialReq);
+        accumulateComboSlotRequirements(deficits, specialReq);
+        COMBO_SLOT_RAWS.forEach(k => specialReq[k] = Math.max(0, specialReq[k] - (completedUnits.get(k) || 0)));
+
+        let rootTracking = new Map();
+        baseDeficits.forEach((_, uid) => rootTracking.set(uid, new Map()));
+        baseDeficits.forEach((needed, uid) => {
+            if (needed <= 0) return;
+            const uData = unitMap.get(uid); if (!uData) return;
+            getToolNeed(uid).forEach(toolId => {
+                let cRoots = rootTracking.get(toolId) || new Map();
+                let isDirTarget = activeUnits.has(uid) && !mergedActive.has(uid);
+                cRoots.set(`TOOL_${uid}`, { text: `${uData.name} <span class="tool-badge">[도구]</span>`, cond: '', depth: isDirTarget ? 1 : 2, parentUid: uid, reqQty: 1 });
+                rootTracking.set(toolId, cRoots);
+            });
+            uData.parsedRecipe?.forEach(child => {
+                if (!child.id || isToolRequirement(uid, child.id) || (!unitMap.has(child.id) && !virtualUnitIds.has(child.id))) return;
+                let cRoots = rootTracking.get(child.id) || new Map();
+                let isDirTarget = activeUnits.has(uid) && !mergedActive.has(uid);
+                cRoots.set(`MAT_${uid}`, { text: isDirTarget ? `${uData.name} 직속재료` : `${uData.name} 재료`, cond: child.cond, depth: isDirTarget ? 1 : 2, parentUid: uid, reqQty: child.qty });
+                rootTracking.set(child.id, cRoots);
+            });
+            uData.parsedCost?.forEach(pc => {
+                if (COMBO_SLOT_SET.has(pc.key) && (deficits.get(uid) || 0) > 0) {
+                    let isDirTarget = activeUnits.has(uid) && !mergedActive.has(uid);
+                    specialReason[pc.key].set(`SPEC_${uid}`, { text: isDirTarget ? `${uData.name} 직속재료` : `${uData.name} 재료`, cond: '', depth: isDirTarget ? 1 : 2 });
+                }
+            });
+        });
+
+        rootTracking.forEach((rMap, cId) => {
+            let finalMap = new Map();
+            const childComp = completedUnits.get(cId) || 0;
+            rMap.forEach((info, key) => {
+                if (info.parentUid !== undefined) {
+                    if (activeUnits.has(info.parentUid) && childComp >= (info.reqQty || 1) * (activeUnits.get(info.parentUid) || 1)) return;
+                    else if (!activeUnits.has(info.parentUid)) {
+                        if ((reqMap.get(info.parentUid) || 0) <= 0) return;
+                        const parentTotalNeeded = baseMap.get(info.parentUid) || 0;
+                        if (parentTotalNeeded > 0 && childComp >= (info.reqQty || 1) * parentTotalNeeded) return;
+                    }
+                }
+                finalMap.set(key, info);
+            });
+            if (activeUnits.has(cId)) finalMap.set('TARGET_' + cId, { text: GROUP_DEFS.find(g => g.pid === 'grid-target')?.title || '', cond: '', depth: 0 });
+            reasonMap.set(cId, finalMap);
+        });
+
+        return { reqMap, baseMap, reasonMap, specialReq, baseSpecialReq, specialReason };
+    }
+
+    // ── [6] 로직: 완료 및 역산 복구 ──
+
+    // 전역 패널 업데이트 트리거 — 계산→clamp→UI→저장 순서 고정
+    function debouncedUpdateAllPanels() {
+        if (updateTimer) clearTimeout(updateTimer);
+        updateTimer = setTimeout(() => {
+            const calcResult = calculateDeductedRequirements();
+            _lastCalcResult = calcResult;
+            clampCompletedUnits(calcResult);
+            updateMagicDashboard();
+            updateEssence();
+            updateTabsUI();
+            updateTabContentUI();
+            updateDeductionBoard(calcResult);
+            updateCartUI();
+            updateEmptyMsg();
+            saveNexusState();
+        }, 16);
+    }
+
+    // completedUnits를 baseMap 범위 내로 클램프 (초과 수량 제거)
+    function clampCompletedUnits(calcResult) {
+        const { baseMap, baseSpecialReq } = calcResult || calculateDeductedRequirements();
+        for (let [uid, compQty] of completedUnits.entries()) {
+            if (activeUnits.has(uid)) {
+                let maxAllow = baseMap.get(uid) || activeUnits.get(uid) || 1;
+                if (compQty > maxAllow) completedUnits.set(uid, maxAllow);
+                continue;
+            }
+            let maxAllow = COMBO_SLOT_SET.has(uid) ? (baseSpecialReq[uid] || 0) : (baseMap.get(uid) || 0);
+            if (compQty > maxAllow) { if (maxAllow <= 0) completedUnits.delete(uid); else completedUnits.set(uid, maxAllow); }
+        }
+    }
+
+    function deleteCompletedRecipe(uid, multiplier, _depth = 0) {
+        if (_depth > SYSTEM_CONFIG.policy.maxLoopMerge) {
+            console.warn("[경고] 완료 역산 루프 제한 도달 — 역산 처리가 중단되었습니다.");
+            return;
+        }
+        const u = unitMap.get(uid); if (!u) return;
+        u.parsedRecipe?.forEach(child => {
+            if (!child.id) return;
+            let needed = child.qty * multiplier, comp = completedUnits.get(child.id) || 0;
+            // completedUnits에 있는 만큼만 소비 — 재귀 역산 금지
+            // 재귀하면 다른 부모를 위해 완료된 공유 재료까지 차감되는 버그 발생
+            let consume = Math.min(needed, comp);
+            if (consume > 0) { const newVal = Math.max(0, comp - consume); if (newVal <= 0) completedUnits.delete(child.id); else completedUnits.set(child.id, newVal); }
+        });
+        u.parsedCost?.forEach(pc => {
+            if (COMBO_SLOT_SET.has(pc.key) && !SPECIAL_RENDER_LIST.some(e => e.id === pc.key)) {
+                let needed = pc.qty * multiplier, comp = completedUnits.get(pc.key) || 0, consume = Math.min(needed, comp);
+                if (consume > 0) { const newVal = Math.max(0, comp - consume); if (newVal <= 0) completedUnits.delete(pc.key); else completedUnits.set(pc.key, newVal); }
+            }
+        });
+    }
+
+    function completeUnit(uid, amount) {
+        if (_completeLock.has(uid)) return;
+        _completeLock.add(uid);
+        const cWrapEl = document.getElementById(`craft-wrap-${uid}`);
+        const lockBtns = cWrapEl ? Array.from(cWrapEl.querySelectorAll('button')) : [];
+        lockBtns.forEach(b => b.disabled = true);
+        try {
+            const { reqMap, baseMap, specialReq } = calculateDeductedRequirements();
+            const isTarget = activeUnits.has(uid), isSpecial = COMBO_SLOT_SET.has(uid);
+            let isMergedSlot = false;
+            if (isTarget && !isSpecial) activeUnits.forEach((_, activeId) => { if (activeId !== uid && unitMap.get(activeId)?.parsedRecipe?.some(pr => pr.id === uid)) isMergedSlot = true; });
+            const isPureTarget = isTarget && !isMergedSlot && !isSpecial;
+            let reqVal = 0;
+            if (isPureTarget) reqVal = Math.max(0, (activeUnits.get(uid) || 1) - (completedUnits.get(uid) || 0));
+            else if (isSpecial) reqVal = specialReq[uid] || 0;
+            else if (isTarget && isMergedSlot) reqVal = Math.max(0, (baseMap.get(uid) || 1) - (completedUnits.get(uid) || 0));
+            else reqVal = reqMap.get(uid) || 0;
+            const processQty = Math.min(amount !== undefined ? amount : reqVal, reqVal);
+            if (processQty > 0) {
+                deleteCompletedRecipe(uid, processQty);
+                const newComp = (completedUnits.get(uid) || 0) + processQty;
+                completedUnits.set(uid, newComp);
+                if (isPureTarget) {
+                    if (newComp >= (activeUnits.get(uid) || 1)) { completedTargets.set(uid, activeUnits.get(uid) || 1); activeUnits.delete(uid); completedUnits.delete(uid); _cartTab = 'done'; }
+                } else if (isTarget && isMergedSlot) {
+                    const totalQty = baseMap.get(uid) || 1;
+                    if (newComp >= totalQty) {
+                        const activeQty = activeUnits.get(uid) || 1, matQty = totalQty - activeQty;
+                        completedTargets.set(uid, activeQty);
+                        activeUnits.delete(uid);
+                        if (matQty > 0) completedUnits.set(uid, matQty); else completedUnits.delete(uid);
+                        _cartTab = 'done';
+                    }
+                }
+                toggleHighlight(null); triggerHaptic(); debouncedUpdateAllPanels();
+            } else {
+                // processQty=0: 완료할 수량 없음 — 비활성화한 버튼 즉시 복구
+                lockBtns.forEach(b => b.disabled = false);
+            }
+        } finally {
+            setTimeout(() => { _completeLock.delete(uid); }, SYSTEM_CONFIG.policy.completeLockDelay);
+        }
+    }
+
+    function restoreUnit(uid) {
+        if (!completedTargets.has(uid)) return;
+        const qty = completedTargets.get(uid) || 1;
+        completedTargets.delete(uid);
+        deleteCompletedRecipe(uid, qty);
+        completedUnits.delete(uid);
+        if (!activeUnits.has(uid)) activeUnits.set(uid, qty);
+        if (completedTargets.size === 0) _cartTab = 'active';
+        triggerHaptic(); debouncedUpdateAllPanels();
+    }
+
+    function restoreAllCompleted() {
+        if (_restoreAllCooldown) return;
+        const cfg = SYSTEM_CONFIG.policy.restoreAllBtn;
+        const btn = getEl(cfg.idBtn), label = getEl(cfg.idLabel);
+        if (_restoreAllPendingTimer) {
+            clearTimeout(_restoreAllPendingTimer); _restoreAllPendingTimer = null;
+            if (label) label.textContent = cfg.labelDefault;
+            if (btn) { btn.classList.remove('reset-btn-pending'); btn.disabled = false; }
+            return;
+        }
+        if (label) label.textContent = '취소하려면 다시 클릭';
+        if (btn) { btn.classList.add('reset-btn-pending'); btn.style.setProperty('--pending-duration', `${cfg.pendingDelay / 1000}s`); }
+        _restoreAllPendingTimer = setTimeout(() => {
+            _restoreAllPendingTimer = null;
+            activeUnits.clear(); completedUnits.clear(); completedTargets.clear();
+            _cartTab = 'active'; _presetUsed.clear(); updatePresetBtns(); triggerHaptic(); debouncedUpdateAllPanels();
+            _restoreAllCooldown = true;
+            if (btn) { btn.classList.remove('reset-btn-pending'); btn.classList.add(cfg.classDone); btn.disabled = true; }
+            if (label) label.textContent = cfg.labelDone;
+            setTimeout(() => {
+                if (label) label.textContent = cfg.labelDefault;
+                if (btn) { btn.classList.remove(cfg.classDone); btn.disabled = false; }
+                _restoreAllCooldown = false;
+            }, cfg.resetDelay);
+        }, cfg.pendingDelay);
+    }
+
+    function resetGroupCompleted(level) {
+        if (level >= 5) {
+            completedTargets.forEach((qty, uid) => { deleteCompletedRecipe(uid, qty); completedUnits.delete(uid); activeUnits.set(uid, qty); });
+            completedTargets.clear(); _cartTab = 'active'; _presetUsed.clear(); updatePresetBtns();
+        } else {
+            const uidsToReset = [];
+            completedUnits.forEach((_, uid) => { if (activeUnits.has(uid)) return; if ((_unitNativeLevels.get(uid) || 1) <= level) uidsToReset.push(uid); });
+            uidsToReset.forEach(uid => completedUnits.delete(uid));
+        }
+        toggleHighlight(null); debouncedUpdateAllPanels();
+    }
+
+    function resetCodex() {
+        activeUnits.clear(); completedUnits.clear(); completedTargets.clear();
+        toggleHighlight(null); _cartTab = 'active'; _presetUsed.clear(); updatePresetBtns(); debouncedUpdateAllPanels();
+    }
+
+    // ── [7] UI: 대시보드 ──
+    function updateEssence() {
+        let tE = getEssenceCount(activeUnits), cE = getEssenceCount(completedUnits);
+        const hybridKey = SYSTEM_CONFIG.essence.display.find(d => d.id === 'hybrid')?.name || '혼종';
+        SYSTEM_CONFIG.essence.display.forEach(d => {
+            const key = d.id === 'hybrid' ? hybridKey : d.name;
+            const base = Math.max(0, (tE[key] || 0) - (cE[key] || 0));
+            const el = getEl(`val-essence-${d.id}`);
+            if (el) { const v = base > 0 ? String(base) : ''; if (el.innerHTML !== v) el.innerHTML = v; }
+            getEl(`slot-essence-${d.id}`)?.classList.toggle('active', base > 0);
+        });
+    }
+
+    function renderDashboardAtoms() {
+        let db = getEl('magicDashboard'); if (!db) return;
+        const comboKey = SYSTEM_CONFIG.policy.magicComboKey;
+        db.innerHTML = `<div class="cost-slot total-cost" id="slot-total-cost"><div class="cost-val" id="val-total-cost"></div><div class="cost-name">통합 코스트</div></div>` +
+            SYSTEM_CONFIG.essence.display.map(d => `<div class="cost-slot is-magic-slot" id="slot-essence-${d.id}"><div class="cost-val" id="val-essence-${d.id}" style="color:${d.color};"></div><div class="cost-name">${d.name}</div></div>`).join('') +
+            SYSTEM_CONFIG.dashboardAtoms.map(a => `<div class="cost-slot ${a === comboKey ? 'is-skill-slot' : 'is-magic-slot'}" id="vslot-${clean(a)}"><div class="cost-val"></div><div class="cost-name" id="name-${clean(a)}">${a}</div></div>`).join('');
+    }
+
+    function updateMagicDashboard() {
+        const tMap = {}, cMap = {}, comboKey = SYSTEM_CONFIG.policy.magicComboKey, specials = COMBO_SLOT_RAWS;
+        SYSTEM_CONFIG.dashboardAtoms.forEach(a => {
+            if (a === comboKey) { tMap[a] = {}; cMap[a] = {}; specials.forEach(k => { tMap[a][k] = 0; cMap[a][k] = 0; }); }
+            else tMap[a] = cMap[a] = 0;
+        });
+        const flattenUnitToAtoms = (uid, qty, map, path) => {
+            if (qty <= 0 || path.has(uid)) return;
+            path.add(uid);
+            try {
+                if (specials.includes(uid)) { map[comboKey][uid] += qty; return; }
+                let atomRaw = ATOM_HASH[uid];
+                if (atomRaw && atomRaw !== comboKey) { map[atomRaw] = (map[atomRaw] || 0) + qty; return; }
+                const u = unitMap.get(uid); if (!u) return;
+                if (u.parsedCost?.length) {
+                    u.parsedCost.forEach(pc => {
+                        if (pc.type === 'special' && specials.includes(pc.key)) map[comboKey][pc.key] += pc.qty * qty;
+                        else { let pcRaw = ATOM_HASH[pc.key] || pc.key; if (pcRaw !== comboKey) { if (SYSTEM_CONFIG.dashboardAtoms.includes(pcRaw)) map[pcRaw] = (map[pcRaw] || 0) + pc.qty * qty; else flattenUnitToAtoms(pc.key, pc.qty * qty, map, path); } }
+                    });
+                    getToolNeed(uid).forEach(toolId => flattenUnitToAtoms(toolId, 1, map, path));
+                } else if (u.parsedRecipe?.length) {
+                    u.parsedRecipe.forEach(child => { if (!child.id) return; isToolRequirement(uid, child.id) ? flattenUnitToAtoms(child.id, 1, map, path) : flattenUnitToAtoms(child.id, child.qty * qty, map, path); });
+                    u.parsedCost?.forEach(pc => specials.includes(pc.key) && (map[comboKey][pc.key] += pc.qty * qty));
+                }
+            } finally { path.delete(uid); }
+        };
+        let activePath = new Set(), compPath = new Set();
+        activeUnits.forEach((c, k) => c > 0 && flattenUnitToAtoms(k, c, tMap, activePath));
+        completedUnits.forEach((c, k) => c > 0 && flattenUnitToAtoms(k, c, cMap, compPath));
+        let totalCost = 0;
+        SYSTEM_CONFIG.dashboardAtoms.forEach(a => {
+            const container = getEl(`vslot-${clean(a)}`), e = container?.querySelector('.cost-val'), nEl = container?.querySelector('.cost-name');
+            if (!container || !e || !nEl) return;
+            if (a === comboKey) {
+                let hasValue = specials.some(k => Math.max(0, tMap[a][k] - cMap[a][k]) > 0);
+                if (hasValue) {
+                    specials.forEach(k => totalCost += Math.max(0, tMap[a][k] - cMap[a][k]));
+                    let spHtml = specials.map(k => `<div class="sp-row"><span class="sp-val-num">${Math.max(0, tMap[a][k] - cMap[a][k])}</span></div>`).join('<div class="sp-divider"></div>');
+                    if (e.innerHTML !== spHtml) e.innerHTML = spHtml;
+                    nEl.style.display = 'block'; container.classList.add('active');
+                } else { if (e.innerHTML !== '') e.innerHTML = ''; nEl.style.display = 'block'; container.classList.remove('active'); }
+            } else {
+                let fV = Math.max(0, tMap[a] - cMap[a]); totalCost += fV;
+                if (fV > 0) { if (e.innerText !== String(fV)) e.innerText = String(fV); nEl.style.display = 'block'; container.classList.add('active'); }
+                else { if (e.innerHTML !== '') e.innerHTML = ''; nEl.style.display = 'block'; container.classList.remove('active'); }
+            }
+        });
+        const tcEl = getEl('val-total-cost');
+        if (tcEl) { let v = totalCost > 0 ? String(totalCost) : ''; if (tcEl.innerText !== v) tcEl.innerText = v; }
+        getEl('slot-total-cost')?.classList.toggle('active', totalCost > 0);
+    }
+
+    // ── [8] UI: 체크리스트 보드 ──
+    function renderDeductionBoard() {
+        const renderSlot = (id, n, g) => `<div class="deduct-slot" id="d-slot-wrap-${id}" data-uid="${id}" style="display:none;"><div class="d-reason-wrap" id="d-reason-${id}"></div><div class="d-slot-main"><div class="d-name" data-action="showRecipeTooltip" data-uid="${id}" data-is-deduction="true"><span class="gtag grade-${g}">${g}</span><span class="d-name-inline">${n}${CLEAN_SPECIAL_CONDITIONS[id]?`<span class="badge-special-cond" style="margin-left:4px; pointer-events:none;">특수조건</span>`:''}</span></div><div id="d-cond-${id}" class="d-cond-inline"></div></div><div id="craft-wrap-${id}" class="craft-wrap"></div></div>`;
+        const getGrp = (id, pid, title, resetLevel=0, isCol=false, alwaysShow=false, alwaysOpen=false, resetLabel='완료복구') => `<div class="deduct-group" id="${id}" style="${alwaysShow ? '' : 'display:none;'}" ${alwaysShow ? 'data-always-show="true"' : ''} ${alwaysOpen ? 'data-always-open="true"' : ''}><div class="deduct-group-title" data-action="toggleGroup" data-grid-id="${pid}"><div style="display:flex;align-items:center;gap:7px;pointer-events:none;"><span class="grp-toggle-icon" style="display:inline-block;transition:transform 0.2s;transform:${isCol?'rotate(-90deg)':'rotate(0deg)'};font-size:0.75rem;">▼</span><span class="grp-title-text">${title}</span>${resetLevel > 0 ? `<span class="grp-count-badge" id="grp-count-${pid}" style="margin-left:2px;"></span>` : ''}</div>${resetLevel > 0 ? `<button class="btn-text-link grp-restore-btn" data-action="resetGroup" data-level="${resetLevel}" style="pointer-events:auto;">↩ ${resetLabel}</button>` : ''}</div><div class="deduct-grid" id="${pid}" ${isCol?'style="display:none;"':''}></div></div>`;
+        const allUnits = Array.from(unitMap.values());
+        const specialSlots = COMBO_SLOT_RAWS.map(k => renderSlot(k, k, '코스트')).join('');
+        const unitSlots = allUnits.filter(u => getGradeIndex(u.grade) >= getGradeIndex(SYSTEM_CONFIG.policy.minGradeForChecklist) && !COMBO_SLOT_SET.has(u.id)).map(u => renderSlot(u.id, u.name, u.grade)).join('');
+        const autoSlots = SPECIAL_RENDER_LIST.filter(e => !COMBO_SLOT_SET.has(e.id)).map(e => renderSlot(e.id, e.raw, '코스트')).join('');
+        const _exIds = new Set((SYSTEM_CONFIG.policy.hideCompletedExcludeGroups || []).map(t => titleToGridId[t]).filter(Boolean));
+        const boardEl = getEl('deductionBoard');
+        if (!boardEl) return;
+        boardEl.innerHTML = `<div id="deduct-empty-msg" class="empty-msg" style="display:none;"></div><div id="deduct-slot-pool" style="display:none;">${specialSlots}${unitSlots}${autoSlots}</div>` + GROUP_DEFS.map(g => getGrp(g.id, g.pid, g.title, g.resetLevel, g.isCol, g.alwaysShow, g.alwaysOpen, g.resetLabel)).join('');
+        boardEl.dataset.excludeGridIds = JSON.stringify([..._exIds]);
+    }
+
+    function updateDeductionBoard(calcResult) {
+        const { reqMap, baseMap, reasonMap, specialReq, baseSpecialReq, specialReason } = calcResult || calculateDeductedRequirements();
+        const mergedSlots = new Set();
+        const targetHighlight = _currentHighlight || null;
+        const highlightDeps = targetHighlight ? getDependencies(targetHighlight) : null;
+        activeUnits.forEach((_, uid) => unitMap.get(uid)?.parsedRecipe?.forEach(pr => pr.id && activeUnits.has(pr.id) && mergedSlots.add(pr.id)));
+        const directMaterials = new Set();
+        activeUnits.forEach((_, uid) => { if (mergedSlots.has(uid)) return; unitMap.get(uid)?.parsedRecipe?.forEach(pr => pr.id && !activeUnits.has(pr.id) && directMaterials.add(pr.id)); });
+        const excludeGridIds = (() => { try { return JSON.parse(getEl('deductionBoard')?.dataset.excludeGridIds || '[]'); } catch(e) { return []; } })();
+        const pool = getEl('deduct-slot-pool');
+        const grids = { target: getEl('grid-target'), special: getEl('grid-special'), upperHidden: getEl('grid-upper-hidden'), basicHidden: getEl('grid-basic-hidden'), top: getEl('grid-top') };
+
+        const exactDepths = new Map(); let queue = [];
+        activeUnits.forEach((_, uid) => { if (!mergedSlots.has(uid)) { exactDepths.set(uid, 0); queue.push(uid); } });
+        if (queue.length === 0) activeUnits.forEach((_, uid) => { exactDepths.set(uid, 0); queue.push(uid); });
+        let curDepth = 0;
+        while(queue.length > 0 && curDepth < SYSTEM_CONFIG.policy.maxBfsDepth) {
+            let nextQueue = []; curDepth++;
+            for (let uid of queue) {
+                const u = unitMap.get(uid); if (!u) continue;
+                u.parsedRecipe?.forEach(pr => { if (pr.id && !exactDepths.has(pr.id)) { exactDepths.set(pr.id, curDepth); nextQueue.push(pr.id); } });
+                getToolNeed(uid).forEach(toolId => { if (toolId && !exactDepths.has(toolId)) { exactDepths.set(toolId, curDepth); nextQueue.push(toolId); } });
+                u.parsedCost?.forEach(pc => { if (COMBO_SLOT_SET.has(pc.key) && !exactDepths.has(pc.key)) { exactDepths.set(pc.key, curDepth); nextQueue.push(pc.key); } });
+            }
+            queue = nextQueue;
+        }
+
+        document.querySelectorAll('.deduct-slot[data-uid]').forEach(el => {
+            el.style.display = 'none'; el.classList.remove('is-visible','has-target','is-completed','is-inactive','is-craftable');
+            if (pool && el.parentElement !== pool) pool.appendChild(el);
+        });
+        document.querySelectorAll('.top-row-blank').forEach(el => el.remove());
+        document.querySelectorAll('.deduct-slot-ghost').forEach(el => el.remove());
+
+        const topFixedRows = SYSTEM_CONFIG.topFixedOrder.map(row => row.map(clean));
+        const topFixedSet = new Set(topFixedRows.flat());
+        const ROW_SIZE = Math.max(...topFixedRows.map(r => r.length));
+
+        const processSlot = (id, isTopFixedCall = false) => {
+            const slotEl = getEl(`d-slot-wrap-${id}`); if (!slotEl) return null;
+            const isSpecialCost = COMBO_SLOT_SET.has(id), isAutoRender = isSpecialRender(id), isAutoApply = isAutoRender || isSpecialCost;
+            const isTarget = activeUnits.has(id), isCompletedTarget = !isTarget && !isSpecialCost && completedTargets.has(id);
+            const isMergedSlot = isTarget && !isSpecialCost && mergedSlots.has(id);
+            let needed = isSpecialCost ? (specialReq[id]||0) : (reqMap.get(id)||0);
+            if (isMergedSlot) needed = Math.max(0, (baseMap.get(id)||0) - (completedUnits.get(id)||0));
+            else if (isTarget && !isSpecialCost) needed = Math.max(0, (activeUnits.get(id)||1) - (completedUnits.get(id)||0));
+            if (isCompletedTarget) needed = 0;
+            let baseNeeded = isSpecialCost ? (baseSpecialReq[id]||0) :
+                             isTarget && !isSpecialCost ? (isMergedSlot ? (baseMap.get(id)||0) : (activeUnits.get(id)||1)) :
+                             isCompletedTarget ? (completedTargets.get(id)||1) : (baseMap.get(id)||0);
+            const isInactive = isTopFixedCall && baseNeeded <= 0 && needed <= 0 && !isTarget && !isCompletedTarget;
+            if (!isTopFixedCall) {
+                if (isSpecialCost && needed <= 0 && baseNeeded <= 0) return null;
+                else if (isAutoRender && !baseNeeded && !needed) return null;
+                else if (!isAutoRender && !isSpecialCost && !baseNeeded && !isTarget && !isCompletedTarget) return null;
+            }
+            slotEl.classList.remove('is-inactive');
+            if (isInactive) slotEl.classList.add('is-inactive');
+
+            const rCon = slotEl.querySelector(`#d-reason-${id}`);
+            if (rCon) {
+                let rMap = isSpecialCost ? specialReason[id] : reasonMap.get(id);
+                if (!isInactive && rMap && rMap.size > 0 && needed > 0) {
+                    let allEntries = [...rMap.entries()];
+                    if (isTarget && !isSpecialCost && !isMergedSlot) allEntries = allEntries.filter(([, i]) => i.depth === 0);
+                    if (_currentHighlight) {
+                        const filtered = allEntries.filter(([, i]) => i.parentUid === targetHighlight || (highlightDeps && highlightDeps.has(i.parentUid)) || i.depth === 0);
+                        if (filtered.length > 0) allEntries = filtered;
+                    }
+                    let sorted = allEntries.sort((a,b)=>(a[1].depth||0)-(b[1].depth||0));
+                    rCon.style.display = 'flex'; rCon.style.justifyContent = sorted.length === 1 ? 'center' : 'flex-start';
+                    rCon.innerHTML = sorted.map(([rId,i]) => {
+                        let qtyText = '';
+                        if (i.depth !== 0 && i.reqQty) {
+                            const parentQty = i.parentUid ? (reqMap.get(i.parentUid) || activeUnits.get(i.parentUid) || baseMap.get(i.parentUid) || 1) : 1;
+                            const displayQty = rId.startsWith('TOOL_') ? 1 : i.reqQty * parentQty;
+                            qtyText = ` <span style="opacity:0.75;font-weight:700;">· ${displayQty}개</span>`;
+                        }
+                        const cleanUid = rId.replace(/^(TARGET_|MAT_|TOOL_|SPEC_)/,'');
+                        return `<span class="d-reason-tag ${i.depth===0?'tag-target':i.depth===1?'tag-mat':''}" data-action="toggleHighlight" data-uid="${cleanUid}">${i.text}${qtyText}</span>`;
+                    }).join('');
+                } else { rCon.style.display='none'; rCon.innerHTML=''; }
+            }
+
+            const cEl = slotEl.querySelector(`#d-cond-${id}`);
+            if (cEl) {
+                let rMap = isSpecialCost ? specialReason[id] : reasonMap.get(id), condMap = new Map();
+                if (rMap) {
+                    rMap.forEach((info) => {
+                        if (!info.cond) return;
+                        if (_currentHighlight) {
+                            const pUid = info.parentUid;
+                            if (pUid !== targetHighlight && (!highlightDeps || !highlightDeps.has(pUid))) return;
+                        }
+                        let cleanCond = info.cond.replace(/,/g, ' ').trim();
+                        if (!cleanCond) return;
+                        let parentTotal = info.parentUid ? (reqMap.get(info.parentUid) || activeUnits.get(info.parentUid) || baseMap.get(info.parentUid) || 1) : 1;
+                        condMap.set(cleanCond, (condMap.get(cleanCond) || 0) + (info.reqQty || 1) * parentTotal);
+                    });
+                }
+                if (condMap.size > 0) {
+                    cEl.style.display = 'flex'; cEl.style.flexDirection = 'column'; cEl.style.gap = '2px';
+                    cEl.innerHTML = Array.from(condMap).map(([condStr, qty]) => `<span class="d-cond-tag">${condStr} <span style="color:var(--text-muted);font-weight:800;font-size:0.9em;margin-left:1px;">· ${qty}개</span></span>`).join('');
+                } else { cEl.style.display = 'none'; cEl.innerHTML = ''; }
+            }
+
+            const cWrap = slotEl.querySelector(`#craft-wrap-${id}`), isCompleted = !isInactive && needed === 0;
+            slotEl.classList.toggle('has-target', !isInactive && !isCompleted);
+            slotEl.classList.toggle('is-completed', !isInactive && isCompleted);
+            if (cWrap) {
+                if (isInactive) cWrap.innerHTML = '';
+                else if (isAutoApply) cWrap.innerHTML = `<span style="font-size:0.82rem;color:var(--clr-auto);font-weight:bold;display:block;text-align:center;width:100%;">자동 완료됨</span>`;
+                else if (!isCompleted) {
+                    const bs = CLEAN_CRAFT_BATCH[id] || 1;
+                    // 완료 가능 판정: 직속 recipe 재료가 completedUnits에 충분히 쌓인 경우
+                    const unitNeeded = isMergedSlot ? (baseMap.get(id) || 1) : (activeUnits.has(id) ? (activeUnits.get(id) || 1) : needed);
+                    const uData = unitMap.get(id);
+                    const isCraftable = !!(uData?.parsedRecipe?.length) && uData.parsedRecipe
+                        .filter(c => !isToolRequirement(id, c.id))
+                        .every(c => (completedUnits.get(c.id) || 0) >= c.qty * unitNeeded);
+                    slotEl.classList.toggle('is-craftable', isCraftable);
+                    const completeLabel = isCraftable ? '완료 가능' : '완료';
+                    const addLabel = isCraftable ? `+ ${bs}개 가능` : `+ ${bs}개`;
+                    const add1Label = isCraftable ? `+ 1개 가능` : `+ 1개`;
+                    cWrap.innerHTML = `<div class="craft-wrap-left"><span class="req-text">${needed}</span><span class="req-label">필요</span></div><div class="craft-wrap-right">${(needed > bs || (bs > 1 && needed > 0)) ? `<button class="pc-btn${isCraftable ? ' is-craftable' : ''}" data-action="addComplete" data-uid="${id}" data-batch="${bs}">${addLabel}</button>` : needed > 1 ? `<button class="pc-btn${isCraftable ? ' is-craftable' : ''}" data-action="addComplete" data-uid="${id}" data-batch="1">${add1Label}</button>` : ''}<button class="btn-complete${isCraftable ? ' is-craftable' : ''}" data-action="completeUnit" data-uid="${id}">${completeLabel}</button></div>`;
+                } else cWrap.innerHTML = `<div class="craft-wrap-left"><span class="req-text">0</span><span class="req-label">필요</span></div><div class="craft-wrap-right"><span style="font-size:0.82rem;color:var(--g-dim);font-weight:bold;">완료됨</span></div>`;
+            }
+
+            let tGrid = null, sGrid = null, upgradedTitle = "";
+            const getGridTitle = (grid) => GROUP_DEFS.find(g => g.pid === grid?.id)?.title || '';
+            let isHiddenGroup = getGradeIndex(unitMap.get(id)?.grade) >= getGradeIndex(SYSTEM_CONFIG.policy.hiddenGroupMinGrade);
+            let nativeLevel = isHiddenGroup ? ((exactDepths.has(id) ? exactDepths.get(id) : 99) <= SYSTEM_CONFIG.policy.hiddenUpperDepthMax ? 3 : 2) : 1;
+            _unitNativeLevels.set(id, nativeLevel);
+            let upgradedGrid = null;
+            if (!isAutoApply) {
+                if (isCompletedTarget) { upgradedGrid = grids.target; upgradedTitle = getGridTitle(grids.target); }
+                else if (isMergedSlot) { upgradedGrid = grids.special; upgradedTitle = getGridTitle(grids.special); }
+                else if (isTarget) { upgradedGrid = grids.target; upgradedTitle = getGridTitle(grids.target); }
+                else if (directMaterials.has(id)) { upgradedGrid = grids.special; upgradedTitle = getGridTitle(grids.special); }
+                else {
+                    const rVals = isSpecialCost ? specialReason[id] : reasonMap.get(id);
+                    if (rVals) { for (const i of rVals.values()) { if (i.depth === 1) { upgradedGrid = grids.special; upgradedTitle = getGridTitle(grids.special); break; } } }
+                }
+            }
+            let nativeGrid = grids.top;
+            if (!isTopFixedCall && isHiddenGroup) nativeGrid = (nativeLevel === 3) ? grids.upperHidden : grids.basicHidden;
+            if (upgradedGrid === grids.target && !isMergedSlot) { tGrid = grids.target; sGrid = isTopFixedCall ? nativeGrid : null; }
+            else if (upgradedGrid && upgradedGrid !== nativeGrid) { if (isHiddenGroup && !isTopFixedCall) { tGrid = upgradedGrid; sGrid = null; } else { tGrid = upgradedGrid; sGrid = nativeGrid; } }
+            else { tGrid = upgradedGrid || nativeGrid; sGrid = null; }
+
+            let hideT = _hideCompleted && isCompleted && !isInactive && !excludeGridIds.includes(tGrid?.id || '');
+            if (tGrid) {
+                if (!hideT) slotEl.classList.add('is-visible'); else slotEl.classList.remove('is-visible');
+                slotEl.style.display = hideT ? 'none' : 'flex'; tGrid.appendChild(slotEl);
+            }
+            if (sGrid) {
+                let hideS = _hideCompleted && isCompleted && !isInactive && !excludeGridIds.includes(sGrid.id || '');
+                const ghost = document.createElement('div'); ghost.className = 'deduct-slot-ghost'; ghost.dataset.ghostFor = id;
+                ghost.innerHTML = `<span class="ghost-name">${unitMap.get(id)?.name || id}</span><span class="ghost-label">→ ${upgradedTitle}</span>`;
+                ghost.style.display = hideS ? 'none' : ''; sGrid.appendChild(ghost);
+            }
+            return tGrid;
+        };
+
+        COMBO_SLOT_RAWS.filter(k => !topFixedSet.has(k)).forEach(k => processSlot(k));
+        AUTO_COMPLETE_IDS.filter(id => !topFixedSet.has(id)).forEach(id => processSlot(id));
+        topFixedRows.forEach(row => {
+            row.forEach(uid => processSlot(uid, true));
+            for (let b = 0; b < ROW_SIZE - row.length; b++) grids.top?.appendChild(Object.assign(document.createElement('div'), {className: 'top-row-blank'}));
+        });
+        Array.from(activeUnits.keys()).filter(uid => !topFixedSet.has(uid)).map(uid => unitMap.get(uid)).filter(Boolean).sort((a, b) => getGradeIndex(b.grade) - getGradeIndex(a.grade) || (SYSTEM_CONFIG.sorting.order[b.name]||0) - (SYSTEM_CONFIG.sorting.order[a.name]||0) || a.name.localeCompare(b.name)).forEach(u => processSlot(u.id));
+        Array.from(completedTargets.keys()).filter(uid => !topFixedSet.has(uid)).map(uid => unitMap.get(uid)).filter(Boolean).sort((a, b) => getGradeIndex(b.grade) - getGradeIndex(a.grade) || a.name.localeCompare(b.name)).forEach(u => processSlot(u.id));
+        Array.from(unitMap.values()).filter(u => !COMBO_SLOT_SET.has(u.id) && !topFixedSet.has(u.id) && !activeUnits.has(u.id) && !completedTargets.has(u.id) && getGradeIndex(u.grade) >= getGradeIndex(SYSTEM_CONFIG.policy.minGradeForChecklist)).sort((a, b) => getGradeIndex(b.grade) - getGradeIndex(a.grade) || (SYSTEM_CONFIG.sorting.order[b.name]||0) - (SYSTEM_CONFIG.sorting.order[a.name]||0) || a.name.localeCompare(b.name)).forEach(u => processSlot(u.id));
+
+        [grids.target, grids.special].forEach(grid => {
+            if (!grid) return;
+            const children = Array.from(grid.children);
+            children.sort((a, b) => {
+                const uidA = a.dataset.uid || a.id.replace('d-slot-wrap-',''), uidB = b.dataset.uid || b.id.replace('d-slot-wrap-','');
+                const uA = unitMap.get(uidA), uB = unitMap.get(uidB);
+                return getGradeIndex(uB?.grade) - getGradeIndex(uA?.grade) || (SYSTEM_CONFIG.sorting.order[uB?.name]||0) - (SYSTEM_CONFIG.sorting.order[uA?.name]||0) || (uA?.name || uidA).localeCompare(uB?.name || uidB);
+            });
+            children.forEach(el => grid.appendChild(el));
+        });
+
+        Object.values(grids).forEach(g => {
+            if (!g) return;
+            const grp = g.closest('.deduct-group'), icon = grp?.querySelector('.grp-toggle-icon'); if (!grp) return;
+            grp.style.display = 'block';
+            const slots = Array.from(g.querySelectorAll('.deduct-slot')).filter(el => !el.classList.contains('is-inactive'));
+            const visibleSlots = slots.filter(el => el.style.display !== 'none');
+            if (visibleSlots.length === 0 && grp.dataset.alwaysShow !== 'true') { g.style.display = 'none'; grp.classList.add('collapsed'); if (icon) icon.style.transform = 'rotate(-90deg)'; }
+            else if (visibleSlots.length > 0 && grp.dataset.alwaysOpen === 'true') { grp.classList.remove('collapsed'); g.style.display = 'grid'; if (icon) icon.style.transform = 'rotate(0deg)'; }
+            const badge = getEl(`grp-count-${g.id}`); if (!badge) return;
+            const total = slots.length, done = slots.filter(el => el.classList.contains('is-completed')).length;
+            badge.textContent = total > 0 ? `${done} / ${total}` : '';
+        });
+
+        document.querySelectorAll('.deduct-slot').forEach(el => {
+            const cleanId = el.id.replace('d-slot-wrap-', '');
+            el.classList.toggle('highlighted-tree', !!_currentHighlight && highlightDeps?.has(cleanId));
+        });
+    }
+
+    function updateEmptyMsg() {
+        const msg = getEl('deduct-empty-msg'); if (!msg) return;
+        if (activeUnits.size === 0 && completedTargets.size === 0) {
+            msg.style.display = 'block';
+            msg.innerHTML = `<div class="empty-msg-enhanced"><div class="empty-arrow">↑</div><div class="empty-main">유닛도감에서 목표 유닛을 선택해 보세요</div><div class="empty-sub">상단 <b style="color:var(--g);">유닛도감</b> 탭 → 종족 선택 → 카드 클릭<br>프리셋 버튼으로 빠르게 시작할 수도 있습니다</div></div>`;
+        } else msg.style.display = 'none';
+    }
+
+    function updateHideCompletedBtn() {
+        const btn = getEl('btnHideCompleted'), label = getEl('btnHideCompletedLabel');
+        if (!btn || !label) return;
+        label.textContent = _hideCompleted ? '숨기는 중' : '완료 숨기기';
+        btn.classList.toggle('hide-completed-active', _hideCompleted);
+    }
+
+    // ── [9] UI: 탭 및 도감 카드 ──
+
+    // 별 버튼 HTML (즐겨찾기 여부에 따라 채워진 별/빈 별)
+    function starBtnHtml(id) {
+        const isFav = _favorites.has(id);
+        return `<button class="uc-fav-btn${isFav ? ' is-fav' : ''}" data-action="toggleFavorite" data-uid="${id}" title="${isFav ? '즐겨찾기 해제' : '즐겨찾기 등록'}" aria-label="즐겨찾기">${isFav ? '★' : '☆'}</button>`;
+    }
+
+    // 카드 공통 빌더
+    // prefix: '' = 종족탭, 'fav-{종족}-' = 종족탭 상단 공통 즐겨찾기
+    // showRecipe: 조합조건 표시 여부
+    function buildCard(item, idx, prefix, showRecipe) {
+        const isExc = CLEAN_EXCLUDE_IDS.has(item.id), isOT = isOneTime(item);
+        const isFav = _favorites.has(item.id);
+        const noRecipeCls = showRecipe ? '' : ' no-recipe';
+        return `<div id="card-${prefix}${item.id}" class="unit-card${isExc ? ' is-excluded' : ''}${isFav ? ' is-fav-card' : ''}${noRecipeCls}" data-grade="${item.grade}" style="${idx >= 0 ? `animation-delay:${idx*0.02}s` : ''}" data-action="toggleUnit" data-uid="${item.id}">` +
+            `<div class="uc-card-inner">` +
+            `${starBtnHtml(item.id)}` +
+            `<div class="uc-head${showRecipe ? '' : ' uc-head-slim'}">` +
+            `<span class="gtag grade-${item.grade}">${item.grade}</span>` +
+            `<div class="uc-name-row" style="color:${SYSTEM_CONFIG.grades.colors[item.grade]};">${item.name}</div>` +
+            `${isExc ? `<span class="badge-excluded" data-action="showExcludedTooltip" data-uid="${item.id}">선택제한</span>` : ''}` +
+            `</div>` +
+            `${showRecipe ? `<div class="uc-recipe-area">${formatRecipe(item, 1, false)}</div>` : ''}` +
+            `${showRecipe && CLEAN_UNIT_CONDITIONS[item.id] ? `<div class="tsc-wrap" style="margin:4px 0 2px;"><div class="tsc-item">${CLEAN_UNIT_CONDITIONS[item.id]}</div></div>` : ''}` +
+            `${(!isOT && !isExc) ? `<div class="uc-ctrl-area"><div class="smart-stepper active-stepper" id="stepper-${prefix}${item.id}"><button data-action="smartChange" data-uid="${item.id}" data-delta="-1" aria-label="${item.name} 감소">-</button><div class="ss-val" id="val-unit-${prefix}${item.id}" aria-live="polite">-</div><button data-action="smartChange" data-uid="${item.id}" data-delta="1" aria-label="${item.name} 추가">+</button></div></div>` : ''}` +
+            `</div></div>`;
+    }
+
+    // 종족탭 카드 (조합조건+스테퍼 표시)
+    function buildUnitCard(item, idx) {
+        return buildCard(item, idx, '', true);
+    }
+
+    // 즐겨찾기 공통 섹션 카드 (조합조건+스테퍼 표시)
+    function buildFavCard(item, idx, categoryKey) {
+        return buildCard(item, idx, `fav-${categoryKey}-`, true);
+    }
+
+    function getCodexSort(a, b) {
+        return (SYSTEM_CONFIG.sorting.order[b.name] || 0) - (SYSTEM_CONFIG.sorting.order[a.name] || 0) ||
+            (isOneTime(a) ? -1 : isOneTime(b) ? 1 : 0) ||
+            getGradeIndex(b.grade) - getGradeIndex(a.grade) ||
+            calculateTotalCostScore(b) - calculateTotalCostScore(a) ||
+            a.name.localeCompare(b.name);
+    }
+
+    function getCodexVisibleItems() {
+        const minGradeIdx = getGradeIndex(SYSTEM_CONFIG.search.minGradeForSearch || "레전드");
+        return Array.from(unitMap.values()).filter(u =>
+            (getGradeIndex(u.grade) >= minGradeIdx || isSearchAllowed(u.id)) && !CLEAN_EXCLUDE_IDS.has(u.id)
+        );
+    }
+
+    function getFavoriteItems() {
+        return getCodexVisibleItems().filter(u => _favorites.has(u.id)).sort(getCodexSort);
+    }
+
+    function buildFavoriteSection(categoryKey) {
+        const favItems = getFavoriteItems();
+        if (favItems.length > 0) {
+            return `<div class="codex-fav-section">` +
+                `<div class="codex-fav-header"><span class="codex-fav-title">⭐ 즐겨찾기</span></div>` +
+                `<div class="codex-fav-grid">${favItems.map((item, idx) => buildFavCard(item, idx, categoryKey)).join('')}</div>` +
+                `<div class="codex-fav-divider"></div>` +
+                `</div>`;
+        }
+        return `<div class="codex-fav-empty">` +
+            `<span class="codex-fav-empty-star">☆</span>` +
+            `<span class="codex-fav-empty-text">카드 우측 상단 <b>☆</b>를 누르면 즐겨찾기에 등록됩니다</span>` +
+            `</div>`;
+    }
+
+    function renderTabs() {
+        const t = getEl('codexTabs');
+        if (t) {
+            t.innerHTML = SYSTEM_CONFIG.tabs.map((c, i) =>
+                `<button id="tab-btn-${i}" role="tab" aria-selected="${i===_activeTabIdx}" class="tab-btn" data-action="selectTab" data-tab-idx="${i}"><span>${c.name}</span></button>`
+            ).join('');
+            updateTabsUI();
+        }
+    }
+
+    function updateTabsUI() {
+        let aCats = new Set([...activeUnits.keys()].map(id => unitMap.get(id)?.category).filter(Boolean));
+        const minGradeIdx = getGradeIndex(SYSTEM_CONFIG.search.minGradeForSearch || "레전드");
+        SYSTEM_CONFIG.tabs.forEach((c, i) => {
+            let btn = getEl(`tab-btn-${i}`), isActive = (i === _activeTabIdx);
+            const has = aCats.has(c.key);
+            if (!btn) return;
+            if (btn.classList.contains('active') !== isActive) { btn.classList.toggle('active', isActive); btn.setAttribute('aria-selected', isActive ? 'true' : 'false'); }
+            if (btn.classList.contains('has-active') !== has) btn.classList.toggle('has-active', has);
+        });
+        const selectAllBtn = getEl('btnSelectAllTab'), currentTab = SYSTEM_CONFIG.tabs[_activeTabIdx];
+        if (selectAllBtn && currentTab) {
+            selectAllBtn.disabled = false;
+            const catItems = Array.from(unitMap.values()).filter(u => u.category === currentTab.key && (getGradeIndex(u.grade) >= minGradeIdx || isSearchAllowed(u.id)) && !CLEAN_EXCLUDE_IDS.has(u.id));
+            selectAllBtn.innerHTML = (catItems.length > 0 && catItems.every(item => activeUnits.has(item.id))) ? `<span class="btn-select-all-clear-label">✖ ${currentTab.name} 해제</span>` : `✔ ${currentTab.name} 선택`;
+        }
+    }
+
+    // 종족별 도감 패널 초기화
+    // 각 종족 패널마다 공통 즐겨찾기 섹션을 포함한다.
+    function initCodexCategoryContents() {
+        const tc = getEl('tabContent'); if (!tc) return;
+        const minGradeIdx = getGradeIndex(SYSTEM_CONFIG.search.minGradeForSearch || "레전드");
+        const favSet = new Set(_favorites);
+        tc.innerHTML = SYSTEM_CONFIG.tabs.map(cat => {
+            const items = Array.from(unitMap.values()).filter(u =>
+                (getGradeIndex(u.grade) >= minGradeIdx || isSearchAllowed(u.id)) &&
+                u.category === cat.key &&
+                !CLEAN_EXCLUDE_IDS.has(u.id) &&
+                !favSet.has(u.id)
+            ).sort(getCodexSort);
+            const bodyHtml = !items.length
+                ? `<div class="codex-empty-msg">즐겨찾기를 제외하고 표시할 유닛이 없습니다.</div>`
+                : items.map((item, idx) => buildUnitCard(item, idx)).join('');
+            return `<div id="cat-group-${cat.key}" class="cat-group" role="tabpanel">${buildFavoriteSection(cat.key)}<div class="codex-category-grid">${bodyHtml}</div></div>`;
+        }).join('');
+        _isCodexContentInitialized = true;
+    }
+
+    function renderCurrentTabContent() {
+        if (!_isCodexContentInitialized) initCodexCategoryContents();
+        SYSTEM_CONFIG.tabs.forEach((c, i) => getEl(`cat-group-${c.key}`)?.classList.toggle('is-visible', i === _activeTabIdx));
+        updateTabContentUI();
+    }
+
+    function updateTabContentUI() {
+        document.querySelectorAll('.unit-card[data-uid]').forEach(card => {
+            const uid = card.dataset.uid;
+            const item = unitMap.get(uid);
+            if (!item) return;
+            const isActive = activeUnits.has(uid);
+            if (!isOneTime(item)) {
+                card.querySelectorAll('.ss-val').forEach(v => {
+                    const nv = isActive ? String(activeUnits.get(uid)) : '-';
+                    if (v.innerText !== nv) v.innerText = nv;
+                });
+                card.querySelectorAll('.smart-stepper button').forEach(b => b.disabled = !isActive);
+                card.querySelectorAll('.smart-stepper').forEach(stepper => { stepper.style.display = isActive ? '' : 'none'; });
+            }
+            card.style.display = 'flex';
+            card.classList.toggle('active', isActive);
+            card.classList.toggle('is-fav-card', _favorites.has(uid));
+        });
+        document.querySelectorAll('.uc-fav-btn[data-uid]').forEach(btn => {
+            const uid = btn.dataset.uid, isFav = _favorites.has(uid);
+            btn.classList.toggle('is-fav', isFav);
+            btn.textContent = isFav ? '★' : '☆';
+            btn.title = isFav ? '즐겨찾기 해제' : '즐겨찾기 등록';
+        });
+    }
+
+    function toggleSelectAllTab() {
+        const currentTab = SYSTEM_CONFIG.tabs[_activeTabIdx];
+        if (!currentTab) return;
+        const minGradeIdx = getGradeIndex(SYSTEM_CONFIG.search.minGradeForSearch || "레전드");
+        const catItems = Array.from(unitMap.values()).filter(u => u.category === currentTab.key && (getGradeIndex(u.grade) >= minGradeIdx || isSearchAllowed(u.id)) && !CLEAN_EXCLUDE_IDS.has(u.id));
+        if (!catItems.length) return;
+        if (catItems.every(item => activeUnits.has(item.id))) catItems.forEach(item => activeUnits.delete(item.id));
+        else catItems.forEach(item => !activeUnits.has(item.id) && activeUnits.set(item.id, 1));
+        triggerHaptic(); debouncedUpdateAllPanels();
+    }
+
+    function toggleFavorite(id, event) {
+        event?.stopPropagation();
+        if (_favorites.has(id)) _favorites.delete(id); else _favorites.add(id);
+        saveFavorites();
+        triggerHaptic();
+        initCodexCategoryContents();
+        renderCurrentTabContent();
+        updateTabsUI();
+    }
+
+    function selectTab(idx) { hideRecipeTooltip(); _activeTabIdx = Math.max(0, Math.min(idx, SYSTEM_CONFIG.tabs.length - 1)); updateTabsUI(); renderCurrentTabContent(); if (_jewelPanelOpen) closeJewelPanel(); }
+    function toggleUnitSelection(id, forceQty) { if (CLEAN_EXCLUDE_IDS.has(id)) return; if (activeUnits.has(id)) activeUnits.delete(id); else activeUnits.set(id, isOneTime(unitMap.get(id)) ? 1 : Math.min(forceQty || 1, SYSTEM_CONFIG.policy.maxUnitCapacity)); debouncedUpdateAllPanels(); }
+    function setUnitQty(id, val) { if (CLEAN_EXCLUDE_IDS.has(id)) return; let q = parseInt(val, 10); if (isNaN(q) || q < 1) return; if (unitMap.get(id) && !isOneTime(unitMap.get(id))) activeUnits.set(id, Math.min(q, SYSTEM_CONFIG.policy.maxUnitCapacity)); debouncedUpdateAllPanels(); }
+
+    function formatRecipe(item, multi = 1, showSep = false) {
+        if (!item.recipe || IGNORE_PARSE_RECIPES.includes(item.recipe)) return `<div style="color:var(--text-muted);font-size:0.8rem;">정보 없음</div>`;
+        let foundSpecialIds = [];
+        let partsHtml = splitRecipe(item.recipe).map(p => {
+            const m = p.match(/^([^(\[ ]+)(?:\(([^)]+)\))?(?:\[(\d+)\])?/);
+            if (m) {
+                const unitId = getUnitId(m[1].trim()), u = unitMap.get(unitId);
+                let condHtml = '';
+                if (CLEAN_SPECIAL_CONDITIONS[unitId]) { condHtml = `<span class="badge-special-cond" style="pointer-events:none;">특수조건</span>`; if (!foundSpecialIds.includes(unitId)) foundSpecialIds.push(unitId); }
+                else if (m[2]) condHtml = `<span class="badge-cond">${m[2].replace(/,/g, ' ')}</span>`;
+                const qtyNum = (m[3] ? parseInt(m[3], 10) : 1) * multi;
+                if (showSep && m[2] && !CLEAN_SPECIAL_CONDITIONS[unitId]) return `<div class="recipe-badge" style="color:${u ? SYSTEM_CONFIG.grades.colors[u.grade] : "var(--text)"};"><span class="recipe-badge-name">${m[1].trim()}</span><span class="badge-cond" style="margin-left:4px;">${m[2].replace(/,/g, ' ')}</span><span class="badge-qty-wrap"><span class="badge-qty">· ${qtyNum}개</span></span></div>`;
+                return `<div class="recipe-badge" style="color:${u ? SYSTEM_CONFIG.grades.colors[u.grade] : "var(--text)"};"><span class="recipe-badge-name">${m[1].trim()}</span><span class="badge-qty-wrap">${condHtml}<span class="badge-qty">· ${qtyNum}개</span></span></div>`;
+            }
+            return `<div style="color:var(--text-sub); font-size:0.8rem; white-space:nowrap;">${p}</div>`;
+        }).join('');
+        let specialCondInlineHtml = (!showSep && foundSpecialIds.length > 0) ? `<div class="tsc-wrap" style="margin-top:6px; padding-top:6px;">${foundSpecialIds.map(uid => `<div class="tsc-item" style="margin-top:4px;">${CLEAN_SPECIAL_CONDITIONS[uid]}</div>`).join('')}</div>` : '';
+        return `<div class="${showSep ? '' : 'recipe-vertical'}" ${showSep ? 'style="display:flex; flex-wrap:wrap; gap:5px; align-items:center;"' : ''}>${partsHtml}</div>${specialCondInlineHtml}`;
+    }
+
+    // ── [10] UI: 장바구니 ──
+    function toggleCartCollapse() {
+        _cartCollapsed = !_cartCollapsed;
+        const btn = getEl('cartCollapseBtn'); if (btn) btn.textContent = _cartCollapsed ? '▶' : '▼';
+        [getEl('cartTabBar'), getEl('cartListArea')].forEach(el => { if (el) el.style.display = _cartCollapsed ? 'none' : ''; });
+    }
+
+    function updateCartUI() {
+        const cartListArea = getEl('cartListArea'); if (!cartListArea) return;
+        const tabBar = getEl('cartTabBar');
+        if (tabBar) {
+            tabBar.innerHTML = `<button class="cart-tab-btn ${_cartTab === 'active' ? 'active' : ''}" data-action="switchCartTab" data-tab="active">선택 <span class="cart-tab-cnt">${activeUnits.size}</span></button><button class="cart-tab-btn ${_cartTab === 'done' ? 'active' : ''}" data-action="switchCartTab" data-tab="done">완료 <span class="cart-tab-cnt done">${completedTargets.size}</span></button>`;
+            tabBar.style.display = _cartCollapsed ? 'none' : '';
+        }
+        cartListArea.style.display = _cartCollapsed ? 'none' : '';
+        if (_cartCollapsed) return;
+        if (_cartTab === 'active') {
+            if (activeUnits.size === 0) return cartListArea.innerHTML = `<div class="cart-empty-msg">목표 유닛을 선택하면<br>여기에 표시됩니다.</div>`;
+            const items = Array.from(activeUnits.keys()).map(uid => unitMap.get(uid)).filter(Boolean).sort((a, b) => (isOneTime(b) ? 1 : 0) - (isOneTime(a) ? 1 : 0) || getGradeIndex(b.grade) - getGradeIndex(a.grade) || (a.name || '').localeCompare(b.name || ''));
+            const existingIds = Array.from(cartListArea.querySelectorAll('.cart-item')).map(el => el.id.replace('ci-', '')), newIds = items.map(i => i.id);
+            if (existingIds.length !== newIds.length || existingIds.some((id, i) => id !== newIds[i])) {
+                cartListArea.innerHTML = items.map(item => `<div class="cart-item" id="ci-${item.id}"><span class="cart-item-grade"><span class="gtag grade-${item.grade}">${item.grade}</span></span><span class="cart-item-name" style="color:${SYSTEM_CONFIG.grades.colors[item.grade]};">${item.name}</span>${!isOneTime(item) ? `<div class="cart-item-stepper"><button data-action="smartChange" data-uid="${item.id}" data-delta="-1">-</button><span class="ci-val" id="ci-val-${item.id}">${activeUnits.get(item.id) || 1}</span><button data-action="smartChange" data-uid="${item.id}" data-delta="1">+</button></div>` : ''}<button class="cart-item-del" data-action="removeCartItem" data-uid="${item.id}" title="삭제">✕</button></div>`).join('');
+            } else items.forEach(item => { const valEl = getEl(`ci-val-${item.id}`); if (valEl) { const qty = activeUnits.get(item.id) || 1; if (valEl.innerText !== String(qty)) valEl.innerText = qty; } });
+        } else {
+            if (completedTargets.size === 0) return cartListArea.innerHTML = `<div class="cart-empty-msg">완료된 유닛이 없습니다.<br><span style="font-size:0.78rem;color:var(--text-muted);">체크리스트에서 전체완료 시 이곳으로 이동됩니다.</span></div>`;
+            cartListArea.innerHTML = Array.from(completedTargets.keys()).map(uid => unitMap.get(uid)).filter(Boolean).sort((a, b) => (isOneTime(b) ? 1 : 0) - (isOneTime(a) ? 1 : 0) || getGradeIndex(b.grade) - getGradeIndex(a.grade) || (a.name || '').localeCompare(b.name || '')).map(item => `<div class="cart-item cart-item-done" id="cid-${item.id}" data-action="restoreUnit" data-uid="${item.id}" title="클릭하면 선택탭으로 복구됩니다"><span class="cart-item-grade"><span class="gtag grade-${item.grade}">${item.grade}</span></span><span class="cart-item-name done-name" style="color:${SYSTEM_CONFIG.grades.colors[item.grade]};">${item.name}</span><span class="ci-onetime done-qty">×${completedTargets.get(item.id) || 1}</span><span class="cart-done-restore-hint always-show">↩ 복구</span></div>`).join('');
+        }
+    }
+
+    // ── [11] UI: 프리셋 및 제어 ──
+    function renderPresetButtons() {
+        const tabBar = getEl('presetInlineTabBar'), btnList = getEl('presetInlineBtnList'), wrap = getEl('presetInlineWrap');
+        if (!tabBar || !btnList || !wrap) return;
+        if (!SYSTEM_CONFIG.presets.length) { wrap.style.display = 'none'; return; }
+        const groups = [...new Set(SYSTEM_CONFIG.presets.filter(p => !(p.hidden === true || p.hidden === '비활성')).map(p => p.group || '일반 프리셋'))];
+        if (!groups.includes(_presetTab)) _presetTab = groups[0];
+        tabBar.style.display = groups.length > 1 ? 'flex' : 'none';
+        tabBar.innerHTML = groups.map(g => `<button class="preset-inline-tab-btn${g === _presetTab ? ' active' : ''}" data-action="switchPresetTab" data-tab="${g}">${g}</button>`).join('');
+        btnList.innerHTML = SYSTEM_CONFIG.presets.map((p, i) => {
+            const isHidden = p.hidden === true || p.hidden === '비활성';
+            if (isHidden || (p.group || '일반 프리셋') !== _presetTab) return '';
+            const colorKey = PRESET_COLOR_MAP[p.배경색] || 'red', textKey = PRESET_COLOR_MAP[p.글씨색];
+            let styleStr = `--btn-color:var(--preset-color-${colorKey})`;
+            if (textKey === 'white') styleStr += `;--btn-text-override:#ffffff`;
+            else if (textKey === 'black') styleStr += `;--btn-text-override:#111111`;
+            else if (textKey) styleStr += `;--btn-text-override:rgb(var(--preset-color-${textKey}))`;
+            else if (isBrightColor(p.배경색)) styleStr += ';--btn-text-override:#111111';
+            return `<button class="btn-gohaeng" data-action="runPreset" data-preset-idx="${i}" title="${p.tooltip || p.label}" style="${styleStr}">${p.icon ? `<span class="gohaeng-icon">${p.icon}</span>` : ''}<span class="gohaeng-label">${p.label}</span></button>`;
+        }).join('');
+        btnList.dataset.tab = _presetTab; wrap.style.display = ''; updatePresetBtns();
+    }
+
+    function updatePresetBtns() {
+        SYSTEM_CONFIG.presets.forEach((p, i) => {
+            const btn = document.querySelector(`[data-action="runPreset"][data-preset-idx="${i}"]`), used = p.oneTime && _presetUsed.get(i);
+            if (btn) { btn.disabled = !!used; btn.classList.toggle('gohaeng-used', !!used); btn.title = used ? '초기화 버튼으로 재활성화됩니다' : (p.tooltip || p.label); }
+        });
+    }
+
+    function startSmartChange(id, delta, event) {
+        if (event) {
+            if (event.type === 'touchstart' || event.type === 'pointerdown') _lastInteractionTime = Date.now();
+            else if (event.type === 'mousedown' && Date.now() - _lastInteractionTime < SYSTEM_CONFIG.policy.mouseAfterTouchDelay) { if (event.cancelable) event.preventDefault(); event.stopPropagation?.(); return; }
+        }
+        stopSmartChange(); triggerHaptic(); _touchHoldCount = 0;
+        const action = () => { let accelDelta = delta * (event?.shiftKey ? SYSTEM_CONFIG.policy.accelShiftMultiplier : (Math.floor(++_touchHoldCount / SYSTEM_CONFIG.policy.accelStepUnit) + 1)), current = activeUnits.get(id) || 0; if (current === 0 && accelDelta > 0) toggleUnitSelection(id, accelDelta); else setUnitQty(id, current + accelDelta); };
+        action(); _currentAccelInterval = SYSTEM_CONFIG.policy.accelInterval;
+        const loop = () => { triggerHaptic(); action(); _currentAccelInterval = Math.max(SYSTEM_CONFIG.policy.accelMinInterval, _currentAccelInterval - SYSTEM_CONFIG.policy.accelDecreaseStep); repeatTimer = setTimeout(loop, _currentAccelInterval); };
+        repeatDelayTimer = setTimeout(loop, SYSTEM_CONFIG.policy.holdStartDelay);
+    }
+    function stopSmartChange() { clearTimeout(repeatDelayTimer); clearTimeout(repeatTimer); _touchHoldCount = 0; }
+
+    function setFontScale(scale) { if (window.innerWidth < SYSTEM_CONFIG.policy.mobileBreakpoint) return; _fontScale = Math.max(SYSTEM_CONFIG.policy.fontScaleMin, Math.min(SYSTEM_CONFIG.policy.fontScaleMax, scale)); document.documentElement.style.setProperty('--fs-scale', _fontScale); const label = getEl('fontSizeLabel'); if (label) label.innerText = `${Math.round(_fontScale * 100)}%`; try { localStorage.setItem(SYSTEM_CONFIG.storageKeys.fontScale, String(_fontScale)); } catch(e) {} }
+    function loadFontScale() {
+        const ctrl = document.querySelector('.gh-fontsize-ctrl');
+        const isTabletPortrait = window.innerWidth >= SYSTEM_CONFIG.policy.mobileBreakpoint && window.innerWidth <= SYSTEM_CONFIG.policy.tabletPortraitMax && window.innerHeight > window.innerWidth;
+        if (window.innerWidth < SYSTEM_CONFIG.policy.mobileBreakpoint || isTabletPortrait) { if (ctrl) ctrl.style.display = 'none'; return; }
+        try { const saved = localStorage.getItem(SYSTEM_CONFIG.storageKeys.fontScale); if (saved) setFontScale(parseFloat(saved)); } catch(e) {}
+    }
+    function startFontHold(delta) {
+        stopFontHold();
+        const action = () => setFontScale(_fontScale + delta);
+        action();
+        _fontRepeatDelayTimer = setTimeout(() => { const loop = () => { action(); _fontRepeatTimer = setTimeout(loop, SYSTEM_CONFIG.policy.fontHoldRepeatDelay); }; loop(); }, SYSTEM_CONFIG.policy.fontHoldStartDelay);
+    }
+    function stopFontHold() { clearTimeout(_fontRepeatDelayTimer); clearTimeout(_fontRepeatTimer); }
+
+    function toggleHighlight(uid, event) {
+        if (event) { event.preventDefault(); event.stopPropagation(); }
+        const board = getEl('deductionBoard'); if (!board) return;
+        if (!uid || _currentHighlight === uid) { _currentHighlight = null; board.classList.remove('highlight-mode'); }
+        else { _currentHighlight = uid; board.classList.add('highlight-mode'); }
+        const clearBtn = getEl('btnClearHighlight'); if (clearBtn) clearBtn.hidden = !_currentHighlight;
+        const phBtns = document.querySelector('.checklist-ph-btns'); if (phBtns) phBtns.classList.toggle('has-highlight', !!_currentHighlight);
+        debouncedUpdateAllPanels();
+    }
+
+    // ── [12] UI: 모달 및 툴팁 ──
+    function renderJewelMiniGrid() {
+        let g = getEl('jewelMiniGrid'); if (!g || g.dataset.rendered) return;
+        if (!Array.isArray(JEWEL_DATABASE) || JEWEL_DATABASE.length === 0) return g.innerHTML = `<div style="text-align:center; width:100%; grid-column:1/-1; padding:20px; color:var(--text-sub);">쥬얼 데이터가 로드되지 않았습니다.</div>`;
+        g.dataset.rendered = '1';
+        g.innerHTML = JEWEL_DATABASE.map(arr => {
+            let kr = arr[0];
+            const legendLines = arr[1] ? arr[1].split('&').map(p => `<div class="jwm-stat-line">${p.trim()}</div>`).join('') : '';
+            const mythicLines = arr[2]?.trim() ? arr[2].split('&').map(p => `<div class="jwm-stat-line">${p.trim()}</div>`).join('') : '';
+            return `<div class="jwm-item"><div class="jwm-img-wrap"><img src="https://sldbox.github.io/site/image/jw/${kr}.png" alt="${kr}" loading="lazy" onerror="this.style.opacity='0'"></div><div class="jwm-name">${kr}</div><div class="jwm-stat legend">${legendLines}</div>${mythicLines ? `<div class="jwm-stat mythic">${mythicLines}</div>` : ''}</div>`;
+        }).join('');
+    }
+
+    function switchLayout(mode) {
+        hideRecipeTooltip();
+        const layout = getEl('mainLayout'); if (!layout) return;
+        _currentViewMode = mode; layout.classList.remove('view-codex', 'view-deduct');
+        const btnCodex = getEl('btnViewCodex'), btnDeduct = getEl('btnViewDeduct');
+        if (mode === 'deduct') { layout.classList.add('view-deduct'); btnCodex?.classList.remove('active'); btnDeduct?.classList.add('active'); }
+        else { layout.classList.add('view-codex'); btnCodex?.classList.add('active'); btnDeduct?.classList.remove('active'); }
+    }
+
+    function showTooltipOverlay(tt, event, widthOffset = SYSTEM_CONFIG.policy.tooltipOffset, heightOffset = SYSTEM_CONFIG.policy.tooltipOffset, forceInsideClick = false) {
+        let viewWidth = document.documentElement.clientWidth;
+        tt.style.maxWidth = `${viewWidth - SYSTEM_CONFIG.policy.tooltipMaxWidthPad}px`;
+        const isClickInside = forceInsideClick || (event?.target?.closest('#recipeTooltip') !== null);
+        const isAlreadyActive = tt.classList.contains('active');
+        if (!isAlreadyActive) { tt.style.left = '-9999px'; tt.style.top = '-9999px'; }
+        tt.classList.add('active');
+        requestAnimationFrame(() => {
+            if (isAlreadyActive && isClickInside) return;
+            let x = (event?.clientX || event?.touches?.[0]?.clientX || viewWidth/2) + window.scrollX;
+            let y = (event?.clientY || event?.touches?.[0]?.clientY || window.innerHeight/2) + window.scrollY;
+            let ttRect = tt.getBoundingClientRect(), ttWidth = ttRect.width || SYSTEM_CONFIG.policy.tooltipFallbackWidth, ttHeight = ttRect.height || SYSTEM_CONFIG.policy.tooltipFallbackHeight;
+            const pad = SYSTEM_CONFIG.policy.tooltipScrollPad;
+            tt.style.left = `${Math.max(window.scrollX + pad, Math.min(x, viewWidth + window.scrollX - ttWidth - widthOffset))}px`;
+            tt.style.top = `${Math.max(window.scrollY + pad, Math.min(y, window.innerHeight + window.scrollY - ttHeight - heightOffset))}px`;
+        });
+    }
+
+    function showExcludedTooltip(id, event) {
+        event?.stopPropagation(); const u = unitMap.get(id), tt = getEl('recipeTooltip'); if (!u || !tt) return;
+        const isClickInside = event ? (event.target.closest('#recipeTooltip') !== null) : false;
+        const parentUnits = []; unitMap.forEach(pu => pu.parsedRecipe?.some(pr => pr.id === id) && parentUnits.push(pu));
+        tt.innerHTML = `<div class="tooltip-header" style="display:flex;align-items:center;gap:6px;"><span class="gtag grade-${u.grade}">${u.grade}</span><span style="color:${SYSTEM_CONFIG.grades.colors[u.grade] || '#fbbf24'};">${u.name}</span><span class="badge-excluded" style="pointer-events:none;margin-left:2px;">선택제한</span></div><div class="tooltip-body" style="font-size:0.82rem;color:var(--text);margin-top:8px;display:flex;flex-direction:column;gap:8px;"><div style="color:var(--text-sub);line-height:1.5;">이 유닛은 아래 상위 유닛의 <b style="color:var(--text);">조합 재료로 자동 포함</b>되므로<br>직접 선택할 수 없습니다.</div>${parentUnits.length > 0 ? `<div style="display:flex;flex-direction:column;gap:4px;">${parentUnits.map(pu => `<div style="display:flex;align-items:center;gap:6px;padding:5px 8px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:6px;"><span class="gtag grade-${pu.grade}">${pu.grade}</span><span style="color:${SYSTEM_CONFIG.grades.colors[pu.grade] || 'var(--text)'};font-size:0.85rem;font-weight:900;">${pu.name}</span><span style="color:var(--text-muted);font-size:0.75rem;margin-left:auto;">의 하위 재료</span></div>`).join('')}</div>` : ''}</div><div class="tooltip-footer">터치/클릭 또는 ESC로 닫힙니다.</div>`;
+        showTooltipOverlay(tt, event, SYSTEM_CONFIG.policy.tooltipOffset, SYSTEM_CONFIG.policy.tooltipOffset, isClickInside);
+    }
+
+    function showRecipeTooltip(id, event, isDeduction = false) {
+        event?.stopPropagation(); const u = unitMap.get(id), tt = getEl('recipeTooltip'); if (!u || !tt) return;
+        const isClickInside = event ? (event.target.closest('#recipeTooltip') !== null) : false;
+        let multi = 1;
+        if (isDeduction) {
+            const { reqMap, baseMap, specialReq } = _lastCalcResult || calculateDeductedRequirements();
+            if (COMBO_SLOT_SET.has(id)) multi = specialReq[id] || 0;
+            else if (activeUnits.has(id)) multi = reqMap.get(id) || baseMap.get(id) || activeUnits.get(id) || 0;
+            else multi = reqMap.get(id) || 0;
+        }
+        multi = isOneTime(u) ? 1 : Math.max(multi, 1);
+        let foundSpecialConds = new Set(); u.parsedRecipe?.forEach(pr => pr.id && CLEAN_SPECIAL_CONDITIONS[pr.id] && foundSpecialConds.add(pr.id));
+        tt.innerHTML = `<div class="tooltip-header" style="display:flex;align-items:center;color:${SYSTEM_CONFIG.grades.colors[u.grade]}"><div>${u.name} 조합법 ${multi > 1 ? `<span style="font-size:0.78rem; color:var(--text-sub);">(${multi}개 기준)</span>` : ''}</div></div><div class="tooltip-body">${formatRecipe(u, multi, true)}${foundSpecialConds.size > 0 ? `<div class="tsc-wrap">${Array.from(foundSpecialConds).map(uid => `<div class="tsc-item">${CLEAN_SPECIAL_CONDITIONS[uid]}</div>`).join('')}</div>` : ''}</div>${CLEAN_UNIT_CONDITIONS[u.id] ? `<div class="tsc-wrap" style="margin:6px 8px 2px;"><div class="tsc-item">${CLEAN_UNIT_CONDITIONS[u.id]}</div></div>` : ''}<div class="tooltip-footer"><span class="tooltip-footer-close">터치/클릭 또는 ESC로 닫기</span></div>`;
+        showTooltipOverlay(tt, event, SYSTEM_CONFIG.policy.tooltipOffset, SYSTEM_CONFIG.policy.tooltipOffset, isClickInside);
+    }
+
+    function hideRecipeTooltip() { getEl('recipeTooltip')?.classList.remove('active'); }
+
+    function toggleJewelPanel() { hideRecipeTooltip(); const modal = getEl('jewelModalOverlay'), btn = getEl('btnJewelToggle'); if (modal?.style.display === 'flex') closeJewelPanel(); else if (modal) { modal.style.display = 'flex'; btn?.setAttribute('aria-expanded', 'true'); btn?.classList.add('is-open'); _jewelPanelOpen = true; renderJewelMiniGrid(); document.body.style.overflow = 'hidden'; modal.focus(); } }
+    function closeJewelPanel() { const modal = getEl('jewelModalOverlay'), btn = getEl('btnJewelToggle'); if (modal) modal.style.display = 'none'; btn?.setAttribute('aria-expanded', 'false'); btn?.classList.remove('is-open'); _jewelPanelOpen = false; document.body.style.overflow = ''; }
+    function openNoticeModal() { _previousFocus = document.activeElement; const m = getEl('noticeModal'); if (m) { m.style.display = 'flex'; m.focus(); m.addEventListener('keydown', trapModalFocus); } }
+    function closeNoticeModal() { const m = getEl('noticeModal'); if (m) { m.style.display = 'none'; m.removeEventListener('keydown', trapModalFocus); } if (_previousFocus) _previousFocus.focus(); }
+    function trapModalFocus(e) { if (e.key === 'Escape') closeNoticeModal(); }
+
+    // ── [13] 전역 이벤트 위임 ──
+    ['pointerup','pointercancel','touchend','touchcancel','mouseup','contextmenu'].forEach(evt => { document.addEventListener(evt, stopSmartChange); document.addEventListener(evt, stopFontHold); });
+    document.addEventListener('visibilitychange', () => { if (document.hidden) { stopSmartChange(); stopFontHold(); } });
+
+    document.addEventListener('click', e => {
+        const actionEl = e.target.closest('[data-action]');
+        if (!actionEl) {
+            if (_currentHighlight) toggleHighlight(null);
+            if (e.target.id === 'noticeModal') closeNoticeModal();
+            if (e.target.id === 'jewelModalOverlay') closeJewelPanel();
+            if (getEl('recipeTooltip')?.classList.contains('active') && !e.target.closest('#recipeTooltip')) hideRecipeTooltip();
+            return;
+        }
+
+        const action = actionEl.dataset.action, uid = actionEl.dataset.uid;
+        switch (action) {
+            // 레이아웃 및 탭
+            case 'switchMainView': switchLayout(actionEl.dataset.view); break;
+            case 'selectTab': selectTab(parseInt(actionEl.dataset.tabIdx, 10)); break;
+            case 'toggleSelectAllTab': toggleSelectAllTab(); break;
+
+            // 모달
+            case 'openNoticeModal': openNoticeModal(); break;
+            case 'closeNoticeModal': closeNoticeModal(); break;
+            case 'toggleJewelPanel': toggleJewelPanel(); break;
+            case 'closeJewelPanel': closeJewelPanel(); break;
+
+            // 프리셋 및 유닛 제어
+            case 'runPreset': {
+                const idx = parseInt(actionEl.dataset.presetIdx, 10), preset = SYSTEM_CONFIG.presets[idx];
+                if (preset && !(preset.oneTime && _presetUsed.get(idx))) { processCommand(preset.command, true); if (preset.oneTime) _presetUsed.set(idx, true); updatePresetBtns(); }
+                break;
+            }
+            case 'switchPresetTab': _presetTab = actionEl.dataset.tab; renderPresetButtons(); break;
+            case 'toggleUnit': toggleUnitSelection(uid, 1); break;
+            case 'toggleFavorite': e.stopPropagation(); toggleFavorite(uid, e); break;
+
+            // 툴팁 및 하이라이트
+            case 'showExcludedTooltip': e.stopPropagation(); showExcludedTooltip(uid, e); break;
+            case 'showRecipeTooltip': e.stopPropagation(); showRecipeTooltip(uid, e, actionEl.dataset.isDeduction === 'true'); break;
+            case 'toggleHighlight': toggleHighlight(uid, e); break;
+            case 'clearHighlight': toggleHighlight(null); break;
+
+            // 장바구니
+            case 'switchCartTab': _cartTab = ['active', 'done'].includes(actionEl.dataset.tab) ? actionEl.dataset.tab : 'active'; updateCartUI(); break;
+            case 'toggleCartCollapse': toggleCartCollapse(); break;
+            case 'removeCartItem': e.stopPropagation(); if (uid) { activeUnits.delete(uid); debouncedUpdateAllPanels(); } break;
+
+            // 체크리스트 (완료 및 복구)
+            case 'addComplete': e.stopPropagation(); completeUnit(uid, parseInt(actionEl.dataset.batch || 1, 10)); break;
+            case 'completeUnit': e.stopPropagation(); completeUnit(uid); break;
+            case 'restoreUnit': e.stopPropagation(); restoreUnit(uid); break;
+            case 'resetGroup': e.stopPropagation(); resetGroupCompleted(parseInt(actionEl.dataset.level, 10)); break;
+            case 'toggleGroup': {
+                const grp = actionEl.closest('.deduct-group'), gridEl = getEl(actionEl.dataset.gridId), icon = actionEl.querySelector('.grp-toggle-icon');
+                if (grp) {
+                    if (grp.classList.contains('collapsed') || (gridEl && gridEl.style.display === 'none')) { grp.classList.remove('collapsed'); if (gridEl) gridEl.style.display = 'grid'; if (icon) icon.style.transform = 'rotate(0deg)'; }
+                    else { grp.classList.add('collapsed'); if (gridEl) gridEl.style.display = 'none'; if (icon) icon.style.transform = 'rotate(-90deg)'; }
+                }
+                break;
+            }
+            case 'toggleHideCompleted': _hideCompleted = !_hideCompleted; updateHideCompletedBtn(); debouncedUpdateAllPanels(); break;
+            case 'restoreAllCompleted': restoreAllCompleted(); break;
+            case 'resetCodex': resetCodex(); break;
+        }
     });
-  }
 
-  function init() {
-    applyMode();
-    bindMobileScroll();
-    bindInputAutoSelect();
-    updateMobileOffsets();
-  }
+    document.addEventListener('pointerdown', e => {
+        const actionEl = e.target.closest('[data-action="smartChange"]');
+        if (actionEl) { e.stopPropagation(); startSmartChange(actionEl.dataset.uid, parseInt(actionEl.dataset.delta, 10), e); return; }
+        if (e.target.closest('[data-action="increaseFont"]')) { e.preventDefault(); startFontHold(SYSTEM_CONFIG.policy.fontScaleStep); return; }
+        if (e.target.closest('[data-action="decreaseFont"]')) { e.preventDefault(); startFontHold(-SYSTEM_CONFIG.policy.fontScaleStep); return; }
+    });
+    document.addEventListener('keydown', e => {
+        if (e.key === 'Escape') {
+            if (getEl('noticeModal')?.style.display === 'flex') return closeNoticeModal();
+            if (_jewelPanelOpen) return closeJewelPanel();
+            if (_currentHighlight) toggleHighlight(null);
+            hideRecipeTooltip();
+            const searchInp = getEl('unitSearchInput');
+            if (document.activeElement === searchInp) searchInp?.blur();
+        }
+    });
+    window.addEventListener('orientationchange', hideRecipeTooltip);
 
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init, { once: true });
-  } else {
-    init();
-  }
-
-  window.addEventListener('resize', scheduleApply, { passive: true });
-  window.addEventListener('orientationchange', scheduleApply, { passive: true });
-  window.addEventListener('load', updateMobileOffsets, { once: true });
+    // ── [14] 앱 초기화 부트스트랩 ──
+    document.addEventListener('DOMContentLoaded', () => {
+        try {
+            document.documentElement.lang = 'ko';
+            if (typeof UNIT_DATABASE === 'undefined' || !Array.isArray(UNIT_DATABASE)) return alert("치명적 오류: data.js의 UNIT_DATABASE를 불러올 수 없습니다.") || console.error("[오류] 데이터베이스 배열 로드 실패");
+            UNIT_DATABASE.forEach(kArr => unitMap.set(clean(kArr[0]), { id: clean(kArr[0]), name: kArr[0], grade: kArr[1] || SYSTEM_CONFIG.grades.order[0], category: kArr[2] || SYSTEM_CONFIG.tabs[0]?.key || '테바', recipe: kArr[3], cost: kArr[4] }));
+            if (typeof RAW_JEWEL_DATA !== 'undefined' && Array.isArray(RAW_JEWEL_DATA)) { RAW_JEWEL_DATA.forEach(jewel => { JEWEL_DATABASE.push([jewel[0], jewel[1], jewel[2]]); }); }
+            initializeCacheEngine();
+            loadNexusState();
+            loadFontScale();
+            renderDashboardAtoms();
+            renderDeductionBoard();
+            renderTabs();
+            selectTab(0);
+            debouncedUpdateAllPanels();
+            setupSearchEngine();
+            switchLayout('codex');
+            renderPresetButtons();
+            updateHideCompletedBtn();
+            if (_cartCollapsed) {
+                const btn = getEl('cartCollapseBtn'); if (btn) btn.textContent = '▶';
+                [getEl('cartTabBar'), getEl('cartListArea')].forEach(el => { if (el) el.style.display = 'none'; });
+            }
+        } catch (err) { console.error("[오류] 넥서스 초기화 중 에러 발생:", err); alert("초기화 중 치명적인 오류가 발생했습니다.\n\n" + (err.stack || err.message || String(err))); }
+    });
 })();
-
-/* =========================================================
-   01. 설정 / 기준 데이터
-   ========================================================= */
-var DPS_CONFIG={
-  storage:{
-    version:(window.DPS_BUILD_VERSION || 'dev'),
-    scope:'browser_local',
-    key:'gbd_dps_calculator:personal_state',
-    fontKey:'gbd_dps_calculator:font_scale',
-    clientKey:'gbd_dps_calculator:client_id'
-  },
-
-  state:{
-    skipElementIds:['backupFileInput','dpsTableMinDpsMain','ep']
-  },
-
-  dpsTable:{
-    difficulties:['Practice','Very Easy','Easy','Normal','Hard','Very Hard','Hell','Inferno','Lunatic','Holic','Epic','Ultimate','Impossible','The Final','Hall Of Fame','Abyss road','Deep Abyss'],
-    tower:{minFloor:1,maxFloor:90},
-    penanceMin:0,
-    penanceMax:20,
-    decimals:1
-  },
-
-  ui:{
-    updateDelay:16,
-    confirmDelayMs:1600,
-    traitHoldInitialDelay:320,
-    traitHoldRepeatMs:55,
-    traitHoldAccelEvery:7,
-    traitHoldMaxStep:50,
-    fontScaleDefault:1,
-    fontScaleMin:0.9,
-    fontScaleMax:2,
-    fontScaleStep:0.05,
-    mobileMaxWidth:600
-  }
-};
-
-window.DPS_CONFIG=DPS_CONFIG;
-function enchantAt(pos){
-  syncEnchantCodeFromInputs(false);
-  const code=(document.getElementById('enchantCode')?.value||'999999').padEnd(6,'0');
-  const lv=Math.max(0,Math.min(9,parseInt(code[pos]||'0',10)||0));
-  return ENCHANT_TABLE[lv];
-}
-
-/* =========================================================
-   02. 전역 상태 / 특성 투자 상태
-   ========================================================= */
-const INV={};
-TRAITS.forEach(t=>{INV[t[0]]=0;});
-Object.assign(INV,{116:1});
-const AUTO_INVEST_EXCLUDED_ROWS=new Set([45,87]);
-const ENCHANT_INPUT_IDS=['enchAD','enchCRI','enchUA','enchTD','enchSR','enchHR'];
-const FIXED_STEP_AFTER_150={93:76000,94:76000,95:114000};
-function fixedStepAfter150(row){return FIXED_STEP_AFTER_150[row] || 0;}
-function nextCost(row){
-  const step=(typeof STEP_COST!=='undefined') ? STEP_COST[row] : null;
-  const n=INV[row]||0;
-  const mx=TMAX[row]||999;
-  if(n>=mx) return Infinity;
-  if(step) return Number.isFinite(step[n]) ? step[n] : Infinity;
-  const p=COST[row];
-  if(!p){
-    if(typeof RP_ROWS!=='undefined' && RP_ROWS.has(row)) return nextRpCost(row);
-    return Infinity;
-  }
-  const [a,d,mx2]=p;
-  if(n>=mx2) return Infinity;
-  const fixed=fixedStepAfter150(row);
-  if(fixed && n>=150) return fixed;
-  return n<400 ? a+n*d : a+400*d+(n-400)*(d/2);
-}
-function cumCost(row){
-  const n=Math.min(INV[row]||0,TMAX[row]||999);
-  const step=(typeof STEP_COST!=='undefined') ? STEP_COST[row] : null;
-  if(step) return step.slice(0,n).reduce((a,b)=>a+(+b||0),0);
-  const p=COST[row];
-  if(!p) return 0;
-  const [a,d,mx]=p; const nn=Math.min(n,mx);
-  if(nn<=0) return 0;
-  const fixed=fixedStepAfter150(row);
-  if(fixed && nn>150){
-    const base=(150*(2*a+(149)*d))/2;
-    return base + (nn-150)*fixed;
-  }
-  const e=Math.min(nn,400);
-  let s=(e*(2*a+(e-1)*d))/2;
-  if(nn>400){const ov=nn-400,x0=a+400*d;s+=(ov*(2*x0+(ov-1)*(d/2)))/2;}
-  return s;
-}
-/* =========================================================
-   03. 공통 UI 유틸 / 입력값 유틸
-   ========================================================= */
-function showToast(message, type='ok'){
-  try{
-    let root=document.getElementById('toastRoot');
-    if(!root){
-      root=document.createElement('div');
-      root.id='toastRoot';
-      root.className='toast-root';
-      root.setAttribute('aria-live','polite');
-      document.body.appendChild(root);
-    }
-    const el=document.createElement('div');
-    el.className='toast '+type;
-    el.textContent=message;
-    root.appendChild(el);
-    requestAnimationFrame(()=>el.classList.add('show'));
-    setTimeout(()=>{
-      el.classList.remove('show');
-      setTimeout(()=>el.remove(), 220);
-    }, 2200);
-  }catch(e){}
-}
-function v(id){const el=document.getElementById(id); if(!el) return 0; const raw=String(el.value??'').replace(/,/g,'').trim(); return +raw||0;}
-function vs(id){const el=document.getElementById(id); return el ? el.value : '';}
-const BASE_DISPLAY_STATS={ad:5, as:5, cri:5};
-function effectiveXpValue(){return Math.max(1, v('xp'));}
-function normalizeXpInput(){
-  const el=document.getElementById('xp');
-  if(!el) return 1;
-  const n=Math.max(1, v('xp'));
-  if(v('xp')!==n) el.value=String(n.toLocaleString('ko-KR'));
-  return n;
-}
-function setText(id,val){const el=document.getElementById(id); if(el) el.textContent=val;}
-function setHtml(id,val){const el=document.getElementById(id); if(el) el.innerHTML=val;}
-function setValue(id,val){const el=document.getElementById(id); if(el) el.value=String(val);}
-const RUNE_CHOICE_TARGETS=[['ap','rAP'],['ua','rUA'],['td','rTD'],['harmony','rHarmony']];
-
-/* =========================================================
-   04. 계산 보조 함수 / 난이도 / 룬 / 특성 효과
-   ========================================================= */
-function isAbyssDifficulty(){const d=vs('diff'); return d==='Abyss road' || d==='Deep Abyss';}
-function abyssEffectiveStack(){
-  if(!isAbyssDifficulty()) return 0;
-  const round=Math.max(0, v('round'));
-  const abyssRes=(INV[131]||0) * 3;
-  const deepExtra=vs('diff')==='Deep Abyss' ? Math.floor(round/10)*5 : 0;
-  return Math.max(0, round - abyssRes + deepExtra);
-}
-function abyssTdPenalty(){
-  return abyssEffectiveStack() * 0.5;
-}
-function abyssSlowMultiplier(){
-  return Math.pow(0.9875, abyssEffectiveStack());
-}
-function abyssAdPenalty(){
-  if(!isAbyssDifficulty()) return 0;
-  const base=vs('diff')==='Deep Abyss' ? 5 : 0.75;
-  const stack=Math.max(0, v('erosionStack'));
-  const jewelRes=Math.max(0, Math.min(100, v('jewelErosionRes')));
-  const traitRes=(INV[132]||0) * 0.025;
-  return Math.max(0, base * stack * (1 - (jewelRes/100 + traitRes)));
-}
-function traitRate(t){
-  const row=t[0];
-  if(isAbyssDifficulty()){
-    if(row===133) return 15;
-    if(row===134) return 7.5;
-    if(row===135) return 1.5;
-  }
-  return t[4]||0;
-}
-function sumStat(type){
-  let s=0;
-  TRAITS.forEach(t=>{
-    if(t[3]!==type||T_UA.has(t[0])) return;
-    let val=(INV[t[0]]||0)*traitRate(t);
-    if(t[5]==='team' && !isTowerDifficulty()) val*=Math.max(1,v('team')||1);
-    if(t[0]===70||t[0]===103||t[0]===110) val=Math.round(val*10)/10;
-    s+=val;
-  });
-  return s;
-}
-function uaProd(){
-  const rates={99:0.24,111:0.08,136:(isAbyssDifficulty()?3:0.4)};
-  let p=1;
-  for(const [r,rate] of Object.entries(rates)){
-    const n=INV[+r]||0;
-    if(n>0){
-      let val=Math.pow(1+rate/100,n);
-      if(+r===99||+r===111) val=Math.round(val*10000)/10000;
-      p*=val;
-    }
-  }
-  return p;
-}
-function dps0(hpRemain,enemyArmor,dr,pierce,dmgReduce){
-  const armor=Math.max(0, Number.isFinite(enemyArmor)?enemyArmor:enemyRoundData(v('round')).armor);
-  const hp=Math.max(0.01, Number.isFinite(hpRemain)?hpRemain:1);
-  const dmg=Number.isFinite(dmgReduce)?dmgReduce:(DIFF[vs('diff')]||DIFF['The Final']).dmg;
-  return (100/(100+armor*(1-dr/100)*(1-pierce/100))) / hp * (dmg/100);
-}
-function dps2(cri,mc,cd,md,mp,mcp,radiation=0){
-  let a=cri;
-  let d=md;
-  let e=mp;
-  let f=mcp;
-  if(radiation===1 || radiation===true){
-    a=a/2;
-    d=0;
-    e=0;
-    f=0;
-  }
-  if(a>=300) return 1+cd/100+mc*cd*2/300+d/100*e/100*(1+f/100*cd/100+f/100*mc*cd*2/300);
-  if(a>=100) return 1+cd/100+mc*a/300*cd*2/300+d/100*e/100*(1+f/100*cd/100+f/100*mc*a/300*cd*2/300);
-  return 1+a/100*cd/100+mc*a/100*a/300*cd*2/300+d/100*e/100*(1+f/100*cd/100+f/100*mc*a/300*cd*2/300);
-}
-function lookupFloor(table, round){
-  const r=Math.max(1,Math.round(+round||1));
-  let last=null;
-  for(const row of table){
-    if(row[0] <= r) last=row; else break;
-  }
-  return last || table[0];
-}
-function isTowerDifficulty(){return vs('diff')==='도전의 탑';}
-function enemyRoundData(round){
-  const maxRound=isTowerDifficulty()?90:300;
-  const r=Math.max(0,Math.min(maxRound,Math.round(+round||0)));
-  if(r<=0) return {round:0,armor:0,unitRound:0,count:0,hp:0,shield:0};
-  const armorTable=isTowerDifficulty()?TOWER_ARMOR_TABLE:ENEMY_ARMOR_TABLE;
-  const unitTable=isTowerDifficulty()?TOWER_UNIT_TABLE:ENEMY_UNIT_TABLE;
-  const armorRow=lookupFloor(armorTable, r);
-  const unitRow=lookupFloor(unitTable, r);
-  return {
-    round:r,
-    armor: armorRow && armorRow[0] <= r ? armorRow[1] : 0,
-    unitRound: unitRow ? unitRow[0] : r,
-    count: unitRow ? unitRow[1] : 0,
-    hp: unitRow ? unitRow[2] : 0,
-    shield: unitRow ? unitRow[3] : 0
-  };
-}
-function renderEnemyData(data){
-  if(!data) return;
-  setText('enemyQuickView', `방어 ${big(data.armor)} / 체력 ${big(data.hp)} / 실드 ${big(data.shield)}`);
-  setText('enemyArmorQuick', big(data.armor));
-  setText('enemyHpQuick', big(data.hp));
-  setText('enemyShieldQuick', big(data.shield));
-  setText('enemyCountQuick', big(data.count));
-  setValue('enemyArmor', data.armor);
-}
-function syncRuneChoice(){
-  const type=vs('runeChoiceType') || 'harmony';
-  const value=v('runeChoiceValue');
-  RUNE_CHOICE_TARGETS.forEach(([kind,id])=>setValue(id, kind===type ? value : 0));
-}
-function hydrateRuneChoiceFromHidden(){
-  const typeEl=document.getElementById('runeChoiceType');
-  const valueEl=document.getElementById('runeChoiceValue');
-  if(!typeEl || !valueEl) return;
-  const selected=RUNE_CHOICE_TARGETS.find(([,id])=>v(id)!==0);
-  typeEl.value=selected ? selected[0] : 'harmony';
-  valueEl.value=String(selected ? v(selected[1]) : 0);
-  syncRuneChoice();
-}
-function setSelectButton(id,value){
-  const el=document.getElementById(id);
-  if(!el) return;
-  el.value=value;
-  syncSelectButtons();
-  requestAppUpdate();
-}
-function syncSelectButtons(){
-  document.querySelectorAll('.seg-btns[data-target]').forEach(group=>{
-    const id=group.dataset.target;
-    const val=document.getElementById(id)?.value;
-    group.querySelectorAll('button[data-value]').forEach(btn=>{
-      btn.classList.toggle('active', btn.dataset.value===val);
-    });
-  });
-}
-function syncBuffChoiceButtons(){
-  document.querySelectorAll('.buff-choice-item').forEach(item=>{
-    const input=item.querySelector('input[type="checkbox"]');
-    const active=!!(input && input.checked);
-    item.classList.toggle('is-active', active);
-    item.setAttribute('aria-pressed', active ? 'true' : 'false');
-  });
-}
-function clampEnchantInput(el){
-  let n=parseInt(String(el.value||'0').replace(/[^0-9]/g,''),10);
-  if(!Number.isFinite(n)) n=0;
-  n=Math.max(0,Math.min(9,n));
-  el.value=String(n);
-  return n;
-}
-function syncEnchantInputs(){
-  const code=ENCHANT_INPUT_IDS.map(id=>{
-    const el=document.getElementById(id);
-    return el ? clampEnchantInput(el) : 0;
-  }).join('');
-  const hidden=document.getElementById('enchantCode');
-  if(hidden) hidden.value=code;
-}
-function syncEnchantCodeFromInputs(updateInputs=true){
-  const hidden=document.getElementById('enchantCode');
-  const hasInputs=ENCHANT_INPUT_IDS.some(id=>document.getElementById(id));
-  if(!hasInputs) return;
-  if(updateInputs && hidden){
-    const code=String(hidden.value||'999999').padEnd(6,'0');
-    ENCHANT_INPUT_IDS.forEach((id,i)=>{
-      const el=document.getElementById(id);
-      if(el) el.value=String(Math.max(0,Math.min(9,parseInt(code[i]||'0',10)||0)));
-    });
-  }
-  syncEnchantInputs();
-}
-function formatMoneyInput(el){
-  if(!el) return;
-  const raw=String(el.value||'').replace(/[^\d-]/g,'');
-  if(raw===''||raw==='-'){el.value=raw;return;}
-  const neg=raw[0]==='-';
-  const digits=(neg?raw.slice(1):raw).replace(/^0+(?=\d)/,'');
-  el.value=(neg?'-':'') + (digits?digits.replace(/\B(?=(\d{3})+(?!\d))/g,','):'0');
-}
-function formatAllMoneyInputs(){
-  document.querySelectorAll('.money-input').forEach(formatMoneyInput);
-}
-function on(id){const el=document.getElementById(id); return !!(el && el.checked);}
-function clampInt(n,min,max){return Math.max(min,Math.min(max,Math.round(+n||0)));}
-const OVER_ENHANCE_ALLOWED=new Set([0,3,5,6]);
-function normalizeOverEnhanceValue(value){
-  const n=clampInt(value,0,6);
-  return OVER_ENHANCE_ALLOWED.has(n) ? n : 0;
-}
-function monthRuneCount(prefix, kind='plus'){
-  const el=document.getElementById(prefix + (kind==='normal' ? 'RuneNormal' : 'RunePlus'));
-  return clampInt(el ? el.value : 0, 0, 4);
-}
-const RUNE_OPTION_SELECT_IDS=['opt10','opt15','transOpt'];
-function uniqueRuneOptionCodes(){
-  return Array.from(new Set(
-    RUNE_OPTION_SELECT_IDS.map(id=>vs(id)).filter(code=>code && code!=='none')
-  ));
-}
-function syncExclusiveRuneOptions(){
-  const selects=RUNE_OPTION_SELECT_IDS.map(id=>document.getElementById(id)).filter(Boolean);
-  if(!selects.length) return;
-  const used=new Set();
-  selects.forEach(select=>{
-    const code=select.value;
-    if(code && code!=='none'){
-      if(used.has(code)) select.value='none';
-      else used.add(code);
-    }
-  });
-  const selected=new Set(selects.map(select=>select.value).filter(code=>code && code!=='none'));
-  selects.forEach(select=>{
-    Array.from(select.options || []).forEach(option=>{
-      const code=option.value;
-      const blocked=code && code!=='none' && code!==select.value && selected.has(code);
-      option.disabled=blocked;
-      option.hidden=blocked;
-    });
-  });
-}
-/* Stat, buff, rune, and DPS calculation engine */
-const STAT_KO={
-  AD:'공격력', AS:'공격속도', AP:'마법공격력', CRI:'크리티컬 확률', CD:'크리티컬 데미지',
-  MC:'다중 크리티컬', TD:'총 데미지', DR:'방어력 감소', PIERCE:'방어력 관통', UA:'유닛 가속',
-  SR:'실드 감소', HR:'체력 감소', MD:'멀티 타겟', MP:'멀티 확률', MCP:'멀티 크리 확률',
-  RA:'강화 관련', 특수:'상시 적용', 유틸:'편의/보조', 경험치:'경험치 보너스'
-};
-function statKo(type){return STAT_KO[type] || type;}
-function traitEffectText(row,type,rate){return !rate ? statKo(type) : `${statKo(type)} +${rate}${T_UA.has(row)?'%':''}`;}
-function reinforceSuccessChance(tries, isTheZero, upRev, upFRev){
-  tries=clampInt(tries,0,999);
-  if(tries<=0) return 0;
-  const upP=105 + (isTheZero ? 20 : 0) + upRev * 2;
-  const failStep=4 + 2 * upFRev;
-  const streakChance=[];
-  for(let i=0;i<=tries;i++) streakChance[i]=1 - 70 / (upP + i * failStep);
-  const upOdds=[];
-  for(let i=0;i<=tries;i++){
-    let x;
-    if(i===0) x=1;
-    else if(i===1) x=streakChance[0];
-    else{
-      x=upOdds[i-1] * streakChance[0];
-      for(let j=1;j<=i-1;j++){
-        let inter=1;
-        for(let f=0;f<=j-1;f++) inter *= 1 - streakChance[f];
-        x += inter * streakChance[j] * upOdds[i-1-j];
-      }
-    }
-    upOdds[i]=x;
-  }
-  let sum=0;
-  for(let i=1;i<=tries;i++) sum += upOdds[i];
-  return sum / tries;
-}
-function reinforceExpectedValue(successChance, count, masterRate, doubleReinf, repairAdd){
-  return Math.floor(30 * successChance * count * (1 + doubleReinf / 200) + 10 * (1 - successChance) * count * masterRate + repairAdd * (1 - successChance) * count);
-}
-function unitEnhanceStats(){
-  const active=true; // 유닛강화는 웹 기준 상시 ON
-  const over=normalizeOverEnhanceValue(v('overEnhance'));
-  const repair=vs('repairEnhance');
-  const master=vs('enhanceMaster');
-  const masterRate=master==='ON+'?0.66:master==='ON'?0.5:0;
-  const repairAdd=repair==='ON+'?7:repair==='ON'?5:0;
-  const aprilNormal=monthRuneCount('apr','normal');
-  const aprilPlus=monthRuneCount('apr','plus');
-  const septemberPlus=monthRuneCount('sep','plus');
-  const count=10 + (INV[58]||0) + over + aprilNormal + (hasRuneOption('reinf5')?5:0);
-  const chance=reinforceSuccessChance(count, true, INV[64]||0, INV[65]||0);
-  const value=active ? reinforceExpectedValue(chance, count, masterRate, INV[96]||0, repairAdd) + aprilPlus * 10 : 0;
-  return {count,chance,value,septemberPlus};
-}
-function upperOptionStats(){
-  const flower1=on('flowerSkill1');
-  const flower2=on('flowerSkill2');
-  const flower3=on('flowerSkill3');
-  const prod={
-    nova:on('prodNova'), teratron:on('prodTeratron'), amon:on('prodAmon'), adun:on('prodAdun'),
-    kerrigan:on('prodKerrigan'), overmind:on('prodOvermind'), narud:on('prodNarud'), artifact:on('prodArtifact')
-  };
-  const prodHiddenAD = (prod.nova?10:0) + (prod.teratron?10:0) + (prod.amon?10:0)
-                     + (prod.adun?10:0) + (prod.kerrigan?10:0) + (prod.overmind?10:0);
-  const prodAD = (prod.amon?30:0) + prodHiddenAD;
-  const prodAS = (prod.nova?15:0) + (prod.narud?15:0);
-  const prodCRI = (prod.teratron?10:0) + (prod.kerrigan?10:0) + (prod.artifact?20:0);
-  const prodCD = (prod.adun?30:0) + (prod.overmind?30:0);
-  return {
-    ad: prodAD,
-    as: prodAS,
-    cri: prodCRI,
-    cd: prodCD,
-    td: 0,
-    actualAd: flower1 ? 20 : 0,
-    actualAs: flower2 ? 15 : 0,
-    uaMul: 1,
-    dps0Mul: flower3 ? 1.15 : 1
-  };
-}
-function unitGradeADBonus(grade){
-  const table={D:-10,C:-5,B:0,A:5,S:10,SS:20,SSS:30,X:40,XD:50,SXD:50,RXD:100};
-  return table[grade] ?? table.S;
-}
-function unitGradeASBonus(grade){
-  const table={D:0,C:0,B:0,A:0,S:0,SS:0,SSS:0,X:0,XD:0,SXD:25,RXD:30};
-  return table[grade] ?? 0;
-}
-function currentUnitGrade(){return vs('unitGrade') || 'S';}
-function isPersonalUnit(){return (vs('currentUnit') || 'M2') === (vs('personalUnit') || '유물');}
-function isUnitUniqueBuffOn(){
-  const el=document.getElementById('unitUniqueBuff');
-  if(!el) return true;
-  return el.type==='checkbox' ? !!el.checked : String(el.value||'ON')!=='OFF';
-}
-function isBasePierceBuffOn(){
-  const el=document.getElementById('basePierceBuff');
-  if(!el) return false;
-  return el.type==='checkbox' ? !!el.checked : String(el.value||'ON')!=='OFF';
-}
-function isDailyCouponBuffOn(){
-  const el=document.getElementById('dailyCouponBuff');
-  if(!el) return false;
-  return el.type==='checkbox' ? !!el.checked : String(el.value||'ON')!=='OFF';
-}
-function isShareUserBuffOn(){
-  const el=document.getElementById('shareUserBuff');
-  if(!el) return false;
-  return el.type==='checkbox' ? !!el.checked : String(el.value||'ON')!=='OFF';
-}
-function xpInputStatBonus(){
-  return effectiveXpValue() <= 10000 ? {ad:10, as:10, cri:5} : {ad:0, as:0, cri:0};
-}
-function unitADPrivateBonus(){
-  const enh=unitEnhanceStats();
-  const gradeAd=unitGradeADBonus(currentUnitGrade());
-  const level=(v('unitLevel')||11)*5;
-  const uniqueBuff=isUnitUniqueBuffOn() ? 30 + 10*(enh.septemberPlus ?? 4) : 0;
-  const duplicatePenalty=(v('unitDuplicatePenalty')||0)*10;
-  const manualAbyssPenalty=(v('unitAbyssPenalty')||0);
-  return gradeAd + level + uniqueBuff + (enh.value||0) - duplicatePenalty - manualAbyssPenalty - abyssAdPenalty();
-}
-function personalAsBonus(){
-  if(isPersonalUnit()) return 0;
-  return (vs('personalASBuff') || 'OFF')==='ON' ? 15 : 0;
-}
-function gradeAsBonus(){
-  return isPersonalUnit() ? 0 : unitGradeASBonus(currentUnitGrade());
-}
-function personalUaDtMultiplier(){
-  const dt=(vs('dt')==='ON'?1.15:1);
-  const limitBreak=isPersonalUnit() ? (v('personalLimitBreak') || 50) : 0;
-  const jewel=isPersonalUnit() ? (v('personalJewel') || 0) : 0;
-  return dt * (1+limitBreak/100) * (1+jewel);
-}
-function calcAutoEP(){
-  const xp=effectiveXpValue();
-  const bxp=Math.max(0, v('bxp'));
-  return Math.floor(xp/100000) + Math.floor(bxp/50000);
-}
-function syncAutoEP(){
-  const ep=calcAutoEP();
-  const hidden=document.getElementById('ep');
-  if(hidden) hidden.value=String(ep);
-  const view=document.getElementById('autoEpView');
-  if(view) view.textContent=big(ep);
-  return ep;
-}
-function effectiveAdditionalStats(){
-  // Excel spec sheet applies additional rune stats to Hyper/Penance, Tower, and Abyss sheets alike.
-  return {
-    ad:v('addAD'), as:v('addAS'), cd:v('addCD'), cri:v('addCRI'), ap:v('addAP'),
-    td:v('addTD'), ua:v('addUA'), dr:v('addDR'), sr:v('addSR'), hr:v('addHR')
-  };
-}
-function growthGraduationAttackBonus(){
-  const manual=v('sysAD');
-  if(manual) return manual;
-  return effectiveXpValue()>=2000000 ? 20 : 0;
-}
-
-/* =========================================================
-   05. 핵심 계산 엔진
-   ========================================================= */
-function computeStatsRaw(){
-  const autoEP=syncAutoEP();
-  const diff=DIFF[vs('diff')]||DIFF['The Final'];
-  const targetRound=v('round');
-  const towerPenaltyLevel=isTowerDifficulty() ? (targetRound>=65 ? Math.floor((targetRound-63)/2) : 0) : v('penance');
-  const penanceLevel=Math.max(0,Math.min(towerPenaltyLevel,20));
-  const penCD=PEN_CD[penanceLevel];
-  const penTD=PEN_TD[penanceLevel];
-  const penDmg=PEN_DMG[penanceLevel];
-  const penUA=PEN_UA[penanceLevel];
-  const asc=ASC[vs('rAsc')]||ASC['없음'];
-  const baseReinf=v('rReinf');
-  const reinf=baseReinf + (hasRuneOption('reinf5')?5:0);
-  const ascVlookup3=asc[1];
-  const ascVlookup4=asc[2];
-  const ascVlookup5=asc[3];
-  const shareOn=isShareUserBuffOn();
-  const shareAD=shareOn?10:0, shareAS=shareOn?10:0, shareCRI=shareOn?5:0;
-  const dailyCouponCRI=isDailyCouponBuffOn()?10:0;
-  const xpStat=xpInputStatBonus();
-  let epUsedForBuff=0;
-  TRAITS.forEach(t=>{ if(EP_ROWS.has(t[0])) epUsedForBuff+=cumCost(t[0]); });
-  const epBuff=Math.floor(Math.max(0, autoEP-epUsedForBuff)/20);
-  const gradeCri=enchantAt(1).cri;
-  const unitADBonus=unitADPrivateBonus();
-  const optionStats=getRuneOptionStats();
-  const specialRune=getSpecialRuneStats(optionStats);
-  const upperStats=upperOptionStats();
-  const transcendDR=optionStats.dr;
-  const gradeTD=enchantAt(3).td;
-  const cd50opt=optionStats.cd;
-  const additionalStats=effectiveAdditionalStats();
-  const AP9 = BASE_DISPLAY_STATS.ad + sumStat('AD') + v('rAD') + optionStats.ad + upperStats.ad + ascVlookup3 + reinf + v('rModAD')
-            + v('pbless') + shareAD + xpStat.ad + (v('powerBunkerAD')||0) + (v('postMasterAD')||0)
-            + enchantAt(0).ad + epBuff
-            + ((vs('additionalADBuff')==='ON') ? (v('additionalADValue')||0) : 0)
-            + ((vs('rushADBuff')==='ON') ? 50 : 0)
-            + growthGraduationAttackBonus() + additionalStats.ad;
-  const AP10 = -diff.ad;
-  const M4 = AP9 + AP10 + unitADBonus + upperStats.actualAd;
-  const M7_base = BASE_DISPLAY_STATS.as + sumStat('AS') + v('rAS') + upperStats.as + ascVlookup4 + reinf + shareAS + xpStat.as + v('rModAS') + additionalStats.as;
-  const M7 = isPersonalUnit() ? 0 : M7_base;
-  const M8 = BASE_DISPLAY_STATS.cri + sumStat('CRI') + v('rCRI') + v('rModCRI') + reinf + dailyCouponCRI + shareCRI + xpStat.cri + gradeCri + optionStats.cri + upperStats.cri + additionalStats.cri;
-  const cdReinf = reinf > 10 ? reinf - 10 : 0;
-  const rawCD = 100 + sumStat('CD') + v('rCD') + cd50opt + cdReinf + upperStats.cd + ascVlookup5 + additionalStats.cd + v('rModCD');
-  const M9 = rawCD * (1 - penCD/100);
-  const criOver300 = M8>=300 ? (M8>=400?5:Math.floor((M8-300)/20)) : 0;
-  const M10 = sumStat('MC') + (asc[5]||0) + criOver300 + optionStats.mc;
-  const rawTD = sumStat('TD') + specialRune.td + gradeTD + upperStats.td + (asc[6]||0) + optionStats.td + v('titleTdBonus') + additionalStats.td;
-  const tdReduce = penTD + abyssTdPenalty();
-  const actualTD = isAbyssDifficulty() ? 100 + rawTD - tdReduce : rawTD - tdReduce;
-  const M11 = isAbyssDifficulty() ? actualTD : 100 + actualTD;
-  const M12_dr = sumStat('DR') + transcendDR + (asc[4]||0) + additionalStats.dr;
-  const displayUA = uaProd() * optionStats.uaMul * upperStats.uaMul * enchantAt(2).ua * (1 + specialRune.ua/100) * (1 + additionalStats.ua/100);
-  const M13 = displayUA * (1 - penUA/100) * abyssSlowMultiplier();
-  const M16=sumStat('MD'), M17=20+(INV[101]||0)*0.2, M18=(INV[102]||0)*0.5;
-  const enemyData=enemyRoundData(targetRound);
-  const displaySR = sumStat('SR') + enchantAt(4).sr + additionalStats.sr;
-  const displayHR = enchantAt(5).hr + additionalStats.hr;
-  const durabilityTotal = Math.max(0, (enemyData.hp||0) + (enemyData.shield||0));
-  const hpRatio = durabilityTotal > 0 ? (enemyData.hp||0) / durabilityTotal : 1;
-  const shieldRatio = durabilityTotal > 0 ? (enemyData.shield||0) / durabilityTotal : 0;
-  const hpRemain = Math.max(0.01, hpRatio * (1 - displayHR / 100) + shieldRatio * (1 - displaySR / 100));
-  const excelPierce = (isBasePierceBuffOn() ? 10 : 0) + rpPierceBonus();
-  const M12 = M12_dr;
-  const actualM12 = M12_dr + (100-M12_dr) * (excelPierce / 100);
-  const AB3=dps0(hpRemain, enemyData.armor, M12_dr, excelPierce, diff.dmg*(1-penDmg/100)) * upperStats.dps0Mul;
-  const AB4=(1+M4/100)*(M11/100);
-  const AB5=dps2(M8, M10, M9, M16, M17, M18, isPersonalUnit()?1:0);
-  const dt=personalUaDtMultiplier();
-  const personalAs=personalAsBonus();
-  const gradeAs=gradeAsBonus();
-  const AB6=(1+(M7+upperStats.actualAs+personalAs+gradeAs)/100)*(1-diff.as/100)*M13*dt;
-  const M19=AB3*AB4*AB5*AB6;
-  let spU=0,spO=0,epU=0,rpU=0,soulU=0;
-  TRAITS.forEach(t=>{
-    const row=t[0];
-    if(SP_ROWS.has(row)){const c=cumCost(row); if(['유틸','AP','RA','경험치','특수'].includes(t[3])) spU+=c; else spO+=c;}
-    if(EP_ROWS.has(row)) epU+=cumCost(row);
-    if(RP_ROWS.has(row)) rpU+=rpCost(row, INV[row]||0);
-    if(SOUL_ROWS.has(row)) soulU+=cumCost(row);
-  });
-  const displayAD = Math.round(AP9 * (1 + rawTD/100));
-  const rawDisplayAP = sumStat('AP') + (optionStats.ap||0) + specialRune.ap + additionalStats.ap;
-  const displayAP = Math.min(535, rawDisplayAP);
-  const displayAPS = displayAP;
-  const displayAPU = displayAP;
-  const actualAPU = rawDisplayAP + (unitEnhanceStats().value || 0) + (on('flowerSkill1') ? 40 : 0)
-                  + (isUnitUniqueBuffOn() ? 20 : 0) + (v('unitLevel') || 11) * 5
-                  - (v('unitDuplicatePenalty') || 0) * 10;
-  const actualSR = displaySR * shieldRatio;
-  const actualHR = displayHR * hpRatio;
-  return {M4,M7,M8,M9,M10,M11,M12,M12_dr,actualM12,M13,M16,M17,M18,AB3,AB4,AB5,AB6,M19,
-          rawCD,rawTD,actualTD,penTD,penCD,penDmg,penUA,abyssStack:abyssEffectiveStack(),abyssTd:abyssTdPenalty(),abyssSlow:abyssSlowMultiplier(),abyssAd:abyssAdPenalty(),diff,dt,personalAs,gradeAs,asc,reinf,displayAD,displayAPS,displayAPU,actualAPU,displayUA,displaySR,displayHR,actualSR,actualHR,
-          spTotal:spU+spO,spU,spO,epU,rpU,soulU,spBank:spBankRawBonus(),spBankApplied:isSpBankApplied(),effectiveSP:effectiveSP(),rpPierce:rpPierceBonus(),excelPierce,enemyData};
-}
-function computeStats(){
-  return computeStatsRaw();
-}
-function hasRuneOption(code){
-  return uniqueRuneOptionCodes().includes(code);
-}
-function getRuneOptionStats(){
-  const stats={ad:0,ap:0,cri:0,cd:0,dr:0,mc:0,td:0,tdRuneMul:1,uaMul:1};
-  uniqueRuneOptionCodes().forEach(code=>{
-    if(code==='ad15') stats.ad+=15;
-    else if(code==='cri22') stats.cri+=22;
-    else if(code==='cd50') stats.cd+=50;
-    else if(code==='dr25') stats.dr+=25;
-    else if(code==='mc3') stats.mc+=3;
-    else if(code==='ua15') stats.uaMul*=1.15;
-    else if(code==='td10') stats.td+=10;
-    else if(code==='tdUa'){ stats.td+=10; stats.uaMul*=1.10; }
-    else if(code==='ap30') stats.ap+=30;
-    else if(code==='td2') stats.tdRuneMul*=2;
-  });
-  return stats;
-}
-function getSpecialRuneStats(optionStats={tdRuneMul:1}){
-  const harmony=v('rHarmony');
-  const tdRuneMul=optionStats.tdRuneMul || 1;
-  return {
-    ap:v('rAP'),
-    td:(v('rTD') + harmony) * tdRuneMul,
-    ua:v('rUA') + harmony
-  };
-}
-function rpCost(row,n){
-  n=Math.max(0,Math.min(TMAX[row]||999,Math.round(n||0)));
-  if(row===125 || row===126 || row===127){
-    if(n<=12) return n;
-    if(n<=24) return 12+2*(n-12);
-    if(n<=36) return 36+3*(n-24);
-    return 72+4*(n-36);
-  }
-  if(row===128){
-    if(n<=12) return n;
-    if(n<=24) return 12+2*(n-12);
-    return 36+3*(n-24);
-  }
-  if(row===129 || row===130){
-    if(n<=9) return n*2;
-    return 20+4*(n-10);
-  }
-  return n;
-}
-function nextRpCost(row){
-  const n=INV[row]||0;
-  if(n>=TMAX[row]) return Infinity;
-  return rpCost(row,n+1)-rpCost(row,n);
-}
-function resourceUsed(kind){
-  let total=0;
-  TRAITS.forEach(t=>{
-    const row=t[0];
-    if(kind==='SP' && SP_ROWS.has(row)) total+=cumCost(row);
-    if(kind==='EP' && EP_ROWS.has(row)) total+=cumCost(row);
-    if(kind==='RP' && RP_ROWS.has(row)) total+=rpCost(row, INV[row]||0);
-    if(kind==='SOUL' && SOUL_ROWS.has(row)) total+=cumCost(row);
-  });
-  return total;
-}
-function resourceKindForRow(row){return SP_ROWS.has(row)?'SP':EP_ROWS.has(row)?'EP':RP_ROWS.has(row)?'RP':SOUL_ROWS.has(row)?'SOUL':null;}
-function resourceOwn(kind){return kind==='SP'?effectiveSP():kind==='EP'?v('ep'):kind==='RP'?v('rp'):kind==='SOUL'?v('soul'):Infinity;}
-function canAffordNext(row){
-  const kind=resourceKindForRow(row);
-  if(!kind) return true;
-  const cost=nextCost(row);
-  if(!Number.isFinite(cost)) return false;
-  return resourceUsed(kind)+cost <= resourceOwn(kind);
-}
-function setRowToAffordableValue(row,wanted){
-  const old=INV[row]||0;
-  const mx=TMAX[row]||999;
-  let val=Math.max(0,Math.min(mx,Math.round(+wanted||0)));
-  INV[row]=val;
-  const kind=resourceKindForRow(row);
-  if(kind){
-    const own=resourceOwn(kind);
-    while(INV[row]>old && resourceUsed(kind)>own) INV[row]--;
-  }
-  return INV[row];
-}
-function addOneIfAffordable(row){
-  if(row===116) return false;
-  if((INV[row]||0)>=(TMAX[row]||999)) return false;
-  if(!canAffordNext(row)) return false;
-  INV[row]=(INV[row]||0)+1;
-  return true;
-}
-function fillRowToBudget(row){
-  let changed=false;
-  while(addOneIfAffordable(row)) changed=true;
-  return changed;
-}
-function isSpBankApplied(){
-  const el=document.getElementById('spBankApply');
-  return !el || !!el.checked;
-}
-function toggleSpBankApply(){
-  const el=document.getElementById('spBankApply');
-  if(!el) return false;
-  el.checked=!el.checked;
-  try{el.dispatchEvent(new Event('change',{bubbles:true}));}catch(_e){}
-  requestAppUpdate();
-  return true;
-}
-function spBankRawBonus(){
-  const bankLevel=INV[89]||0;
-  const appliedRound=Math.min(Math.max(0, v('round')), 290);
-  const ticks=Math.floor(appliedRound/10);
-  return bankLevel * 1000 * ticks;
-}
-function spBankBonus(){return isSpBankApplied() ? spBankRawBonus() : 0;}
-function effectiveSP(){return v('sp') + spBankBonus();}
-function rpPierceBonus(){return Math.max(0, Math.min(20, INV[130]||0));}
-function enforceBudgets(){
-  const budgets=[['SP',SP_ROWS,effectiveSP()],['EP',EP_ROWS,v('ep')],['RP',RP_ROWS,v('rp')],['SOUL',SOUL_ROWS,v('soul')]];
-  budgets.forEach(([kind,set,own])=>{
-    let guard=0;
-    while(resourceUsed(kind)>own && guard++<20000){
-      let changed=false;
-      for(let i=TRAITS.length-1;i>=0;i--){
-        const row=TRAITS[i][0];
-        if(!set.has(row) || row===116 || (INV[row]||0)<=0) continue;
-        INV[row]--; changed=true; break;
-      }
-      if(!changed) break;
-    }
-  });
-}
-function allowedRowsByTier(){
-  const target=vs('optTier')||'무한∞';
-  const idx=TIERS.indexOf(target);
-  return new Set(TRAITS.filter(t=>TIERS.indexOf(t[2])>=0 && TIERS.indexOf(t[2])<=idx).map(t=>t[0]));
-}
-/* Main dashboard rendering */
-function fmt(n,d=1){return n==null||isNaN(n)?'—':parseFloat(n.toFixed(d)).toLocaleString('ko-KR');}
-function big(n){
-  n=Number(n);
-  if(!Number.isFinite(n)) return '—';
-  n=Math.round(n||0);
-  return Math.abs(n)>=1e8 ? (n/1e8).toFixed(2)+'억' : Math.abs(n)>=1e4 ? (n/1e4).toFixed(1)+'만' : n.toLocaleString('ko-KR');
-}
-function fullNumber(n){
-  n=Number(n);
-  return Number.isFinite(n) ? Math.round(n||0).toLocaleString('ko-KR') : '—';
-}
-function shouldHideDpsForRound(){
-  const raw=String(document.getElementById('round')?.value ?? '').replace(/,/g,'').trim();
-  return raw==='0' || Number(raw)===0;
-}
-function normalizeRoundInput(){
-  const el=document.getElementById('round');
-  if(!el) return false;
-  const raw=String(el.value ?? '').replace(/,/g,'').trim();
-  const num=Number(raw);
-  if(raw==='' || !Number.isFinite(num) || num<1){
-    el.value='1';
-    return true;
-  }
-  return false;
-}
-function resetDifficultyDependentFields(){
-  const pen=document.getElementById('penance');
-  const round=document.getElementById('round');
-  let changed=false;
-  if(pen && pen.value!=='0'){ pen.value='0'; changed=true; }
-  if(round && String(round.value)!=='1'){ round.value='1'; changed=true; }
-  return changed;
-}
-
-/* =========================================================
-   06. 메인 화면 렌더링 / 재계산
-   ========================================================= */
-function renderDpsSummary(s){
-  if(shouldHideDpsForRound()){
-    setText('dpsVal', '—');
-    syncDpsMinDpsInputs();
-    updateDpsRiskViews(NaN);
-    if(isDpsTableOpen()) renderDpsTableModal();
-    return;
-  }
-  setText('dpsVal', s.M19.toFixed(2));
-  syncDpsMinDpsInputs();
-  updateDpsRiskViews(s.M19);
-  if(isDpsTableOpen()) renderDpsTableModal();
-}
-const STAT_COMPARE_ROWS=[
-  ['AD', s=>fmt(s.displayAD,0), s=>fmt(s.M4,0)],
-  ['APS', s=>fmt(s.displayAPS,0), s=>fmt(s.displayAPS,0)],
-  ['APU', s=>fmt(s.displayAPU,0), s=>fmt(s.actualAPU ?? s.displayAPU,0)],
-  ['AS', s=>fmt(s.M7,1), s=>fmt(s.M7,1)],
-  ['CRI', s=>fmt(s.M8,1), s=>fmt(s.M8,1)],
-  ['CD', s=>fmt(s.rawCD,1), s=>fmt(s.M9,2)],
-  ['MC', s=>fmt(s.M10,0), s=>fmt(s.M10,0)],
-  ['TD', s=>fmt(s.rawTD,1), s=>fmt(s.M11,2)],
-  ['DR', s=>fmt(s.M12,0), s=>fmt(s.actualM12,0)],
-  ['PIERCE', s=>`${fmt(s.excelPierce,0)}%`, s=>`${fmt(s.excelPierce,0)}%`],
-  ['UA', s=>fmt(s.displayUA,4), s=>fmt(s.M13,4)],
-  ['SR', s=>fmt(s.displaySR,2), s=>fmt(s.actualSR ?? s.displaySR,2)],
-  ['HR', s=>fmt(s.displayHR,2), s=>fmt(s.actualHR ?? s.displayHR,2)],
-  ['MD', s=>fmt(s.M16,0), s=>fmt(s.M16,0)],
-  ['MP', s=>fmt(s.M17,0), s=>fmt(s.M17,0)],
-  ['MCP', s=>fmt(s.M18,0), s=>fmt(s.M18,0)]
-];
-function renderStatSummary(s){
-  STAT_COMPARE_ROWS.forEach(([key,display,actual])=>{
-    setText('s'+key+'Display', display(s));
-    setText('s'+key+'Actual', actual(s));
-  });
-}
-function renderResourceSummary(s){
-  const baseSP=v('sp');
-  const bankSP=s.spBankApplied ? (s.spBank||0) : 0;
-  const spOwn=s.effectiveSP||effectiveSP();
-  const spRemain=spOwn-s.spTotal;
-  setText('spAttackView', fullNumber(s.spO));
-  setText('spUtilityView', fullNumber(s.spU));
-  const bankValue=s.spBankApplied ? fullNumber(bankSP) : '미적용';
-  const bankTitle=s.spBankApplied ? 'SP 은행을 제외하려면 누르세요' : 'SP 은행을 포함하려면 누르세요';
-  setHtml('spDetail', `<div class="sp-detail-row"><small>총 SP</small><b>${fullNumber(baseSP)}</b></div><button class="sp-detail-row sp-bank-line ${s.spBankApplied?'bank-on':''}" data-action="toggleSpBankApply" type="button" title="${bankTitle}"><small>SP은행</small><b>${bankValue}</b></button><div class="sp-detail-row"><small>SP 사용량</small><b>${fullNumber(s.spTotal)}</b></div><div class="sp-detail-row"><small>SP 잔여량</small><b>${fullNumber(spRemain)}</b></div>`);
-  const epRemain=v('ep')-s.epU, rpRemain=v('rp')-s.rpU, soulRemain=v('soul')-s.soulU;
-  setHtml('epRem', `<span>투자 <b>${big(s.epU)}</b></span><em>·</em><span>잔여 <b>${big(epRemain)}</b></span>`);
-  setHtml('rpRem', `<span>투자 <b>${big(s.rpU)}</b></span><em>·</em><span>잔여 <b>${big(rpRemain)}</b></span>`);
-  setHtml('soulRem', `<span>투자 <b>${big(s.soulU)}</b></span><em>·</em><span>잔여 <b>${big(soulRemain)}</b></span>`);
-}
-function recalc(){
-  try{
-    syncExclusiveRuneOptions();
-    syncRuneChoice();
-    syncEnchantInputs();
-    syncSelectButtons();
-    syncBuffChoiceButtons();
-    formatAllMoneyInputs();
-    renderEnchantPreview(); renderXpCut(); renderEnhanceSummary();
-    const s=computeStats();
-    renderEnemyData(s.enemyData);
-    renderSkillDamage(s);
-    renderDpsSummary(s);
-    renderStatSummary(s);
-    renderResourceSummary(s);
-    updateTraits();
-    saveState({silent:true});
-  }catch(e){console.error(e);}
-}
-function renderEnhanceSummary(){
-  const e=unitEnhanceStats();
-  const chance=document.getElementById('enhanceChanceView');
-  const count=document.getElementById('enhanceCountView');
-  const value=document.getElementById('enhanceValueView');
-  if(chance) chance.textContent=(e.chance*100).toFixed(2)+'%';
-  if(count) count.textContent=`${fmt(e.count,0)}회`;
-  if(value) value.textContent=fmt(e.value,0);
-}
-function renderEnchantPreview(){
-  const keys=['ad','cri','ua','td','sr','hr'];
-  const outIds=['enchOutAD','enchOutCRI','enchOutUA','enchOutTD','enchOutSR','enchOutHR'];
-  keys.forEach((key,i)=>{
-    const e=enchantAt(i);
-    const val=key==='ua'
-      ? e[key].toFixed(2)+'×'
-      : fmt(e[key], ['ad','cri','td'].includes(key)?0:2);
-    const out=document.getElementById(outIds[i]);
-    if(out) out.textContent=val;
-  });
-}
-function renderXpCut(){
-  const base=Math.max(0, v('sp'));
-  const rows=[['1단계',base/10,base/6],['2단계',base/20,base/12],['3단계',base/30,base/22],['4단계',base/40,base/30]];
-  const el=document.getElementById('xpCutRows'); if(!el) return;
-  el.innerHTML=rows.map(r=>`<tr><td>${r[0]}</td><td>${big(r[1])}</td><td>${big(r[2])}</td></tr>`).join('');
-}
-function renderSkillDamage(s){
-  const ap=s?.displayAPU ?? 535;
-  const apView=document.getElementById('skillAPView');
-  if(apView) apView.textContent=`AP : ${fmt(ap,0)}`;
-  const doubleSpace=v('skillDouble');
-  const round=Math.max(1,v('skillRound'));
-  const isTower=vs('skillMode')==='tower';
-  const baseRound=isTower ? 30 : 100;
-  const perRound=isTower ? 0.016601 : 0.005;
-  const penalty=Math.max(0, Math.min(0.99, (round-baseRound)*perRound));
-  const pv=document.getElementById('skillPenaltyView');
-  if(pv){
-    pv.replaceChildren(
-      document.createTextNode('라운드별 데미지 감소: '),
-      Object.assign(document.createElement('strong'),{textContent:`${(penalty*100).toFixed(1)}%`}),
-      document.createTextNode(` (${isTower?'도전의 탑':'일반모드'} `),
-      Object.assign(document.createElement('strong'),{textContent:`${round}R`}),
-      document.createTextNode(')')
-    );
-  }
-  const data=[
-    ['어스퀘이크',0.0223,0.000066,10],
-    ['포이즌미스트',0.0432,0.0001755,15],
-    ['라이트닝스톰',0.517,0.0005,1],
-    ['퓨리파이어',0.0198,0.000142,30],
-    ['메테오 (1발)',0.259,0.00025,1]
-  ];
-  const el=document.getElementById('skillRows'); if(!el) return;
-  el.innerHTML=data.map(([name,base,add,tick])=>{
-    const total=(base + add*ap*doubleSpace) * tick * (1-penalty) * 100;
-    return `<tr><td>${name}</td><td>${fmt(total,1)}%</td><td>AP ${fmt(ap,0)} / 더블 ${fmt(doubleSpace,2)}</td></tr>`;
-  }).join('');
-}
-let appUpdateTimer=0;
-function requestAppUpdate(){
-  if(appUpdateTimer) clearTimeout(appUpdateTimer);
-  appUpdateTimer=setTimeout(()=>{appUpdateTimer=0; recalc();}, DPS_CONFIG.ui.updateDelay);
-}
-/* =========================================================
-   07. DPS 표 모달
-   ========================================================= */
-const DPS_TABLE_DIFFICULTIES=DPS_CONFIG.dpsTable.difficulties;
-const DPS_TABLE_PENANCE_MIN=DPS_CONFIG.dpsTable.penanceMin ?? 0;
-const DPS_TABLE_PENANCE_MAX=DPS_CONFIG.dpsTable.penanceMax ?? 20;
-const DPS_TABLE_DECIMALS=DPS_CONFIG.dpsTable.decimals ?? 1;
-let activeDpsTableMode='round';
-let dpsTableMinDps='';
-function isDpsTableOpen(){
-  return document.getElementById('dpsTableModal')?.classList.contains('is-open') || false;
-}
-function getDpsTableCurrentRound(){
-  return Math.max(1, Math.min(300, Math.round(v('round') || 1)));
-}
-function getDpsTableTowerRange(){
-  const tower=DPS_CONFIG.dpsTable.tower || {};
-  return {
-    min: Math.max(1, Math.round(tower.minFloor || 1)),
-    max: Math.max(1, Math.round(tower.maxFloor || 90))
-  };
-}
-function getDpsTableTowerGroupSize(){
-  const body=document.body;
-  if(body?.classList.contains('is-mobile') || window.innerWidth<=600) return 90;
-  if(body?.classList.contains('is-tablet') || body?.classList.contains('is-pc-portrait') || window.innerWidth<=1024) return 45;
-  return 30;
-}
-function chunkDpsTowerFloors(minFloor, maxFloor, groupSize){
-  const chunks=[];
-  for(let start=minFloor; start<=maxFloor; start+=groupSize){
-    const end=Math.min(maxFloor, start+groupSize-1);
-    const floors=[];
-    for(let floor=start; floor<=end; floor++) floors.push(floor);
-    chunks.push(floors);
-  }
-  return chunks;
-}
-function syncDpsMinDpsInputs(){
-  ['dpsTableMinDps','dpsTableMinDpsMain'].forEach(id=>{
-    const el=document.getElementById(id);
-    if(el && el.value!==dpsTableMinDps) el.value=dpsTableMinDps;
-  });
-}
-function setDpsTableMinDps(value){
-  dpsTableMinDps=String(value ?? '');
-  syncDpsMinDpsInputs();
-  updateDpsRiskViews();
-  if(isDpsTableOpen()) renderDpsTableModal();
-  if(!isLoadingState) saveState({silent:true});
-}
-function parseDpsTableMinDps(){
-  const n=Number(String(dpsTableMinDps||'').replace(/,/g,'').trim());
-  return Number.isFinite(n) && n>=0 ? n : null;
-}
-function formatDpsTableValue(value){
-  if(!Number.isFinite(value)) return '—';
-  return value.toLocaleString('ko-KR',{minimumFractionDigits:DPS_TABLE_DECIMALS, maximumFractionDigits:DPS_TABLE_DECIMALS});
-}
-function dpsTableRiskCompareValue(value){
-  if(!Number.isFinite(value)) return NaN;
-  const factor=10**DPS_TABLE_DECIMALS;
-  return Math.round(value*factor)/factor;
-}
-function updateDpsRiskViews(currentDps){
-  const card=document.querySelector('.dps-card');
-  const dpsEl=document.getElementById('dpsVal');
-  if(!card) return;
-  const minDps=parseDpsTableMinDps();
-  const raw=Number.isFinite(currentDps) ? currentDps : Number(String(dpsEl?.textContent||'').replace(/,/g,'').trim());
-  const isRisk=minDps!==null && Number.isFinite(raw) && raw<=minDps;
-  card.classList.toggle('is-dps-risk', !!isRisk);
-  let badge=document.getElementById('dpsRiskBadge');
-  if(!badge){
-    badge=document.createElement('div');
-    badge.id='dpsRiskBadge';
-    badge.className='dps-risk-badge';
-    card.appendChild(badge);
-  }
-  badge.style.display=isRisk ? 'inline-flex' : 'none';
-  if(isRisk) badge.textContent=`위험구간 · 최소 DPS ${formatDpsTableValue(minDps)} 이하`;
-}
-function computeDpsPreview(diffName, penanceLevel, round){
-  const ids=['diff','penance','round'];
-  const saved=ids.map(id=>{
-    const el=document.getElementById(id);
-    return [el, el ? el.value : null];
-  });
-  try{
-    const diffEl=document.getElementById('diff');
-    const penEl=document.getElementById('penance');
-    const roundEl=document.getElementById('round');
-    if(diffEl) diffEl.value=diffName;
-    if(penEl) penEl.value=String(penanceLevel);
-    if(roundEl) roundEl.value=String(round);
-    const s=computeStats();
-    return Number.isFinite(s.M19) ? s.M19 : 0;
-  }catch(e){
-    console.error('[DPS table preview failed]', e);
-    return 0;
-  }finally{
-    saved.forEach(([el,val])=>{ if(el) el.value=val; });
-  }
-}
-function buildDpsTable(round){
-  const minDps=parseDpsTableMinDps();
-  const currentDiff=vs('diff');
-  const currentPen=Math.max(DPS_TABLE_PENANCE_MIN, Math.min(DPS_TABLE_PENANCE_MAX, Math.round(v('penance'))));
-  const head=DPS_TABLE_DIFFICULTIES.map(d=>`<th class="${d===currentDiff?'dps-current-column':''}">${d}</th>`).join('');
-  const rows=[];
-  for(let pen=DPS_TABLE_PENANCE_MIN; pen<=DPS_TABLE_PENANCE_MAX; pen++){
-    const rowCurrent=pen===currentPen;
-    const cells=DPS_TABLE_DIFFICULTIES.map(diff=>{
-      const value=computeDpsPreview(diff, pen, round);
-      const danger=minDps!==null && dpsTableRiskCompareValue(value)<=minDps;
-      const currentCell=rowCurrent && diff===currentDiff;
-      const classes=[danger?'dps-risk-cell':'', currentCell?'dps-current-cell':''].filter(Boolean).join(' ');
-      const title=currentCell ? `현재 선택: ${diff} ${pen}고행 / ${round}라운드` : '';
-      return `<td class="${classes}"${title?` title="${title}"`:''}>${formatDpsTableValue(value)}</td>`;
-    }).join('');
-    rows.push(`<tr${rowCurrent?' class="dps-current-row"':''}><th>${pen}</th>${cells}</tr>`);
-  }
-  return `<table class="dps-matrix dps-round-matrix"><thead><tr><th>고행</th>${head}</tr></thead><tbody>${rows.join('')}</tbody></table>`;
-}
-function towerEnemyData(floor){
-  const r=Math.max(1, Math.min(90, Math.round(+floor||1)));
-  const armorRow=lookupFloor(TOWER_ARMOR_TABLE, r);
-  const unitRow=lookupFloor(TOWER_UNIT_TABLE, r);
-  return {
-    round:r,
-    armor:armorRow && armorRow[0]<=r ? armorRow[1] : 0,
-    count:unitRow ? unitRow[1] : 0,
-    hp:unitRow ? unitRow[2] : 0,
-    shield:unitRow ? unitRow[3] : 0
-  };
-}
-function towerEnemySummaryItems(floor){
-  const enemy=towerEnemyData(floor);
-  return [
-    ['방어력', big(enemy.armor)],
-    ['체력', big(enemy.hp)],
-    ['실드', big(enemy.shield)],
-    ['물량', big(enemy.count)]
-  ];
-}
-function formatTowerEnemySummary(floor){
-  return towerEnemySummaryItems(floor).map(([label,value])=>`${label} ${value}`).join('   ');
-}
-function formatTowerEnemySummaryHtml(floor){
-  return towerEnemySummaryItems(floor)
-    .map(([label,value])=>`<span class="dps-tower-enemy-item"><em>${label}</em><b>${value}</b></span>`)
-    .join('');
-}
-function buildDpsTowerTable(){
-  const minDps=parseDpsTableMinDps();
-  const currentDiff=vs('diff');
-  const currentFloor=Math.max(1, Math.round(v('round') || 1));
-  const range=getDpsTableTowerRange();
-  const groupSize=getDpsTableTowerGroupSize();
-  const chunks=chunkDpsTowerFloors(range.min, range.max, groupSize);
-  const blocks=chunks.map(floors=>{
-    const rows=floors.map(floor=>{
-      const value=computeDpsPreview('도전의 탑', 0, floor);
-      const danger=minDps!==null && dpsTableRiskCompareValue(value)<=minDps;
-      const currentCell=currentDiff==='도전의 탑' && currentFloor===floor;
-      const classes=[danger?'dps-risk-cell':'', currentCell?'dps-current-cell':''].filter(Boolean).join(' ');
-      const enemySummary=formatTowerEnemySummary(floor);
-      const enemySummaryHtml=formatTowerEnemySummaryHtml(floor);
-      return `<tr${currentCell?' class="dps-current-row"':''}><th>${floor}층</th><td class="${classes}" title="${enemySummary}"><b class="dps-tower-value">${formatDpsTableValue(value)}</b><span class="dps-tower-enemy">${enemySummaryHtml}</span></td></tr>`;
-    }).join('');
-    const first=floors[0], last=floors[floors.length-1];
-    return `<div class="dps-tower-block" aria-label="도전의탑 ${first}층부터 ${last}층까지"><table class="dps-matrix dps-tower-matrix"><thead><tr><th>층</th><th>필요 DPS</th></tr></thead><tbody>${rows}</tbody></table></div>`;
-  }).join('');
-  return `<div class="dps-tower-grid" data-tower-group-size="${groupSize}">${blocks}</div>`;
-}
-function renderDpsTableModal(){
-  const mount=document.getElementById('dpsTableMount');
-  const tabs=document.getElementById('dpsTableTabsMount');
-  if(!mount) return;
-  const round=getDpsTableCurrentRound();
-  if(tabs){
-    tabs.innerHTML=[
-      {key:'round',label:'라운드 기준',sub:`${round}라운드`},
-      {key:'tower',label:'도전의탑',sub:'1~90층'}
-    ].map(tab=>`
-      <button type="button" class="dps-table-tab ${activeDpsTableMode===tab.key?'is-active':''}" data-dps-table-mode="${tab.key}" role="tab" aria-selected="${activeDpsTableMode===tab.key?'true':'false'}">
-        <b>${tab.label}</b><span>${tab.sub}</span>
-      </button>
-    `).join('');
-  }
-  syncDpsMinDpsInputs();
-  const tableHtml=activeDpsTableMode==='tower' ? buildDpsTowerTable() : buildDpsTable(round);
-  mount.innerHTML=`<section class="dps-table-panel dps-table-panel-animated"><div class="dps-table-scroll">${tableHtml}</div></section>`;
-}
-function switchDpsTableMode(mode){
-  if(!['round','tower'].includes(mode) || activeDpsTableMode===mode) return;
-  activeDpsTableMode=mode;
-  renderDpsTableModal();
-}
-let dpsTowerResizeTimer=0;
-window.addEventListener('resize', ()=>{
-  if(!isDpsTableOpen() || activeDpsTableMode!=='tower') return;
-  clearTimeout(dpsTowerResizeTimer);
-  dpsTowerResizeTimer=setTimeout(renderDpsTableModal, 120);
-}, {passive:true});
-function createDpsTableModal(){
-  if(document.getElementById('dpsTableModal')) return;
-  const modal=document.createElement('div');
-  modal.id='dpsTableModal';
-  modal.className='dps-table-modal-shell';
-  modal.setAttribute('aria-hidden','true');
-  modal.innerHTML=`
-    <div class="dps-table-backdrop" data-dps-table-close="1"></div>
-    <section class="dps-table-modal" role="dialog" aria-modal="true" aria-labelledby="dpsTableTitle">
-      <header class="dps-table-modal-head">
-        <div class="dps-table-titlebox">
-          <p class="dps-table-kicker">현재 입력값 기준</p>
-          <h2 id="dpsTableTitle">DPS표</h2>
-        </div>
-        <div class="dps-table-tabs" id="dpsTableTabsMount" role="tablist" aria-label="DPS표 기준 선택"></div>
-        <label class="dps-table-min-box" for="dpsTableMinDps">
-          <span>도전할 최소 DPS</span>
-          <input id="dpsTableMinDps" type="text" inputmode="decimal" autocomplete="off" placeholder="예시) 3.0">
-        </label>
-        <button type="button" class="dps-table-close-btn" data-dps-table-close="1" aria-label="DPS표 닫기">×</button>
-      </header>
-      <div class="dps-table-modal-body" id="dpsTableMount"></div>
-    </section>`;
-  document.body.appendChild(modal);
-}
-function openDpsTable(){
-  createDpsTableModal();
-  activeDpsTableMode=isTowerDifficulty() ? 'tower' : 'round';
-  renderDpsTableModal();
-  const modal=document.getElementById('dpsTableModal');
-  if(!modal) return;
-  modal.classList.add('is-open');
-  modal.setAttribute('aria-hidden','false');
-  document.body.classList.add('dps-table-modal-open');
-}
-function closeDpsTable(){
-  const modal=document.getElementById('dpsTableModal');
-  if(!modal) return;
-  modal.classList.remove('is-open');
-  modal.setAttribute('aria-hidden','true');
-  document.body.classList.remove('dps-table-modal-open');
-}
-function installDpsTableButton(){
-  const target=document.querySelector('.hdr-meta') || document.querySelector('.app-header') || document.body;
-  if(!target || document.getElementById('dpsTableOpenBtn')) return;
-  const btn=document.createElement('button');
-  btn.type='button';
-  btn.id='dpsTableOpenBtn';
-  btn.className='dps-table-open-btn';
-  btn.dataset.action='openDpsTable';
-  btn.textContent='DPS표';
-  target.insertBefore(btn, target.firstChild);
-}
-
-function monthRunePairs(items){
-  const pairs=[];
-  for(let i=0;i<items.length;i+=2) pairs.push([items[i]||'',items[i+1]||'']);
-  return pairs;
-}
-function renderMonthRuneRows(items, mode){
-  return monthRunePairs(items).map(([code,desc])=>`
-    <div class="month-rune-effect-row">
-      <b>${escapeCompareHtml(code)}</b>
-      <span>${escapeCompareHtml(desc)}</span>
-    </div>
-  `).join('');
-}
-function renderMonthRuneCard(item){
-  return `
-    <article class="month-rune-card">
-      <header class="month-rune-card-head">
-        <b>${item.month}월</b>
-        <span>${escapeCompareHtml(item.title)}</span>
-      </header>
-      <div class="month-rune-compare">
-        <section class="month-rune-side normal">
-          <h3>일반 <em>RP+1</em></h3>
-          <div class="month-rune-effects">${renderMonthRuneRows(item.normal,'normal')}</div>
-        </section>
-        <section class="month-rune-side plus">
-          <h3>플러스 <em>RP+2</em></h3>
-          <div class="month-rune-effects">${renderMonthRuneRows(item.plus,'plus')}</div>
-        </section>
-      </div>
-    </article>
-  `;
-}
-function getJewelImageKey(name){
-  return `image/jw/${String(name||'').trim()}.png`;
-}
-function getJewelImageSrc(name){
-  const safeName=encodeURIComponent(String(name||'').trim());
-  const key=getJewelImageKey(name);
-  const assetUrl=typeof window.dpsAssetUrl==='function' ? window.dpsAssetUrl : null;
-  if(assetUrl) return assetUrl(`./image/jw/${safeName}.png`, key);
-  const version=encodeURIComponent(window.DPS_BUILD_VERSION || 'dev');
-  return `./image/jw/${safeName}.png?v=${version}`;
-}
-function getJewelImageFallbackSrc(name){
-  const key=getJewelImageKey(name);
-  if(typeof window.dpsRemoteAssetUrl==='function') return window.dpsRemoteAssetUrl(key, key);
-  const safeName=encodeURIComponent(String(name||'').trim());
-  const version=encodeURIComponent(window.DPS_BUILD_VERSION || 'dev');
-  return `https://sldbox.github.io/dps/image/jw/${safeName}.png?v=${version}`;
-}
-function renderJewelAbility(label, text){
-  const value=String(text||'').trim();
-  const isUnreleased=value==='미발견';
-  return `
-    <div class="jewel-ability ${isUnreleased?'is-unreleased':''}">
-      <b>${escapeCompareHtml(label)}</b>
-      <span>${escapeCompareHtml(value)}</span>
-    </div>
-  `;
-}
-function renderJewelCard(row){
-  const name=String(row?.[0]||'');
-  const legendary=String(row?.[1]||'');
-  const mythic=String(row?.[2]||'');
-  const initial=name ? name.charAt(0) : '?';
-  const imageSrc=getJewelImageSrc(name);
-  const fallbackSrc=getJewelImageFallbackSrc(name);
-  const fallbackAttr=fallbackSrc && fallbackSrc!==imageSrc ? ` data-fallback-src="${escapeCompareHtml(fallbackSrc)}"` : '';
-  return `
-    <article class="jewel-card">
-      <header class="jewel-card-head">
-        <div class="jewel-card-visual" aria-hidden="true">
-          <img src="${escapeCompareHtml(imageSrc)}"${fallbackAttr} alt="" loading="lazy" onerror="var f=this.dataset.fallbackSrc;if(f){this.dataset.fallbackSrc='';this.src=f;return;}this.closest('.jewel-card-visual').classList.add('is-missing');this.remove();">
-          <span>${escapeCompareHtml(initial)}</span>
-        </div>
-        <b>${escapeCompareHtml(name)}</b>
-      </header>
-      <div class="jewel-ability-list">
-        ${renderJewelAbility('전설', legendary)}
-        ${renderJewelAbility('신화', mythic)}
-      </div>
-    </article>
-  `;
-}
-function renderMonthRunePanel(info){
-  const months=(info.months||[]);
-  const content=months.length ? months.map(renderMonthRuneCard).join('') : '<div class="month-rune-empty">이달룬 데이터가 없습니다.</div>';
-  return `
-    <section class="month-rune-panel is-active" data-month-rune-panel="runes" role="tabpanel" aria-labelledby="monthRuneTabRunes">
-      <div class="month-rune-note">${escapeCompareHtml(info.note||'')}</div>
-      <div class="month-rune-grid">${content}</div>
-    </section>
-  `;
-}
-function renderJewelPanel(items){
-  const list=Array.isArray(items)?items:[];
-  const content=list.length ? list.map(renderJewelCard).join('') : '<div class="month-rune-empty">쥬얼 데이터가 없습니다.</div>';
-  return `
-    <section class="month-rune-panel" data-month-rune-panel="jewels" role="tabpanel" aria-labelledby="monthRuneTabJewels" hidden>
-      <div class="jewel-grid">${content}</div>
-    </section>
-  `;
-}
-function selectMonthRuneModalTab(tabName){
-  const modal=document.getElementById('monthRuneModal');
-  if(!modal) return;
-  const next=tabName==='jewels'?'jewels':'runes';
-  modal.querySelectorAll('[data-month-rune-tab]').forEach(btn=>{
-    const active=btn.dataset.monthRuneTab===next;
-    btn.classList.toggle('is-active',active);
-    btn.setAttribute('aria-selected',active?'true':'false');
-    btn.tabIndex=active?0:-1;
-  });
-  modal.querySelectorAll('[data-month-rune-panel]').forEach(panel=>{
-    const active=panel.dataset.monthRunePanel===next;
-    panel.classList.toggle('is-active',active);
-    panel.hidden=!active;
-  });
-}
-function createMonthRuneModal(){
-  if(document.getElementById('monthRuneModal')) return;
-  const info=(typeof MONTHLY_RUNE_INFO!=='undefined' && MONTHLY_RUNE_INFO) || window.MONTHLY_RUNE_INFO || {months:[]};
-  const jewels=(typeof RAW_JEWEL_DATA!=='undefined' && RAW_JEWEL_DATA) || window.RAW_JEWEL_DATA || [];
-  const modal=document.createElement('div');
-  modal.id='monthRuneModal';
-  modal.className='month-rune-modal-shell';
-  modal.setAttribute('aria-hidden','true');
-  modal.innerHTML=`
-    <div class="month-rune-backdrop" data-month-rune-close="1"></div>
-    <section class="month-rune-modal" role="dialog" aria-modal="true" aria-labelledby="monthRuneTitle">
-      <header class="month-rune-head">
-        <h2 id="monthRuneTitle" class="month-rune-sr-title">이달룬 / 쥬얼</h2>
-        <div class="month-rune-tabs" role="tablist" aria-label="이달룬과 쥬얼 정보 선택">
-          <button type="button" id="monthRuneTabRunes" class="month-rune-tab is-active" data-month-rune-tab="runes" role="tab" aria-selected="true">이달의룬</button>
-          <button type="button" id="monthRuneTabJewels" class="month-rune-tab" data-month-rune-tab="jewels" role="tab" aria-selected="false" tabindex="-1">쥬얼</button>
-        </div>
-        <button type="button" class="month-rune-close" data-month-rune-close="1" aria-label="이달룬/쥬얼 닫기">×</button>
-      </header>
-      <div class="month-rune-body">
-        ${renderMonthRunePanel(info)}
-        ${renderJewelPanel(jewels)}
-      </div>
-    </section>`;
-  document.body.appendChild(modal);
-}
-function openMonthRune(){
-  createMonthRuneModal();
-  const modal=document.getElementById('monthRuneModal');
-  if(!modal) return;
-  selectMonthRuneModalTab('runes');
-  modal.classList.add('is-open');
-  modal.setAttribute('aria-hidden','false');
-  document.body.classList.add('month-rune-modal-open');
-}
-function closeMonthRune(){
-  const modal=document.getElementById('monthRuneModal');
-  if(!modal) return;
-  modal.classList.remove('is-open');
-  modal.setAttribute('aria-hidden','true');
-  document.body.classList.remove('month-rune-modal-open');
-}
-function installMonthRuneButton(){
-  const target=document.querySelector('.hdr-meta');
-  if(!target || document.getElementById('monthRuneOpenBtn')) return;
-  const btn=document.createElement('button');
-  btn.type='button';
-  btn.id='monthRuneOpenBtn';
-  btn.className='month-rune-open-btn';
-  btn.dataset.action='openMonthRune';
-  btn.textContent='이달룬/쥬얼';
-  btn.title='이달룬/쥬얼 정보 보기';
-  const excelButton=document.getElementById('excelCompareOpenBtn');
-  const nexusLink=target.querySelector('.global-site-link');
-  if(excelButton) excelButton.insertAdjacentElement('afterend',btn);
-  else if(nexusLink) target.insertBefore(btn,nexusLink);
-  else target.appendChild(btn);
-}
-function bindMonthRuneEvents(){
-  document.addEventListener('click',e=>{
-    const tab=e.target.closest('[data-month-rune-tab]');
-    if(tab){
-      selectMonthRuneModalTab(tab.dataset.monthRuneTab);
-      return;
-    }
-    if(e.target.closest('[data-month-rune-close]')) closeMonthRune();
-  });
-  document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeMonthRune(); });
-}
-/* Comparison file import, preview, and apply */
-
-/* =========================================================
-   08. 비교하기 / 변경값 적용
-   - 5.4392 구조만 지원
-   - 비교는 읽기 전용
-   - 적용 버튼에서만 웹 상태 변경
-   ========================================================= */
-const EXCEL_COMPARE_STATS=[
-  ['AD','공격력','L4','M4',s=>s.displayAD,s=>s.M4],
-  ['APS','AP(성소)','L5','M5',s=>s.displayAPS,s=>s.displayAPS],
-  ['APU','AP(유닛)','L6','M6',s=>s.displayAPU,s=>s.actualAPU],
-  ['AS','공격속도','L7','M7',s=>s.M7,s=>s.M7],
-  ['CRI','크리티컬 확률','L8','M8',s=>s.M8,s=>s.M8],
-  ['CD','크리티컬 데미지','L9','M9',s=>s.rawCD,s=>s.M9],
-  ['MC','다중 크리티컬','L10','M10',s=>s.M10,s=>s.M10],
-  ['TD','총 데미지','L11','M11',s=>s.rawTD,s=>s.M11],
-  ['DR','방어력 감소','L12','M12',s=>s.M12,s=>s.actualM12],
-  ['UA','유닛 가속','L13','M13',s=>s.displayUA,s=>s.M13],
-  ['SR','쉴드 감소','L14','M14',s=>s.displaySR,s=>s.actualSR],
-  ['HR','체력 감소','L15','M15',s=>s.displayHR,s=>s.actualHR],
-  ['MD','멀티 타겟','L16','M16',s=>s.M16,s=>s.M16],
-  ['MP','멀티 확률','L17','M17',s=>s.M17,s=>s.M17],
-  ['MCP','멀티 크리 확률','L18','M18',s=>s.M18,s=>s.M18]
-];
-function readU16(view, offset){ return view.getUint16(offset,true); }
-function readU32(view, offset){ return view.getUint32(offset,true); }
-async function inflateZipEntry(bytes){
-  if(typeof DecompressionStream!=='function') throw new Error('이 브라우저는 XLSM 압축 해제를 지원하지 않습니다.');
-  const stream=new Blob([bytes]).stream().pipeThrough(new DecompressionStream('deflate-raw'));
-  return new Uint8Array(await new Response(stream).arrayBuffer());
-}
-async function readZipEntries(file){
-  const bytes=new Uint8Array(await file.arrayBuffer());
-  const view=new DataView(bytes.buffer,bytes.byteOffset,bytes.byteLength);
-  let eocd=-1;
-  for(let i=bytes.length-22;i>=Math.max(0,bytes.length-65557);i--){
-    if(readU32(view,i)===0x06054b50){ eocd=i; break; }
-  }
-  if(eocd<0) throw new Error('올바른 Excel 파일이 아닙니다.');
-  const count=readU16(view,eocd+10);
-  let pos=readU32(view,eocd+16);
-  const decoder=new TextDecoder();
-  const entries=new Map();
-  for(let i=0;i<count;i++){
-    if(readU32(view,pos)!==0x02014b50) throw new Error('Excel ZIP 목록을 읽을 수 없습니다.');
-    const method=readU16(view,pos+10);
-    const compressedSize=readU32(view,pos+20);
-    const nameLength=readU16(view,pos+28);
-    const extraLength=readU16(view,pos+30);
-    const commentLength=readU16(view,pos+32);
-    const localOffset=readU32(view,pos+42);
-    const name=decoder.decode(bytes.slice(pos+46,pos+46+nameLength));
-    const localNameLength=readU16(view,localOffset+26);
-    const localExtraLength=readU16(view,localOffset+28);
-    const start=localOffset+30+localNameLength+localExtraLength;
-    const compressed=bytes.slice(start,start+compressedSize);
-    let data;
-    if(method===0) data=compressed;
-    else if(method===8) data=await inflateZipEntry(compressed);
-    else throw new Error(`지원하지 않는 Excel 압축 방식입니다. (${method})`);
-    entries.set(name,data);
-    pos+=46+nameLength+extraLength+commentLength;
-  }
-  return entries;
-}
-function parseXml(bytes){
-  const xml=new TextDecoder('utf-8').decode(bytes);
-  const doc=new DOMParser().parseFromString(xml,'application/xml');
-  if(doc.querySelector('parsererror')) throw new Error('Excel XML을 해석하지 못했습니다.');
-  return doc;
-}
-function xmlLocalAll(root,name){ return [...root.getElementsByTagNameNS('*',name)]; }
-function excelCellMap(sheetDoc, sharedStrings){
-  const cells={};
-  xmlLocalAll(sheetDoc,'c').forEach(cell=>{
-    const ref=cell.getAttribute('r');
-    const value=xmlLocalAll(cell,'v')[0]?.textContent ?? '';
-    const type=cell.getAttribute('t');
-    cells[ref]=type==='s' ? (sharedStrings[Number(value)] ?? '') : value;
-  });
-  return cells;
-}
-async function readExcelWorkbook(file){
-  const zip=await readZipEntries(file);
-  const workbook=parseXml(zip.get('xl/workbook.xml'));
-  const rels=parseXml(zip.get('xl/_rels/workbook.xml.rels'));
-  const relMap={};
-  xmlLocalAll(rels,'Relationship').forEach(rel=>{ relMap[rel.getAttribute('Id')]=rel.getAttribute('Target'); });
-  const shared=[];
-  if(zip.has('xl/sharedStrings.xml')){
-    const sharedDoc=parseXml(zip.get('xl/sharedStrings.xml'));
-    xmlLocalAll(sharedDoc,'si').forEach(si=>shared.push(xmlLocalAll(si,'t').map(t=>t.textContent||'').join('')));
-  }
-  const sheets=xmlLocalAll(workbook,'sheet').map(node=>{
-    const name=node.getAttribute('name');
-    const relId=node.getAttributeNS('http://schemas.openxmlformats.org/officeDocument/2006/relationships','id') || node.getAttribute('r:id');
-    const target=relMap[relId];
-    const path=target?.startsWith('/') ? target.slice(1) : `xl/${target}`;
-    return {name,path};
-  }).filter(sheet=>sheet.name&&sheet.path&&zip.has(sheet.path));
-  if(!sheets.length) throw new Error('비교할 Excel 시트를 찾을 수 없습니다.');
-  return {
-    fileName:file.name,
-    sheets,
-    getCells(sheetName){
-      const sheet=sheets.find(item=>item.name===sheetName);
-      if(!sheet) throw new Error('선택한 시트를 찾을 수 없습니다.');
-      return excelCellMap(parseXml(zip.get(sheet.path)),shared);
-    }
-  };
-}
-function excelCompareNumberValue(value){
-  if(value===undefined || value===null || String(value).trim()==='') return 0;
-  const n=Number(String(value).replace(/,/g,'').trim());
-  return Number.isFinite(n) ? n : null;
-}
-function excelCompareRound(value, digits=6){
-  const n=Number(value);
-  if(!Number.isFinite(n)) return n;
-  const factor=10**digits;
-  return Math.round((n + Number.EPSILON) * factor) / factor;
-}
-function compareNumber(change, current, tolerance=0.0005){
-  const target=excelCompareNumberValue(change), base=excelCompareNumberValue(current);
-  if(target===null||base===null) return {diff:null,status:'warn'};
-  const diff=target-base;
-  const limit=Math.max(tolerance,Math.abs(target)*0.00005);
-  return {diff,status:Math.abs(diff)<=limit?'same':Math.abs(diff)<=limit*10?'near':'diff'};
-}
-function formatCompareNumber(value){
-  const n=excelCompareNumberValue(value);
-  return n===null ? '—' : parseFloat(excelCompareRound(n,6).toFixed(6)).toLocaleString('ko-KR');
-}
-function formatCompareDiff(diff){
-  if(!Number.isFinite(diff)) return '확인 불가';
-  if(Math.abs(diff)<0.0000005) return '일치';
-  const value=excelCompareRound(diff,6);
-  return `${value>0?'+':''}${parseFloat(value.toFixed(6)).toLocaleString('ko-KR')}`;
-}
-function escapeCompareHtml(value){
-  return String(value??'').replace(/[&<>"']/g,char=>({
-    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
-  }[char]));
-}
-const COMPARE_SPECIAL_RUNE_LABELS={
-  ap:'파이널룬',ua:'코스모스룬',td:'카오스룬',harmony:'하모니룬',
-  'td&ua':'하모니룬','td＆ua':'하모니룬'
-};
-function compareNormalizedText(value){
-  return String(value??'').trim().replace(/\s+/g,'').toLowerCase();
-}
-function compareSelectDisplayText(value,id){
-  const text=String(value??'').trim();
-  if(id==='runeChoiceType'){
-    const runeLabel=COMPARE_SPECIAL_RUNE_LABELS[compareNormalizedText(text)];
-    if(runeLabel) return runeLabel;
-  }
-  const select=document.getElementById(id);
-  if(select?.tagName==='SELECT'){
-    const normalized=compareNormalizedText(text);
-    const option=[...select.options].find(item=>{
-      const optionValue=String(item.value??'').trim();
-      const optionText=String(item.textContent??'').trim();
-      return optionValue===text || optionText===text ||
-        compareNormalizedText(optionValue)===normalized ||
-        compareNormalizedText(optionText)===normalized;
-    });
-    if(option) return String(option.textContent||option.value||'').trim() || '—';
-  }
-  return text || '—';
-}
-function compareDisplayText(value,id){
-  if(typeof value==='boolean') return value?'ON':'OFF';
-  if(id) return compareSelectDisplayText(value,id);
-  const text=String(value??'').trim();
-  return text || '—';
-}
-function renderCompareTransition(current, change){
-  return `${escapeCompareHtml(compareDisplayText(current))} → ${escapeCompareHtml(compareDisplayText(change))}`;
-}
-function compareNumberDiffClass(diff){
-  if(!Number.isFinite(diff)) return 'diff-warn';
-  if(Math.abs(diff)<0.0000005) return 'diff-same';
-  return diff>0 ? 'diff-positive' : 'diff-negative';
-}
-function buildCompareTextRow(kind, name, changeValue, currentValue, options={}){
-  const id=options.id;
-  const changeText=compareDisplayText(changeValue,id);
-  const currentText=compareDisplayText(currentValue,id);
-  const same=compareNormalizedText(changeText)===compareNormalizedText(currentText);
-  return {kind,name,current:escapeCompareHtml(currentText),change:escapeCompareHtml(changeText),
-    difference:same?'일치':escapeCompareHtml(changeText),status:same?'same':'diff',diffClass:same?'diff-same':'diff-text'};
-}
-function buildCompareNumberRow(kind, name, changeValue, currentValue, tolerance=0.0005){
-  const compare=compareNumber(changeValue,currentValue,tolerance);
-  const currentText=formatCompareNumber(currentValue);
-  const changeText=formatCompareNumber(changeValue);
-  return {kind,name,current:currentText,change:changeText,difference:formatCompareDiff(compare.diff),
-    status:compare.status,diffClass:compareNumberDiffClass(compare.diff)};
-}
-function excelFlag(value){
-  const text=excelText(value).toLowerCase();
-  const number=excelNumber(value);
-  return ['true','on','on+','yes','y'].includes(text) || (number!==null && number!==0);
-}
-function excelDisplayFlag(value){ return excelFlag(value)?'ON':'OFF'; }
-function webControlDisplay(id){
-  const el=document.getElementById(id);
-  if(!el) return '—';
-  if(el.type==='checkbox') return el.checked?'ON':'OFF';
-  return String(el.value??'');
-}
-const EXCEL_TITLE_BONUS_MAP={'패왕':'12','패왕+':'13','제왕':'14','제왕+':'15','신황':'16','신황+':'17'};
-const EXCEL_RUNE_TYPE_MAP={'AP':'ap','UA':'ua','TD':'td','TD&UA':'harmony','TD＆UA':'harmony'};
-const EXCEL_NUMERIC_INPUT_IDS=new Set(['sp','xp','bxp','rp','soul','penance','round','titleTdBonus','erosionStack','jewelErosionRes','pbless','team','rAD','rModAD','runeChoiceValue','rAS','rModAS','rCD','rModCD','rCRI','rModCRI','rReinf','addAD','addAS','addCD','addCRI','addAP','addTD','addUA','addDR','addSR','addHR','dpsTableMinDps','enchAD','enchCRI','enchUA','enchTD','enchSR','enchHR']);
-const EXCEL_SELECT_INPUT_IDS=new Set(['diff','runeChoiceType','rAsc','raceOpt','opt10','opt15','transOpt']);
-const COMPARE_VALUE_META={
-  sp:{kind:'기본정보',name:'총 SP'},xp:{kind:'기본정보',name:'XP'},bxp:{kind:'기본정보',name:'BXP'},rp:{kind:'기본정보',name:'RP'},soul:{kind:'기본정보',name:'심연의 혼'},
-  diff:{kind:'기본정보',name:'난이도'},penance:{kind:'기본정보',name:'고행'},round:{kind:'기본정보',name:'라운드'},titleTdBonus:{kind:'기본정보',name:'승단 총데미지'},
-  erosionStack:{kind:'기본정보',name:'침식 스택'},jewelErosionRes:{kind:'기본정보',name:'침식 내성'},pbless:{kind:'기본정보',name:'파워 블레스'},team:{kind:'기본정보',name:'출발지원 인원수'},
-  rAD:{kind:'룬정보',name:'AD'},rModAD:{kind:'룬정보',name:'AD 개조'},runeChoiceType:{kind:'룬정보',name:'특수룬 종류'},runeChoiceValue:{kind:'룬정보',name:'특수룬 수치'},
-  rAS:{kind:'룬정보',name:'AS'},rModAS:{kind:'룬정보',name:'AS 개조'},rCD:{kind:'룬정보',name:'CD'},rModCD:{kind:'룬정보',name:'CD 개조'},rCRI:{kind:'룬정보',name:'CRI'},rModCRI:{kind:'룬정보',name:'CRI 개조'},
-  rReinf:{kind:'룬정보',name:'룬 강화 수'},rAsc:{kind:'룬정보',name:'룬 각성'},raceOpt:{kind:'룬정보',name:'종족 업그레이드'},opt10:{kind:'룬정보',name:'10강 옵션'},opt15:{kind:'룬정보',name:'15강 옵션'},transOpt:{kind:'룬정보',name:'초월 옵션'},
-  addAD:{kind:'에디셔널',name:'공격력'},addAS:{kind:'에디셔널',name:'공격속도'},addCD:{kind:'에디셔널',name:'크리티컬 데미지'},addCRI:{kind:'에디셔널',name:'크리티컬 확률'},addAP:{kind:'에디셔널',name:'마법 공격력'},addTD:{kind:'에디셔널',name:'총데미지'},addUA:{kind:'에디셔널',name:'가속'},addDR:{kind:'에디셔널',name:'방어력 감소'},addSR:{kind:'에디셔널',name:'실드 감소'},addHR:{kind:'에디셔널',name:'체력 감소'},
-  currentUnit:{kind:'유닛정보',name:'현재 유닛'},personalUnit:{kind:'유닛정보',name:'개인 유닛'},unitGrade:{kind:'유닛정보',name:'유닛 등급'},unitLevel:{kind:'유닛정보',name:'유닛 레벨'},
-  unitUniqueBuff:{kind:'룬효과/버프',name:'단일유닛버프'},basePierceBuff:{kind:'룬효과/버프',name:'방어력관통 10%'},overEnhance:{kind:'룬효과/버프',name:'오버핸스'},repairEnhance:{kind:'룬효과/버프',name:'리페핸스'},enhanceMaster:{kind:'룬효과/버프',name:'강화의 달인'},
-  shareUserBuff:{kind:'룬효과/버프',name:'나눔유저'},dailyCouponBuff:{kind:'룬효과/버프',name:'일일쿠폰'},aprRuneNormal:{kind:'룬효과/버프',name:'4월 일반'},aprRunePlus:{kind:'룬효과/버프',name:'4월 강화(+)'},sepRuneNormal:{kind:'룬효과/버프',name:'9월 일반'},sepRunePlus:{kind:'룬효과/버프',name:'9월 강화(+)'},
-  prodNova:{kind:'룬효과/버프',name:'노바'},prodTeratron:{kind:'룬효과/버프',name:'테라트론'},prodAmon:{kind:'룬효과/버프',name:'아몬'},prodAdun:{kind:'룬효과/버프',name:'아둔의 창'},prodKerrigan:{kind:'룬효과/버프',name:'불새 케리건'},prodOvermind:{kind:'룬효과/버프',name:'초월체'},prodNarud:{kind:'룬효과/버프',name:'나루드'},prodArtifact:{kind:'룬효과/버프',name:'유물'},
-  flowerSkill1:{kind:'룬효과/버프',name:'근성의 꽃가루'},flowerSkill2:{kind:'룬효과/버프',name:'바람의 꽃가루'},flowerSkill3:{kind:'룬효과/버프',name:'안개의 꽃가루'},
-  dpsTableMinDps:{kind:'DPS표',name:'도전할 최소 DPS'}
-};
-const ENCHANT_COMPARE_ITEMS=[
-  ['enchAD','공격력'],['enchCRI','크리티컬 확률'],['enchUA','유닛 가속'],['enchTD','총 데미지'],['enchSR','실드 감소'],['enchHR','체력 감소']
-];
-const LATEST_SPEC_ADDITIONAL_LABELS=[
-  ['Q36','AD'],['Q37','AS'],['Q38','CD'],['Q39','CRI'],['Q40','AP'],['Q41','TD'],['Q42','UA']
-];
-const SPEC_ADDITIONAL_CELLS={addAD:'R36',addAS:'R37',addCD:'R38',addCRI:'R39',addAP:'R40',addTD:'R41',addUA:'R42'};
-function normalizeStructureText(value){
-  return excelText(value).replace(/\s+/g,'').toLowerCase();
-}
-function inspectSpecAdditionalStructure(specCells){
-  const mismatches=LATEST_SPEC_ADDITIONAL_LABELS.filter(([ref,expected])=>
-    normalizeStructureText(specCells[ref])!==normalizeStructureText(expected)
-  ).map(([ref,expected])=>({ref,expected,actual:excelText(specCells[ref])||'값 없음'}));
-  return {
-    valid:mismatches.length===0,
-    mismatches,
-    message:'불러온 Excel 파일은 5.4392 버전과 구조가 달라 비교하기 기능을 사용할 수 없습니다.'
-  };
-}
-function getSpecAdditionalValue(specCells, id){
-  const ref=SPEC_ADDITIONAL_CELLS[id];
-  return ref ? specCells[ref] : id.startsWith('add') ? 0 : undefined;
-}
-function getSpecEnchantCode(specCells){
-  return ['G52','G53','G54','G55','G56','G57'].map(ref=>{
-    const value=excelNumber(specCells[ref]);
-    return String(Math.max(0,Math.min(9,Math.round(value??0))));
-  }).join('');
-}
-function normalizeEnchantCompareCode(code){
-  return String(code??'').replace(/[^0-9]/g,'').padEnd(6,'0').slice(0,6);
-}
-function enchantCompareCodeFromValues(values={}){
-  const saved=normalizeEnchantCompareCode(values.enchantCode);
-  if(saved.replace(/0/g,'')) return saved;
-  return ENCHANT_COMPARE_ITEMS.map(([id])=>{
-    const n=parseInt(String(values[id]??'0').replace(/[^0-9]/g,''),10);
-    return String(Math.max(0,Math.min(9,Number.isFinite(n)?n:0)));
-  }).join('');
-}
-function buildEnchantCompareRows(changeCode,currentCode){
-  const change=normalizeEnchantCompareCode(changeCode);
-  const current=normalizeEnchantCompareCode(currentCode);
-  return ENCHANT_COMPARE_ITEMS.map(([,name],index)=>
-    buildCompareNumberRow('인첸트',name,change[index]||0,current[index]||0,0.0001)
-  );
-}
-function buildExcelEnchantRows(specCells){
-  return buildEnchantCompareRows(getSpecEnchantCode(specCells),webControlDisplay('enchantCode'));
-}
-function applyRuneChoiceState(values, cells){
-  const type=excelStateValue('runeChoiceType', cells.I6, {valueMap:EXCEL_RUNE_TYPE_MAP}) || 'harmony';
-  const value=excelNumber(cells.J6) ?? 0;
-  values.runeChoiceType=type;
-  values.runeChoiceValue=String(value);
-  RUNE_CHOICE_TARGETS.forEach(([kind,id])=>{ values[id]=String(kind===type ? value : 0); });
-}
-function buildExcelChoiceRow(name, excel, id, options={}){
-  const changeValue=options.boolean ? excelDisplayFlag(excel) : String(excel??'');
-  const currentValue=options.boolean ? webControlDisplay(id) : webControlDisplay(id);
-  return buildCompareTextRow('룬효과/버프',name,changeValue,currentValue,{id});
-}
-function compareExcelInputValue(value,id){
-  if(EXCEL_NUMERIC_INPUT_IDS.has(id)) return formatCompareNumber(value);
-  if(EXCEL_SELECT_INPUT_IDS.has(id) && (value===undefined || value===null || String(value).trim()==='')){
-    const el=document.getElementById(id);
-    return el?.tagName==='SELECT' ? String(el.options[0]?.value ?? '') : '';
-  }
-  return String(value??'').replace(/,/g,'').trim();
-}
-function buildExcelInputSpecs(cells,specCells){
-  return [
-    ['기본정보','총 SP',Math.round(Number(cells.B9)||0),'sp'],
-    ['기본정보','XP',specCells.R20,'xp'],
-    ['기본정보','BXP',specCells.R21,'bxp'],
-    ['기본정보','RP',cells.B16,'rp'],
-    ['기본정보','심연의 혼',cells.B19,'soul'],
-    ['기본정보','난이도',firstExcelValue(cells,['B4','N41']),'diff'],
-    ['기본정보','고행',firstExcelValue(cells,['B6','N42','AD8']),'penance'],
-    ['기본정보','라운드',firstExcelValue(cells,['B7','N43']),'round'],
-    ['기본정보','승단 총데미지',EXCEL_TITLE_BONUS_MAP[excelText(specCells.S17)]??specCells.S17,'titleTdBonus'],
-    ['기본정보','침식 스택',cells.H10,'erosionStack'],
-    ['기본정보','침식 내성',cells.H11,'jewelErosionRes'],
-    ['기본정보','파워 블레스',cells.D4,'pbless'],
-    ['기본정보','출발지원 인원수',cells.D5,'team'],
-    ['룬정보','AD',cells.J5,'rAD'],
-    ['룬정보','AD 개조',specCells.C19,'rModAD'],
-    ['룬정보','특수룬 종류',EXCEL_RUNE_TYPE_MAP[excelText(cells.I6)]??cells.I6,'runeChoiceType'],
-    ['룬정보','특수룬 수치',cells.J6,'runeChoiceValue'],
-    ['룬정보','AS',cells.J7,'rAS'],
-    ['룬정보','AS 개조',specCells.C21,'rModAS'],
-    ['룬정보','CD',cells.J8,'rCD'],
-    ['룬정보','CD 개조',specCells.C22,'rModCD'],
-    ['룬정보','CRI',cells.J9,'rCRI'],
-    ['룬정보','CRI 개조',specCells.C23,'rModCRI'],
-    ['룬정보','룬 강화 수',cells.J11,'rReinf'],
-    ['룬정보','룬 각성',cells.J12,'rAsc'],
-    ['룬정보','종족 업그레이드',cells.J13,'raceOpt'],
-    ['룬정보','10강 옵션',resolveExcelSelectValue('opt10',cells.J14)??cells.J14,'opt10'],
-    ['룬정보','15강 옵션',resolveExcelSelectValue('opt15',cells.J15)??cells.J15,'opt15'],
-    ['룬정보','초월 옵션',resolveExcelSelectValue('transOpt',cells.J16)??cells.J16,'transOpt'],
-    ['에디셔널','공격력',specCells.R36,'addAD'],
-    ['에디셔널','공격속도',specCells.R37,'addAS'],
-    ['에디셔널','크리티컬 데미지',specCells.R38,'addCD'],
-    ['에디셔널','크리티컬 확률',specCells.R39,'addCRI'],
-    ['에디셔널','마법 공격력',specCells.R40,'addAP'],
-    ['에디셔널','총데미지',specCells.R41,'addTD'],
-    ['에디셔널','가속',specCells.R42,'addUA']
-  ];
-}
-function buildExcelInputRows(cells,specCells){
-  return buildExcelInputSpecs(cells,specCells).map(([kind,name,excel,id])=>{
-    const changeValue=compareExcelInputValue(excel,id);
-    const currentValue=EXCEL_NUMERIC_INPUT_IDS.has(id) ? formatCompareNumber(webControlDisplay(id)) : String(webControlDisplay(id)).replace(/,/g,'').trim();
-    if(EXCEL_NUMERIC_INPUT_IDS.has(id)) return buildCompareNumberRow(kind,name,changeValue,currentValue);
-    return buildCompareTextRow(kind,name,changeValue,currentValue,{id});
-  });
-}
-const ZERO_EXCEL_SHEET_NAME='더제로 승단';
-const ZERO_EXCEL_PENANCE_ROWS=[
-  'Practice','Very Easy','Easy','Normal','Hard','Very Hard','Hell','Inferno','Lunatic','Holic','Epic','Ultimate','Impossible','The Final'
-].map((name,index)=>({name,row:13+index}));
-function getZeroScoreSheetCells(workbook){
-  try{
-    return workbook?.sheets?.some(sheet=>sheet.name===ZERO_EXCEL_SHEET_NAME) ? workbook.getCells(ZERO_EXCEL_SHEET_NAME) : null;
-  }catch(_e){ return null; }
-}
-function normalizeZeroHonorValue(value){
-  const text=excelText(value).toLowerCase().replace(/명예/g,'').trim();
-  const first=text.charAt(0);
-  if(['b','a','s','x'].includes(first)) return first;
-  if(['없음','none','off','n','0','-',''].includes(text)) return '';
-  return '';
-}
-function zeroHonorDisplay(value){
-  return value ? String(value).toUpperCase() : '없음';
-}
-function zeroScoreStateFromExcel(zeroCells){
-  if(!zeroCells) return null;
-  const rows=[];
-  ZERO_EXCEL_PENANCE_ROWS.forEach(({row})=>{
-    rows.push({
-      type:'penance',
-      current:String(Math.max(0,Math.min(20,Math.round(excelNumber(zeroCells[`B${row}`]) ?? 0)))),
-      target:String(Math.max(0,Math.min(20,Math.round(excelNumber(zeroCells[`C${row}`]) ?? 0)))),
-      star:excelFlag(zeroCells[`D${row}`]),
-      currentHonor:normalizeZeroHonorValue(zeroCells[`E${row}`]),
-      targetHonor:normalizeZeroHonorValue(zeroCells[`F${row}`])
-    });
-  });
-  rows.push({
-    type:'tower',
-    current:String(Math.max(0,Math.min(90,Math.round(excelNumber(zeroCells.B27) ?? 0)))),
-    target:String(Math.max(0,Math.min(90,Math.round(excelNumber(zeroCells.C27) ?? 0)))),
-    star:false,currentHonor:'',targetHonor:''
-  });
-  rows.push({
-    type:'honorTower',
-    current:String(Math.max(0,Math.min(90,Math.round(excelNumber(zeroCells.B28) ?? 0)))),
-    target:String(Math.max(0,Math.min(90,Math.round(excelNumber(zeroCells.C28) ?? 0)))),
-    star:false,currentHonor:'',targetHonor:''
-  });
-  return {rows};
-}
-function zeroScoreRowCalculation(row){
-  const type=row?.type || 'penance';
-  let currentScore=0, targetScore=0, score=0;
-  if(type==='penance'){
-    const cur=zeroScoreNumber(row.current,0,20);
-    const tar=zeroScoreNumber(row.target,0,20);
-    const currentPenanceScore=zeroPenanceScore(cur);
-    const targetPenanceScore=zeroPenanceScore(tar);
-    const currentHonorScore=zeroHonorScore(row.currentHonor||'');
-    const targetHonorScore=zeroHonorScore(row.targetHonor||'');
-    const star=row.star ? 2 : 0;
-    currentScore=currentPenanceScore+currentHonorScore+star;
-    targetScore=targetPenanceScore+targetHonorScore;
-    score=Math.max(0,targetPenanceScore-currentPenanceScore)+Math.max(0,targetHonorScore-currentHonorScore);
-  }else if(type==='tower'){
-    currentScore=zeroTowerScore(row.current);
-    targetScore=zeroTowerScore(row.target);
-    score=Math.max(0,targetScore-currentScore);
-  }else if(type==='honorTower'){
-    currentScore=zeroHonorTowerScore(row.current);
-    targetScore=zeroHonorTowerScore(row.target);
-    score=Math.max(0,targetScore-currentScore);
-  }
-  return {currentScore,targetScore,score};
-}
-function zeroScoreSummaryFromState(zeroScore){
-  const rows=Array.isArray(zeroScore?.rows) ? zeroScore.rows : [];
-  let currentTotal=0,total=0;
-  rows.forEach(row=>{
-    const calc=zeroScoreRowCalculation(row);
-    currentTotal+=calc.currentScore;
-    total+=calc.score;
-  });
-  return {currentTotal,total,targetScore:currentTotal+total};
-}
-function compareZeroTextRow(name, changeValue, currentValue){
-  return buildCompareTextRow('승단계산',name,changeValue,currentValue);
-}
-function compareZeroNumberRow(kind,name,changeValue,currentValue){
-  return buildCompareNumberRow(kind,name,changeValue,currentValue,0.0001);
-}
-function buildZeroScoreCompareRows(zeroCells){
-  if(!zeroCells) return [];
-  const excelState=zeroScoreStateFromExcel(zeroCells);
-  const webState=collectZeroScoreState() || {rows:[]};
-  const rows=[];
-  ZERO_EXCEL_PENANCE_ROWS.forEach(({name,row},index)=>{
-    const web=webState.rows[index] || {};
-    const webCalc=zeroScoreRowCalculation(web);
-    rows.push(compareZeroNumberRow('승단계산',`${name} 현재 고행`,zeroCells[`B${row}`],web.current ?? 0));
-    rows.push(compareZeroNumberRow('승단계산',`${name} 목표 고행`,zeroCells[`C${row}`],web.target ?? 0));
-    rows.push(compareZeroTextRow(`${name} 24스타`,excelFlag(zeroCells[`D${row}`])?'ON':'OFF',web.star?'ON':'OFF'));
-    rows.push(compareZeroTextRow(`${name} 현재 명예`,zeroHonorDisplay(normalizeZeroHonorValue(zeroCells[`E${row}`])),zeroHonorDisplay(web.currentHonor||'')));
-    rows.push(compareZeroTextRow(`${name} 목표 명예`,zeroHonorDisplay(normalizeZeroHonorValue(zeroCells[`F${row}`])),zeroHonorDisplay(web.targetHonor||'')));
-    rows.push(compareZeroNumberRow('승단계산 결과',`${name} 추가점수`,zeroCells[`G${row}`],webCalc.score));
-  });
-  const towerWeb=webState.rows[14] || {};
-  const honorTowerWeb=webState.rows[15] || {};
-  rows.push(compareZeroNumberRow('승단계산','도전의 탑 현재층',zeroCells.B27,towerWeb.current ?? 0));
-  rows.push(compareZeroNumberRow('승단계산','도전의 탑 목표층',zeroCells.C27,towerWeb.target ?? 0));
-  rows.push(compareZeroNumberRow('승단계산 결과','도전의 탑 추가점수',zeroCells.G27,zeroScoreRowCalculation(towerWeb).score));
-  rows.push(compareZeroNumberRow('승단계산','명예 도탑 현재층',zeroCells.B28,honorTowerWeb.current ?? 0));
-  rows.push(compareZeroNumberRow('승단계산','명예 도탑 목표층',zeroCells.C28,honorTowerWeb.target ?? 0));
-  rows.push(compareZeroNumberRow('승단계산 결과','명예 도탑 추가점수',zeroCells.G28,zeroScoreRowCalculation(honorTowerWeb).score));
-  const webSummary=zeroScoreSummaryFromState(webState);
-  rows.push(compareZeroNumberRow('승단계산 결과','현재 승단점수',zeroCells.H28,webSummary.currentTotal));
-  rows.push(compareZeroNumberRow('승단계산 결과','목표 완료 시',zeroCells.I28,webSummary.targetScore));
-  return rows;
-}
-function validateExcelCompareSheet(cells,sheetName){
-  if(!Number.isFinite(Number(cells.M19))||!Number.isFinite(Number(cells.L4))){
-    throw new Error(`"${sheetName}" 시트는 현재 계산기와 비교할 수 있는 셀 구조가 아닙니다.`);
-  }
-}
-function buildExcelStatRows(cells,stats){
-  return EXCEL_COMPARE_STATS.map(([code,name,displayCell,actualCell,getDisplay])=>{
-    const excelDisplay=excelCompareNumberValue(cells[displayCell]);
-    const webDisplay=excelCompareRound(getDisplay(stats),6);
-    const displayCompare=compareNumber(excelDisplay,webDisplay);
-    return {kind:'스탯',name,current:formatCompareNumber(webDisplay),change:formatCompareNumber(excelDisplay),
-      difference:formatCompareDiff(displayCompare.diff),status:displayCompare.status,diffClass:compareNumberDiffClass(displayCompare.diff)};
-  });
-}
-function buildExcelTraitRows(cells){
-  return TRAITS.filter(t=>t[0]>=42&&t[0]<=138).map(t=>{
-    const row=t[0], changeValue=excelCompareNumberValue(cells[`H${row}`]), currentValue=Number(INV[row]||0);
-    return buildCompareNumberRow('특성',t[1],changeValue,currentValue,0.0001);
-  }).filter(row=>row.status!=='same');
-}
-function buildExcelBuffRows(cells,specCells){
-  return [
-    buildExcelChoiceRow('4월 일반',specCells.N52,'aprRuneNormal'),
-    buildExcelChoiceRow('4월 강화(+)',specCells.O52,'aprRunePlus'),
-    buildExcelChoiceRow('9월 일반',specCells.N53,'sepRuneNormal'),
-    buildExcelChoiceRow('9월 강화(+)',specCells.O53,'sepRunePlus'),
-    buildExcelChoiceRow('오버핸스',cells.H14,'overEnhance'),
-    buildExcelChoiceRow('리페핸스',cells.H15,'repairEnhance'),
-    buildExcelChoiceRow('강화의 달인',cells.H16,'enhanceMaster'),
-    buildExcelChoiceRow('일일쿠폰',specCells.R24,'dailyCouponBuff',{boolean:true}),
-    buildExcelChoiceRow('나눔유저',cells.H116,'shareUserBuff',{boolean:true}),
-    buildExcelChoiceRow('단일유닛버프',cells.H6,'unitUniqueBuff',{boolean:true}),
-    buildExcelChoiceRow('방어력관통 10%',cells.H8,'basePierceBuff',{boolean:true}),
-    buildExcelChoiceRow('유물',cells.F11,'prodArtifact',{boolean:true}),
-    buildExcelChoiceRow('노바',cells.F4,'prodNova',{boolean:true}),
-    buildExcelChoiceRow('테라트론',cells.F5,'prodTeratron',{boolean:true}),
-    buildExcelChoiceRow('아몬',cells.F6,'prodAmon',{boolean:true}),
-    buildExcelChoiceRow('아둔의 창',cells.F7,'prodAdun',{boolean:true}),
-    buildExcelChoiceRow('불새 케리건',cells.F8,'prodKerrigan',{boolean:true}),
-    buildExcelChoiceRow('초월체',cells.F9,'prodOvermind',{boolean:true}),
-    buildExcelChoiceRow('나루드',cells.F10,'prodNarud',{boolean:true}),
-    buildExcelChoiceRow('근성의 꽃가루',cells.F13,'flowerSkill1',{boolean:true}),
-    buildExcelChoiceRow('바람의 꽃가루',cells.F14,'flowerSkill2',{boolean:true}),
-    buildExcelChoiceRow('안개의 꽃가루',cells.F15,'flowerSkill3',{boolean:true})
-  ];
-}
-function buildExcelComparison(cells, specCells, zeroCells, fileName, sheetName){
-  validateExcelCompareSheet(cells,sheetName);
-  const stats=computeStats();
-  const dpsCompare=compareNumber(cells.M19,stats.M19);
-  const inputRows=buildExcelInputRows(cells,specCells);
-  const enchantRows=buildExcelEnchantRows(specCells);
-  const statRows=buildExcelStatRows(cells,stats);
-  const buffRows=buildExcelBuffRows(cells,specCells);
-  const traitRows=buildExcelTraitRows(cells);
-  const zeroRows=buildZeroScoreCompareRows(zeroCells);
-  const dpsRow=buildCompareNumberRow('DPS','기본 DPS',cells.M19,stats.M19);
-  return {
-    fileName,
-    sheetName,
-    sourceType:'excel',
-    summary:{
-      dps:{change:excelCompareNumberValue(cells.M19),current:stats.M19,diff:dpsCompare.diff,status:dpsCompare.status},
-      statDiffs:statRows.filter(r=>r.status!=='same').length,
-      inputDiffs:inputRows.filter(r=>r.status!=='same').length + enchantRows.filter(r=>r.status!=='same').length,
-      traitDiffs:traitRows.length,
-      buffDiffs:buffRows.filter(r=>r.status!=='same').length,
-      zeroDiffs:zeroRows.filter(r=>r.status!=='same').length
-    },
-    rows:[
-      dpsRow,
-      ...inputRows,
-      ...enchantRows,
-      ...statRows,
-      ...buffRows,
-      ...zeroRows,
-      ...traitRows
-    ]
-  };
-}
-function createExcelCompareModal(){
-  if(document.getElementById('excelCompareModal')) return;
-  const modal=document.createElement('div');
-  modal.id='excelCompareModal';
-  modal.className='excel-compare-shell';
-  modal.setAttribute('aria-hidden','true');
-  modal.innerHTML=`
-    <div class="excel-compare-backdrop" data-excel-compare-close="1"></div>
-    <section class="excel-compare-modal" role="dialog" aria-modal="true" aria-labelledby="excelCompareTitle">
-      <header class="excel-compare-head">
-        <div><p>불러온 파일의 저장값 기준</p><h2 id="excelCompareTitle">비교하기</h2></div>
-        <div class="excel-compare-controls">
-          <select id="excelCompareSheet" aria-label="비교할 시트 또는 백업 데이터" disabled><option>시트 선택</option></select>
-          <label class="excel-compare-file-btn">파일 선택<input id="excelCompareFile" type="file" accept=".xlsm,.xlsx,.json,.txt,application/json,text/plain,application/vnd.ms-excel.sheet.macroEnabled.12"></label>
-          <button id="excelCompareApplyBtn" class="excel-compare-apply-btn" type="button" data-excel-compare-apply="1" disabled>변경값 적용</button>
-          <button id="excelCompareResetBtn" class="excel-compare-reset-btn" type="button" data-excel-compare-reset="1" disabled>초기화</button>
-        </div>
-        <button type="button" class="excel-compare-close" data-excel-compare-close="1" aria-label="비교하기 닫기">×</button>
-      </header>
-      <div class="excel-compare-body" id="excelCompareBody">
-        <div class="excel-compare-empty">비교할 Excel 또는 웹백업 파일을 선택하세요.<small>Excel 파일은 시트를 선택할 수 있고, 웹백업 파일은 백업 데이터를 바로 비교합니다.</small></div>
-      </div>
-    </section>`;
-  document.body.appendChild(modal);
-}
-function renderExcelWarning(item){
-  return escapeCompareHtml(item).replace('5.4392','<span class="excel-compare-version">5.4392</span>');
-}
-function renderExcelComparison(result){
-  const body=document.getElementById('excelCompareBody');
-  if(!body) return;
-  const {summary}=result;
-  const dpsDiff=summary.dps.diff===null ? '확인 불가' : formatCompareDiff(summary.dps.diff);
-  const dpsApply=(summary.dps.change===null || summary.dps.current===null) ? '확인 불가' :
-    renderCompareTransition(formatCompareNumber(summary.dps.current),formatCompareNumber(summary.dps.change));
-  const compareColgroup='<colgroup><col class="compare-col-kind"><col class="compare-col-name"><col class="compare-col-current"><col class="compare-col-change"><col class="compare-col-diff"></colgroup>';
-  body.innerHTML=`
-    <div class="excel-compare-summary">
-      <div class="${summary.dps.status}"><span>DPS</span><b>차이 ${dpsDiff}</b><small>${dpsApply}</small></div>
-      <div class="${summary.statDiffs?'diff':'same'}"><span>스탯 차이</span><b>${summary.statDiffs}개</b></div>
-      <div class="${summary.inputDiffs?'diff':'same'}"><span>입력값 차이</span><b>${summary.inputDiffs}개</b></div>
-      <div class="${summary.buffDiffs?'diff':'same'}"><span>룬/버프 차이</span><b>${summary.buffDiffs}개</b></div>
-      <div class="${summary.traitDiffs?'diff':'same'}"><span>특성 차이</span><b>${summary.traitDiffs}개</b></div>
-      <div class="${summary.zeroDiffs?'diff':'same'}"><span>승단 차이</span><b>${summary.zeroDiffs}개</b></div>
-    </div>
-    <div class="excel-compare-table-wrap">
-      <table class="excel-compare-table excel-compare-table-head">${compareColgroup}<thead><tr><th>구분</th><th>항목</th><th>현재값</th><th>변경값</th><th>차이</th></tr></thead></table>
-      <div class="excel-compare-table-scroll">
-        <table class="excel-compare-table excel-compare-table-body">${compareColgroup}<tbody>${result.rows.map(row=>`<tr class="${row.status}"><td>${row.kind}</td><th>${escapeCompareHtml(row.name)}</th><td>${row.current}</td><td>${row.change}</td><td class="compare-diff ${row.diffClass||''}">${row.difference}</td></tr>`).join('')}</tbody></table>
-      </div>
-    </div>`;
-}
-function openExcelCompare(){
-  createExcelCompareModal();
-  const modal=document.getElementById('excelCompareModal');
-  modal.classList.add('is-open');
-  modal.setAttribute('aria-hidden','false');
-  document.body.classList.add('excel-compare-open');
-  const select=document.getElementById('excelCompareSheet');
-  if(compareSourceType==='json' && compareBackupState) renderJsonComparison(compareBackupState);
-  else if(excelCompareWorkbook && select && !select.disabled && select.value) compareSelectedExcelSheet();
-}
-function closeExcelCompare(){
-  const modal=document.getElementById('excelCompareModal');
-  if(!modal) return;
-  modal.classList.remove('is-open');
-  modal.setAttribute('aria-hidden','true');
-  document.body.classList.remove('excel-compare-open');
-}
-let excelCompareWorkbook=null;
-let compareBackupState=null;
-let compareSourceType=null;
-function resetExcelComparison(options={}){
-  excelCompareWorkbook=null;
-  compareBackupState=null;
-  compareSourceType=null;
-  const select=document.getElementById('excelCompareSheet');
-  const file=document.getElementById('excelCompareFile');
-  const apply=document.getElementById('excelCompareApplyBtn');
-  const reset=document.getElementById('excelCompareResetBtn');
-  const body=document.getElementById('excelCompareBody');
-  if(select){
-    select.innerHTML='<option>시트 선택</option>';
-    select.disabled=true;
-  }
-  if(file) file.value='';
-  if(apply) apply.disabled=true;
-  if(reset) reset.disabled=true;
-  if(body) body.innerHTML='<div class="excel-compare-empty">비교할 Excel 또는 웹백업 파일을 선택하세요.<small>Excel 파일은 시트를 선택할 수 있고, 웹백업 파일은 백업 데이터를 바로 비교합니다.</small></div>';
-  if(options.close) closeExcelCompare();
-}
-function excelText(value){ return String(value??'').trim(); }
-function excelNumber(value){
-  const number=Number(String(value??'').replace(/,/g,'').trim());
-  return Number.isFinite(number) ? number : null;
-}
-function resolveExcelSelectValue(id, value){
-  const select=document.getElementById(id);
-  const text=excelText(value);
-  if(!select||!text) return null;
-  const normalized=text.replace(/\s+/g,'').toLowerCase();
-  const option=[...select.options].find(item=>{
-    const optionValue=String(item.value).trim();
-    const optionText=String(item.textContent||'').trim();
-    return optionValue===text || optionText===text ||
-      optionValue.replace(/\s+/g,'').toLowerCase()===normalized ||
-      optionText.replace(/\s+/g,'').toLowerCase()===normalized;
-  });
-  return option ? option.value : null;
-}
-function firstExcelValue(cells, refs){
-  for(const ref of refs){
-    if(cells[ref]!==undefined && cells[ref]!==null && cells[ref]!=='') return cells[ref];
-  }
-  return null;
-}
-function excelStateValue(id, value, options={}){
-  const el=document.getElementById(id);
-  if(!el || value===undefined || value===null || value==='') return undefined;
-  if(el.tagName==='SELECT'){
-    return options.valueMap?.[excelText(value)] ?? resolveExcelSelectValue(id,value) ?? undefined;
-  }
-  if(el.type==='checkbox') return excelFlag(value);
-  if(options.number){
-    const number=excelNumber(value);
-    if(number===null) return undefined;
-    return String(options.integer ? Math.round(number) : number);
-  }
-  return String(value);
-}
-function buildExcelState(cells, specCells, zeroCells){
-  const state=makeStateObject();
-  const values={...state.values};
-  const assign=(id,value,options={})=>{
-    const resolved=excelStateValue(id,value,options);
-    if(resolved===undefined) return 0;
-    values[id]=resolved;
-    return 1;
-  };
-  let applied=0;
-  [
-    ['diff',firstExcelValue(cells,['B4','N41'])],
-    ['penance',firstExcelValue(cells,['B6','N42','AD8'])],
-    ['round',firstExcelValue(cells,['B7','N43'])],
-    ['pbless',cells.D4],['team',cells.D5],
-    ['currentUnit',cells.F37],['personalUnit',cells.E11],
-    ['unitGrade',cells.H4],['unitLevel',cells.H5],
-    ['unitUniqueBuff',cells.H6],['basePierceBuff',cells.H8],
-    ['erosionStack',cells.H10],['jewelErosionRes',cells.H11],
-    ['overEnhance',cells.H14],['repairEnhance',cells.H15],['enhanceMaster',cells.H16],
-    ['shareUserBuff',cells.H116],
-    ['prodNova',cells.F4],['prodTeratron',cells.F5],['prodAmon',cells.F6],['prodAdun',cells.F7],
-    ['prodKerrigan',cells.F8],['prodOvermind',cells.F9],['prodNarud',cells.F10],['prodArtifact',cells.F11],
-    ['flowerSkill1',cells.F13],['flowerSkill2',cells.F14],['flowerSkill3',cells.F15],
-    ['rAD',cells.J5],['rAS',cells.J7],['rCD',cells.J8],['rCRI',cells.J9],
-    ['rModAD',specCells.C19],['rModAS',specCells.C21],['rModCD',specCells.C22],['rModCRI',specCells.C23],
-    ['rReinf',cells.J11],['rAsc',cells.J12],['raceOpt',cells.J13],
-    ['opt10',cells.J14],['opt15',cells.J15],['transOpt',cells.J16],
-    ['addAD',getSpecAdditionalValue(specCells,'addAD')],['addAS',getSpecAdditionalValue(specCells,'addAS')],
-    ['addCD',getSpecAdditionalValue(specCells,'addCD')],['addCRI',getSpecAdditionalValue(specCells,'addCRI')],
-    ['addAP',getSpecAdditionalValue(specCells,'addAP')],['addTD',getSpecAdditionalValue(specCells,'addTD')],
-    ['addUA',getSpecAdditionalValue(specCells,'addUA')],['addDR',getSpecAdditionalValue(specCells,'addDR')],
-    ['addSR',getSpecAdditionalValue(specCells,'addSR')],['addHR',getSpecAdditionalValue(specCells,'addHR')]
-  ].forEach(([id,value])=>{ applied+=assign(id,value); });
-  applied+=assign('sp',cells.B9,{number:true,integer:true});
-  applied+=assign('xp',specCells.R20,{number:true,integer:true});
-  applied+=assign('bxp',specCells.R21,{number:true,integer:true});
-  applied+=assign('rp',cells.B16,{number:true,integer:true});
-  applied+=assign('soul',cells.B19,{number:true,integer:true});
-  applied+=assign('aprRuneNormal',specCells.N52);
-  applied+=assign('aprRunePlus',specCells.O52);
-  applied+=assign('sepRuneNormal',specCells.N53);
-  applied+=assign('sepRunePlus',specCells.O53);
-  applied+=assign('dailyCouponBuff',specCells.R24);
-  applied+=assign('titleTdBonus',specCells.S17,{valueMap:EXCEL_TITLE_BONUS_MAP});
-  const enchantCode=getSpecEnchantCode(specCells);
-  values.enchantCode=enchantCode;
-  ENCHANT_INPUT_IDS.forEach((id,index)=>{ values[id]=enchantCode[index]||'0'; });
-  applied+=ENCHANT_INPUT_IDS.length + 1;
-  applyRuneChoiceState(values,cells);
-  applied+=2;
-  const inv={...state.inv};
-  TRAITS.filter(t=>t[0]>=42&&t[0]<=138).forEach(([row])=>{
-    const value=excelNumber(cells[`H${row}`]);
-    if(value===null) return;
-    inv[row]=Math.max(0,Math.min(TMAX[row]||999,Math.round(value)));
-    applied++;
-  });
-  inv[116]=1;
-  const zeroScore=zeroScoreStateFromExcel(zeroCells) || state.zeroScore;
-  if(zeroScore?.rows?.length) applied+=zeroScore.rows.reduce((sum,row)=>sum+(row.type==='penance'?5:2),0);
-  return {state:makeStorageEnvelope({...state,values,inv,zeroScore}),applied};
-}
-
-function isCompareBackupFile(file){
-  const name=String(file?.name||'').toLowerCase();
-  const type=String(file?.type||'').toLowerCase();
-  return name.endsWith('.json') || name.endsWith('.txt') || type.includes('json') || type.startsWith('text/');
-}
-function readFileAsText(file){
-  return new Promise((resolve,reject)=>{
-    const reader=new FileReader();
-    reader.onload=()=>resolve(String(reader.result||''));
-    reader.onerror=()=>reject(new Error('파일을 읽지 못했습니다.'));
-    reader.readAsText(file,'utf-8');
-  });
-}
-async function readCompareBackupState(file){
-  const raw=await readFileAsText(file);
-  const parsed=safeJsonParse(raw);
-  if(!parsed) throw new Error('웹백업 파일 형식이 아닙니다.');
-  const state=normalizeSavedState(parsed);
-  if(!state) throw new Error('계산기 저장값 형식이 아닙니다.');
-  return {...state,fileName:file.name};
-}
-function compareValueMeta(id){
-  return COMPARE_VALUE_META[id] || {kind:'입력값',name:id};
-}
-function compareSavedValueDisplay(value,id){
-  if(EXCEL_NUMERIC_INPUT_IDS.has(id)) return formatCompareNumber(value);
-  return compareDisplayText(value,id);
-}
-function buildSavedValueCompareRows(changeState,currentState){
-  const ordered=storageElementIds().filter(id=>id!=='calcMode');
-  const skipped=new Set(['backupFileInput','excelCompareFile','excelCompareSheet','enchantCode',...ENCHANT_INPUT_IDS]);
-  const ids=[...new Set([...ordered,'dpsTableMinDps',...Object.keys(currentState.values||{}),...Object.keys(changeState.values||{})])]
-    .filter(id=>id && id!=='calcMode' && !skipped.has(id));
-  return ids.map(id=>{
-    const meta=compareValueMeta(id);
-    const changeValue=compareSavedValueDisplay(changeState.values?.[id],id);
-    const currentValue=compareSavedValueDisplay(currentState.values?.[id],id);
-    if(EXCEL_NUMERIC_INPUT_IDS.has(id)) return buildCompareNumberRow(meta.kind,meta.name,changeValue,currentValue);
-    return buildCompareTextRow(meta.kind,meta.name,changeValue,currentValue);
-  }).filter(row=>row.status!=='same');
-}
-function buildSavedTraitCompareRows(changeState){
-  return TRAITS.filter(t=>t[0]>=42&&t[0]<=138).map(t=>{
-    const row=t[0], changeValue=Number(changeState.inv?.[row]||0), currentValue=Number(INV[row]||0);
-    return buildCompareNumberRow('특성',t[1],changeValue,currentValue,0.0001);
-  }).filter(row=>row.status!=='same');
-}
-function buildSavedZeroScoreCompareRows(changeZeroScore,currentZeroScore){
-  const changeRows=Array.isArray(changeZeroScore?.rows) ? changeZeroScore.rows : [];
-  const currentRows=Array.isArray(currentZeroScore?.rows) ? currentZeroScore.rows : [];
-  const rows=[];
-  ZERO_EXCEL_PENANCE_ROWS.forEach(({name},index)=>{
-    const change=changeRows[index] || {};
-    const current=currentRows[index] || {};
-    const currentCalc=zeroScoreRowCalculation(current);
-    const changeCalc=zeroScoreRowCalculation(change);
-    rows.push(compareZeroNumberRow('승단계산',`${name} 현재 고행`,change.current ?? 0,current.current ?? 0));
-    rows.push(compareZeroNumberRow('승단계산',`${name} 목표 고행`,change.target ?? 0,current.target ?? 0));
-    rows.push(compareZeroTextRow(`${name} 24스타`,change.star?'ON':'OFF',current.star?'ON':'OFF'));
-    rows.push(compareZeroTextRow(`${name} 현재 명예`,zeroHonorDisplay(change.currentHonor||''),zeroHonorDisplay(current.currentHonor||'')));
-    rows.push(compareZeroTextRow(`${name} 목표 명예`,zeroHonorDisplay(change.targetHonor||''),zeroHonorDisplay(current.targetHonor||'')));
-    rows.push(compareZeroNumberRow('승단계산 결과',`${name} 추가점수`,changeCalc.score,currentCalc.score));
-  });
-  const changeTower=changeRows[14] || {}, currentTower=currentRows[14] || {};
-  const changeHonorTower=changeRows[15] || {}, currentHonorTower=currentRows[15] || {};
-  rows.push(compareZeroNumberRow('승단계산','도전의 탑 현재층',changeTower.current ?? 0,currentTower.current ?? 0));
-  rows.push(compareZeroNumberRow('승단계산','도전의 탑 목표층',changeTower.target ?? 0,currentTower.target ?? 0));
-  rows.push(compareZeroNumberRow('승단계산 결과','도전의 탑 추가점수',zeroScoreRowCalculation(changeTower).score,zeroScoreRowCalculation(currentTower).score));
-  rows.push(compareZeroNumberRow('승단계산','명예 도탑 현재층',changeHonorTower.current ?? 0,currentHonorTower.current ?? 0));
-  rows.push(compareZeroNumberRow('승단계산','명예 도탑 목표층',changeHonorTower.target ?? 0,currentHonorTower.target ?? 0));
-  rows.push(compareZeroNumberRow('승단계산 결과','명예 도탑 추가점수',zeroScoreRowCalculation(changeHonorTower).score,zeroScoreRowCalculation(currentHonorTower).score));
-  const changeSummary=zeroScoreSummaryFromState({rows:changeRows});
-  const currentSummary=zeroScoreSummaryFromState({rows:currentRows});
-  rows.push(compareZeroNumberRow('승단계산 결과','현재 승단점수',changeSummary.currentTotal,currentSummary.currentTotal));
-  rows.push(compareZeroNumberRow('승단계산 결과','목표 완료 시',changeSummary.targetScore,currentSummary.targetScore));
-  return rows.filter(row=>row.status!=='same');
-}
-function buildSavedComputedStatRows(changeComputed,currentComputed){
-  if(!changeComputed?.displayStats || !currentComputed?.displayStats) return [];
-  return EXCEL_COMPARE_STATS.map(([code,name])=>{
-    const changeDisplay=changeComputed.displayStats?.[code];
-    const currentDisplay=currentComputed.displayStats?.[code];
-    const displayCompare=compareNumber(changeDisplay,currentDisplay);
-    return {kind:'스탯',name,current:formatCompareNumber(currentDisplay),change:formatCompareNumber(changeDisplay),
-      difference:formatCompareDiff(displayCompare.diff),status:displayCompare.status,diffClass:compareNumberDiffClass(displayCompare.diff)};
-  });
-}
-function buildJsonComparison(changeState){
-  const currentState=makeStateObject();
-  const currentComputed=makeComputedSnapshot();
-  const changeComputed=changeState.computed || {};
-  const dpsCompare=compareNumber(changeComputed.dps,currentComputed.dps);
-  const inputRows=buildSavedValueCompareRows(changeState,currentState);
-  const enchantRows=buildEnchantCompareRows(enchantCompareCodeFromValues(changeState.values),enchantCompareCodeFromValues(currentState.values));
-  const statRows=buildSavedComputedStatRows(changeComputed,currentComputed);
-  const traitRows=buildSavedTraitCompareRows(changeState);
-  const zeroRows=buildSavedZeroScoreCompareRows(changeState.zeroScore,currentState.zeroScore);
-  const dpsRow=buildCompareNumberRow('DPS','기본 DPS',changeComputed.dps,currentComputed.dps);
-  return {
-    fileName:changeState.fileName || '웹백업',
-    sheetName:'웹백업',
-    sourceType:'json',
-    summary:{
-      dps:{change:excelCompareNumberValue(changeComputed.dps),current:currentComputed.dps,diff:dpsCompare.diff,status:dpsCompare.status},
-      statDiffs:statRows.filter(r=>r.status!=='same').length,
-      inputDiffs:inputRows.filter(r=>r.status!=='same').length + enchantRows.filter(r=>r.status!=='same').length,
-      traitDiffs:traitRows.length,
-      buffDiffs:inputRows.filter(r=>r.kind==='룬효과/버프').length,
-      zeroDiffs:zeroRows.length
-    },
-    rows:[dpsRow,...inputRows,...enchantRows,...statRows,...zeroRows,...traitRows]
-  };
-}
-function renderJsonComparison(changeState){
-  renderExcelComparison(buildJsonComparison(changeState));
-}
-function applySelectedComparison(){
-  if(compareSourceType==='json') return applySelectedJsonBackup();
-  return applySelectedExcelSheet();
-}
-function applySelectedJsonBackup(){
-  if(!compareBackupState) return;
-  try{
-    applyStateObject(compareBackupState);
-    saveState({silent:true});
-    renderJsonComparison(compareBackupState);
-    showToast('변경값 적용 완료','ok');
-  }catch(e){
-    console.error('[backup apply failed]',e);
-    showToast(e?.message||String(e),'err');
-  }
-}
-function applySelectedExcelSheet(){
-  const select=document.getElementById('excelCompareSheet');
-  if(!excelCompareWorkbook||!select?.value) return;
-  try{
-    const cells=excelCompareWorkbook.getCells(select.value);
-    validateExcelCompareSheet(cells,select.value);
-    const specCells=excelCompareWorkbook.getCells('스펙');
-    const zeroCells=getZeroScoreSheetCells(excelCompareWorkbook);
-    const additionalInfo=inspectSpecAdditionalStructure(specCells);
-    if(!additionalInfo.valid) throw new Error(additionalInfo.message);
-    const imported=buildExcelState(cells,specCells,zeroCells);
-    applyStateObject(imported.state);
-    saveState({silent:true});
-    compareSelectedExcelSheet();
-    showToast(`변경값 ${imported.applied}개 적용 완료`,'ok');
-  }catch(e){
-    console.error('[Excel apply failed]',e);
-    showToast(e?.message||String(e),'err');
-  }
-}
-function compareSelectedExcelSheet(){
-  const select=document.getElementById('excelCompareSheet');
-  if(!excelCompareWorkbook||!select?.value) return;
-  const body=document.getElementById('excelCompareBody');
-  const apply=document.getElementById('excelCompareApplyBtn');
-  const reset=document.getElementById('excelCompareResetBtn');
-  try{
-    const cells=excelCompareWorkbook.getCells(select.value);
-    const specCells=excelCompareWorkbook.getCells('스펙');
-    const zeroCells=getZeroScoreSheetCells(excelCompareWorkbook);
-    const additionalInfo=inspectSpecAdditionalStructure(specCells);
-    if(!additionalInfo.valid){
-      if(apply) apply.disabled=true;
-      if(reset) reset.disabled=false;
-      if(body) body.innerHTML=`<div class="excel-compare-error">${renderExcelWarning(additionalInfo.message)}</div>`;
-      return;
-    }
-    compareSourceType='excel';
-    renderExcelComparison(buildExcelComparison(cells,specCells,zeroCells,excelCompareWorkbook.fileName,select.value));
-    if(apply) apply.disabled=false;
-    if(reset) reset.disabled=false;
-  }catch(e){
-    console.error('[Excel compare failed]',e);
-    if(apply) apply.disabled=true;
-    if(reset) reset.disabled=false;
-    if(body) body.innerHTML=`<div class="excel-compare-error">${escapeCompareHtml(e?.message||String(e))}</div>`;
-  }
-}
-async function handleExcelCompareFile(file){
-  const body=document.getElementById('excelCompareBody');
-  if(body) body.innerHTML='<div class="excel-compare-empty">파일을 분석하고 있습니다.</div>';
-  try{
-    const select=document.getElementById('excelCompareSheet');
-    const apply=document.getElementById('excelCompareApplyBtn');
-    const reset=document.getElementById('excelCompareResetBtn');
-    if(isCompareBackupFile(file)){
-      compareBackupState=await readCompareBackupState(file);
-      compareSourceType='json';
-      excelCompareWorkbook=null;
-      if(select){
-        select.innerHTML='<option value="webBackup">웹백업</option>';
-        select.value='webBackup';
-        select.disabled=true;
-      }
-      renderJsonComparison(compareBackupState);
-      if(apply) apply.disabled=false;
-      if(reset) reset.disabled=false;
-      return;
-    }
-    excelCompareWorkbook=await readExcelWorkbook(file);
-    compareBackupState=null;
-    compareSourceType='excel';
-    const preferred=excelCompareWorkbook.sheets.some(sheet=>sheet.name==='고행')?'고행':excelCompareWorkbook.sheets[0].name;
-    select.innerHTML=excelCompareWorkbook.sheets.map(sheet=>`<option value="${escapeCompareHtml(sheet.name)}">${escapeCompareHtml(sheet.name)}</option>`).join('');
-    select.disabled=false;
-    select.value=preferred;
-    if(reset) reset.disabled=false;
-    compareSelectedExcelSheet();
-  }catch(e){
-    console.error('[compare file failed]',e);
-    const apply=document.getElementById('excelCompareApplyBtn');
-    const reset=document.getElementById('excelCompareResetBtn');
-    if(apply) apply.disabled=true;
-    if(reset) reset.disabled=true;
-    if(body) body.innerHTML=`<div class="excel-compare-error">${escapeCompareHtml(e?.message||String(e))}</div>`;
-  }
-}
-function installExcelCompareButton(){
-  const target=document.querySelector('.hdr-meta');
-  if(!target||document.getElementById('excelCompareOpenBtn')) return;
-  const btn=document.createElement('button');
-  btn.type='button';
-  btn.id='excelCompareOpenBtn';
-  btn.className='excel-compare-open-btn';
-  btn.dataset.action='openExcelCompare';
-  btn.textContent='비교하기';
-  const dpsButton=document.getElementById('dpsTableOpenBtn');
-  if(dpsButton) dpsButton.insertAdjacentElement('afterend',btn);
-  else target.insertBefore(btn,target.firstChild);
-}
-function bindExcelCompareEvents(){
-  document.addEventListener('click',e=>{
-    if(e.target.closest('[data-excel-compare-close]')) closeExcelCompare();
-    if(e.target.closest('[data-excel-compare-apply]')) applySelectedComparison();
-    if(e.target.closest('[data-excel-compare-reset]')) resetExcelComparison();
-  });
-  document.addEventListener('change',e=>{
-    if(e.target.id==='excelCompareFile'&&e.target.files?.[0]) handleExcelCompareFile(e.target.files[0]);
-    if(e.target.id==='excelCompareSheet' && compareSourceType==='excel') compareSelectedExcelSheet();
-  });
-  document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeExcelCompare(); });
-}
-function bindDpsTableEvents(){
-  document.addEventListener('click', function(e){
-    const modeTarget=e.target.closest('[data-dps-table-mode]');
-    if(modeTarget){
-      switchDpsTableMode(modeTarget.getAttribute('data-dps-table-mode'));
-      return;
-    }
-    if(e.target.closest('[data-dps-table-close]')) closeDpsTable();
-  });
-  document.addEventListener('input', function(e){
-    const minInput=e.target.closest('#dpsTableMinDps,#dpsTableMinDpsMain');
-    if(!minInput) return;
-    setDpsTableMinDps(minInput.value);
-    const fresh=document.getElementById(minInput.id);
-    if(fresh){
-      fresh.focus({preventScroll:true});
-      const pos=fresh.value.length;
-      try{ fresh.setSelectionRange(pos,pos); }catch(_e){}
-    }
-  });
-  document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeDpsTable(); });
-}
-/* =========================================================
-   09. 특성보드 / 최적화 / 초기화
-   ========================================================= */
-const TIERS=['루키','비기너','아마추어','프로','엑스퍼트','마스터','디바인','더원1','더원2','무한∞','EP특성','RP특성','심연특성'];
-function updateTraits(){
-  const body=document.getElementById('traitBody');
-  if(!body) return;
-  body.innerHTML=TIERS.map(tier=>{
-    const rows=TRAITS.filter(t=>t[2]===tier && t[0]!==116).map(t=>{
-      const [row,name,,type,rate]=t;
-      const n=INV[row]||0, mx=TMAX[row]||999;
-      const isMax=n>=mx;
-      const cost=nextCost(row);
-      const rStr=traitEffectText(row,type,rate);
-      return `<div class="tr ${isMax?'maxed':''}">
-        <div><div class="tr-name">${name}</div><div class="tr-type">${rStr}${isMax?' · 최대 투자됨':` · 다음비용 ${fullNumber(cost)}`}</div></div>
-        <div class="tr-ctrl">
-          <button type="button" data-action="traitAdjust" data-row="${row}" data-delta="-1" ${n<=0?'disabled':''} title="길게 누르면 연속 감소">−</button>
-          <div class="trait-value-pair">
-            <input class="tv-input" type="number" value="${n}" min="0" max="${mx}" data-row="${row}">
-            <span class="trait-max-sep">/</span>
-            <span class="trait-max-val" title="최대 투자치">${mx}</span>
-          </div>
-          <button type="button" data-action="traitAdjust" data-row="${row}" data-delta="1" ${isMax?'disabled':''} title="길게 누르면 연속 증가">+</button>
-          <button type="button" class="trait-master-btn" data-action="traitMax" data-row="${row}" ${isMax?'disabled':''} title="이 항목을 최대치로 투자">MAX</button>
-        </div>
-      </div>`;
-    }).join('');
-    return `<div class="trait-group"><h4><span class="trait-title">${tier}</span><span class="trait-tools"><button type="button" class="mini-btn master" data-action="masterTier" data-tier="${tier}">구간 마스터</button><button type="button" class="mini-btn reset" data-action="resetTier" data-tier="${tier}">초기화</button></span></h4>${rows}</div>`;
-  }).join('');
-}
-let traitKeyNavGuardUntil=0;
-function commitTraitInput(el){
-  const row=+(el && el.dataset ? el.dataset.row : NaN);
-  if(!Number.isFinite(row)) return;
-  setInv(row,+el.value);
-}
-function getTraitScrollHost(){
-  return document.querySelector('.col-right') || document.scrollingElement || document.documentElement;
-}
-function getNextTraitInputRow(el,dir){
-  const inputs=Array.from(document.querySelectorAll('.tv-input[data-row]'));
-  const idx=inputs.indexOf(el);
-  const nextIndex=Math.max(0,Math.min(inputs.length-1,idx+dir));
-  return +(inputs[nextIndex]?.dataset?.row ?? el?.dataset?.row);
-}
-function focusTraitInputRow(row,hostScroll,pageX,pageY){
-  const host=getTraitScrollHost();
-  const focusNow=()=>{
-    const next=document.querySelector(`.tv-input[data-row="${row}"]`);
-    if(!next) return false;
-    try{next.focus({preventScroll:true});}catch(_e){next.focus();}
-    try{next.select();}catch(_e){}
-    if(host) host.scrollTop=hostScroll;
-    try{window.scrollTo(pageX,pageY);}catch(_e){}
-    return true;
-  };
-  setTimeout(()=>{ if(!focusNow()) requestAnimationFrame(focusNow); },0);
-}
-function bindTraitInputEvents(){
-  document.addEventListener('change', e=>{
-    if(Date.now()<traitKeyNavGuardUntil) return;
-    const input=e.target.closest && e.target.closest('.tv-input[data-row]');
-    if(input) commitTraitInput(input);
-  }, true);
-  document.addEventListener('keydown', e=>{
-    const input=e.target.closest && e.target.closest('.tv-input[data-row]');
-    if(!input || (e.key!=='Tab' && e.key!=='Enter')) return;
-    e.preventDefault();
-    e.stopImmediatePropagation();
-    const dir=e.shiftKey?-1:1;
-    const nextRow=getNextTraitInputRow(input,dir);
-    const host=getTraitScrollHost();
-    const hostScroll=host ? host.scrollTop : 0;
-    const pageX=window.scrollX, pageY=window.scrollY;
-    traitKeyNavGuardUntil=Date.now()+250;
-    commitTraitInput(input);
-    focusTraitInputRow(nextRow,hostScroll,pageX,pageY);
-  }, true);
-  document.addEventListener('click', e=>{
-    const input=e.target.closest && e.target.closest('.tv-input[data-row]');
-    if(input) input.select();
-  }, true);
-}
-function adjustTraitBy(row,d,step=1){
-  row=+row;
-  d=+d;
-  step=Math.max(1,Math.round(+step||1));
-  if(row===116 || !Number.isFinite(row) || !Number.isFinite(d) || d===0) return false;
-  const before=INV[row]||0;
-  let applied=0;
-  if(d>0){
-    for(let i=0;i<step;i++){
-      if(addOneIfAffordable(row)) applied++;
-      else break;
-    }
-    if(applied===0) try{showToast('보유 재화가 부족합니다','err');}catch(e){}
-  }else{
-    const next=Math.max(0,before-step);
-    applied=before-next;
-    INV[row]=next;
-  }
-  if(applied>0){
-    recalc();
-    return true;
-  }
-  return false;
-}
-function setInv(row,val){
-  if(row===116) return;
-  if(isNaN(val)||val<0) val=0;
-  const wanted=Math.round(val);
-  const applied=setRowToAffordableValue(row,wanted);
-  if(applied<wanted) try{showToast('보유 재화 한도까지만 입력되었습니다','err');}catch(e){}
-  recalc();
-}
-function adjMax(row){
-  try{
-    if(row===116) return false;
-    const before=INV[row]||0;
-    fillRowToBudget(row);
-    recalc();
-    try{showToast((INV[row]||0)>before?'가능한 만큼 MAX 적용':'보유 재화가 부족합니다',(INV[row]||0)>before?'ok':'err');}catch(e){}
-    return (INV[row]||0)>before;
-  }catch(e){
-    console.error('[adjMax failed]', e);
-    return false;
-  }
-}
-function masterTier(tier){
-  TRAITS.forEach(t=>{
-    const row=t[0];
-    if(t[2]!==tier || row===116 || AUTO_INVEST_EXCLUDED_ROWS.has(row)) return;
-    fillRowToBudget(row);
-  });
-  recalc();
-  try{showToast('보유 재화 한도 내 구간 마스터 완료','ok');}catch(e){}
-}
-function resetTier(tier){
-  TRAITS.forEach(t=>{
-    const row=t[0];
-    if(t[2]!==tier || row===116) return;
-    INV[row]=0;
-  });
-  if(116 in INV) INV[116]=1;
-  recalc();
-  try{showToast('구간 초기화 완료','ok');}catch(e){}
-}
-function optimizeSP(){
-  const OPT_NORMAL_ROWS={
-    SP:new Set([42,43,46,52,53,58,60,61,68,70,71,77,84,85,86,92,93,94,95,96,99,100,101,102,103,104,108,109,110,111,115,116,44,54,62,79]),
-    EP:new Set([117,118,119,120,121,122]),
-    RP:new Set([125,126,127,129,130]),
-    SOUL:new Set([131,132,133,134,135,136,137])
-  };
-  function resourceInfo(row){
-    if(SP_ROWS.has(row)) return {kind:'SP', set:SP_ROWS, own:()=>effectiveSP()};
-    if(EP_ROWS.has(row)) return {kind:'EP', set:EP_ROWS, own:()=>v('ep')};
-    if(RP_ROWS.has(row)) return {kind:'RP', set:RP_ROWS, own:()=>v('rp')};
-    if(SOUL_ROWS.has(row)) return {kind:'SOUL', set:SOUL_ROWS, own:()=>v('soul')};
-    return null;
-  }
-  function isOptimizationTarget(t){
-    const [row]=t;
-    if(AUTO_INVEST_EXCLUDED_ROWS.has(row)) return false;
-    const info=resourceInfo(row);
-    if(!info) return false;
-    const normalSet=OPT_NORMAL_ROWS[info.kind];
-    if(!normalSet || !normalSet.has(row)) return false;
-    if(info.kind==='SP') return allowedRowsByTier().has(row);
-    return true;
-  }
-  function remaining(kind){
-    if(kind==='SP') return effectiveSP() - resourceUsed('SP');
-    if(kind==='EP') return v('ep') - resourceUsed('EP');
-    if(kind==='RP') return v('rp') - resourceUsed('RP');
-    if(kind==='SOUL') return v('soul') - resourceUsed('SOUL');
-    return 0;
-  }
-  function deltaCost(row, add){
-    const n=INV[row]||0;
-    if(add<=0) return 0;
-    if(n+add>(TMAX[row]||999)) return Infinity;
-    if(RP_ROWS.has(row)) return rpCost(row,n+add)-rpCost(row,n);
-    const old=INV[row];
-    let total=0;
-    for(let i=0;i<add;i++){
-      INV[row]=(old||0)+i;
-      const c=nextCost(row);
-      if(!Number.isFinite(c)){ total=Infinity; break; }
-      total+=c;
-    }
-    INV[row]=old;
-    return total;
-  }
-  function evaluateCandidate(base, kind, rem, changes, label){
-    let cost=0;
-    for(const [row,add] of changes){
-      const info=resourceInfo(row);
-      if(!info || info.kind!==kind) return null;
-      const c=deltaCost(row,add);
-      if(!Number.isFinite(c) || c<=0) return null;
-      cost+=c;
-    }
-    if(cost>rem) return null;
-    for(const [row,add] of changes) INV[row]=(INV[row]||0)+add;
-    const ns=computeStats();
-    for(const [row,add] of changes) INV[row]=(INV[row]||0)-add;
-    const gain=ns.M19-base.M19;
-    if(gain<=0) return null;
-    return {changes,score:gain/cost,gain,cost,label:label||String(changes[0]?.[0]||'')};
-  }
-  function addBest(list, cand){
-    if(cand) list.push(cand);
-  }
-  function normalAddCount(row, kind, rem){
-    if(kind!=='SP') return 1;
-    if(rem<=4000000) return 1;
-    if(row===77 || row===104 || row===116) return 1;
-    return 5;
-  }
-  function boundedChanges(row, add, rem){
-    const mx=TMAX[row]||999;
-    let n=Math.min(add, mx-(INV[row]||0));
-    while(n>0 && deltaCost(row,n)>rem) n--;
-    return n>0 ? [[row,n]] : null;
-  }
-  function critBreakpointCandidate(base, kind, rem, row, rate){
-    if((INV[row]||0)>=(TMAX[row]||999)) return null;
-    const s=computeStats();
-    if(s.M8<300) return null;
-    const mod=((s.M8%20)+20)%20;
-    const needStat=mod===0 ? 20 : 20-mod;
-    const add=Math.ceil(needStat/rate);
-    if(add<=0) return null;
-    if((INV[row]||0)+add>(TMAX[row]||999)) return null;
-    return evaluateCandidate(base, kind, rem, [[row,add]], `CRI→MC ${row}`);
-  }
-  function multiTargetBundleCandidate(base, rem){
-    if(!allowedRowsByTier().has(100) || !allowedRowsByTier().has(101) || !allowedRowsByTier().has(102)) return null;
-    if(((INV[100]||0)+(INV[101]||0)+(INV[102]||0))>50) return null;
-    const changes=[[100,100],[101,70],[102,80]];
-    for(const [row,add] of changes){
-      if((INV[row]||0)+add>(TMAX[row]||999)) return null;
-    }
-    let cost=0;
-    for(const [row,add] of changes){
-      const old=INV[row]||0;
-      const target=old+add;
-      const saved=INV[row];
-      INV[row]=target;
-      cost+=cumCost(row);
-      INV[row]=saved;
-    }
-    if(!Number.isFinite(cost) || cost<=0 || cost>rem) return null;
-    for(const [row,add] of changes) INV[row]=(INV[row]||0)+add;
-    const ns=computeStats();
-    for(const [row,add] of changes) INV[row]=(INV[row]||0)-add;
-    const gain=ns.M19-base.M19;
-    if(gain<=0) return null;
-    return {changes,score:gain/cost,gain,cost,label:'멀티 타겟 분기점'};
-  }
-  const kinds=['SP','EP','RP','SOUL'];
-  let totalApplied=0;
-  for(const kind of kinds){
-    let guard=0;
-    while(guard++<100000){
-      const base=computeStats();
-      const rem=remaining(kind);
-      if(rem<=0) break;
-      const candidates=[];
-      for(const t of TRAITS){
-        const [row]=t;
-        const info=resourceInfo(row);
-        if(!info || info.kind!==kind) continue;
-        if(!isOptimizationTarget(t)) continue;
-        const n=INV[row]||0;
-        const mx=TMAX[row]||999;
-        if(n>=mx) continue;
-        const add=normalAddCount(row, kind, rem);
-        const changes=boundedChanges(row, add, rem);
-        if(!changes) continue;
-        addBest(candidates, evaluateCandidate(base, kind, rem, changes, String(row)));
-      }
-      if(kind==='SP') addBest(candidates, critBreakpointCandidate(base, kind, rem, 95, 0.5));
-      if(kind==='EP') addBest(candidates, critBreakpointCandidate(base, kind, rem, 119, 1));
-      if(kind==='RP') addBest(candidates, critBreakpointCandidate(base, kind, rem, 127, 2));
-      if(kind==='SP') addBest(candidates, multiTargetBundleCandidate(base, rem));
-      const best=candidates.sort((a,b)=>b.score-a.score)[0];
-      if(!best) break;
-      for(const [row,add] of best.changes){
-        INV[row]=Math.min(TMAX[row]||999,(INV[row]||0)+add);
-        totalApplied+=add;
-      }
-    }
-  }
-  recalc();
-  try{
-    showToast('특성 최적화 완료', 'ok');
-  }catch(e){}
-}
-function clearAll(){
-  try{
-    if(typeof INV === 'undefined' || typeof TRAITS === 'undefined'){
-      alert('특성 데이터가 아직 준비되지 않았습니다.');
-      return false;
-    }
-    TRAITS.forEach(t=>{
-      const row=Array.isArray(t) ? t[0] : t.row;
-      if(Number.isFinite(+row)) INV[+row]=0;
-    });
-    if(116 in INV) INV[116]=1;
-    recalc();
-    try{showToast('특성 전체 초기화 완료','ok');}catch(e){}
-    return true;
-  }catch(e){
-    console.error('[clearAll failed]', e);
-    alert('특성 전체 초기화 실패: '+(e && e.message ? e.message : e));
-    return false;
-  }
-}
-/* =========================================================
-   10. 저장 / 복구 / JSON 백업
-   ========================================================= */
-const STORAGE_VERSION=DPS_CONFIG.storage.version;
-const STORAGE_SCOPE=DPS_CONFIG.storage.scope;
-const STORAGE_KEY=DPS_CONFIG.storage.key;
-const CLIENT_KEY=DPS_CONFIG.storage.clientKey;
-const IGNORED_SAVED_VALUE_IDS=[...(DPS_CONFIG.state.skipElementIds || []),'calcMode'];
-let isLoadingState=false;
-let suppressSave=false;
-let FACTORY_STATE=null;
-let storageSaveFailCount=0;
-function storageElementIds(){
-  const skip=new Set(DPS_CONFIG.state.skipElementIds || []);
-  return Array.from(document.querySelectorAll('input[id],select[id],textarea[id]'))
-    .filter(el=>el.id && el.type!=='file' && !skip.has(el.id))
-    .map(el=>el.id);
-}
-function elementDefaultValue(el){
-  if(el.tagName==='SELECT'){
-    const selected=Array.from(el.options || []).find(opt=>opt.defaultSelected) || el.options?.[0];
-    return selected ? selected.value : '';
-  }
-  if(el.type==='checkbox') return !!el.defaultChecked;
-  if(el.type==='radio') return el.defaultChecked ? el.value : undefined;
-  return el.defaultValue ?? '';
-}
-function readElementValue(el){
-  if(el.type==='checkbox') return !!el.checked;
-  if(el.type==='radio') return el.checked ? el.value : undefined;
-  return el.value;
-}
-function writeElementValue(el, value){
-  if(el.type==='checkbox') el.checked=!!value;
-  else el.value=value;
-}
-function getClientId(){
-  try{
-    let id=localStorage.getItem(CLIENT_KEY);
-    if(id) return id;
-    const seed=(typeof crypto!=='undefined' && crypto.randomUUID) ? crypto.randomUUID() : Date.now()+'_'+Math.random().toString(16).slice(2);
-    id='dps_'+seed;
-    localStorage.setItem(CLIENT_KEY,id);
-    return id;
-  }catch(e){ return 'dps_memory_only'; }
-}
-function makePublicDefaultState(){
-  const values={};
-  storageElementIds().forEach(id=>{
-    const el=document.getElementById(id);
-    if(el) values[id]=elementDefaultValue(el);
-  });
-  values.dpsTableMinDps='';
-  const inv={};
-  TRAITS.forEach(t=>{ inv[t[0]]=0; });
-  inv[116]=1;
-  return makeStorageEnvelope({
-    values,
-    inv,
-    zeroScore:collectZeroScoreState(),
-    savedAt:0,
-    scope:'public_default'
-  });
-}
-function captureFactoryState(){ FACTORY_STATE=makePublicDefaultState(); }
-function makeStorageEnvelope(partial){
-  return {
-    values:partial.values || {},
-    inv:partial.inv || {},
-    zeroScore:partial.zeroScore || undefined,
-    computed:partial.computed || undefined,
-    savedAt:+partial.savedAt || Date.now(),
-    storageVersion:partial.storageVersion || STORAGE_VERSION,
-    scope:partial.scope || STORAGE_SCOPE,
-    ui:partial.ui && typeof partial.ui==='object' ? partial.ui : {fontScale:DPS_CONFIG.ui.fontScaleDefault},
-    clientId:partial.clientId || getClientId()
-  };
-}
-function makeComputedSnapshot(){
-  const s=computeStats();
-  const enemy=s.enemyData || {};
-  return {
-    dps:s.M19,
-    displayStats:{
-      AD:s.displayAD, APS:s.displayAPS, APU:s.displayAPU, AS:s.M7, CRI:s.M8, CD:s.rawCD, MC:s.M10, TD:s.rawTD,
-      DR:s.M12, PIERCE:s.excelPierce, UA:s.displayUA, SR:s.displaySR, HR:s.displayHR, MD:s.M16, MP:s.M17, MCP:s.M18
-    },
-    actualStats:{
-      AD:s.M4, APS:s.displayAPS, APU:(s.actualAPU ?? s.displayAPU), AS:s.M7, CRI:s.M8, CD:s.M9, MC:s.M10, TD:s.M11, DR:s.actualM12, PIERCE:s.excelPierce, UA:s.M13, SR:(s.actualSR ?? s.displaySR), HR:(s.actualHR ?? s.displayHR), MD:s.M16, MP:s.M17, MCP:s.M18
-    },
-    enemy:{
-      round:enemy.round||0, armor:enemy.armor||0, hp:enemy.hp||0, shield:enemy.shield||0, count:enemy.count||0
-    }
-  };
-}
-function makeStateObject(){
-  normalizeXpInput();
-  const values={};
-  storageElementIds().forEach(id=>{
-    const el=document.getElementById(id);
-    if(!el) return;
-    const value=readElementValue(el);
-    if(value!==undefined) values[id]=value;
-  });
-  values.dpsTableMinDps=dpsTableMinDps;
-  return makeStorageEnvelope({
-    values,
-    inv:{...INV},
-    zeroScore:collectZeroScoreState(),
-    computed:makeComputedSnapshot(),
-    savedAt:Date.now(),
-    ui:{fontScale:getFontScale()}
-  });
-}
-function sanitizeSavedValues(values){
-  if(!values || typeof values!=='object') return {};
-  const out={...values};
-  IGNORED_SAVED_VALUE_IDS.forEach(id=>delete out[id]);
-  if(Object.prototype.hasOwnProperty.call(out,'overEnhance')) out.overEnhance=String(normalizeOverEnhanceValue(out.overEnhance));
-  if(out.raceOpt==='해당 없음') out.raceOpt='없음';
-  return out;
-}
-
-function normalizeSavedState(data){
-  if(!data || typeof data!=='object') return null;
-  const legacyAdditional=data.additional || data.additionals || data.additionalInputs || {};
-  const rawValues=(data.values && typeof data.values==='object') ? data.values : {};
-  const values=sanitizeSavedValues({
-    ...(legacyAdditional && typeof legacyAdditional==='object' ? legacyAdditional : {}),
-    ...rawValues
-  });
-  const inv=(data.inv && typeof data.inv==='object') ? {...data.inv} : {};
-  if(!Object.keys(values).length && !Object.keys(inv).length) return null;
-  return makeStorageEnvelope({
-    values,
-    inv,
-    zeroScore:data.zeroScore,
-    computed:data.computed && typeof data.computed==='object' ? data.computed : undefined,
-    savedAt:data.savedAt,
-    storageVersion:data.storageVersion,
-    scope:data.scope,
-    ui:data.ui,
-    clientId:data.clientId
-  });
-}
-function applyStateObject(data){
-  if(!data) return;
-  isLoadingState=true;
-  try{
-    if(data.ui && Number.isFinite(+data.ui.fontScale)) applyFontScale(+data.ui.fontScale, {silent:true});
-    dpsTableMinDps=String(data.values?.dpsTableMinDps ?? data.dpsTableMinDps ?? '');
-    syncDpsMinDpsInputs();
-    Object.entries(sanitizeSavedValues(data.values || {})).forEach(([id,val])=>{
-      if(id==='dpsTableMinDps') return;
-      const el=document.getElementById(id);
-      if(el) writeElementValue(el,val);
-    });
-    normalizeXpInput();
-    syncAutoEP();
-    Object.keys(INV).forEach(k=>{ INV[k]=0; });
-    Object.entries(data.inv || {}).forEach(([row,val])=>{
-      const r=+row;
-      if(!Number.isFinite(r) || !(r in INV)) return;
-      INV[r]=Math.max(0, Math.min(TMAX[r]||999, Math.round(+val||0)));
-    });
-    INV[116]=1;
-    enforceBudgets();
-    hydrateRuneChoiceFromHidden();
-    applyZeroScoreState(data.zeroScore);
-    syncEnchantCodeFromInputs(true);
-    syncSelectButtons();
-    syncBuffChoiceButtons();
-    formatAllMoneyInputs();
-    recalc();
-  }finally{ isLoadingState=false; }
-}
-function resetToFactoryState(){
-  if(!FACTORY_STATE) captureFactoryState();
-  applyStateObject(FACTORY_STATE);
-}
-function safeJsonParse(raw){ try{return JSON.parse(raw);}catch(e){return null;} }
-function readCurrentSavedState(){
-  try{
-    const raw=localStorage.getItem(STORAGE_KEY);
-    return raw ? normalizeSavedState(JSON.parse(raw)) : null;
-  }catch(e){ return null; }
-}
-function clearCurrentCalculatorStorage(){
-  try{ localStorage.removeItem(STORAGE_KEY); }
-  catch(e){ console.warn('clearCurrentCalculatorStorage failed', e); }
-}
-function formatStorageTime(ts=Date.now()){
-  const d=new Date(ts), pad=n=>String(n).padStart(2,'0');
-  return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
-}
-function setStorageStatus(message, type='ok', options={}){
-  const el=document.getElementById('storageStatusView');
-  if(!el) return;
-  el.textContent=message+(options.time ? ` · ${formatStorageTime(options.time)}` : '')+(options.scope ? ` · ${options.scope}` : '');
-  el.className='storage-status '+type;
-  el.title='입력값은 서버/GitHub가 아니라 현재 브라우저에만 저장됩니다.';
-}
-function saveState(options={}){
-  const silent=!!options.silent;
-  if(isLoadingState || suppressSave) return false;
-  try{
-    const state=makeStateObject();
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-    storageSaveFailCount=0;
-    setStorageStatus('저장됨', 'ok', {time:state.savedAt, scope:'현재 브라우저'});
-    if(!silent){
-      try{showToast('입력값 저장 완료','ok');}catch(e){}
-    }
-    return true;
-  }catch(e){
-    console.error(e);
-    storageSaveFailCount++;
-    const msg='저장 실패 · 브라우저 저장공간/권한 확인';
-    setStorageStatus(msg, 'err', {time:Date.now()});
-    if(!silent || storageSaveFailCount===1) try{showToast(msg,'err');}catch(_){}
-    if(!silent) alert('저장 실패: '+(e?.message || e));
-    return false;
-  }
-}
-function loadState(){
-  if(!FACTORY_STATE) captureFactoryState();
-  try{
-    const saved=readCurrentSavedState();
-    if(!saved){
-      resetToFactoryState();
-      setStorageStatus('초기 상태', 'idle', {scope:'저장값 없음'});
-      return;
-    }
-    applyStateObject(saved);
-    setStorageStatus('저장값 불러옴', 'ok', {time:saved.savedAt||Date.now(), scope:'현재 브라우저'});
-  }catch(e){
-    console.warn('loadState failed', e);
-    resetToFactoryState();
-  }
-}
-function clearSavedState(){
-  clearCurrentCalculatorStorage();
-  setStorageStatus('입력값 삭제됨', 'warn', {time:Date.now(), scope:'현재 입력값 유지'});
-}
-function exportStateBackup(){
-  try{
-    const payload=JSON.stringify(makeStateObject(), null, 2);
-    const blob=new Blob([payload], {type:'text/plain;charset=utf-8'});
-    const url=URL.createObjectURL(blob);
-    const a=document.createElement('a');
-    const now=new Date(), pad=n=>String(n).padStart(2,'0');
-    const stamp=String(now.getFullYear()).slice(2)+pad(now.getMonth()+1)+pad(now.getDate())+'_'+pad(now.getHours())+pad(now.getMinutes());
-    a.href=url;
-    a.download=stamp+'-DPS.txt';
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
-    setStorageStatus('백업 파일 생성됨', 'ok', {time:Date.now(), scope:'파일 저장'});
-  }catch(e){
-    console.error(e);
-    alert('백업 실패: '+(e?.message || e));
-  }
-}
-function applyImportedState(data){
-  const norm=normalizeSavedState(data);
-  if(!norm) throw new Error('계산기 저장값 형식이 아닙니다.');
-  resetExcelComparison({close:true});
-  applyStateObject(norm);
-  saveState({silent:false});
-  setStorageStatus('백업 복원 완료', 'ok', {time:Date.now(), scope:'현재 브라우저'});
-}
-function handleImportError(e){
-  console.error(e);
-  alert('복원 실패: '+(e?.message || e));
-}
-function importStateBackup(){
-  const importRaw=raw=>{
-    const data=safeJsonParse(String(raw||''));
-    if(!data){alert('복원 실패: 백업 형식이 아닙니다.'); return;}
-    try{ applyImportedState(data); }catch(e){ handleImportError(e); }
-  };
-  const fileInput=document.getElementById('backupFileInput');
-  if(!fileInput){
-    const raw=prompt('백업 TXT/JSON 내용을 붙여넣으세요.');
-    if(raw) importRaw(raw);
-    return;
-  }
-  fileInput.onchange=function(){
-    const file=fileInput.files && fileInput.files[0];
-    fileInput.value='';
-    if(!file) return;
-    const reader=new FileReader();
-    reader.onload=()=>importRaw(reader.result);
-    reader.onerror=()=>alert('복원 실패: 파일을 읽지 못했습니다.');
-    reader.readAsText(file, 'utf-8');
-  };
-  fileInput.click();
-}
-/* Viewport, font scale, and destructive-action safeguards */
-
-/* =========================================================
-   11. 화면 제어 / 글자 크기 / 위험 작업 확인
-   ========================================================= */
-function isMobileViewport(){
-  const max=DPS_CONFIG.ui.mobileMaxWidth || 600;
-  if(window.matchMedia) return window.matchMedia(`(max-width:${max}px)`).matches;
-  return window.innerWidth<=max;
-}
-function isFontScaleLockedViewport(){
-  const w=window.innerWidth || document.documentElement.clientWidth || 0;
-  const h=window.innerHeight || document.documentElement.clientHeight || 0;
-  return isMobileViewport() || (w>=768 && w<=1368 && h>w);
-}
-function getFontScale(){
-  if(isFontScaleLockedViewport()) return DPS_CONFIG.ui.fontScaleDefault;
-  const root=document.documentElement;
-  const raw=root.style.getPropertyValue('--app-font-scale') || String(DPS_CONFIG.ui.fontScaleDefault);
-  const n=parseFloat(raw);
-  return Number.isFinite(n) ? n : DPS_CONFIG.ui.fontScaleDefault;
-}
-function applyFontScale(scale, options={}){
-  const label=document.getElementById('fontScaleLabel');
-  if(isFontScaleLockedViewport()){
-    document.documentElement.style.setProperty('--app-font-scale', DPS_CONFIG.ui.fontScaleDefault.toFixed(2));
-    if(label) label.textContent='100%';
-    return false;
-  }
-  const min=DPS_CONFIG.ui.fontScaleMin, max=DPS_CONFIG.ui.fontScaleMax;
-  const next=Math.max(min, Math.min(max, Number(scale)||DPS_CONFIG.ui.fontScaleDefault));
-  document.documentElement.style.setProperty('--app-font-scale', next.toFixed(2));
-  if(label) label.textContent=Math.round(next*100)+'%';
-  try{ localStorage.setItem(DPS_CONFIG.storage.fontKey, String(next)); }catch(e){}
-  if(!options.silent) setStorageStatus('글씨 크기 '+Math.round(next*100)+'% 저장됨', 'ok', {time:Date.now(), scope:'PC/태블릿'});
-  return true;
-}
-function loadFontScale(){
-  let scale=DPS_CONFIG.ui.fontScaleDefault;
-  try{
-    const saved=parseFloat(localStorage.getItem(DPS_CONFIG.storage.fontKey)||'');
-    if(Number.isFinite(saved)) scale=saved;
-  }catch(e){}
-  applyFontScale(scale, {silent:true});
-}
-function changeFontScale(delta){
-  if(isFontScaleLockedViewport()) return false;
-  return applyFontScale(getFontScale()+delta);
-}
-function resetFontScale(){
-  return applyFontScale(DPS_CONFIG.ui.fontScaleDefault);
-}
-function bindFontScaleViewportGuard(){
-  window.addEventListener('resize', ()=>{
-    if(isFontScaleLockedViewport()) applyFontScale(DPS_CONFIG.ui.fontScaleDefault, {silent:true});
-  });
-}
-function renderAppVersion(){
-  const version=(window.DPS_APP_VERSION || 'V1.02');
-  const el=document.getElementById('appVersionView');
-  if(el) el.textContent=version;
-}
-let pendingDangerAction=null;
-function requestDangerAction(key,message,run){
-  const now=Date.now();
-  const delay=DPS_CONFIG.ui.confirmDelayMs || 1600;
-  if(pendingDangerAction && pendingDangerAction.key===key && now<pendingDangerAction.until){
-    const timer=pendingDangerAction.timer;
-    pendingDangerAction=null;
-    if(timer) clearTimeout(timer);
-    return run();
-  }
-  if(pendingDangerAction && pendingDangerAction.timer) clearTimeout(pendingDangerAction.timer);
-  try{showToast(message,'err');}catch(e){}
-  pendingDangerAction={
-    key,
-    until:now+delay,
-    timer:setTimeout(()=>{
-      if(pendingDangerAction && pendingDangerAction.key===key) pendingDangerAction=null;
-    }, delay)
-  };
-  return false;
-}
-function requestClearAll(){
-  return requestDangerAction('clearAll','한 번 더 누르면 특성 전체 초기화', clearAll);
-}
-function requestClearSavedState(){
-  return requestDangerAction('clearSavedState','한 번 더 누르면 입력값 삭제', clearSavedState);
-}
-let traitHoldTimer=null;
-let traitHoldRepeatTimer=null;
-let traitHoldSuppressClickUntil=0;
-function stopTraitAdjustHold(){
-  if(traitHoldTimer) clearTimeout(traitHoldTimer);
-  if(traitHoldRepeatTimer) clearTimeout(traitHoldRepeatTimer);
-  traitHoldTimer=null;
-  traitHoldRepeatTimer=null;
-  traitHoldSuppressClickUntil=Date.now()+260;
-}
-function startTraitAdjustHold(trigger,e){
-  if(!trigger || trigger.disabled) return;
-  const row=+trigger.dataset.row;
-  const delta=+trigger.dataset.delta;
-  if(!Number.isFinite(row) || !Number.isFinite(delta) || delta===0) return;
-  if(e){ e.preventDefault(); e.stopPropagation(); }
-  stopTraitAdjustHold();
-  let count=0;
-  const every=Math.max(1,DPS_CONFIG.ui.traitHoldAccelEvery||7);
-  const maxStep=Math.max(1,DPS_CONFIG.ui.traitHoldMaxStep||50);
-  const apply=()=>{
-    const step=Math.min(maxStep, 1+Math.floor(count/every));
-    count++;
-    adjustTraitBy(row,delta,step);
-  };
-  apply();
-  traitHoldTimer=setTimeout(function repeat(){
-    apply();
-    traitHoldRepeatTimer=setTimeout(repeat, DPS_CONFIG.ui.traitHoldRepeatMs||55);
-  }, DPS_CONFIG.ui.traitHoldInitialDelay||320);
-}
-function bindTraitHoldEvents(){
-  document.addEventListener('pointerdown', e=>{
-    const btn=e.target.closest('[data-action="traitAdjust"]');
-    if(!btn) return;
-    startTraitAdjustHold(btn,e);
-  }, true);
-  ['pointerup','pointercancel','pointerleave','blur'].forEach(type=>{
-    window.addEventListener(type, stopTraitAdjustHold, true);
-  });
-}
-/* =========================================================
-   12. 이벤트 바인딩 / 앱 초기화
-   ========================================================= */
-function zeroScoreNumber(value, min, max){
-  const n=Number(value);
-  if(!Number.isFinite(n)) return min;
-  return Math.max(min, Math.min(max, Math.floor(n)));
-}
-function zeroPenanceScore(level){
-  let sum=0;
-  const max=zeroScoreNumber(level,0,20);
-  for(let i=1;i<=max;i++){
-    if(i<=13) sum+=1;
-    else if(i<=16) sum+=2;
-    else if(i===17) sum+=3;
-    else sum+=7;
-  }
-  return sum;
-}
-const ZERO_HONOR_STAGES=[
-  {key:'b', point:2},
-  {key:'a', point:4},
-  {key:'s', point:6},
-  {key:'x', point:8}
-];
-function zeroHonorScore(stage){
-  const found=ZERO_HONOR_STAGES.find(item=>item.key===stage);
-  return found ? found.point : 0;
-}
-function zeroTowerScore(floor){
-  let sum=0;
-  const max=zeroScoreNumber(floor,0,90);
-  for(let i=41;i<=max;i++){
-    if(i<=60) sum+=1;
-    else if(i<=70) sum+=2;
-    else sum+=3;
-  }
-  return sum;
-}
-function zeroHonorTowerScore(floor){
-  let sum=0;
-  const max=zeroScoreNumber(floor,0,90);
-  for(let i=50;i<=max;i++){
-    if(i<=68){
-      if(i%2===0) sum+=1;
-    }else if(i>=70 && i<=79){
-      sum+=1;
-    }else if(i>=80){
-      sum+=2;
-    }
-  }
-  return sum;
-}
-const ZERO_RANK_FALLBACK_TABLE=[
-  {name:'입문',score:0},{name:'견습',score:100},{name:'숙련',score:150},{name:'전문',score:200},
-  {name:'장인',score:250},{name:'명장',score:300},{name:'명장+',score:350},{name:'도인',score:400},
-  {name:'도인+',score:450},{name:'지존',score:500},{name:'지존+',score:550},{name:'패왕',score:600},
-  {name:'패왕+',score:650},{name:'제왕',score:700},{name:'제왕+',score:750},{name:'신황',score:800},{name:'신황+',score:850}
-];
-function getZeroRankTable(){
-  const rows=[...document.querySelectorAll('.zero-rank-table tbody tr')].map(row=>{
-    const cells=row.querySelectorAll('td');
-    const name=excelText(cells[0]?.textContent);
-    const score=excelNumber(cells[2]?.textContent);
-    return name && score!==null ? {name,score,row} : null;
-  }).filter(Boolean);
-  return rows.length ? rows : ZERO_RANK_FALLBACK_TABLE;
-}
-function zeroRankEntry(score){
-  const value=Number(score)||0;
-  return getZeroRankTable().reduce((best,item)=>value>=item.score ? item : best, getZeroRankTable()[0] || ZERO_RANK_FALLBACK_TABLE[0]);
-}
-function zeroRankName(score){
-  return zeroRankEntry(score)?.name || '입문';
-}
-function zeroBenefitRankName(article){
-  const text=excelText(article?.querySelector('h4 span')?.textContent);
-  return text.replace(/^\[/,'').replace(/\]$/,'').trim();
-}
-function updateZeroRankHighlights(currentRank, targetRank){
-  const current=excelText(currentRank);
-  const target=excelText(targetRank);
-  document.querySelectorAll('.zero-rank-table tbody tr').forEach(row=>{
-    const name=excelText(row.querySelector('td')?.textContent);
-    row.classList.toggle('zero-rank-current', !!current && name===current);
-    row.classList.toggle('zero-rank-target', !!target && name===target);
-    row.classList.toggle('zero-rank-same', !!current && current===target && name===current);
-  });
-  document.querySelectorAll('.zero-benefit-rank').forEach(article=>{
-    const name=zeroBenefitRankName(article);
-    article.classList.toggle('zero-rank-current', !!current && name===current);
-    article.classList.toggle('zero-rank-target', !!target && name===target);
-    article.classList.toggle('zero-rank-same', !!current && current===target && name===current);
-  });
-  const card=document.querySelector('.zero-rank-result-card');
-  if(card){
-    card.classList.toggle('zero-rank-same', !!current && current===target);
-    card.classList.toggle('zero-rank-upgrade', !!current && !!target && current!==target);
-  }
-  updateMobileZeroRankSummary(current,target);
-}
-function updateMobileZeroRankSummary(currentRank, targetRank){
-  const card=document.querySelector('.zero-rank-card');
-  if(!card) return;
-  const rankPanel=card.querySelector('[data-zero-rank-panel="rank"]');
-  const benefitPanel=card.querySelector('[data-zero-rank-panel="benefit"]');
-  const rows=[...card.querySelectorAll('.zero-rank-table tbody tr')];
-  const benefits=[...card.querySelectorAll('.zero-benefit-rank')];
-  const currentIndex=Math.max(0,rows.findIndex(row=>excelText(row.querySelector('td')?.textContent)===currentRank));
-  const start=Math.max(0,Math.min(currentIndex-2,rows.length-6));
-  const visibleRanks=new Set(rows.slice(start,start+6).map(row=>excelText(row.querySelector('td')?.textContent)));
-  const rankExpanded=rankPanel?.classList.contains('zero-mobile-expanded');
-  const benefitExpanded=benefitPanel?.classList.contains('zero-mobile-expanded');
-  rows.forEach(row=>{
-    const name=excelText(row.querySelector('td')?.textContent);
-    row.classList.toggle('zero-mobile-summary-hidden', !rankExpanded && !visibleRanks.has(name));
-  });
-  benefits.forEach(article=>{
-    const name=zeroBenefitRankName(article);
-    const highlighted=name===currentRank || name===targetRank;
-    article.classList.toggle('zero-mobile-summary-hidden', !benefitExpanded && !highlighted);
-  });
-  ensureMobileZeroToggle(rankPanel,'승단표',rows.length,rankExpanded);
-  ensureMobileZeroToggle(benefitPanel,'혜택',benefits.length,benefitExpanded);
-}
-function ensureMobileZeroToggle(panel,label,total,expanded){
-  if(!panel) return;
-  let button=panel.querySelector('.zero-mobile-expand-btn');
-  if(!button){
-    button=document.createElement('button');
-    button.type='button';
-    button.className='zero-mobile-expand-btn';
-    button.dataset.action='toggleZeroMobileSummary';
-    panel.appendChild(button);
-  }
-  button.textContent=expanded ? `${label} 요약 보기` : `전체 ${label} 보기 (${total})`;
-  button.setAttribute('aria-expanded', expanded ? 'true' : 'false');
-}
-function toggleZeroMobileSummary(trigger){
-  const panel=trigger?.closest('.zero-rank-panel');
-  if(!panel) return;
-  panel.classList.toggle('zero-mobile-expanded');
-  const calc=document.querySelector('.zero-score-calc');
-  const current=excelText(calc?.querySelector('.zero-current-rank')?.textContent) || '입문';
-  const target=excelText(calc?.querySelector('.zero-target-rank')?.textContent) || current;
-  updateMobileZeroRankSummary(current,target);
-}
-function updateZeroScoreCalculator(){
-  const calc=document.querySelector('.zero-score-calc');
-  if(!calc) return;
-  let total=0;
-  let currentTotal=0;
-  calc.querySelectorAll('.zero-calc-row').forEach(row=>{
-    const type=row.dataset.rowType || 'penance';
-    const current=row.querySelector('.zero-calc-current')?.value;
-    const target=row.querySelector('.zero-calc-target')?.value;
-    let currentScore=0;
-    let targetScore=0;
-    let score=0;
-    if(type==='penance'){
-      const cur=zeroScoreNumber(current,0,20);
-      const tar=zeroScoreNumber(target,0,20);
-      const star=row.querySelector('.zero-star-toggle.active') ? 2 : 0;
-      const currentHonor=normalizeZeroHonorValue(row.querySelector('.zero-current-honor')?.value || '');
-      const targetHonor=normalizeZeroHonorValue(row.querySelector('.zero-target-honor')?.value || '');
-      const currentPenanceScore=zeroPenanceScore(cur);
-      const targetPenanceScore=zeroPenanceScore(tar);
-      const currentHonorScore=zeroHonorScore(currentHonor);
-      const targetHonorScore=zeroHonorScore(targetHonor);
-      currentScore=currentPenanceScore+currentHonorScore+star;
-      targetScore=targetPenanceScore+targetHonorScore;
-      score=Math.max(0,targetPenanceScore-currentPenanceScore)+Math.max(0,targetHonorScore-currentHonorScore);
-    }else if(type==='tower'){
-      currentScore=zeroTowerScore(current);
-      targetScore=zeroTowerScore(target);
-      score=Math.max(0, targetScore-currentScore);
-    }else if(type==='honorTower'){
-      currentScore=zeroHonorTowerScore(current);
-      targetScore=zeroHonorTowerScore(target);
-      score=Math.max(0, targetScore-currentScore);
-    }
-    currentTotal+=currentScore;
-    total+=score;
-    const out=row.querySelector('.zero-row-score');
-    if(out) out.textContent=String(score);
-  });
-  const targetScore=currentTotal+total;
-  const currentEl=calc.querySelector('.zero-current-score');
-  const totalEl=calc.querySelector('.zero-total-add');
-  const targetEl=calc.querySelector('.zero-target-score');
-  const currentRankEl=calc.querySelector('.zero-current-rank');
-  const targetRankEl=calc.querySelector('.zero-target-rank');
-  const currentRank=zeroRankName(currentTotal);
-  const targetRank=zeroRankName(targetScore);
-  if(currentEl) currentEl.textContent=String(currentTotal);
-  if(totalEl) totalEl.textContent=String(total);
-  if(targetEl) targetEl.textContent=String(targetScore);
-  if(currentRankEl) currentRankEl.textContent=currentRank;
-  if(targetRankEl) targetRankEl.textContent=targetRank;
-  updateZeroRankHighlights(currentRank,targetRank);
-}
-function collectZeroScoreState(){
-  const calc=document.querySelector('.zero-score-calc');
-  if(!calc) return null;
-  return {
-    rows:Array.from(calc.querySelectorAll('.zero-calc-row')).map(row=>({
-      type:row.dataset.rowType || 'penance',
-      current:row.querySelector('.zero-calc-current')?.value ?? '0',
-      target:row.querySelector('.zero-calc-target')?.value ?? '0',
-      star:!!row.querySelector('.zero-star-toggle.active'),
-      currentHonor:normalizeZeroHonorValue(row.querySelector('.zero-current-honor')?.value ?? ''),
-      targetHonor:normalizeZeroHonorValue(row.querySelector('.zero-target-honor')?.value ?? '')
-    }))
-  };
-}
-function applyZeroScoreState(zeroScore){
-  const calc=document.querySelector('.zero-score-calc');
-  if(!calc) return;
-  const rows=Array.isArray(zeroScore?.rows) ? zeroScore.rows : [];
-  calc.querySelectorAll('.zero-calc-row').forEach((row,idx)=>{
-    const saved=rows[idx] || {};
-    const current=row.querySelector('.zero-calc-current');
-    const target=row.querySelector('.zero-calc-target');
-    const currentHonor=row.querySelector('.zero-current-honor');
-    const targetHonor=row.querySelector('.zero-target-honor');
-    const starBtn=row.querySelector('.zero-star-toggle');
-    if(current) current.value=String(saved.current ?? '0');
-    if(target) target.value=String(saved.target ?? '0');
-    if(currentHonor) currentHonor.value=normalizeZeroHonorValue(saved.currentHonor ?? '').toUpperCase();
-    if(targetHonor) targetHonor.value=normalizeZeroHonorValue(saved.targetHonor ?? '').toUpperCase();
-    if(starBtn){
-      const active=!!saved.star;
-      starBtn.classList.toggle('active', active);
-      starBtn.classList.toggle('is-active', active);
-      starBtn.setAttribute('aria-pressed', active ? 'true' : 'false');
-      starBtn.textContent=active ? 'ON +2' : '+2';
-    }
-  });
-  updateZeroScoreCalculator();
-}
-function toggleZeroScoreStar(trigger){
-  if(!trigger) return;
-  const active=!trigger.classList.contains('active');
-  trigger.classList.toggle('active', active);
-  trigger.classList.toggle('is-active', active);
-  trigger.setAttribute('aria-pressed', active ? 'true' : 'false');
-  trigger.textContent=active ? 'ON +2' : '+2';
-  updateZeroScoreCalculator();
-  if(!isLoadingState && !suppressSave) saveState({silent:true});
-}
-function normalizeZeroHonorInputElement(el){
-  if(!el || !el.classList?.contains('zero-honor-input')) return;
-  const normalized=normalizeZeroHonorValue(el.value);
-  el.value=normalized ? normalized.toUpperCase() : '';
-}
-function bindZeroScoreCalculator(){
-  if(document.documentElement.dataset.zeroScoreCalcBound==='1') return;
-  document.documentElement.dataset.zeroScoreCalcBound='1';
-  const updateAndSave=(target)=>{
-    if(!(target && target.closest && target.closest('.zero-score-calc'))) return;
-    normalizeZeroHonorInputElement(target);
-    updateZeroScoreCalculator();
-    if(!isLoadingState && !suppressSave) saveState({silent:true});
-  };
-  document.addEventListener('input', e=>updateAndSave(e.target), true);
-  document.addEventListener('change', e=>updateAndSave(e.target), true);
-}
-function setZeroRankTab(trigger){
-  const card=trigger && trigger.closest ? trigger.closest('.zero-rank-card') : null;
-  if(!card) return;
-  const key=trigger.dataset.zeroRankTab || 'rank';
-  card.querySelectorAll('.zero-rank-tab').forEach(btn=>{
-    const active=btn.dataset.zeroRankTab===key;
-    btn.classList.toggle('active', active);
-    btn.classList.toggle('is-active', active);
-    btn.setAttribute('aria-selected', active ? 'true' : 'false');
-  });
-  card.querySelectorAll('.zero-rank-panel').forEach(panel=>{
-    panel.classList.toggle('active', panel.dataset.zeroRankPanel===key);
-  });
-}
-let appEventsBound=false;
-const ACTION_HANDLERS={
-  optimizeSP:()=>optimizeSP(),
-  clearAll:()=>requestClearAll(),
-  saveState:()=>saveState({silent:false}),
-  clearSavedState:()=>requestClearSavedState(),
-  exportStateBackup:()=>exportStateBackup(),
-  importStateBackup:()=>importStateBackup(),
-  toggleSpBankApply:()=>toggleSpBankApply(),
-  openDpsTable:()=>openDpsTable(),
-  openExcelCompare:()=>openExcelCompare(),
-  openMonthRune:()=>openMonthRune(),
-  zeroRankTab:(trigger)=>setZeroRankTab(trigger),
-  zeroScoreStar:(trigger)=>toggleZeroScoreStar(trigger),
-  toggleZeroMobileSummary:(trigger)=>toggleZeroMobileSummary(trigger),
-  decreaseFont:()=>changeFontScale(-DPS_CONFIG.ui.fontScaleStep),
-  increaseFont:()=>changeFontScale(DPS_CONFIG.ui.fontScaleStep),
-  resetFont:()=>resetFontScale(),
-  selectButton:(trigger)=>setSelectButton(trigger.closest('.seg-btns')?.dataset.target, trigger.dataset.value),
-  traitAdjust:(trigger)=>{
-    if(Date.now()<traitHoldSuppressClickUntil) return false;
-    return adjustTraitBy(+trigger.dataset.row,+trigger.dataset.delta,1);
-  },
-  traitMax:(trigger)=>adjMax(+trigger.dataset.row),
-  masterTier:(trigger)=>masterTier(trigger.dataset.tier||''),
-  resetTier:(trigger)=>resetTier(trigger.dataset.tier||'')
-};
-function bindActionEvents(){
-  document.addEventListener('click', e=>{
-    const trigger=e.target.closest('[data-action]');
-    if(!trigger) return;
-    const action=trigger.getAttribute('data-action');
-    const fn=ACTION_HANDLERS[action];
-    if(!fn) return;
-    e.preventDefault();
-    fn(trigger, e);
-  });
-}
-const REACTIVE_INPUT_EXCLUDED_IDS=new Set([
-  'excelCompareFile',
-  'excelCompareSheet',
-  'dpsTableMinDps',
-  'dpsTableMinDpsMain'
-]);
-const RUNE_CHOICE_SYNC_IDS=new Set(['runeChoiceType','runeChoiceValue']);
-function shouldHandleReactiveInput(target){
-  if(isLoadingState || suppressSave) return false;
-  if(!target || !target.id) return false;
-  if(REACTIVE_INPUT_EXCLUDED_IDS.has(target.id)) return false;
-  if(target.classList && target.classList.contains('tv-input')) return false;
-  return target.matches && target.matches('input, select, textarea');
-}
-function bindReactiveInputs(){
-  let raf=0;
-  const schedule=(target)=>{
-    if(!shouldHandleReactiveInput(target)) return;
-    if(target.matches('.money-input')) formatMoneyInput(target);
-    if(target.id==='xp') normalizeXpInput();
-    if(target.id==='round') normalizeRoundInput();
-    if(target.id==='diff') resetDifficultyDependentFields();
-    if(RUNE_CHOICE_SYNC_IDS.has(target.id)) syncRuneChoice();
-    if(ENCHANT_INPUT_IDS.includes(target.id)) syncEnchantInputs();
-    if(RUNE_OPTION_SELECT_IDS.includes(target.id)) syncExclusiveRuneOptions();
-    if(target.matches('select')) syncSelectButtons();
-    if(target.matches('.buff-choice-input')) syncBuffChoiceButtons();
-    cancelAnimationFrame(raf);
-    raf=requestAnimationFrame(()=>requestAppUpdate());
-  };
-  document.addEventListener('input', e=>schedule(e.target), true);
-  document.addEventListener('change', e=>schedule(e.target), true);
-}
-function bindButtonPressFeedback(){
-  const selector='button,.btn,.mini-btn,.trait-master-btn,.seg-btns button';
-  document.addEventListener('pointerdown', e=>{
-    const btn=e.target && e.target.closest ? e.target.closest(selector) : null;
-    if(!btn || btn.disabled) return;
-    btn.classList.add('is-pressed');
-    setTimeout(()=>btn.classList.remove('is-pressed'), 180);
-  }, true);
-}
-function bindAppEvents(){
-  if(appEventsBound) return;
-  appEventsBound=true;
-  bindFontScaleViewportGuard();
-  bindActionEvents();
-  bindTraitHoldEvents();
-  bindTraitInputEvents();
-  bindDpsTableEvents();
-  bindExcelCompareEvents();
-  bindMonthRuneEvents();
-  bindZeroScoreCalculator();
-  bindReactiveInputs();
-  bindButtonPressFeedback();
-}
-function initApp(){
-  loadFontScale();
-  bindAppEvents();
-  installDpsTableButton();
-  installExcelCompareButton();
-  installMonthRuneButton();
-  renderAppVersion();
-  syncEnchantCodeFromInputs(true);
-  syncSelectButtons();
-  syncBuffChoiceButtons();
-  syncExclusiveRuneOptions();
-  updateZeroScoreCalculator();
-  formatAllMoneyInputs();
-  loadState();
-}
-function markAppReady(){
-  try{document.documentElement.classList.remove('dps-booting');}catch(e){}
-  try{
-    const boot=document.getElementById('dpsBootScreen');
-    if(boot) boot.setAttribute('aria-hidden','true');
-  }catch(e){}
-}
-try{
-  initApp();
-}finally{
-  markAppReady();
-}
