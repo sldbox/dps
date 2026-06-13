@@ -11,7 +11,7 @@
    7. 좌측: 룬효과/버프          (유닛강화, 고정 버프, 생산 유닛)
    8. 좌측: 룬정보               (승천, 룬 옵션, 월간룬, 쥬얼)
    9. 좌측: 더제로 승단          (승단 정보, 점수, 혜택, 계산기)
-  10. 중앙: 특성보드             (특성 투자 및 최적화 영역)
+  10. 중앙: 특성보드             (특성 투자, 최적화 안내, TOP5)
   11. 우측: 스탯/버스/스킬보드    (DPS, 표기/실질 스탯, 버스컷, 성소스킬)
   12. 앱 스크립트 로드           (data.js → app.js 순서)
   ==========================================================================
@@ -20,14 +20,14 @@
 <head>
 <!-- ── 1. 앱 버전 / 캐시 설정 ── -->
 <script>
-window.DPS_APP_VERSION = "V 2.1";
-window.DPS_BUILD_VERSION = "2606131201";
+window.DPS_APP_VERSION = "V2.2";
+window.DPS_BUILD_VERSION = "2606140200";
 window.DPS_ASSET_VERSIONS = {
-  "app.js": "2606131201",
-  "style.css": "2606131201",
-  "data.js": "2606131201",
-  "image/logo/logo.png": "2606131201",
-  "image/logo/icon.png": "2606131201"
+  "app.js": "2606140200",
+  "style.css": "2606140200",
+  "data.js": "2606140200",
+  "image/logo/logo.png": "2606140200",
+  "image/logo/icon.png": "2606140200"
 };
 window.dpsAssetVersion = function(key){
   var versions = window.DPS_ASSET_VERSIONS || {};
@@ -224,53 +224,27 @@ setTimeout(function(){
 <!-- ── 6. 좌측: 기본정보 ── -->
 <div class="sg xp-sp-card">
 <div class="sg-title">기본정보</div>
-<div class="xp-sp-split">
-<div class="xp-sp-panel resource-panel">
-<div class="resource-six-grid">
-<div class="resource-box manual-resource">
-<label>총 SP</label>
-<input class="money-input" id="sp" inputmode="numeric" type="text" value="0"/>
-</div>
-<div class="resource-box manual-resource">
-<label>보유 XP</label>
-<input class="money-input" id="xp" inputmode="numeric" type="text" value="1"/>
-</div>
-<div class="resource-box manual-resource">
-<label>보유 BXP</label>
-<input class="money-input" id="bxp" inputmode="numeric" type="text" value="0"/>
-</div>
-<div class="resource-box readonly-resource auto-resource">
-<label>EP</label>
-<b id="autoEpView" title="XP/BXP 기준 자동 계산">0</b>
-</div>
-<div class="resource-box manual-resource">
-<label>RP</label>
-<input class="money-input" id="rp" inputmode="numeric" type="text" value="0"/>
-</div>
-<div class="resource-box manual-resource">
-<label>심연의 혼</label>
-<input class="money-input" id="soul" inputmode="numeric" type="text" value="0"/>
-</div>
-</div>
-<div class="resource-usage-stack">
-<div class="resource-usage-row">
-<span class="usage-name">EP</span>
-<span class="usage-values" id="epRem">—</span>
-</div>
-<div class="resource-usage-row">
-<span class="usage-name">RP</span>
-<span class="usage-values" id="rpRem">—</span>
-</div>
-<div class="resource-usage-row">
-<span class="usage-name">심연의 혼</span>
-<span class="usage-values" id="soulRem">—</span>
-</div>
-</div>
+<div class="xp-sp-split basic-info-grid">
+<div class="xp-sp-panel basic-info-panel basic-info-left" data-basic-info-side="left">
+<div class="basic-info-row manual-resource" data-basic-row="total-sp"><label for="sp">총 SP</label><input class="money-input" id="sp" inputmode="numeric" type="text" value="0"/></div>
+<div class="basic-info-row readonly-resource" data-basic-row="used-sp-attack"><label>사용한 SP (공격)</label><b id="spAttackView" title="공격 특성 투자에 사용한 SP">0</b></div>
+<div class="basic-info-row readonly-resource" data-basic-row="used-sp-utility"><label>사용한 SP (유틸)</label><b id="spUtilityView" title="유틸 특성 투자에 사용한 SP">0</b></div>
+<div class="basic-info-row readonly-resource" data-basic-row="remain-sp"><label>남은 SP</label><b id="spRemainBasicView" title="총 SP와 SP 은행 적용값 기준 잔여 SP">0</b></div>
+<div class="basic-info-row manual-resource" data-basic-row="owned-xp"><label for="xp">보유 XP</label><input class="money-input" id="xp" inputmode="numeric" type="text" value="1"/></div>
+<div class="basic-info-row manual-resource" data-basic-row="owned-bxp"><label for="bxp">보유 BXP</label><input class="money-input" id="bxp" inputmode="numeric" type="text" value="0"/></div>
+<div class="basic-info-row readonly-resource" data-basic-row="owned-ep"><label>보유 EP</label><b id="autoEpView" title="XP/BXP 기준 자동 계산">0</b></div>
+<div class="basic-info-row readonly-resource" data-basic-row="used-ep"><label>사용한 EP</label><b id="epUsedBasicView" title="EP 특성 투자에 사용한 EP">0</b></div>
+<div class="basic-info-row readonly-resource" data-basic-row="remain-ep"><label>남은 EP</label><b id="epRemainBasicView" title="보유 EP 기준 잔여 EP">0</b></div>
+<div class="basic-info-row manual-resource" data-basic-row="owned-rp"><label for="rp">보유 RP</label><input class="money-input" id="rp" inputmode="numeric" type="text" value="0"/></div>
+<div class="basic-info-row readonly-resource" data-basic-row="used-rp"><label>사용한 RP</label><b id="rpUsedBasicView" title="RP 특성 투자에 사용한 RP">0</b></div>
+<div class="basic-info-row readonly-resource" data-basic-row="remain-rp"><label>남은 RP</label><b id="rpRemainBasicView" title="보유 RP 기준 잔여 RP">0</b></div>
+<div class="basic-info-row manual-resource" data-basic-row="owned-soul"><label for="soul">본인 심연의혼</label><input class="money-input" id="soul" inputmode="numeric" type="text" value="0"/></div>
+<div class="basic-info-row readonly-resource" data-basic-row="used-soul"><label>사용한 심연의혼</label><b id="soulUsedBasicView" title="심연 특성 투자에 사용한 심연의혼">0</b></div>
+<div class="basic-info-row readonly-resource" data-basic-row="remain-soul"><label>남은 심연의혼</label><b id="soulRemainBasicView" title="본인 심연의혼 기준 잔여 심연의혼">0</b></div>
 <input id="ep" type="hidden" value="0"/>
 </div>
-<div class="xp-sp-panel difficulty-panel">
-<div class="ir"><label>난이도</label>
-<select id="diff">
+<div class="xp-sp-panel basic-info-panel basic-info-right" data-basic-info-side="right">
+<div class="basic-info-row" data-basic-row="difficulty"><label for="diff">난이도</label><select id="diff">
 <option selected="">Practice</option><option>Very Easy</option><option>Easy</option>
 <option>Normal</option><option>Hard</option><option>Very Hard</option>
 <option>Hell</option><option>Inferno</option><option>Lunatic</option>
@@ -278,18 +252,22 @@ setTimeout(function(){
 <option>Impossible</option><option>The Final</option>
 <option>Hall Of Fame</option><option>Abyss road</option><option>Deep Abyss</option><option>도전의 탑</option>
 </select></div>
-<div class="ir"><label>고행 단계</label><select id="penance"><option selected="" value="0">없음</option><option value="1">1 고행</option><option value="2">2 고행</option><option value="3">3 고행</option><option value="4">4 고행</option><option value="5">5 고행</option><option value="6">6 고행</option><option value="7">7 고행</option><option value="8">8 고행</option><option value="9">9 고행</option><option value="10">10 고행</option><option value="11">11 고행</option><option value="12">12 고행</option><option value="13">13 고행</option><option value="14">14 고행</option><option value="15">15 고행</option><option value="16">16 고행</option><option value="17">17 고행</option><option value="18">18 고행</option><option value="19">19 고행</option><option value="20">20 고행</option></select></div>
-<div class="ir"><label>목표 라운드</label><input id="round" min="1" type="number" value="1"/></div>
-<div class="ir title-td-row"><label>승단 총데미지</label><select id="titleTdBonus"><option selected="" value="0">선택안함</option><option value="2">전문 · +2%</option><option value="4">장인 · +4%</option><option value="6">명장 · +6%</option><option value="8">도인 · +8%</option><option value="10">지존 · +10%</option><option value="12">패왕 · +12%</option><option value="13">패왕+ · +13%</option><option value="14">제왕 · +14%</option><option value="15">제왕+ · +15%</option><option value="16">신황 · +16%</option><option value="17">신황+ · +17%</option></select></div>
-<div class="ir dps-min-main-row"><label>도전할 최소 DPS</label><input id="dpsTableMinDpsMain" inputmode="decimal" placeholder="예시) 3.0" type="text"/></div>
+<div class="basic-info-row" data-basic-row="penance"><label for="penance">고행 단계</label><select id="penance"><option selected="" value="0">없음</option><option value="1">1 고행</option><option value="2">2 고행</option><option value="3">3 고행</option><option value="4">4 고행</option><option value="5">5 고행</option><option value="6">6 고행</option><option value="7">7 고행</option><option value="8">8 고행</option><option value="9">9 고행</option><option value="10">10 고행</option><option value="11">11 고행</option><option value="12">12 고행</option><option value="13">13 고행</option><option value="14">14 고행</option><option value="15">15 고행</option><option value="16">16 고행</option><option value="17">17 고행</option><option value="18">18 고행</option><option value="19">19 고행</option><option value="20">20 고행</option></select></div>
+<div class="basic-info-row" data-basic-row="round"><label for="round">목표 라운드</label><input id="round" min="1" type="number" value="1"/></div>
+<div class="basic-info-row title-td-row" data-basic-row="title-total-damage"><label for="titleTdBonus">타이틀 총 데미지</label><select id="titleTdBonus"><option selected="" value="0">선택안함</option><option value="2">전문 · +2%</option><option value="4">장인 · +4%</option><option value="6">명장 · +6%</option><option value="8">도인 · +8%</option><option value="10">지존 · +10%</option><option value="12">패왕 · +12%</option><option value="13">패왕+ · +13%</option><option value="14">제왕 · +14%</option><option value="15">제왕+ · +15%</option><option value="16">신황 · +16%</option><option value="17">신황+ · +17%</option></select></div>
+<div class="basic-info-row dps-min-main-row" data-basic-row="min-dps"><label for="dpsTableMinDpsMain">도전할 최소 DPS</label><input id="dpsTableMinDpsMain" inputmode="decimal" placeholder="예시) 3.0" type="text"/></div>
 <input id="enemyArmor" type="hidden" value="0"/>
 <input id="dt" type="hidden" value="ON"/>
-<div class="buff-subcard resist-buff-card">
-<div class="ir"><label>침식 스택</label><input id="erosionStack" min="0" type="number" value="0"/></div>
-<div class="ir"><label>침식 내성</label><input id="jewelErosionRes" max="100" min="0" type="number" value="0"/></div>
-<div class="ir"><label>파워 블레스</label><input id="pbless" type="number" value="0"/></div>
-<div class="ir"><label>출발지원 인원수</label><input id="team" max="4" min="1" type="number" value="1"/></div>
-</div>
+<div class="basic-info-row" data-basic-row="erosion-stack"><label for="erosionStack">침식 스텍</label><input id="erosionStack" min="0" type="number" value="0"/></div>
+<div class="basic-info-row" data-basic-row="erosion-resist"><label for="jewelErosionRes">침식 내성</label><input id="jewelErosionRes" max="100" min="0" type="number" value="0"/></div>
+<div class="basic-info-row" data-basic-row="power-bless"><label for="pbless">파워 블레스</label><select id="pbless" disabled><option selected="" value="0">없음</option></select></div>
+<div class="basic-info-row" data-basic-row="team"><label for="team">출발지원 인원수</label><select id="team"><option selected="" value="1">1</option><option value="2">2</option><option value="3">3</option></select></div>
+<div class="basic-info-row sp-bank-basic-row" data-basic-row="sp-bank"><label for="spBankApplyButton">SP 은행</label><input id="spBankApply" type="hidden" value="미반영"/><button id="spBankApplyButton" class="sp-bank-basic-button" data-action="toggleSpBankApply" type="button" title="SP 은행 보너스 SP를 총 SP에 반영하지 않습니다">미반영</button></div>
+<div class="basic-info-row basic-extra-row is-empty" data-basic-extra-slot="1" data-basic-row="extra-1"><label id="basicExtraLabel1" for="basicExtraSlot1">빈칸1</label><input id="basicExtraSlot1" type="text" value="" disabled aria-label="기본정보 빈칸1"/></div>
+<div class="basic-info-row basic-extra-row is-empty" data-basic-extra-slot="2" data-basic-row="extra-2"><label id="basicExtraLabel2" for="basicExtraSlot2">빈칸2</label><input id="basicExtraSlot2" type="text" value="" disabled aria-label="기본정보 빈칸2"/></div>
+<div class="basic-info-row basic-extra-row is-empty" data-basic-extra-slot="3" data-basic-row="extra-3"><label id="basicExtraLabel3" for="basicExtraSlot3">빈칸3</label><input id="basicExtraSlot3" type="text" value="" disabled aria-label="기본정보 빈칸3"/></div>
+<div class="basic-info-row basic-extra-row is-empty" data-basic-extra-slot="4" data-basic-row="extra-4"><label id="basicExtraLabel4" for="basicExtraSlot4">빈칸4</label><input id="basicExtraSlot4" type="text" value="" disabled aria-label="기본정보 빈칸4"/></div>
+<div class="basic-info-row basic-extra-row is-empty" data-basic-extra-slot="5" data-basic-row="extra-5"><label id="basicExtraLabel5" for="basicExtraSlot5">빈칸5</label><input id="basicExtraSlot5" type="text" value="" disabled aria-label="기본정보 빈칸5"/></div>
 </div>
 </div>
  </div>
@@ -330,7 +308,7 @@ setTimeout(function(){
 <div class="seg-btns" data-target="enhanceMaster">
 <button data-action="selectButton" data-value="OFF" type="button">없음</button>
 <button data-action="selectButton" data-value="ON" type="button">전체활성화</button>
-<button data-action="selectButton" data-value="ON+" type="button">선택강화</button>
+<button data-action="selectButton" data-value="ON+" type="button">선택 강화</button>
 </div>
 <select class="hidden-field" id="enhanceMaster"><option selected="" value="OFF">OFF</option><option value="ON">ON</option><option value="ON+">ON+</option></select>
 </div>
@@ -398,32 +376,32 @@ setTimeout(function(){
 <div></div><div>기본</div><div>개조</div>
 </div>
 <div class="rune-stat-row">
-<label>AD</label>
+<label>공격력</label>
 <input id="rAD" type="number" value="0"/>
 <input id="rModAD" type="number" value="0"/>
 </div>
 <div class="rune-stat-row">
 <select id="runeChoiceType">
-<option selected="" value="ap">AP</option>
-<option value="ua">UA</option>
-<option value="td">TD</option>
-<option value="harmony">TD&amp;UA</option>
+<option selected="" value="ap">마법공격력</option>
+<option value="ua">유닛 가속</option>
+<option value="td">총 데미지</option>
+<option value="harmony">총 데미지 &amp; 유닛 가속</option>
 </select>
 <input id="runeChoiceValue" type="number" value="0"/>
 <div class="rune-empty"></div>
 </div>
 <div class="rune-stat-row">
-<label>AS</label>
+<label>공격속도</label>
 <input id="rAS" type="number" value="0"/>
 <input id="rModAS" type="number" value="0"/>
 </div>
 <div class="rune-stat-row">
-<label>CD</label>
+<label>크리티컬 데미지</label>
 <input id="rCD" type="number" value="0"/>
 <input id="rModCD" type="number" value="0"/>
 </div>
 <div class="rune-stat-row">
-<label>CRI</label>
+<label>크리티컬 확률</label>
 <input id="rCRI" type="number" value="0"/>
 <input id="rModCRI" type="number" value="0"/>
 </div>
@@ -453,9 +431,9 @@ setTimeout(function(){
 <div class="additional-row"><label>공격속도</label><input id="addAS" type="number" value="0"/></div>
 <div class="additional-row"><label>크리티컬 데미지</label><input id="addCD" type="number" value="0"/></div>
 <div class="additional-row"><label>크리티컬 확률</label><input id="addCRI" type="number" value="0"/></div>
-<div class="additional-row"><label>마법 공격력</label><input id="addAP" type="number" value="0"/></div>
-<div class="additional-row"><label>총데미지</label><input id="addTD" type="number" value="0"/></div>
-<div class="additional-row"><label>가속</label><input id="addUA" type="number" value="0"/></div>
+<div class="additional-row"><label>마법공격력</label><input id="addAP" type="number" value="0"/></div>
+<div class="additional-row"><label>총 데미지</label><input id="addTD" type="number" value="0"/></div>
+<div class="additional-row"><label>유닛 가속</label><input id="addUA" type="number" value="0"/></div>
 </div>
 <input id="addDR" type="hidden" value="0"/>
 <input id="addSR" type="hidden" value="0"/>
@@ -731,23 +709,46 @@ setTimeout(function(){
 <!-- ── 10. 중앙: 특성보드 ── -->
 <div class="col-right">
 <div class="trait-board-panel">
-<div class="tp-head">
-<h3>특성보드</h3>
-<div class="tp-actions"></div>
+<div class="trait-optimizer-panel">
+<div class="optimizer-head"><span class="optimizer-head-title">특성보드</span><button class="optimizer-guide-toggle" data-action="toggleOptimizerGuide" type="button" aria-expanded="false" aria-controls="optimizerGuide">최적화 안내</button></div>
+<div class="optimizer-guide" id="optimizerGuide" hidden>
+<div><b>특성 최적화</b><span>선택한 특성 최적화 범위까지 DPS 효율 기준으로 자동 투자합니다.</span></div>
+<div><b>유틸 최적화</b><span>선택한 유틸 최적화 범위까지 유틸 특성을 자동 투자합니다.</span></div>
+<div><b>특성 초기화</b><span>일반 특성을 초기화하며, 루키~더원2 유틸 특성은 유지합니다.</span></div>
+<div><b>유틸 초기화</b><span>선택한 유틸 최적화 범위의 유틸 특성만 초기화합니다.</span></div>
+<div><b>특성 투자 제한</b><span>특성 최적화와 특성 효율 TOP 5에 공통 적용됩니다. 0 입력 시 제한없음으로 표시됩니다.</span></div>
 </div>
-<div class="sp-box">
-<div class="sp-summary-stack">
-<div class="sp-summary-line sp-attack-line"><span class="lbl">공격 특성</span><span class="val" id="spAttackView">—</span></div>
-<div class="sp-summary-line sp-utility-line"><span class="lbl">유틸 특성</span><span class="val" id="spUtilityView">—</span></div>
-</div>
-<div class="sp-detail" id="spDetail">—</div>
-<div class="trait-dashboard-tools">
-<input class="hidden-field" id="spBankApply" type="checkbox"/>
-<div class="trait-tool-buttons">
+<div class="trait-dashboard-tools trait-board-control-grid">
 <button class="btn pri" data-action="optimizeSP" type="button">특성 최적화</button>
+<button class="btn pri util" data-action="optimizeUtility" type="button">유틸 최적화</button>
+<select id="optTier" aria-label="특성 최적화 범위"><option>루키</option><option>비기너</option><option>아마추어</option><option>프로</option><option>엑스퍼트</option><option>마스터</option><option>디바인</option><option>더원1</option><option>더원2</option><option selected="">무한∞</option><option>EP특성</option><option>RP특성</option><option>심연특성</option></select>
+<select id="utilOptTier" aria-label="유틸 최적화 범위"><option>루키</option><option>비기너</option><option>아마추어</option><option>프로</option><option>엑스퍼트</option><option>마스터</option><option>디바인</option><option>더원1</option><option selected="">더원2</option></select>
 <button class="btn danger" data-action="clearAll" type="button">특성 초기화</button>
+<button class="btn danger util" data-action="clearUtility" type="button">유틸 초기화</button>
 </div>
-<div class="ir trait-opt-tier-row"><label>최적화 범위</label><select id="optTier"><option>루키</option><option>비기너</option><option>아마추어</option><option>프로</option><option>엑스퍼트</option><option>마스터</option><option>디바인</option><option>더원1</option><option>더원2</option><option selected="">무한∞</option><option>EP특성</option><option>RP특성</option><option>심연특성</option></select></div>
+</div>
+<div class="trait-limit-panel trait-subgroup trait-standalone-panel">
+<div class="trait-limit-title trait-subgroup-title">특성 투자 제한</div>
+<div class="trait-limit-grid trait-subgroup-body">
+<label><span>공격력</span><input id="traitLimitAD" type="text" inputmode="decimal" value="0" aria-label="공격력 제한"></label>
+<label><span>공격속도</span><input id="traitLimitAS" type="text" inputmode="decimal" value="0" aria-label="공격속도 제한"></label>
+<label><span>크리티컬 확률</span><input id="traitLimitCRI" type="text" inputmode="decimal" value="0" aria-label="크리티컬 확률 제한"></label>
+<label><span>크리티컬 데미지</span><input id="traitLimitCD" type="text" inputmode="decimal" value="0" aria-label="크리티컬 데미지 제한"></label>
+<label><span>다중 크리</span><input id="traitLimitMC" type="text" inputmode="decimal" value="0" aria-label="다중 크리 제한"></label>
+<label><span>방어력 감소</span><input id="traitLimitDR" type="text" inputmode="decimal" value="0" aria-label="방어력 감소 제한"></label>
+<label><span>총 데미지</span><input id="traitLimitTD" type="text" inputmode="decimal" value="0" aria-label="총 데미지 제한"></label>
+<label><span>유닛 가속</span><input id="traitLimitUA" type="text" inputmode="decimal" value="0" aria-label="유닛 가속 제한"></label>
+<label><span>멀티타겟</span><select id="traitLimitMultiTarget" aria-label="멀티타겟 제한"><option selected="">ON</option><option>OFF</option></select></label>
+<label><span>무한특성</span><select id="traitLimitInfinite" aria-label="무한특성 제한"><option selected="">ON</option><option>OFF</option></select></label>
+</div>
+</div>
+<div class="trait-efficiency-top5 trait-subgroup trait-standalone-panel" aria-live="polite">
+<div class="trait-efficiency-title trait-subgroup-title">특성 효율 TOP 5</div>
+<div class="trait-efficiency-inner trait-subgroup-body">
+<div class="trait-efficiency-grid trait-efficiency-head"><span>특성명</span><span>투자수</span><span>DPS 증가</span><span>필요 SP</span><span>특성 적용</span></div>
+<div id="traitEfficiencyTop5Body" class="trait-efficiency-body">
+<div class="trait-efficiency-empty">추천 항목을 계산 중입니다.</div>
+</div>
 </div>
 </div>
 <div class="tp-body" id="traitBody"></div>
@@ -760,6 +761,11 @@ setTimeout(function(){
 <div class="dps-card stat-dps-summary">
 <div class="dps-lbl">DPS</div>
 <div class="dps-num" id="dpsVal">—</div>
+<div class="dps-context-summary" id="dpsContextSummary" aria-label="현재 DPS 기준">
+<span data-label="난이도" id="dpsContextDiff">—</span>
+<span data-label="고행" id="dpsContextPenance">—</span>
+<span data-label="라운드" id="dpsContextRound">—</span>
+</div>
 </div>
 <div class="stat-grid stat-compare-grid">
 <div class="stat-row stat-head-row"><div class="sc-name" aria-label="스탯명"></div><div class="sc-val">표기 스탯</div><div class="sc-val">실질 스탯</div></div>
