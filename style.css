@@ -1555,10 +1555,13 @@ body.is-tablet .excel-compare-table td{height:27px;padding:3px 6px}
 body.is-mobile .hdr{display:flex !important;flex-direction:row !important;flex-wrap:nowrap !important;align-items:center !important;justify-content:space-between !important;min-height:46px !important;padding:6px 10px !important;gap:8px !important}
 body.is-mobile .hdr-brand{width:auto !important;min-width:0 !important;flex:1 1 auto !important;display:flex !important;align-items:center !important;justify-content:flex-start !important;gap:8px !important}
 body.is-mobile .hdr-logo{flex:0 0 auto !important;width:34px !important;height:30px !important}
-body.is-mobile .hdr-title-wrap{min-width:0 !important;flex:1 1 auto !important;display:flex !important;flex-direction:row !important;align-items:center !important;justify-content:flex-start !important;max-width:none !important}
+body.is-mobile .hdr-title-wrap{min-width:0 !important;flex:1 1 auto !important;display:flex !important;flex-direction:column !important;align-items:flex-start !important;justify-content:center !important;gap:2px !important;max-width:none !important}
 body.is-mobile .hdr-title-line{justify-content:flex-start !important;gap:5px !important;width:100% !important;min-width:0 !important}
-body.is-mobile .hdr h1{text-align:left !important;font-size:calc(13px * var(--app-font-scale)) !important;white-space:nowrap !important;overflow:hidden !important;text-overflow:ellipsis !important}
-body.is-mobile .hdr-creator-line,
+body.is-mobile .hdr h1{text-align:left !important;font-size:calc(12.5px * var(--app-font-scale)) !important;white-space:nowrap !important;overflow:hidden !important;text-overflow:ellipsis !important}
+body.is-mobile .hdr-creator-line{display:flex !important;align-items:center !important;gap:4px !important;max-width:100% !important;overflow:hidden !important;white-space:nowrap !important;font-size:calc(8.5px * var(--app-font-scale)) !important;line-height:1 !important}
+body.is-mobile .hdr-creator-line span{min-width:0 !important;overflow:hidden !important;text-overflow:ellipsis !important;white-space:nowrap !important}
+body.is-mobile .hdr-creator-line span:first-child{max-width:58px !important}
+body.is-mobile .hdr-creator-line span:last-child{max-width:86px !important}
 body.is-mobile .hdr-meta{display:none !important}
 body.is-mobile .excel-compare-modal{width:calc(100vw - 10px);max-height:calc(100vh - 10px);margin:5px auto}
 body.is-mobile .excel-compare-head{grid-template-columns:minmax(0,1fr) 32px;gap:7px;padding:8px}
