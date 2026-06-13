@@ -1,15 +1,33 @@
 <!DOCTYPE html>
+<!--
+  ==========================================================================
+  [ DPS 계산기 화면 구조 (index.html) 목차 ]
+   1. 앱 버전 / 캐시 설정        (빌드 번호, 파일 버전, 원격 이미지 경로)
+   2. 기본 메타 / 스타일 로드     (SEO, 아이콘, style.css 연결)
+   3. 초기 화면 모드 판정         (PC/태블릿/모바일 class 선적용)
+   4. 글로벌 헤더                (로고, 제목, 글씨 크기, 상단 버튼 자리)
+   5. 좌측: 편의기능             (저장/복원, DPS표, 비교하기, 이달룬)
+   6. 좌측: 기본정보             (SP/EP/RP, 난이도, 유닛, 인첸트)
+   7. 좌측: 룬효과/버프          (유닛강화, 고정 버프, 생산 유닛)
+   8. 좌측: 룬정보               (승천, 룬 옵션, 월간룬, 쥬얼)
+   9. 좌측: 더제로 승단          (승단 정보, 점수, 혜택, 계산기)
+  10. 중앙: 특성보드             (특성 투자 및 최적화 영역)
+  11. 우측: 스탯/버스/스킬보드    (DPS, 표기/실질 스탯, 버스컷, 성소스킬)
+  12. 앱 스크립트 로드           (data.js → app.js 순서)
+  ==========================================================================
+-->
 <html lang="ko" class="dps-booting">
 <head>
+<!-- ── 1. 앱 버전 / 캐시 설정 ── -->
 <script>
 window.DPS_APP_VERSION = "V 2.1";
-window.DPS_BUILD_VERSION = "2606130900";
+window.DPS_BUILD_VERSION = "2606131000";
 window.DPS_ASSET_VERSIONS = {
-  "app.js": "2606130900",
-  "style.css": "2606130900",
-  "data.js": "2606130900",
-  "image/logo/logo.png": "2606130900",
-  "image/logo/icon.png": "2606130900"
+  "app.js": "2606131000",
+  "style.css": "2606131000",
+  "data.js": "2606131000",
+  "image/logo/logo.png": "2606131000",
+  "image/logo/icon.png": "2606131000"
 };
 window.dpsAssetVersion = function(key){
   var versions = window.DPS_ASSET_VERSIONS || {};
@@ -48,7 +66,9 @@ window.dpsCacheSignature = function(){
   }).join('|');
 };
 </script>
-<meta charset="utf-8"/>
+
+<!-- ── 2. 기본 메타 / 스타일 로드 ── -->
+
 <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/>
 <meta content="no-cache, no-store, must-revalidate" http-equiv="Cache-Control"/>
 <meta content="no-cache" http-equiv="Pragma"/>
@@ -113,6 +133,7 @@ setTimeout(function(){
 </script>
 </head>
 <body>
+<!-- ── 3. 초기 화면 모드 판정 ── -->
 <script>
 (function(){
   var w=window.innerWidth||document.documentElement.clientWidth||0;
@@ -127,6 +148,7 @@ setTimeout(function(){
   document.documentElement.className=(document.documentElement.className+' '+mode+dir+device+extra).trim();
 })();
 </script>
+<!-- ── 4. 로딩 화면 / 글로벌 헤더 ── -->
 <div id="dpsBootScreen" aria-live="polite"><div class="boot-card"><div class="boot-title">DPS 계산기 적용 중</div><div class="boot-desc">최신 빌드와 스타일을 불러오는 중입니다.</div></div></div>
 <div class="wrap">
 <div class="hdr app-header">
@@ -153,6 +175,7 @@ setTimeout(function(){
 </div>
 <div class="col-work">
 <div class="col-left">
+<!-- ── 5. 좌측: 편의기능 ── -->
 <div class="sg priority">
 <div class="sg-title trait-work-head"><span>편의기능</span><span aria-live="polite" class="storage-status idle" id="storageStatusView">저장 대기</span></div>
 <div class="save-row convenience-row convenience-tools-row">
@@ -169,6 +192,7 @@ setTimeout(function(){
 <input accept=".txt,.json,application/json,text/plain" class="hidden-field" id="backupFileInput" type="file"/>
 </div>
 </div>
+<!-- ── 6. 좌측: 기본정보 ── -->
 <div class="sg xp-sp-card">
 <div class="sg-title">기본정보</div>
 <div class="xp-sp-split">
@@ -240,8 +264,8 @@ setTimeout(function(){
 </div>
 </div>
  </div>
+<!-- ── 7. 좌측: 룬효과/버프 ── -->
 <div class="sg unit-enhance-card spec-unit-enhance">
-<input id="unitEnhanceMode" type="hidden" value="OFF"/>
 <div class="sg-title">룬효과/버프</div>
 <div class="unit-enhance-main-row">
 <div class="unit-enhance-left">
@@ -320,8 +344,6 @@ setTimeout(function(){
 <div class="enhance-summary-card"><span>강화횟수</span><b id="enhanceCountView">—</b></div>
 <div class="enhance-summary-card"><span>강화 기대값</span><b id="enhanceValueView">—</b></div>
 </div>
-<input id="enhanceBonus" type="hidden" value="0"/>
-<input id="enhanceExpected" type="hidden" value="0"/>
 <input id="unitGrade" type="hidden" value=""/>
 <input id="unitLevel" type="hidden" value="0"/>
 <input id="currentUnit" type="hidden" value=""/>
@@ -337,6 +359,7 @@ setTimeout(function(){
 </div>
 </div>
 </div>
+<!-- ── 8. 좌측: 룬정보 ── -->
 <div class="sg rune-spec clean-rune-card">
 <div class="sg-title">룬정보</div>
 <div class="rune-panel tidy-rune-panel">
@@ -446,10 +469,8 @@ setTimeout(function(){
 <input id="rHarmony" type="hidden" value="0"/>
 <input id="sysAD" type="hidden" value="0"/>
 </div>
-<input id="pCri" type="hidden" value="0"/>
-<input id="sCri" type="hidden" value="0"/>
-<input id="coupon" type="hidden" value="0"/>
 
+<!-- ── 9. 좌측: 더제로 승단 ── -->
 <div class="data-card zero-rank-card">
   <h3 class="zero-rank-title">더제로 승단 정보</h3>
   <div class="zero-rank-tabs" role="tablist" aria-label="더제로 승단 정보 탭">
@@ -678,6 +699,7 @@ setTimeout(function(){
 </div>
 </div>
 
+<!-- ── 10. 중앙: 특성보드 ── -->
 <div class="col-right">
 <div class="trait-board-panel">
 <div class="tp-head">
@@ -702,6 +724,7 @@ setTimeout(function(){
 <div class="tp-body" id="traitBody"></div>
 </div>
 </div>
+<!-- ── 11. 우측: 스탯/버스/스킬보드 ── -->
 <div class="col-mid">
 <div class="data-card stat-dps-card">
 <div class="section-title stat-dps-title">스탯보드</div>
@@ -760,6 +783,7 @@ setTimeout(function(){
 </div></div>
 </div>
 <div aria-live="polite" class="toast-root" id="toastRoot"></div>
+<!-- ── 12. 앱 스크립트 로드 ── -->
 <script>
 ['data','app'].forEach(function(name){
   var fileName = name + '.js';

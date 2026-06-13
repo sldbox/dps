@@ -1,7 +1,24 @@
-/* 1. Foundation: tokens, shell, and desktop layout */
+/* ==========================================================================
+   [ DPS 계산기 스타일 (style.css) 목차 ]
+    1. 변수 및 기본 설정          (:root, reset, body, wrap 기본값)
+    2. 기본 레이아웃 / 패널        (헤더, 좌/중/우 패널, 입력 행)
+    3. 계산 UI 컴포넌트           (자원, 룬, 버프, 특성, 스탯보드)
+    4. 쥬얼 / 도감형 카드         (이달룬/쥬얼 카드 표시)
+    5. 스탯 비교 / 특성 컨트롤     (표기/실질 스탯, 투자 버튼)
+    6. 공통 시각 시스템           (버튼, 카드, 배지, 상태색)
+    7. 카드 구조 / 헤더 정렬       (공통 카드, 섹션 타이틀, 스크롤)
+    8. 반응형 레이아웃            (PC 세로, 태블릿, 모바일)
+    9. 최종 컴포넌트 보정          (현재 테마에서 우선 적용되는 보정)
+   10. DPS표 / 모달 스타일        (DPS표, 비교하기, 팝업)
+   11. 특성보드 / 자원 세부        (특성 그룹, SP/EP/RP, 액션 버튼)
+   12. 승단 / 더제로 보드          (승단표, 혜택, 점수 계산, 모바일 승단)
+   ========================================================================== */
+
+/* ── 1. 변수 및 기본 설정 ── */
 :root{--app-font-scale:1;--font-main:"Pretendard","Malgun Gothic","Apple SD Gothic Neo",sans-serif;--bg:#f5f7fb;--bg2:#ffffff;--bg4:#eef2f7;--bd:#d8dee9;--bd2:#b8c2d2;--tx:#172033;--tx3:#69758a;--acc:#3157d5;--panel-shadow:0 1px 6px rgba(15,23,42,.06);--ui-sub:#5d6b80;--ui-soft:#f8fbff;--ui-line2:#c5d3e6;--ui-card:#ffffff;--ui-card2:#d9ecff;--ui-title:#17336f;--state-warn-bg:#fffbeb;--state-warn-line:#fde68a;--state-warn-text:#b45309;--state-danger-bg:#fff1f2;--state-danger-line:#fecdd3;--state-danger-text:#be123c;--ui-line-soft:#eaf1f9}
 *{box-sizing:border-box;margin:0;padding:0}
 body{font:calc(14px * var(--app-font-scale))/1.55 var(--font-main);min-height:100vh;overflow:hidden !important;color:var(--ui-text) !important;font-size:calc(13px * var(--app-font-scale)) !important}
+/* ── 2. 기본 레이아웃 / 패널 ── */
 .wrap{grid-template-columns:minmax(680px,4fr) minmax(500px,3fr) minmax(500px,3fr) !important;max-width:none !important;margin:0 !important;display:grid !important;height:100vh !important;width:100vw !important;overflow:hidden !important;gap:0 !important}
 .hdr{display:flex;align-items:center;gap:12px;grid-column:1/-1 !important;grid-row:1 !important}
 .hdr h1{font-size:calc(15px * var(--app-font-scale)) !important}
@@ -14,7 +31,6 @@ body{font:calc(14px * var(--app-font-scale))/1.55 var(--font-main);min-height:10
 .ir input,.ir select{background:var(--bg2);border:1px solid var(--bd);color:var(--tx);padding:0 8px;border-radius:4px;font-size:calc(12px * var(--app-font-scale));width:100%;height:28px;text-align:right;font-family:Consolas,monospace;transition:border-color .2s}
 .ir select{text-align:left;cursor:pointer}
 .ir input:focus,.ir select:focus{outline:none;border-color:var(--acc)}
-.btns{display:flex;gap:6px;margin-top:4px}
 .btn{flex:1;border:1px solid var(--bd2);cursor:pointer;height:36px !important;padding:0 10px !important;border-radius:9px !important;font-size:calc(12.5px * var(--app-font-scale)) !important;font-weight:900 !important}
 .btn:hover{background:var(--bg4);filter:brightness(.98) !important}
 
@@ -29,7 +45,6 @@ body{font:calc(14px * var(--app-font-scale))/1.55 var(--font-main);min-height:10
 .stat-row:last-child,.stat-row:nth-last-child(2):nth-child(odd){border-bottom:0}
 .stat-row .sc-name{height:100%;display:flex;align-items:center;margin:0;font-size:calc(12px * var(--app-font-scale)) !important;padding:0 10px !important;color:#334155 !important;font-weight:900 !important}
 .stat-row .sc-val{font-weight:800;text-align:right;font-size:calc(13px * var(--app-font-scale)) !important;padding:0 10px !important;color:#172033 !important}
-.stat-row.fixed .sc-val::after{content:" 고정";font-size:calc(10px * var(--app-font-scale));color:#64748b;margin-left:6px;font-family:"Malgun Gothic",sans-serif;font-weight:600}
 .sp-box{border:1px solid var(--bd);border-radius:10px;margin-bottom:14px;box-shadow:0 1px 3px rgba(15,23,42,.02);padding:10px !important}
 .trait-board-panel{background:linear-gradient(180deg,#ffffff 0%,#fbfdff 100%) !important;border:1px solid var(--ui-line) !important;border-radius:14px !important;box-shadow:var(--ui-shadow-soft) !important;overflow:hidden !important;padding:0 10px 10px !important;margin:0 0 10px !important}
 .trait-board-panel .tp-head{margin:0 !important;padding:10px 0 8px !important}
@@ -76,7 +91,7 @@ select.choice-input{background:#f8fafc !important}
 .btn.subtle:hover{background:#f8fafc}
 .col-work{grid-column:1;grid-row:2;height:calc(100vh - 44px);overflow:hidden;padding:10px;background:var(--bg);grid-template-columns:minmax(520px,660px) minmax(420px,1fr) !important;gap:12px !important;display:contents !important}
 .col-left,.col-mid{height:100% !important;overflow:auto !important;border:1px solid var(--bd) !important;border-radius:10px;background:#fff}
-.col-left .btns,.col-left .save-row{grid-column:1/-1}
+.col-left .save-row{grid-column:1/-1}
 .col-mid .dps-card,.col-mid .section-title,.col-mid .stat-grid,.col-mid .sp-box{grid-column:1/-1 !important}
 .col-mid .section-title{margin-bottom:-2px}
 .data-card{margin-bottom:0 !important}
@@ -87,17 +102,12 @@ select.choice-input{background:#f8fafc !important}
 .trait-tools{display:flex;gap:4px;flex:0 0 auto}
 .trait-tools .mini-btn{height:22px;padding:0 6px;font-size:calc(10px * var(--app-font-scale))}
 .col-left .ir input,.col-left .ir select{height:29px !important;font-size:calc(12px * var(--app-font-scale)) !important}
-/* 2. Calculator components: resources, runes, traits, and results */
-.toggle{display:flex;align-items:center;justify-content:space-between;gap:8px;cursor:pointer;user-select:none;padding:6px 8px !important;font-size:calc(12px * var(--app-font-scale)) !important}
-.toggle input{display:none}
-.toggle .sw{border-radius:999px;background:#cbd5e1;position:relative;flex:0 0 auto;transition:.15s}
-.toggle .sw:before{content:"";position:absolute;left:3px;top:3px;width:14px;height:14px;border-radius:50%;background:#fff;transition:.15s;box-shadow:0 1px 2px rgba(15,23,42,.25)}
-.toggle input:checked + .sw:before{left:21px}
+/* ── 3. 계산 UI 컴포넌트 ── */
 #dt{display:none !important}
 .col-left .sg.priority{border:1px solid #bfdbfe !important;border-bottom:1px solid #dbeafe !important;background:#fbfdff !important}
 .col-left .sg.priority .sg-title{color:#1d4ed8;font-size:calc(11px * var(--app-font-scale))}
-.btns,.save-row{display:grid !important;grid-template-columns:1fr 1fr !important;gap:7px !important;margin:7px 0 0 !important}
-.col-left .sg-title,.col-left .btns,.col-left .save-row,.col-left .toggle-grid{grid-column:1/-1 !important}
+.save-row{display:grid !important;grid-template-columns:1fr 1fr !important;gap:7px !important;margin:7px 0 0 !important}
+.col-left .sg-title,.col-left .save-row{grid-column:1/-1 !important}
 .month-rune-selects{grid-template-columns:repeat(3,minmax(0,1fr)) !important;display:grid !important;gap:8px !important}
 .mini-ir{display:grid !important;grid-template-columns:1fr !important;gap:4px !important}
 .mini-ir label{font-size:calc(11.5px * var(--app-font-scale)) !important;font-weight:900 !important;color:#475569 !important;text-align:center !important}
@@ -147,7 +157,7 @@ select.choice-input{background:#f8fafc !important}
 .seg-btns{display:grid !important;gap:6px !important;flex-wrap:nowrap !important;align-items:center !important;width:100% !important;justify-content:start !important}
 .seg-btns button{min-width:0 !important;height:34px !important;padding:0 8px !important;border:1px solid #bfdbfe !important;border-radius:8px !important;font-size:calc(12px * var(--app-font-scale)) !important;font-weight:900 !important;cursor:pointer !important;white-space:nowrap !important;line-height:1 !important;width:100% !important;text-align:center !important}
 .tidy-rune-panel{grid-template-columns:minmax(240px,270px) minmax(270px,1fr) !important}
-.stat-row .sc-val#sPIERCE{font-size:calc(11.5px * var(--app-font-scale)) !important}
+.stat-row .sc-val#sPIERCEDisplay,.stat-row .sc-val#sPIERCEActual{font-size:calc(11.5px * var(--app-font-scale)) !important}
 .col-left .sg,.trait-group,.dps-card,.stat-grid,.data-card,.sp-box,.col-right .sp-box{background:var(--ui-panel) !important;border:1px solid var(--ui-line) !important;border-radius:12px !important;box-shadow:var(--ui-shadow) !important}
 .col-left .sg-title,.section-title{margin:0 0 10px !important;padding:0 0 7px !important;border-bottom:1px solid #dbeafe !important;color:var(--ui-blue) !important;font-size:calc(13px * var(--app-font-scale)) !important;font-weight:900 !important;letter-spacing:0 !important;text-transform:none !important}
 .col-left .ir input,.col-left .ir select,.col-left .ir span,.rune-option-grid select,.rune-option-grid input,.rune-stat-row input,.rune-stat-row select{min-height:32px !important;height:32px !important;border:1px solid var(--ui-line2) !important;border-radius:8px !important;background:var(--ui-input) !important;color:var(--ui-text) !important;font-size:calc(13px * var(--app-font-scale)) !important;padding:0 9px !important;box-shadow:none !important}
@@ -345,14 +355,9 @@ select.choice-input,.rune-stat-row select,.ir select{background:#ffffff !importa
 .sg.unit-enhance-card .unit-enhance-left .mini-ir select{min-width:0 !important;width:100% !important}
 .sg.unit-enhance-card .unit-enhance-left .unit-enhance-inline-controls{display:grid !important;gap:8px !important;padding:0 !important;border:none !important;background:transparent !important}
 .sg.unit-enhance-card .unit-enhance-left .unit-enhance-inline-controls .pill-row{margin:0 !important;padding:7px !important;border:1px solid #dbe3ee !important;border-radius:9px !important;background:#fff !important}
-.sg.unit-enhance-card .unit-enhance-left .unit-enhance-inline-controls .seg-btns[data-target="overEnhance"]{width:100% !important}
-.sg.unit-enhance-card .unit-enhance-left .unit-enhance-inline-controls .seg-btns[data-target="overEnhance"] button,.sg.unit-enhance-card .unit-enhance-left .unit-enhance-inline-controls .seg-btns[data-target="repairEnhance"] button,.sg.unit-enhance-card .unit-enhance-left .unit-enhance-inline-controls .seg-btns[data-target="enhanceMaster"] button{width:100% !important;min-width:0 !important;height:30px !important;padding:0 6px !important;white-space:nowrap !important}
-.sg.unit-enhance-card .unit-enhance-left .unit-enhance-inline-controls .seg-btns[data-target="repairEnhance"],.sg.unit-enhance-card .unit-enhance-left .unit-enhance-inline-controls .seg-btns[data-target="enhanceMaster"]{display:grid !important;grid-template-columns:repeat(3,minmax(0,1fr)) !important;gap:5px !important;width:100% !important}
 .sg.unit-enhance-card .unit-enhance-left .mini-ir,.sg.unit-enhance-card .unit-enhance-left .unit-enhance-inline-controls .pill-row{grid-template-columns:112px minmax(0,1fr) !important;gap:8px !important}
 .sg.unit-enhance-card .unit-enhance-left .unit-enhance-inline-controls .seg-btns button{font-size:calc(11.5px * var(--app-font-scale)) !important;letter-spacing:-.2px !important}
 .sg.unit-enhance-card .unit-enhance-left .mini-ir.mini-ir-button-row{grid-template-columns:112px minmax(0,1fr) !important}
-.sg.unit-enhance-card .unit-enhance-left .mini-ir.mini-ir-button-row .seg-btns{width:100% !important}
-.sg.unit-enhance-card .unit-enhance-left .mini-ir.mini-ir-button-row .seg-btns button{width:100% !important;min-width:0 !important;height:30px !important;padding:0 6px !important;white-space:nowrap !important}
 .sg.unit-enhance-card .unit-enhance-left .mini-ir.mini-ir-button-row .seg-btns button[data-value="0"]{font-size:calc(11px * var(--app-font-scale)) !important}
 .hdr-logo{display:flex !important;align-items:center !important;justify-content:center !important;padding:0 !important;color:#fff !important;font-family:Consolas,monospace !important;font-size:calc(12px * var(--app-font-scale)) !important;font-weight:900 !important;overflow:hidden !important}
 .hdr-logo img{display:none !important}
@@ -455,7 +460,7 @@ select.choice-input,.rune-stat-row select,.ir select{background:#ffffff !importa
 .month-rune-panel[hidden]{display:none !important}
 .month-rune-note,.month-rune-empty{margin:0 0 10px;padding:9px 11px;border:1px solid #dbeafe;border-radius:11px;background:#eff6ff;color:#1e3a8a;font-size:calc(12px * var(--app-font-scale));font-weight:900;line-height:1.35}
 .month-rune-empty{text-align:center;color:#64748b;background:#f8fafc;border-style:dashed}
-/* Jewel tab keeps the original compact card style. Only the thumbnail box is dark. */
+/* ── 4. 쥬얼 / 도감형 카드 ── */
 .jewel-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
 .jewel-card{min-width:0;overflow:hidden;border:1px solid #dbe3ee;border-radius:14px;background:#fff;box-shadow:0 3px 10px rgba(15,23,42,.045)}
 .jewel-card-head{display:flex;align-items:center;gap:10px;padding:10px;border-bottom:1px solid #e2e8f0;background:linear-gradient(180deg,#fff 0%,#f8fbff 100%)}
@@ -614,15 +619,8 @@ body,input,button,select,textarea{font-family:var(--font-main) !important}
   color:#fff !important;
   box-shadow:none !important;
 }
-.global-site-link span{
-  margin-left:4px;
-  font-size:.9em;
-  line-height:1;
-}
-.global-site-link:focus-visible{
-  outline:2px solid rgba(56,189,248,.38) !important;
-  outline-offset:2px !important;
-}
+.global-site-link span { margin-left:4px; font-size:.9em; line-height:1; }
+.global-site-link:focus-visible { outline:2px solid rgba(56,189,248,.38) !important; outline-offset:2px !important; }
 .font-scale-ctrl{display:flex;align-items:center;gap:3px;border:1px solid var(--ui-line);border-radius:10px;padding:3px;margin-right:8px}
 .font-scale-btn,.font-scale-value{height:26px;border:0;background:transparent;color:#334155;border-radius:7px;font-weight:900;cursor:pointer;line-height:1;font-size:calc(12px * var(--app-font-scale));min-width:30px;padding:0 7px}
 .font-scale-value{min-width:44px;color:#1e3a8a;background:#eef6ff;border:1px solid #dbeafe;font-family:Consolas,var(--font-main) !important}
@@ -656,7 +654,7 @@ body{background:linear-gradient(180deg,#f7faff 0%,#eef4fb 100%) !important}
 
 .font-scale-ctrl{height:34px !important;background:#f6f9fd !important;border-color:#d7e4f3 !important;box-shadow:0 2px 7px rgba(15,23,42,.055) !important}
 
-.col-left .sg,.trait-group,.dps-card,.stat-grid,.data-card,.sp-box,.xp-sp-panel,.rune-panel ,.unit-enhance-main-row,.unit-enhance-summary{border-color:#d7e4f3 !important;border-radius:14px !important;box-shadow:var(--ui-shadow) !important}
+.col-left .sg,.trait-group,.dps-card,.stat-grid,.data-card,.sp-box,.xp-sp-panel,.rune-panel,.unit-enhance-main-row{border-color:#d7e4f3 !important;border-radius:14px !important;box-shadow:var(--ui-shadow) !important}
 .col-left .sg{background:#fff !important;margin-bottom:12px !important}
 .col-left .sg-title,.section-title,.trait-group h4{background:linear-gradient(180deg,#eff7ff 0%,#e8f2fd 100%) !important;border:1px solid #d6e6f7 !important;border-radius:10px !important;color:#173a82 !important;padding:7px 10px !important;margin-bottom:10px !important;font-weight:900 !important;letter-spacing:0 !important}
 .col-left .sg-title{border-bottom:1px solid #d6e6f7 !important}
@@ -667,8 +665,6 @@ body{background:linear-gradient(180deg,#f7faff 0%,#eef4fb 100%) !important}
 .btn:hover,.seg-btns button:hover,.trait-group .tr-ctrl button:hover:not(:disabled),.tp-actions .mini-btn:hover,.trait-tools .mini-btn:hover{transform:translateY(-1px);box-shadow:0 3px 8px rgba(15,23,42,.08) !important}
 .seg-btns button{background:#fff !important;border-color:#b8d3ff !important;color:#1d4ed8 !important}
 .seg-btns button.active{background:linear-gradient(180deg,#3f63de 0%,#294fd0 100%) !important;border-color:#294fd0 !important;color:#fff !important;box-shadow:0 5px 12px rgba(49,87,213,.24) !important}
-.toggle{border-color:#d7e4f3 !important;box-shadow:0 1px 3px rgba(15,23,42,.045) !important}
-.toggle input:checked + .sw{box-shadow:0 0 0 3px rgba(37,99,235,.12) !important}
 .sp-box{background:#fff !important}
 .sp-summary-stack{gap:8px !important}
 .sp-detail{background:transparent !important;border-color:transparent !important}
@@ -725,8 +721,6 @@ button:disabled, .trait-group .tr-ctrl button:disabled{opacity:.42 !important;cu
 .stat-row .sc-name{justify-content:flex-start !important;border-radius:0 !important;border:0 !important;border-right:1px solid var(--result-table-line,#dbe4f0) !important;background:var(--result-table-label-bg,#eaf1f8) !important}
 .stat-row .sc-val, .mini-table td, .mini-table th{font-family:Consolas,monospace !important}
 .mini-table th{background:#eef6ff !important;color:#17336f !important;font-weight:900 !important}
-.toggle{min-height:36px !important;border:1px solid var(--ui-unified-line) !important;border-radius:10px !important;background:#fff !important;color:var(--ui-unified-text) !important;font-weight:900 !important}
-.toggle .sw{width:36px !important;height:20px !important}
 
 .dps-table-modal, .dps-table-panel{border-color:var(--ui-unified-line) !important}
 .dps-table-panel button, .dps-table-panel input{border-radius:10px !important;border-color:var(--ui-unified-line-strong) !important}
@@ -739,7 +733,6 @@ input:not([type="hidden"]):not([readonly]):not(:disabled), select:not(:disabled)
 .btn.pri:hover, .seg-btns button.active:hover, .tp-actions .mini-btn.master:hover, .trait-tools .mini-btn.master:hover{background:var(--btn-action-hover) !important;border-color:var(--btn-action-hover) !important}
 .btn.danger, .tp-actions .mini-btn.reset, .trait-tools .mini-btn.reset{background:var(--btn-danger-bg) !important;background-image:none !important;border-color:var(--btn-danger-bg) !important;color:#fff !important}
 .btn.danger:hover, .tp-actions .mini-btn.reset:hover, .trait-tools .mini-btn.reset:hover{background:var(--btn-danger-hover) !important;border-color:var(--btn-danger-hover) !important}
-.toggle input:checked + .sw{background:var(--btn-action-bg) !important}
 .col-left .sg, .col-left .sg.priority, .col-left .sg.xp-sp-card, .col-left .sg.rune-spec, .col-mid .stat-dps-card, .col-mid .bus-cut-card, .col-mid .final-damage-card, .col-right .trait-group{overflow:hidden !important}
 .col-left .sg{padding:0 14px 12px !important}
 .col-left .sg > .sg-title, .col-mid .stat-dps-card > .section-title, .col-mid .bus-cut-card > h3, .col-mid .final-damage-card > h3, .tp-head, .trait-group h4{height:var(--section-head-h) !important;min-height:var(--section-head-h) !important;padding:0 14px !important;display:flex !important;align-items:center !important;justify-content:space-between !important;gap:8px !important;background:var(--section-head-bg) !important;border:1px solid var(--section-head-bd) !important;border-radius:12px 12px 0 0 !important;color:var(--section-head-text) !important;box-shadow:none !important;font-size:calc(12.5px * var(--app-font-scale)) !important;font-weight:900 !important;line-height:1 !important;letter-spacing:0 !important;text-transform:none !important;opacity:1 !important}
@@ -855,10 +848,7 @@ input:not([type="hidden"]):not([readonly]):not(:disabled), select:not(:disabled)
   box-shadow:var(--panel-shadow, 0 1px 6px rgba(15,23,42,.06)) !important;
   overflow:hidden !important;
 }
-.col-left .zero-rank-card > h3{
-  height:var(--section-head-h) !important;
-  min-height:var(--section-head-h) !important;
-}
+.col-left .zero-rank-card > h3 { height:var(--section-head-h) !important; min-height:var(--section-head-h) !important; }
 
 .zero-rank-title{
   height:var(--section-head-h) !important;
@@ -976,14 +966,8 @@ input:not([type="hidden"]):not([readonly]):not(:disabled), select:not(:disabled)
   text-align:center;
   width:100%;
 }
-.zero-calc-result-card b em{
-  font-style:normal;
-}
-.zero-calc-result-card b i{
-  margin:0 4px;
-  color:#94a3b8;
-  font-style:normal;
-}
+.zero-calc-result-card b em { font-style:normal; }
+.zero-calc-result-card b i { margin:0 4px; color:#94a3b8; font-style:normal; }
 .zero-calc-table-wrap{
   overflow:auto;
   border:1px solid #aeb7c6;
@@ -1017,10 +1001,7 @@ input:not([type="hidden"]):not([readonly]):not(:disabled), select:not(:disabled)
   vertical-align:middle;
   box-sizing:border-box;
 }
-.zero-calc-table td{
-  overflow:hidden;
-  background:#f7f9fd;
-}
+.zero-calc-table td { overflow:hidden; background:#f7f9fd; }
 .zero-calc-table th{
   position:sticky;
   top:0;
@@ -1036,22 +1017,12 @@ input:not([type="hidden"]):not([readonly]):not(:disabled), select:not(:disabled)
   white-space:nowrap;
   background:#fff !important;
 }
-.zero-calc-unused{
-  background:#f7f9fd !important;
-  color:transparent !important;
-  pointer-events:none;
-}
-.zero-calc-table tr[data-row-type="tower"] .zero-calc-unused{
-  border-bottom:0 !important;
-}
-.zero-calc-table tr[data-row-type="honorTower"] .zero-calc-unused{
-  border-top:0 !important;
-}
+.zero-calc-unused { background:#f7f9fd !important; color:transparent !important; pointer-events:none; }
+.zero-calc-table tr[data-row-type="tower"] .zero-calc-unused { border-bottom:0 !important; }
+.zero-calc-table tr[data-row-type="honorTower"] .zero-calc-unused { border-top:0 !important; }
 .zero-calc-table input,
 .zero-calc-table select,
-.zero-calc-table .zero-row-score,
-.zero-calc-table .zero-calc-note,
-.zero-calc-table .zero-calc-dash{
+.zero-calc-table .zero-row-score{
   display:flex;
   align-items:center;
   justify-content:center;
@@ -1073,14 +1044,9 @@ input:not([type="hidden"]):not([readonly]):not(:disabled), select:not(:disabled)
   box-sizing:border-box;
 }
 .zero-calc-table input,
-.zero-calc-table select{
-  display:block;
-}
+.zero-calc-table select { display:block; }
 .zero-calc-table input:focus,
-.zero-calc-table select:focus{
-  background:#fff !important;
-  box-shadow:inset 0 0 0 2px rgba(49,87,213,.35) !important;
-}
+.zero-calc-table select:focus { background:#fff !important; box-shadow:inset 0 0 0 2px rgba(49,87,213,.35) !important; }
 .zero-star-toggle{
   display:flex;
   align-items:center;
@@ -1102,15 +1068,8 @@ input:not([type="hidden"]):not([readonly]):not(:disabled), select:not(:disabled)
 }
 .zero-star-toggle.active,
 .zero-star-toggle.is-active,
-.zero-star-toggle[aria-pressed="true"]{
-  background:#3157d5 !important;
-  color:#fff !important;
-  box-shadow:inset 0 0 0 1px #3157d5 !important;
-}
-.zero-star-toggle:focus-visible{
-  outline:none !important;
-  box-shadow:inset 0 0 0 2px rgba(49,87,213,.7) !important;
-}
+.zero-star-toggle[aria-pressed="true"] { background:#3157d5 !important; color:#fff !important; box-shadow:inset 0 0 0 1px #3157d5 !important; }
+.zero-star-toggle:focus-visible { outline:none !important; box-shadow:inset 0 0 0 2px rgba(49,87,213,.7) !important; }
 .zero-star-toggle.active:focus-visible,
 .zero-star-toggle.is-active:focus-visible,
 .zero-star-toggle[aria-pressed="true"]:focus-visible{
@@ -1135,35 +1094,12 @@ input:not([type="hidden"]):not([readonly]):not(:disabled), select:not(:disabled)
   box-sizing:border-box;
 }
 .zero-mobile-expand-btn{display:none}
-.zero-calc-note,
-.zero-calc-dash{
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  width:100%;
-  height:100%;
-  min-height:31px;
-  color:#64748b;
-  font-size:calc(10px * var(--app-font-scale));
-  font-weight:900;
-}
-body.is-mobile .zero-calc-summary{
-  grid-template-columns:repeat(2,minmax(0,1fr));
-  gap:5px;
-}
+body.is-mobile .zero-calc-summary { grid-template-columns:repeat(2,minmax(0,1fr)); gap:5px; }
 body.is-mobile .zero-current-score-box,
-body.is-mobile .zero-calc-result-card{
-  min-height:44px;
-  padding:5px 7px;
-}
-body.is-mobile .zero-calc-table{
-  min-width:650px;
-}
+body.is-mobile .zero-calc-result-card { min-height:44px; padding:5px 7px; }
+body.is-mobile .zero-calc-table { min-width:650px; }
 body.is-mobile .zero-calc-table th,
-body.is-mobile .zero-calc-table td{
-  height:30px;
-  padding:2px 4px;
-}
+body.is-mobile .zero-calc-table td { height:30px; padding:2px 4px; }
 .zero-table-wrap{
   width:100%;
   min-width:0;
@@ -1195,16 +1131,9 @@ body.is-mobile .zero-calc-table td{
   background:#fff;
   font-weight:900;
 }
-.zero-rank-table th{
-  background:#eaf2ff;
-  color:#173a82;
-}
+.zero-rank-table th { background:#eaf2ff; color:#173a82; }
 .zero-score-list,
-.zero-benefit-list{
-  display:flex;
-  flex-direction:column;
-  gap:8px;
-}
+.zero-benefit-list { display:flex; flex-direction:column; gap:8px; }
 .zero-score-list article,
 .zero-benefit-rank{
   border:1px solid #dbe7f6;
@@ -1231,10 +1160,7 @@ body.is-mobile .zero-calc-table td{
   font-weight:900;
 }
 .zero-score-list ul,
-.zero-benefit-rank ul{
-  margin:0;
-  padding-left:18px;
-}
+.zero-benefit-rank ul { margin:0; padding-left:18px; }
 .zero-score-list li,
 .zero-benefit-rank li{
   margin:2px 0;
@@ -1244,36 +1170,19 @@ body.is-mobile .zero-calc-table td{
   line-height:1.35;
 }
 body.is-pc-portrait .zero-rank-card,
-body.is-tablet .zero-rank-card{
-  grid-column:1/-1 !important;
-  width:100% !important;
-  min-width:0 !important;
-}
-body.is-mobile .zero-rank-card{
-  padding:10px !important;
-  margin-bottom:8px !important;
-}
-body.is-mobile .zero-rank-title{
-  margin:0 -10px 8px !important;
-}
+body.is-tablet .zero-rank-card { grid-column:1/-1 !important; width:100% !important; min-width:0 !important; }
+body.is-mobile .zero-rank-card { padding:10px !important; margin-bottom:8px !important; }
+body.is-mobile .zero-rank-title { margin:0 -10px 8px !important; }
 body.is-mobile .zero-rank-content{
   height:440px;
   max-height:calc(var(--mobile-vh, 100vh) - var(--mobile-header-h, 0px) - var(--mobile-tabs-h, 0px) - 150px);
   min-height:360px;
 }
-body.is-mobile .zero-rank-tab{
-  height:30px;
-  font-size:calc(10.5px * var(--app-font-scale));
-}
+body.is-mobile .zero-rank-tab { height:30px; font-size:calc(10.5px * var(--app-font-scale)); }
 body.is-mobile .zero-benefit-rank,
-body.is-mobile .zero-score-list article{
-  padding:7px 8px;
-}
+body.is-mobile .zero-score-list article { padding:7px 8px; }
 body.is-mobile .zero-score-list li,
-body.is-mobile .zero-benefit-rank li{
-  font-size:calc(10.5px * var(--app-font-scale));
-  line-height:1.32;
-}
+body.is-mobile .zero-benefit-rank li { font-size:calc(10.5px * var(--app-font-scale)); line-height:1.32; }
 
 .bus-cut-card .mini-table{border-collapse:separate !important;border-spacing:0 4px !important}
 .bus-cut-card .mini-table thead{display:none !important}
@@ -1336,7 +1245,7 @@ body.is-mobile .clean-rune-card .enchant-result-value, body.is-tablet .clean-run
 .title-td-row label{white-space:nowrap!important;font-size:calc(11px * var(--app-font-scale))!important}
 
 
-/* Stat comparison and trait controls */
+/* ── 5. 스탯 비교 / 특성 컨트롤 ── */
 .stat-compare-grid{border:0!important;background:transparent!important;}
 .stat-compare-grid .stat-row{align-items:stretch!important;border:0!important;border-bottom:1px solid var(--result-table-line,#dbe4f0)!important;background:transparent!important}
 .stat-compare-grid .stat-row:last-child{border-bottom:0!important}
@@ -1348,14 +1257,12 @@ body.is-mobile .clean-rune-card .enchant-result-value, body.is-tablet .clean-run
 .trait-group .tr-ctrl button{min-width:30px!important;height:28px!important;border:1px solid #bfdbfe!important;border-radius:8px!important;background:#fff!important;color:#1d4ed8!important;font-weight:900!important;line-height:1!important}
 .trait-group .tr-ctrl button:hover:not(:disabled),.trait-group .tr-ctrl button.is-pressed:not(:disabled){background:#eff6ff!important;color:#1d4ed8!important;border-color:#93c5fd!important}
 .trait-group .tr-ctrl button:disabled{opacity:.48!important;background:#f8fafc!important;color:#64748b!important;border-color:#dbeafe!important}
-.trait-group .tr-ctrl .trait-max-btn,.trait-group .tr-ctrl button[data-action="traitMax"]{min-width:46px!important;padding:0 8px!important}
+.trait-group .tr-ctrl button[data-action="traitMax"]{min-width:46px!important;padding:0 8px!important}
 .tp-actions .mini-btn.master:hover,.trait-tools .mini-btn.master:hover{background:#eff6ff!important;color:#1d4ed8!important;border-color:#93c5fd!important}
 .tp-actions .mini-btn.reset:hover,.trait-tools .mini-btn.reset:hover{background:#fff1f2!important;color:#dc2626!important;border-color:#fecaca!important}
 
-/* Trait board spacing */
-body:not(.is-mobile) .trait-board-panel{
-  padding:0 12px 12px !important;
-}
+/* 특성보드 간격 보정 */
+body:not(.is-mobile) .trait-board-panel { padding:0 12px 12px !important; }
 body:not(.is-mobile) .trait-board-panel .tp-head{
   height:38px !important;
   min-height:38px !important;
@@ -1363,29 +1270,18 @@ body:not(.is-mobile) .trait-board-panel .tp-head{
   padding:0 14px !important;
   border-radius:12px 12px 0 0 !important;
 }
-body:not(.is-mobile) .trait-board-panel .tp-head h3{
-  font-size:calc(12.5px * var(--app-font-scale)) !important;
-  line-height:1 !important;
-}
-body:not(.is-mobile) .trait-board-panel .sp-box{
-  margin:0 0 12px !important;
-}
-body:not(.is-mobile) .trait-board-panel .trait-dashboard-tools{
-  margin:10px 0 12px !important;
-}
-body:not(.is-mobile) .trait-board-panel .tp-body{
-  padding-top:10px !important;
-}
-body:not(.is-mobile) .trait-board-panel .trait-group{
-  margin-bottom:10px !important;
-}
+body:not(.is-mobile) .trait-board-panel .tp-head h3 { font-size:calc(12.5px * var(--app-font-scale)) !important; line-height:1 !important; }
+body:not(.is-mobile) .trait-board-panel .sp-box { margin:0 0 12px !important; }
+body:not(.is-mobile) .trait-board-panel .trait-dashboard-tools { margin:10px 0 12px !important; }
+body:not(.is-mobile) .trait-board-panel .tp-body { padding-top:10px !important; }
+body:not(.is-mobile) .trait-board-panel .trait-group { margin-bottom:10px !important; }
 body:not(.is-mobile) .col-left .sg.priority .save-row .btn.subtle{
   background:#ffffff !important;
   border:1px solid #9ec5ff !important;
   color:#0f172a !important;
   font-weight:900 !important;
 }
-/* 3. Shared visual system and reusable control roles */
+/* ── 6. 공통 시각 시스템 ── */
 :root{
   --ui-input:#f4f8ff;
   --ui-label:#f8fafc;
@@ -1443,15 +1339,11 @@ body.is-tabbed .mobile-page>.sg>.sg-title,body.is-tabbed .mobile-page>.data-card
   body.is-mobile input:not([type="hidden"]),body.is-mobile select,body.is-mobile .btn,body.is-mobile .seg-btns button{min-height:34px!important}
 }
 
-/* 4. Card structure and cross-platform header alignment */
+/* ── 7. 카드 구조 / 헤더 정렬 ── */
 
-.col-left > .sg{
-  margin-bottom:12px !important;
-}
+.col-left > .sg { margin-bottom:12px !important; }
 
-.col-left > .sg:last-child{
-  margin-bottom:0 !important;
-}
+.col-left > .sg:last-child { margin-bottom:0 !important; }
 
 .col-left > .xp-sp-card,
 .col-left > .unit-enhance-card{
@@ -1464,9 +1356,7 @@ body.is-tabbed .mobile-page>.sg>.sg-title,body.is-tabbed .mobile-page>.data-card
   overflow:hidden !important;
 }
 
-.col-left > .unit-enhance-card{
-  margin-top:0 !important;
-}
+.col-left > .unit-enhance-card { margin-top:0 !important; }
 
 .col-left .sg > .sg-title,
 .col-mid .stat-dps-card > .section-title,
@@ -1527,9 +1417,7 @@ body.is-tablet .col-left .sg select:not(:disabled),
 body.is-pc-portrait .col-left .sg input:not([type="hidden"]):not([readonly]):not(:disabled),
 body.is-pc-portrait .col-left .sg select:not(:disabled),
 body.is-tabbed .mobile-page > .sg input:not([type="hidden"]):not([readonly]):not(:disabled),
-body.is-tabbed .mobile-page > .sg select:not(:disabled){
-  border-color:var(--role-interactive-bd) !important;
-}
+body.is-tabbed .mobile-page > .sg select:not(:disabled) { border-color:var(--role-interactive-bd) !important; }
 
 body.is-tablet .col-left .sg .sg-title,
 body.is-pc-portrait .col-left .sg .sg-title,
@@ -1540,7 +1428,7 @@ body.is-tabbed .mobile-page > .sg > .sg-title{
   border-color:var(--section-head-bd) !important;
 }
 
-/* Keep panel/page scrolling while hiding desktop and tablet scrollbars. */
+/* 패널 스크롤바 숨김 보정 */
 body.is-pc-landscape .col-left,
 body.is-pc-landscape .col-right,
 body.is-pc-landscape .col-mid,
@@ -1553,10 +1441,7 @@ body.is-tablet,
 body.is-tablet .wrap,
 body.is-tablet .col-left,
 body.is-tablet .col-right,
-body.is-tablet .col-mid{
-  -ms-overflow-style:none !important;
-  scrollbar-width:none !important;
-}
+body.is-tablet .col-mid { -ms-overflow-style:none !important; scrollbar-width:none !important; }
 
 body.is-pc-landscape .col-left::-webkit-scrollbar,
 body.is-pc-landscape .col-right::-webkit-scrollbar,
@@ -1570,11 +1455,7 @@ body.is-tablet::-webkit-scrollbar,
 body.is-tablet .wrap::-webkit-scrollbar,
 body.is-tablet .col-left::-webkit-scrollbar,
 body.is-tablet .col-right::-webkit-scrollbar,
-body.is-tablet .col-mid::-webkit-scrollbar{
-  width:0 !important;
-  height:0 !important;
-  display:none !important;
-}
+body.is-tablet .col-mid::-webkit-scrollbar { width:0 !important; height:0 !important; display:none !important; }
 body.is-pc-landscape .wrap{width:100vw !important;max-width:none !important;margin:0 !important}
 body.is-pc-portrait, body.is-tablet, body.is-mobile{overflow:auto !important}
 body.is-pc-portrait .wrap, body.is-tablet .wrap, body.is-mobile .wrap{display:flex !important;flex-direction:column !important;width:100% !important;max-width:none !important;min-width:0 !important;height:auto !important;min-height:100vh !important;overflow:visible !important;margin:0 !important;gap:0 !important}
@@ -1603,12 +1484,12 @@ body.is-mobile .hdr-brand, body.is-mobile .hdr-meta{width:100% !important;justif
 body.is-mobile .font-scale-ctrl{display:none !important}
 body.is-mobile .col-work{padding:8px !important}
 body.is-mobile .sg, body.is-mobile .col-left .sg, body.is-mobile .data-card, body.is-mobile .trait-group{margin-bottom:8px !important}
-body.is-mobile .xp-sp-split, body.is-mobile .rune-panel.tidy-rune-panel, body.is-mobile .unit-enhance-main-row, body.is-mobile .unit-enhance-control-stack, body.is-mobile .month-rune-selects .toggle-grid, body.is-mobile .sp-box .sp-summary-stack, body.is-mobile .sp-box .sp-detail, body.is-mobile .skill-damage-layout{display:grid !important;grid-template-columns:1fr !important;gap:8px !important}
+body.is-mobile .xp-sp-split, body.is-mobile .rune-panel.tidy-rune-panel, body.is-mobile .unit-enhance-main-row, body.is-mobile .unit-enhance-control-stack, body.is-mobile .sp-box .sp-summary-stack, body.is-mobile .sp-box .sp-detail, body.is-mobile .skill-damage-layout{display:grid !important;grid-template-columns:1fr !important;gap:8px !important}
 body.is-mobile .col-mid{display:flex !important;flex-direction:column !important;gap:8px !important}
 body.is-mobile .ir, body.is-mobile .xp-sp-card .resource-box, body.is-mobile .xp-sp-card .difficulty-panel .ir, body.is-mobile .skill-setting-panel .skill-ir{grid-template-columns:92px minmax(0,1fr) !important;gap:6px !important}
 body.is-mobile .trait-group .tr{grid-template-columns:1fr !important;gap:6px !important}
 
-body.is-mobile .btns, body.is-mobile .save-row{grid-template-columns:1fr 1fr !important;gap:6px !important}
+body.is-mobile .save-row{grid-template-columns:1fr 1fr !important;gap:6px !important}
 body.is-tablet .sg.priority .save-row.convenience-row,body.is-tablet-device .sg.priority .save-row.convenience-row{grid-template-columns:repeat(2,minmax(0,1fr)) !important}
 body.is-mobile .dps-num{font-size:calc(34px * var(--app-font-scale)) !important}
 body.is-mobile .stat-row{display:grid !important;grid-template-columns:minmax(112px,.9fr) minmax(0,1.1fr) !important}
@@ -1720,9 +1601,7 @@ body.is-mobile .bus-cut-card .mini-table tr{display:grid !important;grid-templat
 body.is-mobile .bus-cut-card .mini-table th, body.is-mobile .bus-cut-card .mini-table td{min-width:0 !important;min-height:28px !important;height:28px !important;display:flex !important;align-items:center !important;justify-content:center !important;padding:0 4px !important;white-space:nowrap !important;word-break:keep-all !important;writing-mode:horizontal-tb !important;text-orientation:mixed !important;overflow:hidden !important;text-overflow:clip !important;font-size:calc(11px * var(--app-font-scale)) !important}
 
 body:not(.is-tabbed) .mobile-swipe-tabs,
-body:not(.is-tabbed) .mobile-page{
-  display:none !important;
-}
+body:not(.is-tabbed) .mobile-page { display:none !important; }
 
 html.is-tabbed,
 body.is-tabbed{
@@ -1766,10 +1645,7 @@ body.is-tabbed .mobile-swipe-tab{
   white-space:nowrap !important;
   cursor:pointer !important;
 }
-body.is-tabbed .mobile-swipe-tab.active{
-  background:#2563eb !important;
-  border-color:#2563eb !important;
-}
+body.is-tabbed .mobile-swipe-tab.active { background:#2563eb !important; border-color:#2563eb !important; }
 body.is-tabbed .col-work{
   display:flex !important;
   flex-direction:row !important;
@@ -1793,9 +1669,7 @@ body.is-tabbed .col-work{
 }
 body.is-tabbed .col-work::-webkit-scrollbar{display:none !important}
 body.is-tabbed .col-left,
-body.is-tabbed .col-mid{
-  display:none !important;
-}
+body.is-tabbed .col-mid { display:none !important; }
 body.is-tabbed .mobile-page{
   flex:0 0 calc(100vw - 16px) !important;
   width:calc(100vw - 16px) !important;
@@ -1817,16 +1691,10 @@ body.is-tabbed .mobile-page{
 }
 body.is-tabbed .mobile-page > .sg,
 body.is-tabbed .mobile-page > .data-card,
-body.is-tabbed .mobile-page > .col-right{
-  height:auto !important;
-  min-height:0 !important;
-  max-height:none !important;
-}
+body.is-tabbed .mobile-page > .col-right { height:auto !important; min-height:0 !important; max-height:none !important; }
 body.is-tabbed .mobile-page > .sg:last-child,
 body.is-tabbed .mobile-page > .data-card:last-child,
-body.is-tabbed .mobile-page > .col-right:last-child{
-  margin-bottom:0 !important;
-}
+body.is-tabbed .mobile-page > .col-right:last-child { margin-bottom:0 !important; }
 body.is-tabbed .mobile-page > .col-right{
   border:0 !important;
   border-radius:0 !important;
@@ -1835,19 +1703,11 @@ body.is-tabbed .mobile-page > .col-right{
 }
 body.is-tabbed .mobile-page > .col-right .tp-head,
 body.is-tabbed .mobile-page > .col-right .sp-box,
-body.is-tabbed .mobile-page > .col-right .tp-body{
-  width:100% !important;
-  margin-left:0 !important;
-  margin-right:0 !important;
-}
+body.is-tabbed .mobile-page > .col-right .tp-body { width:100% !important; margin-left:0 !important; margin-right:0 !important; }
 body.is-tabbed .mobile-page > .col-right .tp-head{margin-top:0 !important}
 body.is-tabbed .mobile-page input[type="hidden"]{display:none !important}
 
-.trait-dashboard-tools{
-  width:100% !important;
-  margin:10px 0 0 !important;
-  box-shadow:none !important;
-}
+.trait-dashboard-tools { width:100% !important; margin:10px 0 0 !important; box-shadow:none !important; }
 .trait-dashboard-tools .trait-opt-tier-row{
   display:grid !important;
   grid-template-columns:120px minmax(0,1fr) !important;
@@ -1855,25 +1715,12 @@ body.is-tabbed .mobile-page input[type="hidden"]{display:none !important}
   margin:8px 0 0 !important;
   padding:0 !important;
 }
-.trait-dashboard-tools .trait-tool-buttons{
-  display:grid !important;
-  grid-template-columns:1fr 1fr !important;
-  gap:8px !important;
-}
-body.is-mobile .sg.priority .save-row,
-body.is-mobile .sg.priority .btns{
-  grid-column:1/-1 !important;
-}
-body.is-tablet .sg.priority .save-row.convenience-row{
-  grid-template-columns:repeat(4,minmax(0,1fr)) !important;
-}
+.trait-dashboard-tools .trait-tool-buttons { display:grid !important; grid-template-columns:1fr 1fr !important; gap:8px !important; }
+body.is-mobile .sg.priority .save-row{grid-column:1/-1 !important}
+body.is-tablet .sg.priority .save-row.convenience-row { grid-template-columns:repeat(4,minmax(0,1fr)) !important; }
 body.is-mobile .sg.priority .sg-title span:first-child{white-space:nowrap !important}
 body.is-mobile .trait-dashboard-tools .trait-opt-tier-row select,
-body.is-mobile #optTier{
-  text-align:center !important;
-  text-align-last:center !important;
-  justify-content:center !important;
-}
+body.is-mobile #optTier { text-align:center !important; text-align-last:center !important; justify-content:center !important; }
 
 .sp-box .sp-detail .sp-bank-line{cursor:pointer !important;border:0 !important;background:transparent !important;font:inherit !important;color:inherit !important;width:100% !important}
 .sp-box .sp-detail .sp-bank-line b::after{content:"";display:inline-block;width:6px;height:6px;margin-left:6px;border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:rotate(45deg) translateY(-2px);opacity:.55}
@@ -1881,9 +1728,9 @@ body.is-mobile #optTier{
 .sp-box .sp-detail .sp-bank-line:active b{transform:translateY(1px)}
 body.is-tabbed .trait-dashboard-tools{margin-top:8px !important}
 
-/* 5. Responsive layouts: portrait, tablet, and mobile */
+/* ── 8. 반응형 레이아웃 ── */
 
-/* Mobile stat comparison layout */
+/* 모바일 스탯 비교 레이아웃 */
 body.is-mobile .stat-compare-grid .stat-row{
   display:grid !important;
   grid-template-columns:minmax(96px,.9fr) minmax(0,1fr) minmax(0,1fr) !important;
@@ -1905,25 +1752,14 @@ body.is-mobile .stat-compare-grid .stat-row .sc-val{
   overflow:hidden !important;
   text-overflow:ellipsis !important;
 }
-body.is-mobile .stat-compare-grid .stat-head-row .sc-name{
-  color:transparent !important;
-  font-size:0 !important;
-}
+body.is-mobile .stat-compare-grid .stat-head-row .sc-name { color:transparent !important; font-size:0 !important; }
 
-/* Optimization range alignment */
+/* 최적화 범위 정렬 */
 .trait-opt-tier-row label,
-.trait-opt-tier-row select{
-  text-align:center !important;
-  text-align-last:center !important;
-  justify-content:center !important;
-}
+.trait-opt-tier-row select { text-align:center !important; text-align-last:center !important; justify-content:center !important; }
 
-/* Buff button grids */
-.select-buff-grid,.flower-buff-grid{
-  display:grid !important;
-  gap:6px !important;
-  align-items:stretch !important;
-}
+/* 버프 버튼 그리드 */
+.select-buff-grid,.flower-buff-grid { display:grid !important; gap:6px !important; align-items:stretch !important; }
 .common-buff-row .buff-choice-item,.select-buff-row .buff-choice-item,.flower-buff-row .buff-choice-item{
   position:relative !important;
   display:flex !important;
@@ -1961,41 +1797,20 @@ body.is-pc-portrait .select-buff-grid,
 body.is-pc-portrait .flower-buff-grid,
 body.is-tablet .common-buff-grid,
 body.is-tablet .select-buff-grid,
-body.is-tablet .flower-buff-grid{
-  grid-template-columns:1.35fr repeat(4,minmax(42px,1fr)) !important;
-}
-body.is-mobile .common-buff-grid{
-  grid-template-columns:repeat(2,minmax(0,1fr)) !important;
-}
-body.is-mobile .flower-buff-grid{
-  grid-template-columns:1fr !important;
-}
-body.is-mobile .select-buff-grid{
-  grid-template-columns:repeat(2,minmax(0,1fr)) !important;
-}
+body.is-tablet .flower-buff-grid { grid-template-columns:1.35fr repeat(4,minmax(42px,1fr)) !important; }
+body.is-mobile .common-buff-grid { grid-template-columns:repeat(2,minmax(0,1fr)) !important; }
+body.is-mobile .flower-buff-grid { grid-template-columns:1fr !important; }
+body.is-mobile .select-buff-grid { grid-template-columns:repeat(2,minmax(0,1fr)) !important; }
 
-/* Mobile buff controls */
-body.is-mobile .unit-enhance-card .seg-btns{
-  gap:6px !important;
-}
-body.is-mobile .unit-enhance-card .seg-btns button{
-  min-width:0 !important;
-  padding-left:8px !important;
-  padding-right:8px !important;
-}
+/* 모바일 버프 컨트롤 */
+body.is-mobile .unit-enhance-card .seg-btns { gap:6px !important; }
+body.is-mobile .unit-enhance-card .seg-btns button { min-width:0 !important; padding-left:8px !important; padding-right:8px !important; }
 body.is-mobile .unit-enhance-card .month-rune-selects,
-body.is-mobile .unit-enhance-card .unit-enhance-inline-controls .pill-row{
-  overflow:visible !important;
-}
+body.is-mobile .unit-enhance-card .unit-enhance-inline-controls .pill-row { overflow:visible !important; }
 
-/* Final responsive alignment */
-body .col-left > .unit-enhance-card{
-  padding:0 14px 12px !important;
-}
-body .col-left > .unit-enhance-card > .sg-title{
-  width:calc(100% + 28px) !important;
-  margin:0 0 10px -14px !important;
-}
+/* 반응형 최종 정렬 */
+body .col-left > .unit-enhance-card { padding:0 14px 12px !important; }
+body .col-left > .unit-enhance-card > .sg-title { width:calc(100% + 28px) !important; margin:0 0 10px -14px !important; }
 body .col-left .sg > .sg-title,
 body .col-mid .stat-dps-card > .section-title,
 body .col-mid .bus-cut-card > h3,
@@ -2028,22 +1843,15 @@ body.is-mobile .mobile-page > .sg.rune-spec.clean-rune-card > .sg-title{
 }
 
 body.is-tablet .col-left > .sg,
-body.is-pc-portrait .col-left > .sg{
-  margin-bottom:12px !important;
-}
+body.is-pc-portrait .col-left > .sg { margin-bottom:12px !important; }
 
 body.is-tablet .col-left > .sg:last-child,
-body.is-pc-portrait .col-left > .sg:last-child{
-  margin-bottom:0 !important;
-}
+body.is-pc-portrait .col-left > .sg:last-child { margin-bottom:0 !important; }
 
-/* Header height and form clarity across all layouts. */
-:root{
-  --dps-card-head-h:40px;
-  --dps-card-head-text:var(--section-head-text, #ffffff);
-}
+/* 전체 레이아웃 헤더 높이 / 입력 가독성 */
+:root { --dps-card-head-h:40px; --dps-card-head-text:var(--section-head-text, #ffffff); }
 
-/* PC/태블릿 기본 3열·2열 화면의 짙은 파랑 헤더 높이 통일 */
+/* PC/태블릿 헤더 높이 통일 */
 .col-left .sg > .sg-title,
 .col-mid .stat-dps-card > .section-title,
 .col-mid .bus-cut-card > h3,
@@ -2110,25 +1918,18 @@ body.is-pc-portrait .col-left > .sg:last-child{
   white-space:nowrap !important;
 }
 
-/* 모바일 탭 스크롤바 숨김 유지 */
+/* 모바일 탭 스크롤바 숨김 */
 body.is-tabbed,
 body.is-tabbed .wrap,
 body.is-tabbed .col-work,
-body.is-tabbed .mobile-page{
-  scrollbar-width:none !important;
-  -ms-overflow-style:none !important;
-}
+body.is-tabbed .mobile-page { scrollbar-width:none !important; -ms-overflow-style:none !important; }
 body.is-tabbed::-webkit-scrollbar,
 body.is-tabbed .wrap::-webkit-scrollbar,
 body.is-tabbed .col-work::-webkit-scrollbar,
 body.is-tabbed .mobile-page::-webkit-scrollbar,
 body.is-tabbed .col-left::-webkit-scrollbar,
 body.is-tabbed .col-mid::-webkit-scrollbar,
-body.is-tabbed .col-right::-webkit-scrollbar{
-  width:0 !important;
-  height:0 !important;
-  display:none !important;
-}
+body.is-tabbed .col-right::-webkit-scrollbar { width:0 !important; height:0 !important; display:none !important; }
 
 /* 모바일 탭 카드 구조 */
 body.is-tabbed .mobile-page > .sg,
@@ -2145,11 +1946,7 @@ body.is-tabbed .mobile-page > .col-right{
   background:#ffffff !important;
   border:1px solid #d9e6f5 !important;
 }
-body.is-tabbed .mobile-page > .col-right{
-  height:auto !important;
-  min-height:0 !important;
-  max-height:none !important;
-}
+body.is-tabbed .mobile-page > .col-right { height:auto !important; min-height:0 !important; max-height:none !important; }
 body.is-tabbed .mobile-page > .col-right .trait-board-panel{
   width:100% !important;
   margin:0 !important;
@@ -2160,13 +1957,9 @@ body.is-tabbed .mobile-page > .col-right .trait-board-panel{
   box-shadow:none !important;
   overflow:visible !important;
 }
-body.is-tabbed .mobile-page > .col-right .trait-board-panel .tp-body{
-  width:100% !important;
-  margin:0 !important;
-  padding:0 !important;
-}
+body.is-tabbed .mobile-page > .col-right .trait-board-panel .tp-body { width:100% !important; margin:0 !important; padding:0 !important; }
 
-/* 모바일 탭 하단 헤더도 전체 플랫폼 공통 높이 사용 */
+/* 모바일 탭 하단 헤더 높이 */
 body.is-tabbed .mobile-page > .sg > .sg-title,
 body.is-tabbed .mobile-page > .data-card > .section-title,
 body.is-tabbed .mobile-page > .data-card > h3,
@@ -2194,7 +1987,7 @@ body.is-tabbed .mobile-page .final-damage-card > h3{
   letter-spacing:0 !important;
   text-transform:none !important;
 }
-/* 태블릿은 PC 시각 테마를 그대로 사용하고, 크기/배치 보정만 유지한다. */
+/* 태블릿 크기/배치 보정 */
 body.is-tablet label,
 body.is-tablet .resource-box label,
 body.is-tablet .resource-usage-row .usage-name,
@@ -2204,10 +1997,7 @@ body.is-tablet .additional-row label,
 body.is-tablet .enchant-combined-row label,
 body.is-tablet .mini-ir label,
 body.is-tablet .pill-label,
-body.is-tablet .stat-row .sc-name{
-  font-weight:900 !important;
-  border-color:var(--ui-line-strong, #bfcee2) !important;
-}
+body.is-tablet .stat-row .sc-name { font-weight:900 !important; border-color:var(--ui-line-strong, #bfcee2) !important; }
 body.is-tablet input:not([type="hidden"]),
 body.is-tablet select,
 body.is-tablet textarea,
@@ -2226,12 +2016,9 @@ body.is-tablet .additional-row b{
 body.is-tablet .btn,
 body.is-tablet .seg-btns button,
 body.is-tablet .mini-btn,
-body.is-tablet .trait-group .tr-ctrl button{
-  font-weight:900 !important;
-  border-width:1px !important;
-}
+body.is-tablet .trait-group .tr-ctrl button { font-weight:900 !important; border-width:1px !important; }
 
-/* 저장상태 배지는 상태색 유지 */
+/* 저장상태 배지 색상 */
 body.is-tabbed .sg.priority > .sg-title.trait-work-head .storage-status,
 body.is-tabbed .col-left .sg > .sg-title.trait-work-head .storage-status{
   background:#ecfdf5 !important;
@@ -2252,7 +2039,7 @@ body.is-tabbed .col-left .sg > .sg-title.trait-work-head .storage-status.err{
   color:#dc2626 !important;
 }
 
-/* Final component overrides */
+/* ── 9. 최종 컴포넌트 보정 ── */
 body .col-left > .sg.unit-enhance-card.spec-unit-enhance{
   display:block !important;
   width:100% !important;
@@ -2299,11 +2086,7 @@ body.is-mobile .mobile-page > .sg.rune-spec.clean-rune-card > .sg-title{
   padding-left:14px !important;
   padding-right:14px !important;
 }
-.stat-compare-grid{
-  display:block !important;
-  overflow:hidden !important;
-  border-radius:9px !important;
-}
+.stat-compare-grid { display:block !important; overflow:hidden !important; border-radius:9px !important; }
 .stat-compare-grid .stat-row{
   display:grid !important;
   grid-template-columns:minmax(105px,.95fr) repeat(2,minmax(0,1fr)) !important;
@@ -2320,10 +2103,7 @@ body.is-mobile .mobile-page > .sg.rune-spec.clean-rune-card > .sg-title{
 }
 .stat-compare-grid .stat-head-row,
 .stat-compare-grid .stat-head-row .sc-name,
-.stat-compare-grid .stat-head-row .sc-val{
-  min-height:28px !important;
-  height:28px !important;
-}
+.stat-compare-grid .stat-head-row .sc-val { min-height:28px !important; height:28px !important; }
 body.is-mobile .mobile-page > .sg.priority > .sg-title.trait-work-head,
 body.is-tabbed .mobile-page > .sg.priority > .sg-title.trait-work-head{
   background:var(--section-head-bg, #234395) !important;
@@ -2331,21 +2111,14 @@ body.is-tabbed .mobile-page > .sg.priority > .sg-title.trait-work-head{
   color:#fff !important;
 }
 body.is-mobile .mobile-page > .sg.priority > .sg-title.trait-work-head > span:first-child,
-body.is-tabbed .mobile-page > .sg.priority > .sg-title.trait-work-head > span:first-child{
-  color:#fff !important;
-}
+body.is-tabbed .mobile-page > .sg.priority > .sg-title.trait-work-head > span:first-child { color:#fff !important; }
 
-/* Keep the sanctuary skill result readable in the narrow PC result column. */
-body.is-pc-landscape .col-mid .final-damage-card .skill-damage-layout{
-  grid-template-columns:minmax(0,1fr) !important;
-}
+/* 좁은 PC 결과 컬럼 가독성 보정 */
+body.is-pc-landscape .col-mid .final-damage-card .skill-damage-layout { grid-template-columns:minmax(0,1fr) !important; }
 body.is-pc-landscape .col-mid .final-damage-card .skill-setting-panel,
-body.is-pc-landscape .col-mid .final-damage-card .skill-result-panel{
-  width:100% !important;
-  min-width:0 !important;
-}
+body.is-pc-landscape .col-mid .final-damage-card .skill-result-panel { width:100% !important; min-width:0 !important; }
 
-/* 6. Current dashboard theme and intentional final precedence */
+/* 현재 대시보드 테마 / 최종 우선순위 */
 :root{
   --v57-bg:#f1f5fb;
   --v57-panel:#ffffff;
@@ -2403,13 +2176,8 @@ body{
   border:1px solid rgba(255,255,255,.5) !important;
   box-shadow:0 6px 16px rgba(36,81,157,.24),inset 0 1px 0 rgba(255,255,255,.3) !important;
 }
-.hdr.app-header h1{
-  color:#101d34 !important;
-  letter-spacing:-.45px !important;
-}
-.hdr-creator-line{
-  color:#6b778b !important;
-}
+.hdr.app-header h1 { color:#101d34 !important; letter-spacing:-.45px !important; }
+.hdr-creator-line { color:#6b778b !important; }
 .app-version-badge,
 #appVersionView{
   background:linear-gradient(180deg,#f7faff 0%,#edf3ff 100%) !important;
@@ -2427,14 +2195,9 @@ body{
 
 .col-left,
 .col-right,
-.col-mid{
-  background:transparent !important;
-  border-color:var(--v57-line) !important;
-}
+.col-mid { background:transparent !important; border-color:var(--v57-line) !important; }
 .col-left,
-.col-right{
-  border-right:1px solid var(--v57-line) !important;
-}
+.col-right { border-right:1px solid var(--v57-line) !important; }
 
 .col-left .sg,
 .trait-board-panel,
@@ -2450,10 +2213,7 @@ body{
 }
 .col-left .sg:hover,
 .trait-group:hover,
-.col-mid .data-card:hover{
-  border-color:#ccd9ea !important;
-  box-shadow:var(--v57-shadow-hover) !important;
-}
+.col-mid .data-card:hover { border-color:#ccd9ea !important; box-shadow:var(--v57-shadow-hover) !important; }
 
 .col-left .sg > .sg-title,
 .col-mid .stat-dps-card > .section-title,
@@ -2473,9 +2233,7 @@ body.is-tabbed .mobile-page .trait-group > h4{
 .col-left .sg > .sg-title::after,
 .col-mid .stat-dps-card > .section-title::after,
 .col-mid .bus-cut-card > h3::after,
-.col-mid .final-damage-card > h3::after{
-  content:none !important;
-}
+.col-mid .final-damage-card > h3::after { content:none !important; }
 
 .xp-sp-panel,
 .buff-subcard,
@@ -2487,10 +2245,7 @@ body.is-tabbed .mobile-page .trait-group > h4{
   border-color:#e0e8f3 !important;
   border-radius:12px !important;
 }
-.rune-panel-title{
-  color:#1d447f !important;
-  letter-spacing:-.1px !important;
-}
+.rune-panel-title { color:#1d447f !important; letter-spacing:-.1px !important; }
 
 .ir label,
 .resource-box label,
@@ -2502,9 +2257,7 @@ body.is-tabbed .mobile-page .trait-group > h4{
 .additional-row label,
 .enchant-combined-row label,
 .sp-summary-line .lbl,
-.sp-detail-row small{
-  border-radius:var(--v57-control-radius) !important;
-}
+.sp-detail-row small { border-radius:var(--v57-control-radius) !important; }
 input:not([type="hidden"]):not([readonly]):not(:disabled):not(.zero-calc-current):not(.zero-calc-target):not(.zero-honor-input),
 select:not(:disabled),
 textarea:not([readonly]):not(:disabled),
@@ -2518,10 +2271,7 @@ textarea:not([readonly]):not(:disabled),
 }
 input:not([type="hidden"]):not([readonly]):not(:disabled):not(.zero-calc-current):not(.zero-calc-target):not(.zero-honor-input):hover,
 select:not(:disabled):hover,
-textarea:not([readonly]):not(:disabled):hover{
-  border-color:#8fa8cf !important;
-  background:#f7faff !important;
-}
+textarea:not([readonly]):not(:disabled):hover { border-color:#8fa8cf !important; background:#f7faff !important; }
 input[readonly],
 input:disabled,
 select:disabled,
@@ -2530,11 +2280,7 @@ select:disabled,
 .resource-usage-row .usage-values,
 .sp-summary-line .val,
 .sp-detail-row b,
-.enchant-result-value{
-  background:#fffaf0 !important;
-  border-color:#e9d39d !important;
-  color:#704b16 !important;
-}
+.enchant-result-value { background:#fffaf0 !important; border-color:#e9d39d !important; color:#704b16 !important; }
 input:not([type="hidden"]):not(.zero-calc-current):not(.zero-calc-target):not(.zero-honor-input):focus,
 select:focus,
 textarea:focus{
@@ -2577,16 +2323,9 @@ button:not(.zero-rank-tab):not(.zero-star-toggle):focus-visible{
   color:#fff !important;
   box-shadow:0 5px 13px rgba(46,94,210,.22),inset 0 1px 0 rgba(255,255,255,.18) !important;
 }
-.btn.danger{
-  background:#fff !important;
-  border-color:#e8b5bd !important;
-  color:#bd3144 !important;
-}
+.btn.danger { background:#fff !important; border-color:#e8b5bd !important; color:#bd3144 !important; }
 
-.stat-dps-summary{
-  position:relative !important;
-  overflow:hidden !important;
-}
+.stat-dps-summary { position:relative !important; overflow:hidden !important; }
 .stat-dps-summary::before{
   position:absolute;
   width:90px;
@@ -2597,34 +2336,21 @@ button:not(.zero-rank-tab):not(.zero-star-toggle):focus-visible{
   border:18px solid rgba(53,105,223,.06);
   pointer-events:none;
 }
-.dps-lbl{
-  color:#56709f !important;
-  letter-spacing:1.5px !important;
-}
-.dps-num{
-  text-shadow:0 2px 12px rgba(35,79,184,.11) !important;
-}
+.dps-lbl { color:#56709f !important; letter-spacing:1.5px !important; }
+.dps-num { text-shadow:0 2px 12px rgba(35,79,184,.11) !important; }
 .stat-compare-grid .stat-row .sc-name{
   background:var(--result-table-label-bg,#eaf1f8) !important;
   color:var(--result-table-text,#17365d) !important;
 }
-.stat-compare-grid .stat-row:nth-child(even) .sc-name{
-  background:var(--result-table-label-bg,#eaf1f8) !important;
-}
-.stat-compare-grid .stat-row:nth-child(even) .sc-val{
-  background:var(--result-table-value-bg,#ffffff) !important;
-}
+.stat-compare-grid .stat-row:nth-child(even) .sc-name { background:var(--result-table-label-bg,#eaf1f8) !important; }
+.stat-compare-grid .stat-row:nth-child(even) .sc-val { background:var(--result-table-value-bg,#ffffff) !important; }
 .stat-compare-grid .stat-head-row .sc-name,
 .stat-compare-grid .stat-head-row .sc-val{
   background:var(--result-table-head-bg,#eaf1f8) !important;
   background-image:none !important;
   color:var(--result-table-text,#17365d) !important;
 }
-.enemy-info-grid{
-  border-color:var(--result-table-line,#dbe4f0) !important;
-  border-radius:12px !important;
-  overflow:hidden !important;
-}
+.enemy-info-grid { border-color:var(--result-table-line,#dbe4f0) !important; border-radius:12px !important; overflow:hidden !important; }
 .enemy-info-title{
   background:var(--result-table-head-bg,#eaf1f8) !important;
   background-image:none !important;
@@ -2637,17 +2363,9 @@ button:not(.zero-rank-tab):not(.zero-star-toggle):focus-visible{
   border-radius:12px !important;
   padding:9px !important;
 }
-.trait-group .tr{
-  transition:background-color .15s ease !important;
-}
-.trait-group .tr:hover{
-  background:#f7faff !important;
-}
-.tv-input{
-  background:#fffaf0 !important;
-  border-color:#e5c36c !important;
-  color:#6b4a16 !important;
-}
+.trait-group .tr { transition:background-color .15s ease !important; }
+.trait-group .tr:hover { background:#f7faff !important; }
+.tv-input { background:#fffaf0 !important; border-color:#e5c36c !important; color:#6b4a16 !important; }
 
 .enhance-summary-card,
 .sp-detail span{
@@ -2656,9 +2374,7 @@ button:not(.zero-rank-tab):not(.zero-star-toggle):focus-visible{
   box-shadow:0 1px 2px rgba(22,46,80,.035) !important;
 }
 .skill-damage-list td,
-.bus-cut-card .mini-table td{
-  border-color:#dce5f0 !important;
-}
+.bus-cut-card .mini-table td { border-color:#dce5f0 !important; }
 
 body.is-tabbed .mobile-swipe-tabs{
   gap:7px !important;
@@ -2676,12 +2392,8 @@ body.is-tabbed .mobile-swipe-tab{
   color:#45546b !important;
   box-shadow:0 2px 5px rgba(24,48,82,.045) !important;
 }
-body.is-tabbed .mobile-swipe-tab.active{
-  color:#fff !important;
-}
-body.is-tabbed .col-work{
-  background:transparent !important;
-}
+body.is-tabbed .mobile-swipe-tab.active { color:#fff !important; }
+body.is-tabbed .col-work { background:transparent !important; }
 body.is-tabbed .mobile-page > .sg,
 body.is-tabbed .mobile-page > .data-card,
 body.is-tabbed .mobile-page > .col-right{
@@ -2691,43 +2403,20 @@ body.is-tabbed .mobile-page > .col-right{
 }
 
 @media (max-width:600px){
-  .hdr.app-header{
-    min-height:56px !important;
-    padding:7px 10px !important;
-  }
-  body.is-tabbed .col-work{
-    padding:9px !important;
-    gap:9px !important;
-  }
+  .hdr.app-header { min-height:56px !important; padding:7px 10px !important; }
+  body.is-tabbed .col-work { padding:9px !important; gap:9px !important; }
   body.is-tabbed .mobile-page > .sg,
   body.is-tabbed .mobile-page > .data-card,
-  body.is-tabbed .mobile-page > .col-right{
-    border-radius:14px !important;
-  }
+  body.is-tabbed .mobile-page > .col-right { border-radius:14px !important; }
 }
 
-/* DPS table readability: shared across desktop, tablet, and mobile. */
-.dps-table-modal-body{
-  background:linear-gradient(180deg,#edf3fb 0%,#f5f8fc 100%) !important;
-}
-.dps-table-panel{
-  border-color:#b9cbe2 !important;
-  box-shadow:0 8px 24px rgba(26,55,94,.12) !important;
-}
-.dps-table-scroll{
-  scrollbar-color:#9fb4d0 #eef3f8;
-  scrollbar-width:thin;
-}
-.dps-matrix{
-  color:#172033 !important;
-  font-variant-numeric:tabular-nums lining-nums;
-}
+/* ── 10. DPS표 / 모달 스타일 ── */
+.dps-table-modal-body { background:linear-gradient(180deg,#edf3fb 0%,#f5f8fc 100%) !important; }
+.dps-table-panel { border-color:#b9cbe2 !important; box-shadow:0 8px 24px rgba(26,55,94,.12) !important; }
+.dps-table-scroll { scrollbar-color:#9fb4d0 #eef3f8; scrollbar-width:thin; }
+.dps-matrix { color:#172033 !important; font-variant-numeric:tabular-nums lining-nums; }
 .dps-matrix th,
-.dps-matrix td{
-  height:27px !important;
-  padding:4px 7px !important;
-  border-color:#d8e2ee !important;
-}
+.dps-matrix td { height:27px !important; padding:4px 7px !important; border-color:#d8e2ee !important; }
 .dps-matrix thead th{
   z-index:4 !important;
   border-bottom:2px solid #9cb7dc !important;
@@ -2747,19 +2436,10 @@ body.is-tabbed .mobile-page > .col-right{
   color:#fff !important;
   text-shadow:none;
 }
-.dps-matrix tbody tr:nth-child(odd) td{
-  background:#fff !important;
-}
-.dps-matrix tbody tr:nth-child(even) td{
-  background:#f7faff !important;
-}
-.dps-matrix tbody tr:hover td{
-  background:#eef5ff !important;
-}
-.dps-matrix tbody tr:hover th{
-  background:#e1ecfa !important;
-  color:#173b75 !important;
-}
+.dps-matrix tbody tr:nth-child(odd) td { background:#fff !important; }
+.dps-matrix tbody tr:nth-child(even) td { background:#f7faff !important; }
+.dps-matrix tbody tr:hover td { background:#eef5ff !important; }
+.dps-matrix tbody tr:hover th { background:#e1ecfa !important; color:#173b75 !important; }
 .dps-matrix td.dps-current-cell{
   position:relative !important;
   z-index:2 !important;
@@ -2781,19 +2461,11 @@ body.is-tabbed .mobile-page > .col-right{
 }
 
 @media (max-width:600px){
-  body.is-mobile .dps-table-modal-head{
-    background:linear-gradient(180deg,#f9fbff 0%,#edf4fc 100%) !important;
-  }
+  body.is-mobile .dps-table-modal-head { background:linear-gradient(180deg,#f9fbff 0%,#edf4fc 100%) !important; }
   body.is-mobile .dps-matrix th,
-  body.is-mobile .dps-matrix td{
-    height:30px !important;
-    padding:5px 8px !important;
-    font-size:calc(11px * var(--app-font-scale)) !important;
-  }
+  body.is-mobile .dps-matrix td { height:30px !important; padding:5px 8px !important; font-size:calc(11px * var(--app-font-scale)) !important; }
   body.is-mobile .dps-matrix thead th:first-child,
-  body.is-mobile .dps-matrix tbody th{
-    width:48px !important;
-  }
+  body.is-mobile .dps-matrix tbody th { width:48px !important; }
 }
 
 @media (max-width:1024px) and (min-width:601px){
@@ -2812,10 +2484,8 @@ html body .stat-dps-card .enemy-info-grid > .enemy-info-title{
 }
 
 
-/* Trait board structure */
-body .trait-board-panel > .sp-box{
-  padding-bottom:10px !important;
-}
+/* ── 11. 특성보드 / 자원 세부 ── */
+body .trait-board-panel > .sp-box { padding-bottom:10px !important; }
 
 body .clean-rune-card .enchant-combined .enchant-result-label > span{
   display:flex !important;
@@ -2832,14 +2502,12 @@ body .clean-rune-card .enchant-combined .enchant-result-label > span{
   text-overflow:ellipsis !important;
 }
 
-/* Trait tool controls */
+/* 특성 도구 컨트롤 */
 body .unit-enhance-card .seg-btns button.active:hover,
 body .unit-enhance-card .seg-btns button.is-active:hover,
-body .unit-enhance-card .buff-choice-item.is-active:hover{
-  filter:brightness(1.04) !important;
-}
+body .unit-enhance-card .buff-choice-item.is-active:hover { filter:brightness(1.04) !important; }
 
-/* Enchant label sizing */
+/* 인첸트 라벨 크기 */
 html[class] body[class] .wrap .col-work .col-left .clean-rune-card .enchant-combined .enchant-combined-grid .enchant-combined-row > label.enchant-result-label > span{
   display:flex !important;
   align-items:center !important;
@@ -2849,7 +2517,7 @@ html[class] body[class] .wrap .col-work .col-left .clean-rune-card .enchant-comb
   border-radius:8px !important;
 }
 
-/* Trait summary card */
+/* 특성 요약 카드 */
 body .trait-board-panel,
 body:not(.is-mobile) .trait-board-panel,
 body.is-tabbed .mobile-page > .col-right .trait-board-panel{
@@ -2863,15 +2531,10 @@ body.is-tabbed .mobile-page > .col-right .trait-board-panel{
   border-radius:0 !important;
   box-shadow:none !important;
 }
-body .trait-board-panel::after{
-  content:none !important;
-  display:none !important;
-}
+body .trait-board-panel::after { content:none !important; display:none !important; }
 body .trait-board-panel > .tp-head,
 body:not(.is-mobile) .trait-board-panel > .tp-head,
-body.is-tabbed .mobile-page .trait-board-panel > .tp-head{
-  display:none !important;
-}
+body.is-tabbed .mobile-page .trait-board-panel > .tp-head { display:none !important; }
 
 body .trait-board-panel > .sp-box,
 body:not(.is-mobile) .trait-board-panel > .sp-box,
@@ -2909,12 +2572,8 @@ body .trait-board-panel > .sp-box::before{
 }
 
 body .trait-board-panel > .sp-box .sp-summary-stack,
-body .trait-board-panel > .sp-box .sp-detail{
-  margin:0 !important;
-}
-body .trait-board-panel > .sp-box .sp-summary-stack{
-  margin-bottom:8px !important;
-}
+body .trait-board-panel > .sp-box .sp-detail { margin:0 !important; }
+body .trait-board-panel > .sp-box .sp-summary-stack { margin-bottom:8px !important; }
 
 body .trait-board-panel > .tp-body{
   width:100% !important;
@@ -2932,20 +2591,12 @@ body .trait-board-panel > .tp-body{
     box-shadow:none !important;
     overflow-y:auto !important;
   }
-  body.is-tabbed .mobile-page .trait-board-panel > .sp-box{
-    padding:48px 9px 9px !important;
-    border-radius:14px !important;
-  }
-  body.is-tabbed .mobile-page .trait-board-panel > .sp-box::before{
-    height:38px;
-  }
+  body.is-tabbed .mobile-page .trait-board-panel > .sp-box { padding:48px 9px 9px !important; border-radius:14px !important; }
+  body.is-tabbed .mobile-page .trait-board-panel > .sp-box::before { height:38px; }
 }
 
-/* Platform-wide quiet labels and action controls */
-.stat-dps-summary::before{
-  content:none !important;
-  display:none !important;
-}
+/* 플랫폼 공통 라벨 / 액션 컨트롤 */
+.stat-dps-summary::before { content:none !important; display:none !important; }
 
 body .xp-sp-card .resource-box label,
 body .xp-sp-card .resource-usage-row .usage-name,
@@ -3015,32 +2666,19 @@ body .final-damage-card .skill-ir > label{
   transform:translateY(-1px) !important;
 }
 
-/* Keep rune information in the intended 2x2 layout on PC portrait. */
+/* PC 세로 룬정보 2x2 배치 유지 */
 body.is-pc-portrait .clean-rune-card .rune-panel.tidy-rune-panel{
   display:grid !important;
   grid-template-columns:repeat(2,minmax(0,1fr)) !important;
   gap:12px !important;
   align-items:start !important;
 }
-body.is-pc-portrait .clean-rune-card .rune-basic-card{
-  grid-column:1 !important;
-  grid-row:1 !important;
-}
-body.is-pc-portrait .clean-rune-card .rune-option-card{
-  grid-column:2 !important;
-  grid-row:1 !important;
-}
-body.is-pc-portrait .clean-rune-card .additional-editor{
-  grid-column:1 !important;
-  grid-row:2 !important;
-}
-body.is-pc-portrait .clean-rune-card .enchant-combined{
-  grid-column:2 !important;
-  grid-row:2 !important;
-  margin-top:0 !important;
-}
+body.is-pc-portrait .clean-rune-card .rune-basic-card { grid-column:1 !important; grid-row:1 !important; }
+body.is-pc-portrait .clean-rune-card .rune-option-card { grid-column:2 !important; grid-row:1 !important; }
+body.is-pc-portrait .clean-rune-card .additional-editor { grid-column:1 !important; grid-row:2 !important; }
+body.is-pc-portrait .clean-rune-card .enchant-combined { grid-column:2 !important; grid-row:2 !important; margin-top:0 !important; }
 
-/* Panel accents */
+/* 패널 강조선 */
 .hdr.app-header::after{
   content:"";
   position:absolute;
@@ -3053,29 +2691,14 @@ body.is-pc-portrait .clean-rune-card .enchant-combined{
   pointer-events:none;
 }
 
-.xp-sp-panel.resource-panel{
-  background:transparent !important;
-}
-.xp-sp-panel.difficulty-panel{
-  background:transparent !important;
-}
-.rune-basic-card{
-  background:linear-gradient(145deg,#fbfcff 0%,#f0f4ff 100%) !important;
-}
-.rune-option-card{
-  background:linear-gradient(145deg,#fbfcff 0%,#f1f2ff 100%) !important;
-}
-.additional-editor{
-  background:linear-gradient(145deg,#fcfdff 0%,#f2f7fb 100%) !important;
-}
-.enchant-combined{
-  background:linear-gradient(145deg,#fcfdff 0%,#f6f2ff 100%) !important;
-}
+.xp-sp-panel.resource-panel { background:transparent !important; }
+.xp-sp-panel.difficulty-panel { background:transparent !important; }
+.rune-basic-card { background:linear-gradient(145deg,#fbfcff 0%,#f0f4ff 100%) !important; }
+.rune-option-card { background:linear-gradient(145deg,#fbfcff 0%,#f1f2ff 100%) !important; }
+.additional-editor { background:linear-gradient(145deg,#fcfdff 0%,#f2f7fb 100%) !important; }
+.enchant-combined { background:linear-gradient(145deg,#fcfdff 0%,#f6f2ff 100%) !important; }
 
-.rune-panel-title{
-  position:relative !important;
-  padding-left:10px !important;
-}
+.rune-panel-title { position:relative !important; padding-left:10px !important; }
 .rune-panel-title::before{
   content:"";
   position:absolute;
@@ -3086,34 +2709,15 @@ body.is-pc-portrait .clean-rune-card .enchant-combined{
   background:linear-gradient(180deg,#4b7de2,#635cc5);
 }
 
-.enhance-summary-card{
-  min-height:58px !important;
-  padding:9px 11px !important;
-  border-top:3px solid #3e72da !important;
-}
-.enhance-summary-card:nth-child(2){
-  border-top-color:#28a0b4 !important;
-  background:linear-gradient(180deg,#fff 0%,#f1fbfc 100%) !important;
-}
-.enhance-summary-card:nth-child(3){
-  border-top-color:#6658c7 !important;
-  background:linear-gradient(180deg,#fff 0%,#f6f3ff 100%) !important;
-}
-.enhance-summary-card b{
-  color:#183f91 !important;
-}
-.enhance-summary-card:nth-child(2) b{
-  color:#176d7c !important;
-}
-.enhance-summary-card:nth-child(3) b{
-  color:#5145a7 !important;
-}
+.enhance-summary-card { min-height:58px !important; padding:9px 11px !important; border-top:3px solid #3e72da !important; }
+.enhance-summary-card:nth-child(2) { border-top-color:#28a0b4 !important; background:linear-gradient(180deg,#fff 0%,#f1fbfc 100%) !important; }
+.enhance-summary-card:nth-child(3) { border-top-color:#6658c7 !important; background:linear-gradient(180deg,#fff 0%,#f6f3ff 100%) !important; }
+.enhance-summary-card b { color:#183f91 !important; }
+.enhance-summary-card:nth-child(2) b { color:#176d7c !important; }
+.enhance-summary-card:nth-child(3) b { color:#5145a7 !important; }
 
 .sp-summary-line .val,
-.sp-detail-row b{
-  position:relative !important;
-  background:linear-gradient(180deg,#fffdf7 0%,#fff8e9 100%) !important;
-}
+.sp-detail-row b { position:relative !important; background:linear-gradient(180deg,#fffdf7 0%,#fff8e9 100%) !important; }
 .sp-summary-line .val{
   color:#1e4fa8 !important;
   border-color:#b9cce9 !important;
@@ -3126,16 +2730,10 @@ body.is-pc-portrait .clean-rune-card .enchant-combined{
   background-clip:text;
   color:transparent !important;
 }
-.enemy-info-grid{
-  box-shadow:inset 0 0 0 1px rgba(255,255,255,.55),0 3px 10px rgba(28,54,96,.04) !important;
-}
+.enemy-info-grid { box-shadow:inset 0 0 0 1px rgba(255,255,255,.55),0 3px 10px rgba(28,54,96,.04) !important; }
 
-.bus-cut-card .mini-table tr{
-  transition:background-color .15s ease !important;
-}
-.bus-cut-card .mini-table tr:hover{
-  background:#f2f9fc !important;
-}
+.bus-cut-card .mini-table tr { transition:background-color .15s ease !important; }
+.bus-cut-card .mini-table tr:hover { background:#f2f9fc !important; }
 .skill-result-panel{
   padding:0 !important;
   border:0 !important;
@@ -3149,9 +2747,7 @@ body.is-pc-portrait .clean-rune-card .enchant-combined{
   background:transparent !important;
 }
 
-.storage-status{
-  box-shadow:0 2px 7px rgba(22,101,52,.1) !important;
-}
+.storage-status { box-shadow:0 2px 7px rgba(22,101,52,.1) !important; }
 
 @media (max-width:600px){
   .col-left .sg > .sg-title::before,
@@ -3163,12 +2759,8 @@ body.is-pc-portrait .clean-rune-card .enchant-combined{
   body.is-tabbed .mobile-page > .sg > .sg-title::before,
   body.is-tabbed .mobile-page > .data-card > .section-title::before,
   body.is-tabbed .mobile-page > .data-card > h3::before,
-  body.is-tabbed .mobile-page .trait-board-panel > .tp-head::before{
-    height:15px;
-  }
-  .enhance-summary-card{
-    min-height:52px !important;
-  }
+  body.is-tabbed .mobile-page .trait-board-panel > .tp-head::before { height:15px; }
+  .enhance-summary-card { min-height:52px !important; }
 }
 
 body .unit-enhance-card .seg-btns button.active:hover,
@@ -3180,7 +2772,7 @@ body .unit-enhance-card .buff-choice-item.is-active:hover{
   box-shadow:0 2px 0 #2149a8,0 6px 13px rgba(46,94,210,.28),inset 0 1px 0 rgba(255,255,255,.24) !important;
 }
 
-/* Reinforcement controls and SP row sizing */
+/* 강화 컨트롤 / SP 행 크기 */
 html body .trait-board-panel > .sp-box > .trait-dashboard-tools{
   display:grid !important;
   grid-template-columns:92px minmax(0,1fr) 92px minmax(0,1fr) !important;
@@ -3189,9 +2781,7 @@ html body .trait-board-panel > .sp-box > .trait-dashboard-tools{
   width:100% !important;
 }
 html body .trait-board-panel > .sp-box > .trait-dashboard-tools > .trait-tool-buttons,
-html body .trait-board-panel > .sp-box > .trait-dashboard-tools > .trait-opt-tier-row{
-  display:contents !important;
-}
+html body .trait-board-panel > .sp-box > .trait-dashboard-tools > .trait-opt-tier-row { display:contents !important; }
 html body .trait-board-panel > .sp-box > .trait-dashboard-tools .trait-tool-buttons > .btn,
 html body .trait-board-panel > .sp-box > .trait-dashboard-tools .trait-opt-tier-row > label,
 html body .trait-board-panel > .sp-box > .trait-dashboard-tools .trait-opt-tier-row > select{
@@ -3210,13 +2800,10 @@ html body .trait-board-panel > .sp-box > .trait-dashboard-tools .trait-opt-tier-
   }
   html body .trait-board-panel > .sp-box > .trait-dashboard-tools .trait-tool-buttons > .btn,
   html body .trait-board-panel > .sp-box > .trait-dashboard-tools .trait-opt-tier-row > label,
-  html body .trait-board-panel > .sp-box > .trait-dashboard-tools .trait-opt-tier-row > select{
-    height:29px !important;
-    min-height:29px !important;
-  }
+  html body .trait-board-panel > .sp-box > .trait-dashboard-tools .trait-opt-tier-row > select { height:29px !important; min-height:29px !important; }
 }
 
-/* Convenience action buttons. */
+/* 편의기능 버튼 */
 html body .sg.priority .save-row .btn.subtle{
   height:36px !important;
   min-height:36px !important;
@@ -3304,7 +2891,7 @@ html[class] body.is-mobile[class] .wrap .col-work .sg.priority .save-row > a.btn
   line-height:1 !important;
 }
 
-/* Shared clean edges */
+/* 공통 모서리 / 경계선 정리 */
 html body .col-left .sg > .sg-title::before,
 html body .col-mid .stat-dps-card > .section-title::before,
 html body .col-mid .bus-cut-card > h3::before,
@@ -3316,15 +2903,10 @@ html body.is-tabbed .mobile-page > .data-card > .section-title::before,
 html body.is-tabbed .mobile-page > .data-card > h3::before,
 html body.is-tabbed .mobile-page .trait-board-panel > .tp-head::before,
 html body .clean-rune-card .rune-panel-title::before,
-html body .trait-board-panel > .sp-box::after{
-  content:none !important;
-  display:none !important;
-}
+html body .trait-board-panel > .sp-box::after { content:none !important; display:none !important; }
 
 html body .clean-rune-card .rune-panel-title,
-html body .clean-rune-card .enchant-combined .rune-panel-title{
-  padding-left:0 !important;
-}
+html body .clean-rune-card .enchant-combined .rune-panel-title { padding-left:0 !important; }
 
 html body .xp-sp-card .resource-box label,
 html body .xp-sp-card .resource-usage-row .usage-name,
@@ -3339,14 +2921,9 @@ html body .clean-rune-card .enchant-result-label > span,
 html body .trait-board-panel .sp-summary-line .lbl,
 html body .trait-board-panel .sp-detail-row small,
 html body .trait-board-panel .trait-opt-tier-row > label,
-html body .final-damage-card .skill-ir > label{
-  border-left-width:1px !important;
-  border-left-color:var(--field-label-accent, #d4e1f0) !important;
-}
+html body .final-damage-card .skill-ir > label { border-left-width:1px !important; border-left-color:var(--field-label-accent, #d4e1f0) !important; }
 
-html body .trait-board-panel > .sp-box::before{
-  padding-left:14px !important;
-}
+html body .trait-board-panel > .sp-box::before { padding-left:14px !important; }
 
 html[class] body[class] .wrap .col-work .col-left .unit-enhance-card .mini-ir > label,
 html[class] body[class] .wrap .col-work .col-left .unit-enhance-card .pill-label,
@@ -3369,7 +2946,7 @@ html[class] body.is-tablet[class] .wrap .col-work .clean-rune-card.clean-rune-ca
   border-left:1px solid var(--field-label-accent, #d4e1f0) !important;
 }
 
-/* Additional note and bus labels */
+/* 안내 문구 / 버스 라벨 */
 html body .clean-rune-card .additional-editor .additional-help{
   display:flex !important;
   align-items:center !important;
@@ -3386,7 +2963,7 @@ html body .bus-cut-card .mini-table tbody tr > td:first-child{
   text-align:center !important;
 }
 
-/* Basic information label sizing */
+/* 기본정보 라벨 크기 */
 html body .xp-sp-card .difficulty-panel .resist-buff-card > .ir > label{
   min-height:32px !important;
   height:32px !important;
@@ -3394,9 +2971,7 @@ html body .xp-sp-card .difficulty-panel .resist-buff-card > .ir > label{
   font-size:calc(11.5px * var(--app-font-scale)) !important;
 }
 
-html body .trait-board-panel .sp-detail-row > small{
-  border-radius:8px !important;
-}
+html body .trait-board-panel .sp-detail-row > small { border-radius:8px !important; }
 
 html body .trait-board-panel .trait-group .tr > div:first-child{
   min-width:0 !important;
@@ -3407,14 +2982,10 @@ html body .trait-board-panel .trait-group .tr > div:first-child{
   background-image:none !important;
   box-shadow:none !important;
 }
-html body .trait-board-panel .trait-group .tr-name{
-  color:#182b49 !important;
-}
-html body .trait-board-panel .trait-group .tr-type{
-  color:#64748b !important;
-}
+html body .trait-board-panel .trait-group .tr-name { color:#182b49 !important; }
+html body .trait-board-panel .trait-group .tr-type { color:#64748b !important; }
 
-/* Responsive readonly values. */
+/* 반응형 읽기전용 값 */
 html[class] body[class] .wrap .col-work .xp-sp-card .resource-box.auto-resource > b,
 html[class] body[class] .wrap .col-work .xp-sp-card .resource-box.readonly-resource > b,
 html[class] body[class] .wrap .col-work .xp-sp-card .resource-usage-row > .usage-values{
@@ -3424,7 +2995,7 @@ html[class] body[class] .wrap .col-work .xp-sp-card .resource-usage-row > .usage
   box-shadow:none !important;
 }
 
-/* Mobile trait controls, stat alignment, and navigation */
+/* 모바일 특성 컨트롤 / 스탯 정렬 / 네비게이션 */
 html body:not(.is-mobile) .stat-compare-grid .stat-row:not(.stat-head-row) > .sc-name{
   justify-content:center !important;
   text-align:center !important;
@@ -3440,9 +3011,7 @@ html body:not(.is-mobile) .stat-compare-grid .stat-row:not(.stat-head-row) > .sc
     width:100% !important;
   }
   html body.is-mobile .trait-board-panel > .sp-box > .trait-dashboard-tools > .trait-tool-buttons,
-  html body.is-mobile .trait-board-panel > .sp-box > .trait-dashboard-tools > .trait-opt-tier-row{
-    display:contents !important;
-  }
+  html body.is-mobile .trait-board-panel > .sp-box > .trait-dashboard-tools > .trait-opt-tier-row { display:contents !important; }
   html body.is-mobile .trait-board-panel > .sp-box > .trait-dashboard-tools .trait-tool-buttons > .btn,
   html body.is-mobile .trait-board-panel > .sp-box > .trait-dashboard-tools .trait-opt-tier-row > label,
   html body.is-mobile .trait-board-panel > .sp-box > .trait-dashboard-tools .trait-opt-tier-row > select{
@@ -3477,11 +3046,7 @@ html body:not(.is-mobile) .stat-compare-grid .stat-row:not(.stat-head-row) > .sc
     grid-template-columns:minmax(58px,1fr) 12px 32px !important;
     justify-content:stretch !important;
   }
-  html body.is-mobile .trait-group .tr-ctrl .tv-input{
-    width:100% !important;
-    min-width:0 !important;
-    height:32px !important;
-  }
+  html body.is-mobile .trait-group .tr-ctrl .tv-input { width:100% !important; min-width:0 !important; height:32px !important; }
   html body.is-mobile .trait-group .tr-ctrl .trait-master-btn,
   html body.is-mobile .trait-group .tr-ctrl button[data-action="traitMax"]{
     width:64px !important;
@@ -3510,10 +3075,7 @@ html body:not(.is-mobile) .stat-compare-grid .stat-row:not(.stat-head-row) > .sc
     border-right:1px solid var(--result-table-line,#dbe4f0) !important;
     border-radius:0 8px 0 0 !important;
   }
-  html body.is-mobile .stat-compare-grid .stat-row:not(.stat-head-row) > .sc-name{
-    justify-content:center !important;
-    text-align:center !important;
-  }
+  html body.is-mobile .stat-compare-grid .stat-row:not(.stat-head-row) > .sc-name { justify-content:center !important; text-align:center !important; }
 
   html body.is-tabbed .mobile-swipe-tabs{
     display:grid !important;
@@ -3551,7 +3113,7 @@ html body:not(.is-mobile) .stat-compare-grid .stat-row:not(.stat-head-row) > .sc
   }
 }
 
-/* DPS table final highlight precedence. */
+/* DPS표 위험구간 최종 강조 */
 html body .dps-matrix td.dps-current-cell{
   position:relative !important;
   z-index:8 !important;
@@ -3602,7 +3164,7 @@ html body .dps-matrix tbody tr td.dps-risk-cell{
   box-shadow:inset 0 0 0 2px #8f0f2b !important;
 }
 
-/* Shared charcoal-navy section headers across every layout. */
+/* 공통 짙은 남색 섹션 헤더 */
 :root{
   --section-head-bg:linear-gradient(135deg,#151c27 0%,#1d2838 58%,#2b3a4e 100%);
   --section-head-bd:#111923;
@@ -3627,11 +3189,9 @@ html body.is-tabbed .mobile-page .trait-group > h4{
 html body .trait-group > h4 > .trait-title,
 html body .col-left .sg > .sg-title > span:first-child,
 html body .col-mid .bus-cut-card > h3 > span:first-child,
-html body .col-mid .final-damage-card > h3 > span:first-child{
-  color:#fff !important;
-}
+html body .col-mid .final-damage-card > h3 > span:first-child { color:#fff !important; }
 
-/* Keep the destructive trait reset action unmistakable. */
+/* 위험 작업 버튼 강조 */
 html body .trait-board-panel button.btn.danger[data-action="clearAll"]{
   border-color:#b91c1c !important;
   background:#dc2626 !important;
@@ -3678,28 +3238,16 @@ html body .trait-board-panel > .sp-box > .trait-dashboard-tools{
   }
 }
 
-/* Trait tier header pills keep their own readable colors. */
-html body .trait-group > h4 .trait-title{
-  color:#fff !important;
-}
-html body .trait-group > h4 .trait-tools .mini-btn{
-  background:#fff !important;
-  background-image:none !important;
-  box-shadow:none !important;
-}
-html body .trait-group > h4 .trait-tools .mini-btn.master{
-  border-color:#bfdbfe !important;
-  color:#1d4ed8 !important;
-}
+/* 특성 티어 헤더 색상 */
+html body .trait-group > h4 .trait-title { color:#fff !important; }
+html body .trait-group > h4 .trait-tools .mini-btn { background:#fff !important; background-image:none !important; box-shadow:none !important; }
+html body .trait-group > h4 .trait-tools .mini-btn.master { border-color:#bfdbfe !important; color:#1d4ed8 !important; }
 html body .trait-group > h4 .trait-tools .mini-btn.master:hover{
   border-color:#93c5fd !important;
   background:#eff6ff !important;
   color:#1e40af !important;
 }
-html body .trait-group > h4 .trait-tools .mini-btn.reset{
-  border-color:#fecaca !important;
-  color:#c6283d !important;
-}
+html body .trait-group > h4 .trait-tools .mini-btn.reset { border-color:#fecaca !important; color:#c6283d !important; }
 html body .trait-group > h4 .trait-tools .mini-btn.reset:hover{
   border-color:#fda4af !important;
   background:#fff1f2 !important;
@@ -3711,12 +3259,8 @@ body.is-tabbed .mobile-page-zero-rank{scrollbar-width:none !important}
 body.is-tabbed .mobile-page-zero-rank::-webkit-scrollbar{display:none !important}
 
 
-/* V137: 더제로 승단 정보 확장 및 모바일 스와이프 전용 조정 */
-.col-left .zero-rank-content{
-  height:720px !important;
-  max-height:none !important;
-  min-height:620px !important;
-}
+/* ── 12. 승단 / 더제로 보드 ── */
+.col-left .zero-rank-content { height:720px !important; max-height:none !important; min-height:620px !important; }
 body.is-tablet .zero-rank-content,
 body.is-pc-portrait .zero-rank-content{
   height:clamp(520px, calc(100vh - 250px), 640px) !important;
@@ -3738,9 +3282,7 @@ body.is-mobile .mobile-page-zero-rank .zero-rank-card{
   overflow:hidden !important;
 }
 body.is-mobile .mobile-page-zero-rank .zero-rank-title,
-body.is-mobile .mobile-page-zero-rank .zero-rank-tabs{
-  flex:0 0 auto !important;
-}
+body.is-mobile .mobile-page-zero-rank .zero-rank-tabs { flex:0 0 auto !important; }
 body.is-mobile .mobile-page-zero-rank .zero-rank-content{
   flex:1 1 auto !important;
   height:auto !important;
@@ -3758,9 +3300,7 @@ body.is-mobile .mobile-page-zero-rank .zero-rank-panel{
 }
 body.is-mobile .mobile-page-zero-rank .zero-rank-panel::-webkit-scrollbar,
 body.is-mobile .mobile-page-zero-rank .zero-table-wrap::-webkit-scrollbar,
-body.is-mobile .mobile-page-zero-rank .zero-calc-table-wrap::-webkit-scrollbar{
-  display:none !important;
-}
+body.is-mobile .mobile-page-zero-rank .zero-calc-table-wrap::-webkit-scrollbar { display:none !important; }
 body.is-mobile .mobile-page-zero-rank .zero-table-wrap,
 body.is-mobile .mobile-page-zero-rank .zero-calc-table-wrap{
   overflow-x:auto !important;
@@ -3771,13 +3311,10 @@ body.is-mobile .mobile-page-zero-rank .zero-calc-table-wrap{
   scrollbar-width:none !important;
   -ms-overflow-style:none !important;
 }
-body.is-mobile .mobile-page-zero-rank .zero-rank-table{
-  width:100% !important;
-  min-width:480px !important;
-}
+body.is-mobile .mobile-page-zero-rank .zero-rank-table { width:100% !important; min-width:480px !important; }
 
 
-/* V139: 승단표·혜택·계산 연동 하이라이트 */
+/* 승단표 / 혜택 / 계산 연동 강조 */
 .zero-rank-table tbody tr.zero-rank-current{
   background:linear-gradient(135deg,#eff6ff 0%,#dbeafe 55%,#bfdbfe 100%) !important;
   border-color:#60a5fa !important;
@@ -3793,39 +3330,15 @@ body.is-mobile .mobile-page-zero-rank .zero-rank-table{
   border-color:#a855f7 !important;
   box-shadow:inset 4px 0 0 #7c3aed, 0 10px 24px rgba(124,58,237,.18) !important;
 }
-.zero-benefit-rank.zero-rank-current{
-  background:#e5f0ff !important;
-  border-color:#93c5fd !important;
-  box-shadow:none !important;
-}
-.zero-benefit-rank.zero-rank-target{
-  background:#fff1d6 !important;
-  border-color:#fbbf24 !important;
-  box-shadow:none !important;
-}
-.zero-benefit-rank.zero-rank-same{
-  background:#f2eaff !important;
-  border-color:#c084fc !important;
-  box-shadow:none !important;
-}
+.zero-benefit-rank.zero-rank-current { background:#e5f0ff !important; border-color:#93c5fd !important; box-shadow:none !important; }
+.zero-benefit-rank.zero-rank-target { background:#fff1d6 !important; border-color:#fbbf24 !important; box-shadow:none !important; }
+.zero-benefit-rank.zero-rank-same { background:#f2eaff !important; border-color:#c084fc !important; box-shadow:none !important; }
 .zero-rank-table tbody tr.zero-rank-current td,
 .zero-rank-table tbody tr.zero-rank-target td,
-.zero-rank-table tbody tr.zero-rank-same td{
-  color:#10224a !important;
-  font-weight:1000 !important;
-}
-.zero-rank-table tbody tr.zero-rank-current td{
-  background:#e5f0ff !important;
-  border-color:#93c5fd !important;
-}
-.zero-rank-table tbody tr.zero-rank-target td{
-  background:#fff1d6 !important;
-  border-color:#fbbf24 !important;
-}
-.zero-rank-table tbody tr.zero-rank-same td{
-  background:#f2eaff !important;
-  border-color:#c084fc !important;
-}
+.zero-rank-table tbody tr.zero-rank-same td { color:#10224a !important; font-weight:1000 !important; }
+.zero-rank-table tbody tr.zero-rank-current td { background:#e5f0ff !important; border-color:#93c5fd !important; }
+.zero-rank-table tbody tr.zero-rank-target td { background:#fff1d6 !important; border-color:#fbbf24 !important; }
+.zero-rank-table tbody tr.zero-rank-same td { background:#f2eaff !important; border-color:#c084fc !important; }
 .zero-rank-table tbody tr.zero-rank-current td:first-child,
 .zero-rank-table tbody tr.zero-rank-target td:first-child,
 .zero-rank-table tbody tr.zero-rank-same td:first-child{
@@ -3855,18 +3368,9 @@ body.is-mobile .mobile-page-zero-rank .zero-rank-table{
   letter-spacing:-.03em;
   white-space:nowrap;
 }
-.zero-rank-table tbody tr.zero-rank-current td:first-child::before{
-  content:'현재 타이틀';
-  background:#2563eb;
-}
-.zero-rank-table tbody tr.zero-rank-target td:first-child::before{
-  content:'목표 타이틀';
-  background:#f59e0b;
-}
-.zero-rank-table tbody tr.zero-rank-same td:first-child::before{
-  content:'현재 타이틀';
-  background:#7c3aed;
-}
+.zero-rank-table tbody tr.zero-rank-current td:first-child::before { content:'현재 타이틀'; background:#2563eb; }
+.zero-rank-table tbody tr.zero-rank-target td:first-child::before { content:'목표 타이틀'; background:#f59e0b; }
+.zero-rank-table tbody tr.zero-rank-same td:first-child::before { content:'현재 타이틀'; background:#7c3aed; }
 .zero-benefit-rank.zero-rank-current h4 span::after,
 .zero-benefit-rank.zero-rank-target h4 span::after,
 .zero-benefit-rank.zero-rank-same h4 span::after{
@@ -3883,25 +3387,15 @@ body.is-mobile .mobile-page-zero-rank .zero-rank-table{
 .zero-benefit-rank.zero-rank-current h4 span::after{content:'현재 타이틀';background:#2563eb;}
 .zero-benefit-rank.zero-rank-target h4 span::after{content:'목표 타이틀';background:#f59e0b;}
 .zero-benefit-rank.zero-rank-same h4 span::after{content:'현재 타이틀';background:#7c3aed;}
-.zero-rank-result-card.zero-rank-upgrade{
-  background:#fff1d6 !important;
-  border-color:#fbbf24 !important;
-  box-shadow:none !important;
-}
-.zero-rank-result-card.zero-rank-same{
-  background:#f2eaff !important;
-  border-color:#c084fc !important;
-  box-shadow:none !important;
-}
+.zero-rank-result-card.zero-rank-upgrade { background:#fff1d6 !important; border-color:#fbbf24 !important; box-shadow:none !important; }
+.zero-rank-result-card.zero-rank-same { background:#f2eaff !important; border-color:#c084fc !important; box-shadow:none !important; }
 .zero-rank-result-card.zero-rank-same .zero-current-rank,
-.zero-rank-result-card.zero-rank-same .zero-target-rank{
-  color:#6d28d9 !important;
-}
+.zero-rank-result-card.zero-rank-same .zero-target-rank { color:#6d28d9 !important; }
 .zero-rank-result-card.zero-rank-upgrade .zero-current-rank{color:#2563eb !important;}
 .zero-rank-result-card.zero-rank-upgrade .zero-target-rank{color:#b45309 !important;}
 
 
-/* V140 rework: 더제로 명예 수동 입력 - 기존 선택박스 크기 유지 */
+/* 더제로 명예 수동 입력 */
 .zero-calc-table .zero-honor-input{
   width:100% !important;
   max-width:none !important;
@@ -3920,16 +3414,8 @@ body.is-mobile .mobile-page-zero-rank .zero-rank-table{
   font-size:calc(10.5px * var(--app-font-scale));
   line-height:31px;
 }
-.zero-calc-table .zero-honor-input::placeholder{
-  color:#9aa8bb;
-  font-size:calc(9px * var(--app-font-scale));
-  text-transform:none;
-}
-.zero-calc-table .zero-honor-input:focus{
-  outline:none;
-  border-color:transparent;
-  box-shadow:inset 0 0 0 2px rgba(49,87,213,.35) !important;
-}
+.zero-calc-table .zero-honor-input::placeholder { color:#9aa8bb; font-size:calc(9px * var(--app-font-scale)); text-transform:none; }
+.zero-calc-table .zero-honor-input:focus { outline:none; border-color:transparent; box-shadow:inset 0 0 0 2px rgba(49,87,213,.35) !important; }
 
 
 body.is-mobile .month-rune-modal{width:calc(100vw - 10px);max-height:calc(var(--mobile-vh, 100vh) - 10px);margin:5px auto;border-radius:14px}
@@ -3968,7 +3454,7 @@ body.is-tablet .month-rune-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
 body.is-tablet .jewel-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
 body.is-tablet .month-rune-head{grid-template-columns:34px minmax(0,1fr) 34px;gap:8px;padding:10px}
 
-/* Mobile Zero rank: focused summary and card-form calculator. */
+/* 모바일 더제로 승단 요약 / 계산 카드 */
 body.is-mobile .zero-mobile-summary-hidden{display:none !important}
 body.is-mobile .zero-rank-tab.active{
   border-color:#3157d5 !important;
@@ -3992,23 +3478,13 @@ body.is-mobile .zero-mobile-expand-btn{
   cursor:pointer;
 }
 body.is-mobile .zero-mobile-expand-btn:active{background:#eef4fb}
-body.is-mobile .zero-rank-panel[data-zero-rank-panel="rank"] .zero-table-wrap{
-  overflow:visible !important;
-}
-body.is-mobile .zero-rank-panel[data-zero-rank-panel="rank"] .zero-rank-table{
-  min-width:0 !important;
-  table-layout:fixed !important;
-}
+body.is-mobile .zero-rank-panel[data-zero-rank-panel="rank"] .zero-table-wrap { overflow:visible !important; }
+body.is-mobile .zero-rank-panel[data-zero-rank-panel="rank"] .zero-rank-table { min-width:0 !important; table-layout:fixed !important; }
 body.is-mobile .zero-rank-table th,
-body.is-mobile .zero-rank-table td{
-  height:31px;
-  padding:0 4px;
-}
+body.is-mobile .zero-rank-table td { height:31px; padding:0 4px; }
 body.is-mobile .zero-rank-table tbody tr.zero-rank-current td:first-child,
 body.is-mobile .zero-rank-table tbody tr.zero-rank-target td:first-child,
-body.is-mobile .zero-rank-table tbody tr.zero-rank-same td:first-child{
-  padding:20px 4px 3px !important;
-}
+body.is-mobile .zero-rank-table tbody tr.zero-rank-same td:first-child { padding:20px 4px 3px !important; }
 body.is-mobile .zero-rank-table tbody tr.zero-rank-current td:first-child::before,
 body.is-mobile .zero-rank-table tbody tr.zero-rank-target td:first-child::before,
 body.is-mobile .zero-rank-table tbody tr.zero-rank-same td:first-child::before{
@@ -4028,11 +3504,7 @@ body.is-mobile .zero-benefit-rank ul{
   gap:2px;
   padding-left:16px;
 }
-body.is-mobile .zero-calc-summary{
-  position:static;
-  z-index:auto;
-  padding-bottom:6px;
-}
+body.is-mobile .zero-calc-summary { position:static; z-index:auto; padding-bottom:6px; }
 body.is-mobile .zero-calc-table-wrap{
   overflow:visible !important;
   border:0;
@@ -4047,10 +3519,7 @@ body.is-mobile .mobile-page-zero-rank .zero-calc-table{
   font-size:calc(10px * var(--app-font-scale));
 }
 body.is-mobile .zero-calc-table thead{display:none}
-body.is-mobile .zero-calc-table tbody{
-  display:grid;
-  gap:7px;
-}
+body.is-mobile .zero-calc-table tbody { display:grid; gap:7px; }
 body.is-mobile .zero-calc-table tr.zero-calc-row{
   display:grid;
   grid-template-columns:repeat(3,minmax(0,1fr));
@@ -4133,23 +3602,15 @@ body.is-mobile .zero-calc-table .zero-star-toggle{
   border-radius:9px !important;
   background:#f2f6fd !important;
 }
-body.is-mobile .zero-calc-table .zero-star-toggle.active{
-  border-color:#3157d5 !important;
-  background:#3157d5 !important;
-  color:#fff !important;
-}
+body.is-mobile .zero-calc-table .zero-star-toggle.active { border-color:#3157d5 !important; background:#3157d5 !important; color:#fff !important; }
 body.is-mobile .zero-calc-table .zero-honor-input{
   width:100%;
   height:29px;
   min-height:29px;
   margin:0;
 }
-body.is-mobile .zero-calc-table tr.zero-calc-tower-row .zero-calc-unused{
-  display:none !important;
-}
-body.is-mobile .zero-calc-table tr.zero-calc-tower-row td:nth-child(5)::before{
-  content:'추가' !important;
-}
+body.is-mobile .zero-calc-table tr.zero-calc-tower-row .zero-calc-unused { display:none !important; }
+body.is-mobile .zero-calc-table tr.zero-calc-tower-row td:nth-child(5)::before { content:'추가' !important; }
 body.is-mobile .zero-row-score{
   display:flex;
   align-items:center;

@@ -1,18 +1,24 @@
-/* app.js 구역 목차
-   01. 설정 / 기준 데이터
-   02. 전역 상태 / 특성 투자 상태
-   03. 공통 UI 유틸 / 입력값 유틸
-   04. 계산 보조 함수 / 난이도 / 룬 / 특성 효과
-   05. 핵심 계산 엔진
-   06. 메인 화면 렌더링 / 재계산
-   07. DPS 표 모달
-   08. 비교하기 / 변경값 적용
-   09. 특성보드 / 최적화 / 초기화
-   10. 저장 / 복구 / JSON 백업
-   11. 화면 제어 / 글자 크기 / 위험 작업 확인
-   12. 이벤트 바인딩 / 앱 초기화
+/*
+  ==========================================================================
+  [ DPS 계산 앱 로직 (app.js) 목차 ]
+   0. 반응형/모바일 부트스트랩    (초기 class, 모바일 탭, 입력 포커스)
+   1. 설정 / 기준 데이터          (저장키, DPS표 설정, UI 지연값)
+   2. 전역 상태 / 특성 투자       (INV, 비용, 최대치, 인첸트 입력 ID)
+   3. 공통 UI / 입력 유틸         (값 읽기, 토스트, select/button 동기화)
+   4. 계산 보조 함수              (난이도, 룬, 특성 효과, 적 기준값)
+   5. 스탯 / 버프 / DPS 계산      (computeStatsRaw 중심 계산 엔진)
+   6. 메인 화면 렌더링            (DPS, 표기/실질 스탯, 요약 보드)
+   7. DPS표 / 이달룬 모달         (동적 모달 생성, 탭, 닫기 이벤트)
+   8. 비교하기 / 변경값 적용      (엑셀/백업 읽기, 미리보기, 적용)
+   9. 특성보드 / 최적화           (특성 렌더링, 투자 조정, 초기화)
+  10. 저장 / 복구 / JSON 백업      (localStorage, 백업 파일)
+  11. 화면 제어 / 위험 작업 확인   (글자 크기, 길게 누르기, 확인 버튼)
+  12. 더제로 승단 계산기           (승단 점수, 별 선택, 모바일 요약)
+  13. 이벤트 바인딩 / 앱 초기화     (data-action 연결, 입력 감지, 시작)
+  ==========================================================================
 */
 
+/* ── 0. 반응형/모바일 부트스트랩 ── */
 (() => {
   'use strict';
 
@@ -28,15 +34,7 @@
     { key: 'save', label: '기타', selectors: ['.bus-cut-card', '.final-damage-card'] }
   ];
 
-  const state = {
-    tabs: null,
-    pages: [],
-    restore: new Map(),
-    raf: 0,
-    arrangedMobile: false,
-    layoutWidth: 0,
-    layoutPortrait: null
-  };
+  const state = { tabs:null, pages:[], restore:new Map(), raf:0, arrangedMobile:false, layoutWidth:0, layoutPortrait:null };
 
   function getMode() {
     const w = window.innerWidth || document.documentElement.clientWidth || 0;
@@ -282,9 +280,7 @@
   window.addEventListener('load', updateMobileOffsets, { once: true });
 })();
 
-/* =========================================================
-   01. 설정 / 기준 데이터
-   ========================================================= */
+/* ── 1. 설정 / 기준 데이터 ── */
 var DPS_CONFIG={
   storage:{
     version:(window.DPS_BUILD_VERSION || 'dev'),
@@ -329,9 +325,7 @@ function enchantAt(pos){
   return ENCHANT_TABLE[lv];
 }
 
-/* =========================================================
-   02. 전역 상태 / 특성 투자 상태
-   ========================================================= */
+/* ── 2. 전역 상태 / 특성 투자 상태 ── */
 const INV={};
 TRAITS.forEach(t=>{INV[t[0]]=0;});
 Object.assign(INV,{116:1});
@@ -374,9 +368,7 @@ function cumCost(row){
   if(nn>400){const ov=nn-400,x0=a+400*d;s+=(ov*(2*x0+(ov-1)*(d/2)))/2;}
   return s;
 }
-/* =========================================================
-   03. 공통 UI 유틸 / 입력값 유틸
-   ========================================================= */
+/* ── 3. 공통 UI 유틸 / 입력값 유틸 ── */
 function showToast(message, type='ok'){
   try{
     let root=document.getElementById('toastRoot');
@@ -414,9 +406,7 @@ function setHtml(id,val){const el=document.getElementById(id); if(el) el.innerHT
 function setValue(id,val){const el=document.getElementById(id); if(el) el.value=String(val);}
 const RUNE_CHOICE_TARGETS=[['ap','rAP'],['ua','rUA'],['td','rTD'],['harmony','rHarmony']];
 
-/* =========================================================
-   04. 계산 보조 함수 / 난이도 / 룬 / 특성 효과
-   ========================================================= */
+/* ── 4. 계산 보조 함수 / 난이도 / 룬 / 특성 효과 ── */
 function isAbyssDifficulty(){const d=vs('diff'); return d==='Abyss road' || d==='Deep Abyss';}
 function abyssEffectiveStack(){
   if(!isAbyssDifficulty()) return 0;
@@ -643,7 +633,6 @@ function syncExclusiveRuneOptions(){
     });
   });
 }
-/* Stat, buff, rune, and DPS calculation engine */
 const STAT_KO={
   AD:'공격력', AS:'공격속도', AP:'마법공격력', CRI:'크리티컬 확률', CD:'크리티컬 데미지',
   MC:'다중 크리티컬', TD:'총 데미지', DR:'방어력 감소', PIERCE:'방어력 관통', UA:'유닛 가속',
@@ -792,10 +781,7 @@ function syncAutoEP(){
 }
 function effectiveAdditionalStats(){
   // Excel spec sheet applies additional rune stats to Hyper/Penance, Tower, and Abyss sheets alike.
-  return {
-    ad:v('addAD'), as:v('addAS'), cd:v('addCD'), cri:v('addCRI'), ap:v('addAP'),
-    td:v('addTD'), ua:v('addUA'), dr:v('addDR'), sr:v('addSR'), hr:v('addHR')
-  };
+  return { ad:v('addAD'), as:v('addAS'), cd:v('addCD'), cri:v('addCRI'), ap:v('addAP'), td:v('addTD'), ua:v('addUA'), dr:v('addDR'), sr:v('addSR'), hr:v('addHR') };
 }
 function growthGraduationAttackBonus(){
   const manual=v('sysAD');
@@ -803,9 +789,7 @@ function growthGraduationAttackBonus(){
   return effectiveXpValue()>=2000000 ? 20 : 0;
 }
 
-/* =========================================================
-   05. 핵심 계산 엔진
-   ========================================================= */
+/* ── 5. 스탯 / 버프 / DPS 계산 ── */
 function computeStatsRaw(){
   const autoEP=syncAutoEP();
   const diff=DIFF[vs('diff')]||DIFF['The Final'];
@@ -927,11 +911,7 @@ function getRuneOptionStats(){
 function getSpecialRuneStats(optionStats={tdRuneMul:1}){
   const harmony=v('rHarmony');
   const tdRuneMul=optionStats.tdRuneMul || 1;
-  return {
-    ap:v('rAP'),
-    td:(v('rTD') + harmony) * tdRuneMul,
-    ua:v('rUA') + harmony
-  };
+  return { ap:v('rAP'), td:(v('rTD') + harmony) * tdRuneMul, ua:v('rUA') + harmony };
 }
 function rpCost(row,n){
   n=Math.max(0,Math.min(TMAX[row]||999,Math.round(n||0)));
@@ -1042,7 +1022,6 @@ function allowedRowsByTier(){
   const idx=TIERS.indexOf(target);
   return new Set(TRAITS.filter(t=>TIERS.indexOf(t[2])>=0 && TIERS.indexOf(t[2])<=idx).map(t=>t[0]));
 }
-/* Main dashboard rendering */
 function fmt(n,d=1){return n==null||isNaN(n)?'—':parseFloat(n.toFixed(d)).toLocaleString('ko-KR');}
 function big(n){
   n=Number(n);
@@ -1078,9 +1057,7 @@ function resetDifficultyDependentFields(){
   return changed;
 }
 
-/* =========================================================
-   06. 메인 화면 렌더링 / 재계산
-   ========================================================= */
+/* ── 6. 메인 화면 렌더링 / 재계산 ── */
 function renderDpsSummary(s){
   if(shouldHideDpsForRound()){
     setText('dpsVal', '—');
@@ -1217,9 +1194,7 @@ function requestAppUpdate(){
   if(appUpdateTimer) clearTimeout(appUpdateTimer);
   appUpdateTimer=setTimeout(()=>{appUpdateTimer=0; recalc();}, DPS_CONFIG.ui.updateDelay);
 }
-/* =========================================================
-   07. DPS 표 모달
-   ========================================================= */
+/* ── 7. DPS표 / 이달룬 모달 ── */
 const DPS_TABLE_DIFFICULTIES=DPS_CONFIG.dpsTable.difficulties;
 const DPS_TABLE_PENANCE_MIN=DPS_CONFIG.dpsTable.penanceMin ?? 0;
 const DPS_TABLE_PENANCE_MAX=DPS_CONFIG.dpsTable.penanceMax ?? 20;
@@ -1234,10 +1209,7 @@ function getDpsTableCurrentRound(){
 }
 function getDpsTableTowerRange(){
   const tower=DPS_CONFIG.dpsTable.tower || {};
-  return {
-    min: Math.max(1, Math.round(tower.minFloor || 1)),
-    max: Math.max(1, Math.round(tower.maxFloor || 90))
-  };
+  return { min:Math.max(1, Math.round(tower.minFloor || 1)), max:Math.max(1, Math.round(tower.maxFloor || 90)) };
 }
 function getDpsTableTowerGroupSize(){
   const body=document.body;
@@ -1665,14 +1637,8 @@ function bindMonthRuneEvents(){
   });
   document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeMonthRune(); });
 }
-/* Comparison file import, preview, and apply */
-
-/* =========================================================
-   08. 비교하기 / 변경값 적용
-   - 5.4392 구조만 지원
-   - 비교는 읽기 전용
-   - 적용 버튼에서만 웹 상태 변경
-   ========================================================= */
+/* ── 8. 비교하기 / 변경값 적용 ── */
+/* 비교는 읽기 전용이며, 적용 버튼을 누를 때만 웹 상태를 바꿉니다. */
 const EXCEL_COMPARE_STATS=[
   ['AD','공격력','L4','M4',s=>s.displayAD,s=>s.M4],
   ['APS','AP(성소)','L5','M5',s=>s.displayAPS,s=>s.displayAPS],
@@ -1810,10 +1776,7 @@ function escapeCompareHtml(value){
     '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
   }[char]));
 }
-const COMPARE_SPECIAL_RUNE_LABELS={
-  ap:'파이널룬',ua:'코스모스룬',td:'카오스룬',harmony:'하모니룬',
-  'td&ua':'하모니룬','td＆ua':'하모니룬'
-};
+const COMPARE_SPECIAL_RUNE_LABELS={ap:'파이널룬',ua:'코스모스룬',td:'카오스룬',harmony:'하모니룬','td&ua':'하모니룬','td＆ua':'하모니룬'};
 function compareNormalizedText(value){
   return String(value??'').trim().replace(/\s+/g,'').toLowerCase();
 }
@@ -1897,12 +1860,8 @@ const COMPARE_VALUE_META={
   flowerSkill1:{kind:'룬효과/버프',name:'근성의 꽃가루'},flowerSkill2:{kind:'룬효과/버프',name:'바람의 꽃가루'},flowerSkill3:{kind:'룬효과/버프',name:'안개의 꽃가루'},
   dpsTableMinDps:{kind:'DPS표',name:'도전할 최소 DPS'}
 };
-const ENCHANT_COMPARE_ITEMS=[
-  ['enchAD','공격력'],['enchCRI','크리티컬 확률'],['enchUA','유닛 가속'],['enchTD','총 데미지'],['enchSR','실드 감소'],['enchHR','체력 감소']
-];
-const LATEST_SPEC_ADDITIONAL_LABELS=[
-  ['Q36','AD'],['Q37','AS'],['Q38','CD'],['Q39','CRI'],['Q40','AP'],['Q41','TD'],['Q42','UA']
-];
+const ENCHANT_COMPARE_ITEMS=[['enchAD','공격력'],['enchCRI','크리티컬 확률'],['enchUA','유닛 가속'],['enchTD','총 데미지'],['enchSR','실드 감소'],['enchHR','체력 감소']];
+const LATEST_SPEC_ADDITIONAL_LABELS=[['Q36','AD'],['Q37','AS'],['Q38','CD'],['Q39','CRI'],['Q40','AP'],['Q41','TD'],['Q42','UA']];
 const SPEC_ADDITIONAL_CELLS={addAD:'R36',addAS:'R37',addCD:'R38',addCRI:'R39',addAP:'R40',addTD:'R41',addUA:'R42'};
 function normalizeStructureText(value){
   return excelText(value).replace(/\s+/g,'').toLowerCase();
@@ -1911,11 +1870,7 @@ function inspectSpecAdditionalStructure(specCells){
   const mismatches=LATEST_SPEC_ADDITIONAL_LABELS.filter(([ref,expected])=>
     normalizeStructureText(specCells[ref])!==normalizeStructureText(expected)
   ).map(([ref,expected])=>({ref,expected,actual:excelText(specCells[ref])||'값 없음'}));
-  return {
-    valid:mismatches.length===0,
-    mismatches,
-    message:'불러온 Excel 파일은 5.4392 버전과 구조가 달라 비교하기 기능을 사용할 수 없습니다.'
-  };
+  return { valid:mismatches.length===0, mismatches, message:'불러온 Excel 파일은 5.4392 버전과 구조가 달라 비교하기 기능을 사용할 수 없습니다.' };
 }
 function getSpecAdditionalValue(specCells, id){
   const ref=SPEC_ADDITIONAL_CELLS[id];
@@ -2105,7 +2060,6 @@ function compareZeroNumberRow(kind,name,changeValue,currentValue){
 }
 function buildZeroScoreCompareRows(zeroCells){
   if(!zeroCells) return [];
-  const excelState=zeroScoreStateFromExcel(zeroCells);
   const webState=collectZeroScoreState() || {rows:[]};
   const rows=[];
   ZERO_EXCEL_PENANCE_ROWS.forEach(({name,row},index)=>{
@@ -2671,9 +2625,7 @@ function bindDpsTableEvents(){
   });
   document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeDpsTable(); });
 }
-/* =========================================================
-   09. 특성보드 / 최적화 / 초기화
-   ========================================================= */
+/* ── 9. 특성보드 / 최적화 / 초기화 ── */
 const TIERS=['루키','비기너','아마추어','프로','엑스퍼트','마스터','디바인','더원1','더원2','무한∞','EP특성','RP특성','심연특성'];
 function updateTraits(){
   const body=document.getElementById('traitBody');
@@ -2992,9 +2944,7 @@ function clearAll(){
     return false;
   }
 }
-/* =========================================================
-   10. 저장 / 복구 / JSON 백업
-   ========================================================= */
+/* ── 10. 저장 / 복구 / JSON 백업 ── */
 const STORAGE_VERSION=DPS_CONFIG.storage.version;
 const STORAGE_SCOPE=DPS_CONFIG.storage.scope;
 const STORAGE_KEY=DPS_CONFIG.storage.key;
@@ -3291,11 +3241,7 @@ function importStateBackup(){
   };
   fileInput.click();
 }
-/* Viewport, font scale, and destructive-action safeguards */
-
-/* =========================================================
-   11. 화면 제어 / 글자 크기 / 위험 작업 확인
-   ========================================================= */
+/* ── 11. 화면 제어 / 글자 크기 / 위험 작업 확인 ── */
 function isMobileViewport(){
   const max=DPS_CONFIG.ui.mobileMaxWidth || 600;
   if(window.matchMedia) return window.matchMedia(`(max-width:${max}px)`).matches;
@@ -3421,9 +3367,7 @@ function bindTraitHoldEvents(){
     window.addEventListener(type, stopTraitAdjustHold, true);
   });
 }
-/* =========================================================
-   12. 이벤트 바인딩 / 앱 초기화
-   ========================================================= */
+/* ── 12. 더제로 승단 계산기 ── */
 function zeroScoreNumber(value, min, max){
   const n=Number(value);
   if(!Number.isFinite(n)) return min;
@@ -3440,12 +3384,7 @@ function zeroPenanceScore(level){
   }
   return sum;
 }
-const ZERO_HONOR_STAGES=[
-  {key:'b', point:2},
-  {key:'a', point:4},
-  {key:'s', point:6},
-  {key:'x', point:8}
-];
+const ZERO_HONOR_STAGES=[{key:'b', point:2},{key:'a', point:4},{key:'s', point:6},{key:'x', point:8}];
 function zeroHonorScore(stage){
   const found=ZERO_HONOR_STAGES.find(item=>item.key===stage);
   return found ? found.point : 0;
@@ -3702,6 +3641,7 @@ function setZeroRankTab(trigger){
     panel.classList.toggle('active', panel.dataset.zeroRankPanel===key);
   });
 }
+/* ── 13. 이벤트 바인딩 / 앱 초기화 ── */
 let appEventsBound=false;
 const ACTION_HANDLERS={
   optimizeSP:()=>optimizeSP(),
