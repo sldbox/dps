@@ -21,13 +21,13 @@
 <!-- ── 1. 앱 버전 / 캐시 설정 ── -->
 <script>
 window.DPS_APP_VERSION = "V 2.1";
-window.DPS_BUILD_VERSION = "2606131000";
+window.DPS_BUILD_VERSION = "2606131100";
 window.DPS_ASSET_VERSIONS = {
-  "app.js": "2606131000",
-  "style.css": "2606131000",
-  "data.js": "2606131000",
-  "image/logo/logo.png": "2606131000",
-  "image/logo/icon.png": "2606131000"
+  "app.js": "2606131100",
+  "style.css": "2606131100",
+  "data.js": "2606131100",
+  "image/logo/logo.png": "2606131100",
+  "image/logo/icon.png": "2606131100"
 };
 window.dpsAssetVersion = function(key){
   var versions = window.DPS_ASSET_VERSIONS || {};
@@ -110,19 +110,47 @@ setTimeout(function(){
 (function(){
   var assetUrl = window.dpsAssetUrl;
   var versionSignature = window.dpsCacheSignature();
+  var buildVersion = window.DPS_BUILD_VERSION || 'dev';
   var imageAssetUrl = window.dpsImageAssetUrl || assetUrl;
   var logo = imageAssetUrl('./image/logo/logo.png', 'image/logo/logo.png');
   var icon = imageAssetUrl('./image/logo/icon.png', 'image/logo/icon.png');
+
+  function clearSiteCaches(){
+    if(!('caches' in window)) return;
+    caches.keys().then(function(keys){
+      return Promise.all(keys.map(function(k){ return caches.delete(k); }));
+    }).catch(function(){});
+  }
+
+  function resetToCurrentVersion(){
+    if(!window.location || window.location.protocol === 'file:') return false;
+    try{
+      var refreshKey = 'DPS_ASSET_REFRESHED_' + buildVersion;
+      if(sessionStorage.getItem(refreshKey) === '1') return false;
+      var url = new URL(window.location.href);
+      url.searchParams.set('v', buildVersion);
+      url.searchParams.set('fresh', String(Date.now()));
+      sessionStorage.setItem(refreshKey, '1');
+      window.location.replace(url.toString());
+      return true;
+    }catch(e){ return false; }
+  }
+
   try{
-    var key='gaebokdi_dps_asset_versions';
+    var key='DPS_ASSET_VERSIONS';
+    var oldKeys=['gaebokdi_' + key.toLowerCase()];
     var prev=localStorage.getItem(key);
-    if(prev && prev!==versionSignature){
+    var params=new URLSearchParams(window.location.search || '');
+    var urlVersion=params.get('v');
+    oldKeys.forEach(function(oldKey){
+      try{ localStorage.removeItem(oldKey); }catch(e){}
+    });
+    var hasStoredVersion = !!prev;
+    var needsCacheReset = (hasStoredVersion && prev !== versionSignature) || urlVersion !== buildVersion;
+    if(needsCacheReset){
+      clearSiteCaches();
       localStorage.setItem(key, versionSignature);
-      if('caches' in window){
-        caches.keys().then(function(keys){
-          return Promise.all(keys.map(function(k){ return caches.delete(k); }));
-        }).catch(function(){});
-      }
+      if(resetToCurrentVersion()) return;
     }
     localStorage.setItem(key, versionSignature);
   }catch(e){}

@@ -3135,12 +3135,13 @@ function clearCurrentCalculatorStorage(){
 }
 function formatStorageTime(ts=Date.now()){
   const d=new Date(ts), pad=n=>String(n).padStart(2,'0');
-  return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  return `${pad(d.getFullYear()%100)}년${pad(d.getMonth()+1)}월${pad(d.getDate())}일 ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 function setStorageStatus(message, type='ok', options={}){
   const el=document.getElementById('storageStatusView');
   if(!el) return;
-  el.textContent=message+(options.time ? ` · ${formatStorageTime(options.time)}` : '')+(options.scope ? ` · ${options.scope}` : '');
+  const time=options.time || Date.now();
+  el.textContent=`${formatStorageTime(time)} ${message}`;
   el.className='storage-status '+type;
   el.title='입력값은 서버/GitHub가 아니라 현재 브라우저에만 저장됩니다.';
 }
@@ -3151,7 +3152,7 @@ function saveState(options={}){
     const state=makeStateObject();
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
     storageSaveFailCount=0;
-    setStorageStatus('저장됨', 'ok', {time:state.savedAt, scope:'현재 브라우저'});
+    setStorageStatus('저장됨', 'ok', {time:state.savedAt});
     if(!silent){
       try{showToast('입력값 저장 완료','ok');}catch(e){}
     }
@@ -3172,11 +3173,11 @@ function loadState(){
     const saved=readCurrentSavedState();
     if(!saved){
       resetToFactoryState();
-      setStorageStatus('초기 상태', 'idle', {scope:'저장값 없음'});
+      setStorageStatus('저장값 없음', 'idle', {time:Date.now()});
       return;
     }
     applyStateObject(saved);
-    setStorageStatus('저장값 불러옴', 'ok', {time:saved.savedAt||Date.now(), scope:'현재 브라우저'});
+    setStorageStatus('불러옴', 'ok', {time:Date.now()});
   }catch(e){
     console.warn('loadState failed', e);
     resetToFactoryState();
@@ -3184,7 +3185,7 @@ function loadState(){
 }
 function clearSavedState(){
   clearCurrentCalculatorStorage();
-  setStorageStatus('입력값 삭제됨', 'warn', {time:Date.now(), scope:'현재 입력값 유지'});
+  setStorageStatus('삭제됨', 'warn', {time:Date.now()});
 }
 function exportStateBackup(){
   try{
@@ -3200,7 +3201,7 @@ function exportStateBackup(){
     a.click();
     a.remove();
     URL.revokeObjectURL(url);
-    setStorageStatus('백업 파일 생성됨', 'ok', {time:Date.now(), scope:'파일 저장'});
+    setStorageStatus('백업 파일 생성됨', 'ok', {time:Date.now()});
   }catch(e){
     console.error(e);
     alert('백업 실패: '+(e?.message || e));
@@ -3212,7 +3213,7 @@ function applyImportedState(data){
   resetExcelComparison({close:true});
   applyStateObject(norm);
   saveState({silent:false});
-  setStorageStatus('백업 복원 완료', 'ok', {time:Date.now(), scope:'현재 브라우저'});
+  setStorageStatus('백업 복원 완료', 'ok', {time:Date.now()});
 }
 function handleImportError(e){
   console.error(e);
@@ -3271,7 +3272,7 @@ function applyFontScale(scale, options={}){
   document.documentElement.style.setProperty('--app-font-scale', next.toFixed(2));
   if(label) label.textContent=Math.round(next*100)+'%';
   try{ localStorage.setItem(DPS_CONFIG.storage.fontKey, String(next)); }catch(e){}
-  if(!options.silent) setStorageStatus('글씨 크기 '+Math.round(next*100)+'% 저장됨', 'ok', {time:Date.now(), scope:'PC/태블릿'});
+  if(!options.silent) setStorageStatus('글씨 크기 '+Math.round(next*100)+'% 저장됨', 'ok', {time:Date.now()});
   return true;
 }
 function loadFontScale(){
