@@ -1064,15 +1064,6 @@ function selectedControlText(el){
   }
   return String(el.value ?? '—').trim() || '—';
 }
-function escapeHtml(value){
-  return String(value ?? '').replace(/[&<>"']/g, ch=>({
-    '&':'&amp;',
-    '<':'&lt;',
-    '>':'&gt;',
-    '"':'&quot;',
-    "'":'&#39;'
-  }[ch]));
-}
 function getDpsContextValues(){
   const diffEl=document.getElementById('diff');
   const penEl=document.getElementById('penance');
@@ -1080,17 +1071,20 @@ function getDpsContextValues(){
   const penValue=Math.max(0,Math.min(20,Math.round(Number(penEl?.value || 0))));
   const rawRound=String(roundEl?.value ?? '').replace(/,/g,'').trim();
   const roundValue=rawRound==='' ? NaN : Number(rawRound);
+  const roundInt=Number.isFinite(roundValue) ? Math.round(roundValue) : null;
   const diff=selectedControlText(diffEl);
-  const penance=`${penValue}고행`;
-  const round=Number.isFinite(roundValue) ? `${Math.round(roundValue)}R` : '—';
-  const floor=Number.isFinite(roundValue) ? `${Math.round(roundValue)}층` : '—';
-  return {diff, penValue, roundValue, penance, round, floor};
+  const penance=penValue>0 ? `${penValue} 고행` : '고행 없음';
+  const round=roundInt!==null ? `${roundInt} 라운드` : '라운드 —';
+  const floor=roundInt!==null ? `${roundInt}층` : '층 —';
+  const penanceShort=String(penValue);
+  const roundShort=roundInt!==null ? String(roundInt) : '—';
+  return {diff, penValue, roundValue, penance, round, floor, penanceShort, roundShort};
 }
 function updateDpsContextSummary(){
   const ctx=getDpsContextValues();
   setText('dpsContextDiff', ctx.diff);
-  setText('dpsContextPenance', ctx.penance);
-  setText('dpsContextRound', ctx.round);
+  setText('dpsContextPenance', ctx.penanceShort);
+  setText('dpsContextRound', ctx.roundShort);
 }
 
 /* ── 6. 메인 화면 렌더링 / 재계산 ── */
@@ -1401,15 +1395,6 @@ function buildDpsTowerTable(){
   }).join('');
   return `<div class="dps-tower-grid" data-tower-group-size="${groupSize}">${blocks}</div>`;
 }
-function buildDpsTableContextBar(){
-  const ctx=getDpsContextValues();
-  const isTower=activeDpsTableMode==='tower';
-  const items=isTower
-    ? [['난이도', ctx.diff], ['층수', ctx.floor]]
-    : [['난이도', ctx.diff], ['고행', ctx.penance], ['라운드', ctx.round]];
-  const cells=items.map(([label,value])=>`<span data-label="${escapeHtml(label)}">${escapeHtml(value)}</span>`).join('');
-  return `<div class="dps-table-context-bar" aria-label="현재 DPS표 기준"><div class="dps-context-compact">${cells}</div></div>`;
-}
 function renderDpsTableModal(){
   const mount=document.getElementById('dpsTableMount');
   const tabs=document.getElementById('dpsTableTabsMount');
@@ -1427,7 +1412,7 @@ function renderDpsTableModal(){
   }
   syncDpsMinDpsInputs();
   const tableHtml=activeDpsTableMode==='tower' ? buildDpsTowerTable() : buildDpsTable(round);
-  mount.innerHTML=`<section class="dps-table-panel dps-table-panel-animated">${buildDpsTableContextBar()}<div class="dps-table-scroll">${tableHtml}</div></section>`;
+  mount.innerHTML=`<section class="dps-table-panel dps-table-panel-animated"><div class="dps-table-scroll">${tableHtml}</div></section>`;
 }
 function switchDpsTableMode(mode){
   if(!['round','tower'].includes(mode) || activeDpsTableMode===mode) return;
