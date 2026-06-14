@@ -1176,16 +1176,13 @@ body.is-pc-portrait .dps-table-open-btn, body.is-pc-portrait .month-rune-open-bt
 body.is-tablet-device .font-scale-ctrl, body.is-mobile-device .font-scale-ctrl{display:none !important}
 body.is-pc-portrait .xp-sp-split, body.is-tablet .xp-sp-split{grid-template-columns:repeat(2,minmax(0,1fr)) !important}
 body.is-pc-portrait .rune-panel.tidy-rune-panel, body.is-tablet .rune-panel.tidy-rune-panel{grid-template-columns:repeat(2,minmax(0,1fr)) !important}
-body.is-pc-portrait .rune-basic-card, body.is-tablet .rune-basic-card{grid-column:1/-1 !important}
+body.is-pc-portrait .rune-basic-card{grid-column:1/-1 !important}
 body.is-pc-portrait .col-mid, body.is-tablet .col-mid{display:grid !important;grid-template-columns:repeat(2,minmax(0,1fr)) !important;gap:10px !important}
 body.is-pc-portrait .stat-dps-card, body.is-tablet .stat-dps-card{grid-column:1/-1 !important}
 body.is-pc-portrait .trait-group .tr, body.is-tablet .trait-group .tr{grid-template-columns:minmax(0,1fr) 232px !important}
 body.is-tablet.is-portrait-view .xp-sp-card .xp-sp-split{display:grid !important;grid-template-columns:repeat(2,minmax(0,1fr)) !important;gap:12px !important}
-body.is-tablet.is-portrait-view .clean-rune-card .rune-panel.tidy-rune-panel{display:grid !important;grid-template-columns:repeat(2,minmax(0,1fr)) !important;gap:12px !important;align-items:start !important}
-body.is-tablet.is-portrait-view .clean-rune-card .rune-basic-card{grid-column:1 !important;grid-row:1 !important}
-body.is-tablet.is-portrait-view .clean-rune-card .rune-option-card{grid-column:2 !important;grid-row:1 !important}
-body.is-tablet.is-portrait-view .clean-rune-card .additional-editor{grid-column:1 !important;grid-row:2 !important}
-body.is-tablet.is-portrait-view .clean-rune-card .enchant-combined{grid-column:2 !important;grid-row:2 !important}
+body.is-tablet .clean-rune-card .rune-panel.tidy-rune-panel{display:grid !important;grid-template-columns:repeat(2,minmax(0,1fr)) !important;gap:12px !important;align-items:start !important}
+body.is-tablet .clean-rune-card .rune-basic-card{grid-column:1 !important;grid-row:1 !important}body.is-tablet .clean-rune-card .rune-option-card{grid-column:2 !important;grid-row:1 !important}body.is-tablet .clean-rune-card .additional-editor{grid-column:1 !important;grid-row:2 !important}body.is-tablet .clean-rune-card .enchant-combined{grid-column:2 !important;grid-row:2 !important}
 body.is-mobile .hdr-brand, body.is-mobile .hdr-meta{width:100% !important;justify-content:center !important}
 body.is-mobile .font-scale-ctrl{display:none !important}
 body.is-mobile .col-work{padding:8px !important}
@@ -1380,11 +1377,12 @@ body.is-tabbed .mobile-page > .col-right .tp-body{width:100% !important; margin-
 body.is-tabbed .mobile-page input[type="hidden"]{display:none !important}
 .trait-dashboard-tools{width:100% !important; margin:10px 0 0 !important; box-shadow:none !important;}
 body.is-mobile .sg.priority .save-row{grid-column:1/-1 !important}
-body.is-tablet .sg.priority .save-row.convenience-row{grid-template-columns:repeat(4,minmax(0,1fr)) !important;}
+@media (min-width:701px){body.is-tablet .sg.priority .save-row.convenience-row{grid-template-columns:repeat(4,minmax(0,1fr)) !important;}}
 body.is-mobile .sg.priority .sg-title span:first-child{white-space:nowrap !important}
 body.is-mobile #optTier, body.is-mobile #utilOptTier{text-align:center !important; text-align-last:center !important; justify-content:center !important;}
 body.is-tabbed .trait-dashboard-tools{margin-top:8px !important}
 /* ── 8. 반응형 레이아웃 ── */
+body.is-tablet .stat-dps-card .stat-compare-grid, body.is-tablet .stat-dps-card .enemy-info-grid{display:block!important;width:100%!important;max-width:100%!important;border:1px solid var(--result-table-line,#dbe4f0)!important;border-radius:10px!important;background:#fff!important;overflow:hidden!important}body.is-tablet .stat-dps-card .enemy-info-grid{margin-top:10px!important}body.is-tablet .stat-dps-card .stat-compare-grid .stat-row{display:grid!important;grid-template-columns:minmax(118px,.82fr) repeat(2,minmax(0,1fr))!important;align-items:stretch!important;width:100%!important;height:28px!important;min-height:28px!important;margin:0!important;padding:0!important;border:0!important;border-bottom:1px solid var(--result-table-line,#dbe4f0)!important;background:transparent!important;overflow:hidden!important}body.is-tablet .stat-dps-card .stat-compare-grid .stat-head-row{height:30px!important;min-height:30px!important}body.is-tablet .stat-dps-card .stat-compare-grid .stat-row:last-child, body.is-tablet .stat-dps-card .enemy-info-grid .enemy-info-row:last-child{border-bottom:0!important}body.is-tablet .stat-dps-card .enemy-info-title{display:flex!important;align-items:center!important;justify-content:center!important;height:32px!important;min-height:32px!important;padding:0 10px!important;border:0!important;border-bottom:1px solid var(--result-table-line,#dbe4f0)!important;border-radius:0!important;background:var(--result-table-head-bg,#eaf1f8)!important;color:var(--result-table-text,#17365d)!important;font-weight:900!important;text-align:center!important}body.is-tablet .stat-dps-card .enemy-info-grid .enemy-info-row{display:grid!important;grid-template-columns:minmax(118px,.42fr) minmax(0,1fr)!important;height:32px!important;min-height:32px!important;margin:0!important;padding:0!important;border:0!important;border-bottom:1px solid var(--result-table-line,#dbe4f0)!important;background:transparent!important;overflow:hidden!important}body.is-tablet .stat-dps-card .stat-compare-grid .stat-row>.sc-name, body.is-tablet .stat-dps-card .stat-compare-grid .stat-row>.sc-val, body.is-tablet .stat-dps-card .enemy-info-grid .enemy-info-row>.sc-name, body.is-tablet .stat-dps-card .enemy-info-grid .enemy-info-row>.sc-val{display:flex!important;align-items:center!important;justify-content:center!important;width:100%!important;min-width:0!important;min-height:0!important;height:100%!important;margin:0!important;padding:0 8px!important;box-sizing:border-box!important;border:0!important;border-left:1px solid var(--result-table-line,#dbe4f0)!important;border-radius:0!important;box-shadow:none!important;outline:0!important;line-height:1.05!important;text-align:center!important;text-align-last:center!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important}body.is-tablet .stat-dps-card .stat-compare-grid .stat-row>.sc-name, body.is-tablet .stat-dps-card .enemy-info-grid .enemy-info-row>.sc-name{border-left:0!important;background:var(--result-table-label-bg,#eaf1f8)!important;color:var(--result-table-text,#17365d)!important;font-family:var(--font-main)!important;font-size:calc(11px * var(--app-font-scale))!important;font-weight:900!important}body.is-tablet .stat-dps-card .stat-compare-grid .stat-row>.sc-val, body.is-tablet .stat-dps-card .enemy-info-grid .enemy-info-row>.sc-val{background:var(--result-table-value-bg,#fff)!important;color:#0f172a!important;font-family:Consolas,monospace!important;font-size:calc(11px * var(--app-font-scale))!important;font-weight:900!important}body.is-tablet .stat-dps-card .stat-compare-grid .stat-head-row>.sc-name, body.is-tablet .stat-dps-card .stat-compare-grid .stat-head-row>.sc-val{background:var(--result-table-head-bg,#eaf1f8)!important;color:var(--result-table-text,#17365d)!important;font-family:var(--font-main)!important}body.is-tablet .stat-dps-card .stat-compare-grid .stat-head-row>.sc-name{color:transparent!important;font-size:0!important}
 body.is-mobile .stat-compare-grid .stat-row{display:grid !important;
   grid-template-columns:minmax(96px,.9fr) minmax(0,1fr) minmax(0,1fr) !important;
   min-height:30px !important;
@@ -2884,150 +2882,3 @@ html body .stat-dps-summary .dps-risk-badge, html body .col-mid .stat-dps-card .
   text-align:center !important;
   transform:none !important;
   position:static !important;}
-
-/* ── 15. 태블릿 전용 겹침 보정 ── */
-html[class] body.is-tablet[class] .wrap .col-work .col-left .clean-rune-card .rune-panel.tidy-rune-panel{display:grid !important;
-  grid-template-columns:repeat(2,minmax(0,1fr)) !important;
-  grid-auto-flow:row !important;
-  gap:12px !important;
-  align-items:start !important;
-  width:100% !important;
-  max-width:100% !important;
-  min-width:0 !important;
-  overflow:visible !important;}
-html[class] body.is-tablet[class] .wrap .col-work .col-left .clean-rune-card .rune-basic-card{grid-column:1 !important; grid-row:1 !important;}
-html[class] body.is-tablet[class] .wrap .col-work .col-left .clean-rune-card .rune-option-card{grid-column:2 !important; grid-row:1 !important;}
-html[class] body.is-tablet[class] .wrap .col-work .col-left .clean-rune-card .additional-editor{grid-column:1 !important; grid-row:2 !important;}
-html[class] body.is-tablet[class] .wrap .col-work .col-left .clean-rune-card .enchant-combined{grid-column:2 !important; grid-row:2 !important; margin-top:0 !important;}
-html[class] body.is-tablet[class] .wrap .col-work .col-left .clean-rune-card .rune-basic-card,
-html[class] body.is-tablet[class] .wrap .col-work .col-left .clean-rune-card .rune-option-card,
-html[class] body.is-tablet[class] .wrap .col-work .col-left .clean-rune-card .additional-editor,
-html[class] body.is-tablet[class] .wrap .col-work .col-left .clean-rune-card .enchant-combined{width:100% !important;
-  min-width:0 !important;
-  max-width:100% !important;
-  box-sizing:border-box !important;
-  overflow:visible !important;}
-html[class] body.is-tablet[class] .wrap .col-mid .stat-dps-card .stat-compare-grid{display:block !important;
-  width:100% !important;
-  max-width:100% !important;
-  border:1px solid var(--result-table-line,#dbe4f0) !important;
-  border-radius:10px !important;
-  background:#fff !important;
-  overflow:hidden !important;}
-html[class] body.is-tablet[class] .wrap .col-mid .stat-dps-card .stat-compare-grid .stat-row{display:grid !important;
-  grid-template-columns:minmax(118px,.82fr) repeat(2,minmax(0,1fr)) !important;
-  align-items:stretch !important;
-  width:100% !important;
-  min-height:28px !important;
-  height:28px !important;
-  margin:0 !important;
-  padding:0 !important;
-  border:0 !important;
-  border-bottom:1px solid var(--result-table-line,#dbe4f0) !important;
-  background:transparent !important;
-  overflow:hidden !important;}
-html[class] body.is-tablet[class] .wrap .col-mid .stat-dps-card .stat-compare-grid .stat-row:last-child{border-bottom:0 !important;}
-html[class] body.is-tablet[class] .wrap .col-mid .stat-dps-card .stat-compare-grid .stat-head-row{min-height:30px !important; height:30px !important;}
-html[class] body.is-tablet[class] .wrap .col-mid .stat-dps-card .stat-compare-grid .stat-row > .sc-name,
-html[class] body.is-tablet[class] .wrap .col-mid .stat-dps-card .stat-compare-grid .stat-row > .sc-val{display:flex !important;
-  align-items:center !important;
-  justify-content:center !important;
-  width:100% !important;
-  min-width:0 !important;
-  min-height:0 !important;
-  height:100% !important;
-  margin:0 !important;
-  padding:0 8px !important;
-  box-sizing:border-box !important;
-  border:0 !important;
-  border-left:1px solid var(--result-table-line,#dbe4f0) !important;
-  border-radius:0 !important;
-  box-shadow:none !important;
-  outline:0 !important;
-  line-height:1.05 !important;
-  text-align:center !important;
-  text-align-last:center !important;
-  white-space:nowrap !important;
-  overflow:hidden !important;
-  text-overflow:ellipsis !important;}
-html[class] body.is-tablet[class] .wrap .col-mid .stat-dps-card .stat-compare-grid .stat-row > .sc-name{border-left:0 !important;
-  background:var(--result-table-label-bg,#eaf1f8) !important;
-  color:var(--result-table-text,#17365d) !important;
-  font-family:var(--font-main) !important;
-  font-size:calc(11px * var(--app-font-scale)) !important;
-  font-weight:900 !important;}
-html[class] body.is-tablet[class] .wrap .col-mid .stat-dps-card .stat-compare-grid .stat-row > .sc-val{background:var(--result-table-value-bg,#fff) !important;
-  color:#0f172a !important;
-  font-family:Consolas,monospace !important;
-  font-size:calc(11px * var(--app-font-scale)) !important;
-  font-weight:900 !important;}
-html[class] body.is-tablet[class] .wrap .col-mid .stat-dps-card .stat-compare-grid .stat-head-row > .sc-name,
-html[class] body.is-tablet[class] .wrap .col-mid .stat-dps-card .stat-compare-grid .stat-head-row > .sc-val{background:var(--result-table-head-bg,#eaf1f8) !important;
-  color:var(--result-table-text,#17365d) !important;
-  font-family:var(--font-main) !important;
-  font-size:calc(11px * var(--app-font-scale)) !important;}
-html[class] body.is-tablet[class] .wrap .col-mid .stat-dps-card .stat-compare-grid .stat-head-row > .sc-name{color:transparent !important; font-size:0 !important;}
-html[class] body.is-tablet[class] .wrap .col-mid .stat-dps-card .enemy-info-grid{display:block !important;
-  width:100% !important;
-  max-width:100% !important;
-  margin-top:10px !important;
-  border:1px solid var(--result-table-line,#dbe4f0) !important;
-  border-radius:10px !important;
-  background:#fff !important;
-  overflow:hidden !important;}
-html[class] body.is-tablet[class] .wrap .col-mid .stat-dps-card .enemy-info-title{display:flex !important;
-  align-items:center !important;
-  justify-content:center !important;
-  height:32px !important;
-  min-height:32px !important;
-  padding:0 10px !important;
-  border:0 !important;
-  border-bottom:1px solid var(--result-table-line,#dbe4f0) !important;
-  border-radius:0 !important;
-  background:var(--result-table-head-bg,#eaf1f8) !important;
-  color:var(--result-table-text,#17365d) !important;
-  font-weight:900 !important;}
-html[class] body.is-tablet[class] .wrap .col-mid .stat-dps-card .enemy-info-grid .enemy-info-row{display:grid !important;
-  grid-template-columns:minmax(118px,.42fr) minmax(0,1fr) !important;
-  height:32px !important;
-  min-height:32px !important;
-  margin:0 !important;
-  padding:0 !important;
-  border:0 !important;
-  border-bottom:1px solid var(--result-table-line,#dbe4f0) !important;
-  background:transparent !important;
-  overflow:hidden !important;}
-html[class] body.is-tablet[class] .wrap .col-mid .stat-dps-card .enemy-info-grid .enemy-info-row:last-of-type{border-bottom:0 !important;}
-html[class] body.is-tablet[class] .wrap .col-mid .stat-dps-card .enemy-info-grid .enemy-info-row > .sc-name,
-html[class] body.is-tablet[class] .wrap .col-mid .stat-dps-card .enemy-info-grid .enemy-info-row > .sc-val{display:flex !important;
-  align-items:center !important;
-  justify-content:center !important;
-  width:100% !important;
-  min-width:0 !important;
-  min-height:0 !important;
-  height:100% !important;
-  margin:0 !important;
-  padding:0 8px !important;
-  box-sizing:border-box !important;
-  border:0 !important;
-  border-left:1px solid var(--result-table-line,#dbe4f0) !important;
-  border-radius:0 !important;
-  box-shadow:none !important;
-  outline:0 !important;
-  line-height:1.05 !important;
-  text-align:center !important;
-  text-align-last:center !important;
-  white-space:nowrap !important;
-  overflow:hidden !important;
-  text-overflow:ellipsis !important;}
-html[class] body.is-tablet[class] .wrap .col-mid .stat-dps-card .enemy-info-grid .enemy-info-row > .sc-name{border-left:0 !important;
-  background:var(--result-table-label-bg,#eaf1f8) !important;
-  color:var(--result-table-text,#17365d) !important;
-  font-family:var(--font-main) !important;}
-html[class] body.is-tablet[class] .wrap .col-mid .stat-dps-card .enemy-info-grid .enemy-info-row > .sc-val{background:var(--result-table-value-bg,#fff) !important;
-  color:#0f172a !important;
-  font-family:Consolas,monospace !important;}
-@media (max-width:700px) and (min-width:601px){
-  html[class] body.is-tablet[class] .wrap .col-work .col-left .sg.priority .save-row.convenience-row{grid-template-columns:repeat(2,minmax(0,1fr)) !important;}
-}
-
