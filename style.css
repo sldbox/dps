@@ -487,8 +487,8 @@ select.choice-input,.rune-stat-row select,.ir select{background:#ffffff !importa
 .month-rune-side h3 em{font-style:normal;padding:3px 7px;border-radius:999px;background:#fff7ed;color:#b45309;font-size:calc(10.5px * var(--app-font-scale));font-weight:900}
 .month-rune-side.plus h3 em{background:#eff6ff;color:#1d4ed8}
 .month-rune-effects{display:grid;gap:5px}
-.month-rune-effect-row{display:grid;grid-template-columns:minmax(42px,.34fr) minmax(0,1fr);gap:6px;align-items:start;min-height:26px;padding:5px 6px;border:1px solid #eef2f7;border-radius:9px;background:#fff;color:#334155;font-size:calc(11px * var(--app-font-scale));line-height:1.32}
-.month-rune-effect-row b{color:#1e3a8a;font-family:Consolas,var(--font-main);font-size:calc(10.5px * var(--app-font-scale));font-weight:900;word-break:keep-all}
+.month-rune-effect-row{display:grid;grid-template-columns:52px minmax(0,1fr);gap:8px;align-items:center;min-height:32px;padding:6px 8px;border:1px solid #eef2f7;border-radius:9px;background:#fff;color:#334155;font-size:calc(11px * var(--app-font-scale));line-height:1.32}
+.month-rune-effect-row b{display:flex;align-items:center;justify-content:flex-start;color:#1e3a8a;font-family:Consolas,var(--font-main);font-size:calc(10.5px * var(--app-font-scale));font-weight:900;word-break:keep-all;white-space:nowrap}
 .month-rune-effect-row span{min-width:0;word-break:keep-all;overflow-wrap:anywhere}
 .dps-table-modal-open{overflow:hidden !important}
 .dps-table-modal-shell{position:fixed;inset:0;z-index:10000;display:none}
@@ -3570,7 +3570,7 @@ body.is-mobile .month-rune-card-head span{font-size:calc(12px * var(--app-font-s
 body.is-mobile .month-rune-compare{grid-template-columns:1fr}
 body.is-mobile .month-rune-side{padding:8px}
 body.is-mobile .month-rune-side+.month-rune-side{border-left:0;border-top:1px solid #e2e8f0}
-body.is-mobile .month-rune-effect-row{grid-template-columns:minmax(40px,.26fr) minmax(0,1fr);gap:5px;padding:5px;font-size:calc(10.5px * var(--app-font-scale))}
+body.is-mobile .month-rune-effect-row{grid-template-columns:48px minmax(0,1fr);gap:6px;padding:5px 6px;font-size:calc(10.5px * var(--app-font-scale))}
 body.is-mobile .month-rune-effect-row b{font-size:calc(10px * var(--app-font-scale))}
 body.is-mobile .hdr-meta{gap:5px !important}
 body.is-mobile .dps-table-open-btn,

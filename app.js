@@ -1615,12 +1615,22 @@ function installDpsTableButton(){
   target.insertBefore(btn, target.firstChild);
 }
 
+function expandMonthRuneCodeGroup(code, desc){
+  const codeText=String(code||'').trim();
+  const descText=desc||'';
+  const parts=codeText.split(/\s*\/\s*/).map(part=>part.trim()).filter(Boolean);
+  const isRuneCodeGroup=parts.length>1 && parts.every(part=>/^\d{1,2}[A-D]\+?$/.test(part));
+  if(!isRuneCodeGroup) return [[codeText, descText]];
+  return parts.map(part=>[part, descText]);
+}
 function monthRunePairs(items){
   const pairs=[];
-  for(let i=0;i<items.length;i+=2) pairs.push([items[i]||'',items[i+1]||'']);
+  for(let i=0;i<items.length;i+=2){
+    pairs.push(...expandMonthRuneCodeGroup(items[i]||'', items[i+1]||''));
+  }
   return pairs;
 }
-function renderMonthRuneRows(items, mode){
+function renderMonthRuneRows(items){
   return monthRunePairs(items).map(([code,desc])=>`
     <div class="month-rune-effect-row">
       <b>${escapeCompareHtml(code)}</b>
@@ -1638,11 +1648,11 @@ function renderMonthRuneCard(item){
       <div class="month-rune-compare">
         <section class="month-rune-side normal">
           <h3>일반 <em>RP+1</em></h3>
-          <div class="month-rune-effects">${renderMonthRuneRows(item.normal,'normal')}</div>
+          <div class="month-rune-effects">${renderMonthRuneRows(item.normal)}</div>
         </section>
         <section class="month-rune-side plus">
           <h3>플러스 <em>RP+2</em></h3>
-          <div class="month-rune-effects">${renderMonthRuneRows(item.plus,'plus')}</div>
+          <div class="month-rune-effects">${renderMonthRuneRows(item.plus)}</div>
         </section>
       </div>
     </article>
