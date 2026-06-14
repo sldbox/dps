@@ -14,7 +14,7 @@
     { key: 'save', label: '기타', selectors: ['.bus-cut-card', '.final-damage-card'] }
   ];
 
-  const state = { tabs:null, pages:[], restore:new Map(), raf:0, arrangedMobile:false, layoutWidth:0, layoutPortrait:null };
+  const state = { tabs:null, pages:[], restore:new Map(), raf:0, arrangedMobile:false, layoutWidth:0, layoutPortrait:null, activeIndex:0, layoutSyncing:false, syncTimer:0 };
 
   function getMode() {
     const w = window.innerWidth || document.documentElement.clientWidth || 0;
@@ -109,10 +109,7 @@
       btn.textContent = page.label;
       btn.setAttribute('aria-pressed', idx === 0 ? 'true' : 'false');
       btn.addEventListener('click', () => {
-        page.el.scrollTop = 0;
-        colWork.scrollTo({ left: page.el.offsetLeft, top: 0, behavior: 'auto' });
-        setActiveTab(idx);
-        btn.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'auto' });
+        scrollToMobilePage(idx, true);
       });
       state.tabs.appendChild(btn);
     });
@@ -120,11 +117,91 @@
 
   function setActiveTab(activeIndex) {
     if (!state.tabs) return;
+    const nextIndex = Math.max(0, Math.min(state.pages.length - 1, activeIndex));
+    state.activeIndex = nextIndex;
     state.tabs.querySelectorAll('.mobile-swipe-tab').forEach((btn, idx) => {
-      const active = idx === activeIndex;
+      const active = idx === nextIndex;
       btn.classList.toggle('active', active);
       btn.setAttribute('aria-pressed', active ? 'true' : 'false');
     });
+  }
+
+  function getNearestMobilePageIndex(colWork) {
+    if (!colWork || !state.pages.length) return 0;
+    let bestIndex = 0;
+    let bestDistance = Infinity;
+    state.pages.forEach((page, idx) => {
+      const distance = Math.abs(page.el.offsetLeft - colWork.scrollLeft);
+      if (distance < bestDistance) {
+        bestDistance = distance;
+        bestIndex = idx;
+      }
+    });
+    return bestIndex;
+  }
+
+  function scrollToMobilePage(index, resetPageScroll = false) {
+    const colWork = document.querySelector('.col-work');
+    if (!colWork || !state.pages.length) return;
+    const nextIndex = Math.max(0, Math.min(state.pages.length - 1, index));
+    const page = state.pages[nextIndex];
+    if (!page) return;
+    if (resetPageScroll) page.el.scrollTop = 0;
+    colWork.scrollTo({ left: page.el.offsetLeft, top: 0, behavior: 'auto' });
+    setActiveTab(nextIndex);
+    const activeBtn = state.tabs && state.tabs.querySelectorAll('.mobile-swipe-tab')[nextIndex];
+    if (activeBtn) activeBtn.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'auto' });
+  }
+
+  function holdMobilePageIndex(index) {
+    if (!document.body.classList.contains('is-tabbed') || !state.pages.length) return;
+    if (state.syncTimer) clearTimeout(state.syncTimer);
+    state.layoutSyncing = true;
+    scrollToMobilePage(index, false);
+    requestAnimationFrame(() => scrollToMobilePage(index, false));
+    state.syncTimer = setTimeout(() => {
+      scrollToMobilePage(index, false);
+      state.layoutSyncing = false;
+      state.syncTimer = 0;
+    }, 180);
+  }
+
+  function isSwipeControlTarget(el) {
+    return !!(el && el.closest && el.closest('input, textarea, select, button, a, [contenteditable="true"]'));
+  }
+
+  function bindMobilePageSwipe() {
+    const colWork = document.querySelector('.col-work');
+    if (!colWork || colWork.dataset.mobileSwipeBound === '1') return;
+    colWork.dataset.mobileSwipeBound = '1';
+    let gesture = null;
+
+    colWork.addEventListener('pointerdown', (event) => {
+      if (!document.body.classList.contains('is-tabbed') || !state.pages.length) return;
+      if (event.pointerType === 'mouse' || isSwipeControlTarget(event.target)) return;
+      gesture = {
+        id: event.pointerId,
+        x: event.clientX,
+        y: event.clientY,
+        index: getNearestMobilePageIndex(colWork)
+      };
+    }, { passive: true, capture: true });
+
+    document.addEventListener('pointerup', (event) => {
+      if (!gesture || event.pointerId !== gesture.id) return;
+      const dx = event.clientX - gesture.x;
+      const dy = event.clientY - gesture.y;
+      const absX = Math.abs(dx);
+      const absY = Math.abs(dy);
+      const startIndex = gesture.index;
+      gesture = null;
+      if (!document.body.classList.contains('is-tabbed') || absX < 48 || absX < absY * 1.15) return;
+      scrollToMobilePage(startIndex + (dx < 0 ? 1 : -1));
+    }, { passive: true, capture: true });
+
+    document.addEventListener('pointercancel', () => {
+      gesture = null;
+    }, { passive: true, capture: true });
   }
 
   function arrangeMobile(colWork) {
@@ -149,9 +226,8 @@
 
     state.pages = pages;
     buildTabs(colWork, pages);
-    setActiveTab(0);
-    colWork.scrollTo({ left: 0, top: 0, behavior: 'auto' });
     state.arrangedMobile = true;
+    scrollToMobilePage(state.activeIndex, false);
   }
 
   function restoreDesktop() {
@@ -205,19 +281,12 @@
     colWork.dataset.mobileScrollBound = '1';
 
     colWork.addEventListener('scroll', () => {
-      if (!document.body.classList.contains('is-tabbed') || !state.pages.length) return;
+      if (!document.body.classList.contains('is-tabbed') || !state.pages.length || state.layoutSyncing) return;
       if (state.raf) return;
       state.raf = requestAnimationFrame(() => {
         state.raf = 0;
-        let bestIndex = 0;
-        let bestDistance = Infinity;
-        state.pages.forEach((page, idx) => {
-          const distance = Math.abs(page.el.offsetLeft - colWork.scrollLeft);
-          if (distance < bestDistance) {
-            bestDistance = distance;
-            bestIndex = idx;
-          }
-        });
+        if (state.layoutSyncing) return;
+        const bestIndex = getNearestMobilePageIndex(colWork);
         setActiveTab(bestIndex);
         const activeBtn = state.tabs && state.tabs.querySelectorAll('.mobile-swipe-tab')[bestIndex];
         if (activeBtn) activeBtn.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'auto' });
@@ -227,6 +296,9 @@
 
   function scheduleApply() {
     if (state.raf) cancelAnimationFrame(state.raf);
+    const keepIndex = state.activeIndex;
+    const wasTabbed = document.body.classList.contains('is-tabbed');
+    if (wasTabbed) state.layoutSyncing = true;
     state.raf = requestAnimationFrame(() => {
       state.raf = 0;
       const w = window.innerWidth || document.documentElement.clientWidth || 0;
@@ -236,15 +308,22 @@
       const orientationChanged = state.layoutPortrait !== portrait;
       if (!widthChanged && !orientationChanged) {
         updateMobileOffsets();
+        state.layoutSyncing = false;
         return;
       }
       applyMode();
+      if (wasTabbed && document.body.classList.contains('is-tabbed')) {
+        holdMobilePageIndex(keepIndex);
+      } else {
+        state.layoutSyncing = false;
+      }
     });
   }
 
   function init() {
     applyMode();
     bindMobileScroll();
+    bindMobilePageSwipe();
     bindInputAutoSelect();
     updateMobileOffsets();
   }
@@ -3882,53 +3961,6 @@ function updateZeroRankHighlights(currentRank, targetRank){
     card.classList.toggle('zero-rank-same', !!current && current===target);
     card.classList.toggle('zero-rank-upgrade', !!current && !!target && current!==target);
   }
-  updateMobileZeroRankSummary(current,target);
-}
-function updateMobileZeroRankSummary(currentRank, targetRank){
-  const card=document.querySelector('.zero-rank-card');
-  if(!card) return;
-  const rankPanel=card.querySelector('[data-zero-rank-panel="rank"]');
-  const benefitPanel=card.querySelector('[data-zero-rank-panel="benefit"]');
-  const rows=[...card.querySelectorAll('.zero-rank-table tbody tr')];
-  const benefits=[...card.querySelectorAll('.zero-benefit-rank')];
-  const currentIndex=Math.max(0,rows.findIndex(row=>excelText(row.querySelector('td')?.textContent)===currentRank));
-  const start=Math.max(0,Math.min(currentIndex-2,rows.length-6));
-  const visibleRanks=new Set(rows.slice(start,start+6).map(row=>excelText(row.querySelector('td')?.textContent)));
-  const rankExpanded=rankPanel?.classList.contains('zero-mobile-expanded');
-  const benefitExpanded=benefitPanel?.classList.contains('zero-mobile-expanded');
-  rows.forEach(row=>{
-    const name=excelText(row.querySelector('td')?.textContent);
-    row.classList.toggle('zero-mobile-summary-hidden', !rankExpanded && !visibleRanks.has(name));
-  });
-  benefits.forEach(article=>{
-    const name=zeroBenefitRankName(article);
-    const highlighted=name===currentRank || name===targetRank;
-    article.classList.toggle('zero-mobile-summary-hidden', !benefitExpanded && !highlighted);
-  });
-  ensureMobileZeroToggle(rankPanel,'승단표',rows.length,rankExpanded);
-  ensureMobileZeroToggle(benefitPanel,'혜택',benefits.length,benefitExpanded);
-}
-function ensureMobileZeroToggle(panel,label,total,expanded){
-  if(!panel) return;
-  let button=panel.querySelector('.zero-mobile-expand-btn');
-  if(!button){
-    button=document.createElement('button');
-    button.type='button';
-    button.className='zero-mobile-expand-btn';
-    button.dataset.action='toggleZeroMobileSummary';
-    panel.appendChild(button);
-  }
-  button.textContent=expanded ? `${label} 요약 보기` : `전체 ${label} 보기 (${total})`;
-  button.setAttribute('aria-expanded', expanded ? 'true' : 'false');
-}
-function toggleZeroMobileSummary(trigger){
-  const panel=trigger?.closest('.zero-rank-panel');
-  if(!panel) return;
-  panel.classList.toggle('zero-mobile-expanded');
-  const calc=document.querySelector('.zero-score-calc');
-  const current=excelText(calc?.querySelector('.zero-current-rank')?.textContent) || '입문';
-  const target=excelText(calc?.querySelector('.zero-target-rank')?.textContent) || current;
-  updateMobileZeroRankSummary(current,target);
 }
 function updateZeroScoreCalculator(){
   const calc=document.querySelector('.zero-score-calc');
@@ -4083,7 +4115,6 @@ const ACTION_HANDLERS={
   openMonthRune:()=>openMonthRune(),
   zeroRankTab:(trigger)=>setZeroRankTab(trigger),
   zeroScoreStar:(trigger)=>toggleZeroScoreStar(trigger),
-  toggleZeroMobileSummary:(trigger)=>toggleZeroMobileSummary(trigger),
   decreaseFont:()=>changeFontScale(-DPS_CONFIG.ui.fontScaleStep),
   increaseFont:()=>changeFontScale(DPS_CONFIG.ui.fontScaleStep),
   resetFont:()=>applyFontScale(DPS_CONFIG.ui.fontScaleDefault),
