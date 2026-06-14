@@ -1,18 +1,3 @@
-/* ==========================================================================
-   [ DPS 계산기 스타일 (style.css) 목차 ]
-    1. 변수 및 기본 설정          (:root, reset, body, wrap 기본값)
-    2. 기본 레이아웃 / 패널        (헤더, 좌/중/우 패널, 입력 행)
-    3. 계산 UI 컴포넌트           (자원, 룬, 버프, 특성, 스탯보드)
-    4. 쥬얼 / 도감형 카드         (이달룬/쥬얼 카드 표시)
-    5. 스탯 비교 / 특성 컨트롤     (표기/실질 스탯, 투자 버튼)
-    6. 공통 시각 시스템           (버튼, 카드, 배지, 상태색)
-    7. 카드 구조 / 헤더 정렬       (공통 카드, 섹션 타이틀, 스크롤)
-    8. 반응형 레이아웃            (PC 세로, 태블릿, 모바일)
-    9. 최종 컴포넌트 보정          (현재 테마에서 우선 적용되는 보정, 최적화 안내/TOP5)
-   10. DPS표 / 모달 스타일        (DPS표, 비교하기, 팝업)
-   11. 특성보드 / 자원 세부        (특성 그룹, SP/EP/RP, 액션 버튼)
-   12. 승단 / 더제로 보드          (승단표, 혜택, 점수 계산, 모바일 승단)
-   ========================================================================== */
 
 /* ── 1. 변수 및 기본 설정 ── */
 :root{--app-font-scale:1;--font-main:"Pretendard","Malgun Gothic","Apple SD Gothic Neo",sans-serif;--bg:#f5f7fb;--bg2:#ffffff;--bg4:#eef2f7;--bd:#d8dee9;--bd2:#b8c2d2;--tx:#172033;--tx3:#69758a;--acc:#3157d5;--panel-shadow:0 1px 6px rgba(15,23,42,.06);--ui-sub:#5d6b80;--ui-soft:#f8fbff;--ui-line2:#c5d3e6;--ui-card:#ffffff;--ui-card2:#d9ecff;--ui-title:#17336f;--state-warn-bg:#fffbeb;--state-warn-line:#fde68a;--state-warn-text:#b45309;--state-danger-bg:#fff1f2;--state-danger-line:#fecdd3;--state-danger-text:#be123c;--ui-line-soft:#eaf1f9}
@@ -33,7 +18,6 @@ body{font:calc(14px * var(--app-font-scale))/1.55 var(--font-main);min-height:10
 .ir input:focus,.ir select:focus{outline:none;border-color:var(--acc)}
 .btn{flex:1;border:1px solid var(--bd2);cursor:pointer;height:36px !important;padding:0 10px !important;border-radius:9px !important;font-size:calc(12.5px * var(--app-font-scale)) !important;font-weight:900 !important}
 .btn:hover{background:var(--bg4);filter:brightness(.98) !important}
-
 
 .col-mid{overflow-y:auto;align-content:start;padding:10px !important;gap:10px;grid-template-columns:1fr 1fr !important;grid-column:3 !important;grid-row:2 !important;height:calc(100vh - 44px) !important;overflow:auto !important;background:#f8fafc !important;border:0 !important;border-radius:0 !important;display:block !important;min-width:360px !important;border-right:0 !important}
 .dps-card{border:1px solid var(--bd);text-align:center;margin-bottom:10px !important;border-radius:10px !important}
@@ -562,14 +546,19 @@ select.choice-input,.rune-stat-row select,.ir select{background:#ffffff !importa
 .excel-compare-empty small{margin-top:8px;color:#64748b;font-weight:700}
 .excel-compare-error{border-color:#fecaca;background:#fff1f2;color:#b91c1c}
 .excel-compare-summary{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px;margin-bottom:10px}
-.excel-compare-summary>div{display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:0;min-height:58px;padding:8px 10px;border:1px solid #dbe4f0;border-radius:10px;background:#fff;text-align:center}
+.excel-compare-summary-card{display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:0;min-height:58px;padding:8px 10px;border:1px solid #dbe4f0;border-radius:10px;background:#fff;text-align:center;font:inherit;cursor:pointer;appearance:none;transition:border-color .15s,background .15s,box-shadow .15s,transform .15s}
 .excel-compare-summary span{color:#64748b;font-size:calc(10.5px * var(--app-font-scale));font-weight:800;white-space:nowrap}
 .excel-compare-summary b{overflow:hidden;color:#172033;font-size:calc(12px * var(--app-font-scale));font-weight:900;text-overflow:ellipsis;white-space:nowrap}
-.excel-compare-summary small{display:block;max-width:100%;overflow:hidden;margin-top:2px;color:#475569;font-size:calc(10px * var(--app-font-scale));font-weight:800;text-overflow:ellipsis;white-space:nowrap}
+.excel-compare-summary-card.is-all span{color:#172033;font-size:calc(12px * var(--app-font-scale));font-weight:900}
 .excel-compare-summary .same,.excel-compare-summary .near,.excel-compare-summary .diff{border-color:#dbe4f0;background:#fff}
 .excel-compare-summary .same b{color:#475569}
 .excel-compare-summary .near b{color:#b45309}
 .excel-compare-summary .diff b{color:#be123c}
+.excel-compare-summary-card:hover{border-color:#9bb5e6;background:#f8fbff}
+.excel-compare-summary-card:focus-visible{outline:2px solid rgba(49,87,213,.45);outline-offset:2px}
+.excel-compare-summary-card.is-active{border-color:#3157d5;background:#eef4ff;box-shadow:inset 0 0 0 1px rgba(49,87,213,.35)}
+.excel-compare-summary-card.is-active span{color:#244676}
+.excel-compare-summary-card.is-active b{color:#12357a}
 .excel-compare-table-wrap{display:flex;flex:1;flex-direction:column;min-height:0;overflow-x:auto;overflow-y:hidden;border:1px solid #dbe4f0;border-radius:10px;background:#fff}
 .excel-compare-table-scroll{flex:1;min-height:0;overflow-x:visible;overflow-y:auto}
 .excel-compare-table{width:100%;min-width:760px;table-layout:fixed;border-collapse:separate;border-spacing:0;font-size:calc(11.5px * var(--app-font-scale));font-variant-numeric:tabular-nums}
@@ -591,6 +580,7 @@ select.choice-input,.rune-stat-row select,.ir select{background:#ffffff !importa
 .excel-compare-table .diff-negative{color:#1d4ed8}
 .excel-compare-table .diff-text{color:#b45309}
 .excel-compare-table .diff-warn{color:#64748b}
+.excel-compare-table .excel-compare-no-diff{height:72px;color:#64748b;font-weight:900;text-align:center}
 body,input,button,select,textarea{font-family:var(--font-main) !important}
 .btn.global-site-link,
 .sg.priority .save-row .global-site-link{
@@ -650,7 +640,6 @@ body,input,button,select,textarea{font-family:var(--font-main) !important}
 :root{--ui-blue:#173a82;--ui-shadow-soft:0 6px 18px rgba(15,23,42,.055)}
 body{background:linear-gradient(180deg,#f7faff 0%,#eef4fb 100%) !important}
 
-
 .font-scale-ctrl{height:34px !important;background:#f6f9fd !important;border-color:#d7e4f3 !important;box-shadow:0 2px 7px rgba(15,23,42,.055) !important}
 
 .col-left .sg,.trait-group,.dps-card,.stat-grid,.data-card,.sp-box,.xp-sp-panel,.rune-panel,.unit-enhance-main-row{border-color:#d7e4f3 !important;border-radius:14px !important;box-shadow:var(--ui-shadow) !important}
@@ -686,7 +675,6 @@ body{background:linear-gradient(180deg,#f7faff 0%,#eef4fb 100%) !important}
 .dps-table-modal{border-color:#cbdcf0 !important;box-shadow:0 24px 70px rgba(15,23,42,.24) !important}
 .dps-table-modal-head{background:#f8fbff !important}
 .dps-table-tab.is-active{background:linear-gradient(180deg,#3f63de 0%,#294fd0 100%) !important;border-color:#294fd0 !important;box-shadow:0 6px 14px rgba(49,87,213,.22) !important}
-
 
 .dps-table-close-btn{border-color:#b9d3f4 !important;color:#334155 !important;background:#fff !important}
 .dps-table-close-btn:hover{background:#eff6ff !important;border-color:#60a5fa !important;color:#1d4ed8 !important}
@@ -874,7 +862,6 @@ body.is-narrow-mobile .dps-context-summary span::before{font-size:calc(8.3px * v
 .enchant-combined-row b, .clean-rune-card .enchant-combined-row b{display:flex !important;align-items:center !important;justify-content:center !important}
 
 .common-buff-grid,.select-buff-grid,.flower-buff-grid{display:grid !important;grid-template-columns:var(--unit-enhance-btn-cols,repeat(5,minmax(0,1fr))) !important;gap:var(--unit-enhance-btn-gap,6px) !important;width:100% !important;align-items:stretch !important}
-
 
 .tp-head{margin:0 10px 0 !important}
 .tp-head h3{background:transparent !important;border:0 !important;padding:0 !important;border-radius:0 !important;color:#fff !important;font-size:calc(12.5px * var(--app-font-scale)) !important;font-weight:900 !important;opacity:1 !important}
@@ -1309,7 +1296,6 @@ body.is-mobile .clean-rune-card .enchant-result-value, body.is-tablet .clean-run
 .xp-sp-card .resource-usage-row .usage-values em{font-style:normal!important;color:#94a3b8!important;font-weight:900!important;border:0!important;background:transparent!important;box-shadow:none!important;padding:0!important}
 .title-td-row label{white-space:nowrap!important;font-size:calc(11px * var(--app-font-scale))!important}
 
-
 /* ── 5. 스탯 비교 / 특성 컨트롤 ── */
 .stat-compare-grid{border:0!important;background:transparent!important;}
 .stat-compare-grid .stat-row{align-items:stretch!important;border:0!important;border-bottom:1px solid var(--result-table-line,#dbe4f0)!important;background:transparent!important}
@@ -1326,7 +1312,6 @@ body.is-mobile .clean-rune-card .enchant-result-value, body.is-tablet .clean-run
 .tp-actions .mini-btn.master:hover,.trait-tools .mini-btn.master:hover{background:#eff6ff!important;color:#1d4ed8!important;border-color:#93c5fd!important}
 .tp-actions .mini-btn.reset:hover,.trait-tools .mini-btn.reset:hover{background:#fff1f2!important;color:#dc2626!important;border-color:#fecaca!important}
 
-/* 특성보드 간격 보정 */
 body:not(.is-mobile) .trait-board-panel { padding:0 12px 12px !important; }
 body:not(.is-mobile) .trait-board-panel .tp-head{
   height:38px !important;
@@ -1388,7 +1373,6 @@ input[readonly],input:disabled,select:disabled,.resource-box.readonly-resource b
 .btn.danger:hover{background:#fff1f2!important;border-color:#ea8f9b!important;color:#b51f34!important}
 
 .dps-num{letter-spacing:-.04em!important}
-
 
 body.is-tabbed .mobile-page>.sg>.sg-title,body.is-tabbed .mobile-page>.data-card>.section-title,body.is-tabbed .mobile-page>.data-card>h3,body.is-tabbed .mobile-page .trait-board-panel>.tp-head{border-radius:var(--ui-radius) var(--ui-radius) 0 0!important;background:var(--section-head-bg)!important;border-color:var(--section-head-bd)!important}
 @media (max-width:1320px) and (min-width:1025px){
@@ -1493,7 +1477,6 @@ body.is-tabbed .mobile-page > .sg > .sg-title{
   border-color:var(--section-head-bd) !important;
 }
 
-/* 패널 스크롤바 숨김 보정 */
 body.is-pc-landscape .col-left,
 body.is-pc-landscape .col-right,
 body.is-pc-landscape .col-mid,
@@ -1611,7 +1594,7 @@ body.is-tablet .excel-compare-reset-btn{height:31px;padding:0 10px;font-size:cal
 body.is-tablet .excel-compare-close{width:31px;height:31px;font-size:calc(19px * var(--app-font-scale))}
 body.is-tablet .excel-compare-body{padding:8px}
 body.is-tablet .excel-compare-summary{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin-bottom:8px}
-body.is-tablet .excel-compare-summary>div{min-height:50px;padding:6px 8px}
+body.is-tablet .excel-compare-summary-card{min-height:50px;padding:6px 8px}
 body.is-tablet .excel-compare-summary span{font-size:calc(9.5px * var(--app-font-scale))}
 body.is-tablet .excel-compare-summary b{font-size:calc(10.5px * var(--app-font-scale))}
 body.is-tablet .excel-compare-table{min-width:800px;font-size:calc(10px * var(--app-font-scale))}
@@ -1644,11 +1627,10 @@ body.is-mobile .excel-compare-empty,
 body.is-mobile .excel-compare-error{min-height:180px;padding:18px;font-size:calc(11px * var(--app-font-scale))}
 body.is-mobile .excel-compare-empty small{margin-top:6px;font-size:calc(9.5px * var(--app-font-scale))}
 body.is-mobile .excel-compare-summary{grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;margin-bottom:7px}
-body.is-mobile .excel-compare-summary>div{min-height:40px;padding:4px 3px;border-radius:7px}
-body.is-mobile .excel-compare-summary>div:first-child{grid-column:auto;min-height:40px}
+body.is-mobile .excel-compare-summary-card{min-height:40px;padding:4px 3px;border-radius:7px}
+body.is-mobile .excel-compare-summary-card:first-child{grid-column:auto;min-height:40px}
 body.is-mobile .excel-compare-summary span{font-size:calc(8px * var(--app-font-scale));line-height:1.15;white-space:nowrap}
 body.is-mobile .excel-compare-summary b{max-width:100%;font-size:calc(9px * var(--app-font-scale));line-height:1.15}
-body.is-mobile .excel-compare-summary small{font-size:calc(8px * var(--app-font-scale));line-height:1.15}
 body.is-mobile .excel-compare-table{min-width:760px;font-size:calc(9px * var(--app-font-scale))}
 body.is-mobile .excel-compare-table th,
 body.is-mobile .excel-compare-table td{height:26px;padding:3px 5px}
@@ -1795,7 +1777,6 @@ body.is-tabbed .trait-dashboard-tools{margin-top:8px !important}
 
 /* ── 8. 반응형 레이아웃 ── */
 
-/* 모바일 스탯 비교 레이아웃 */
 body.is-mobile .stat-compare-grid .stat-row{
   display:grid !important;
   grid-template-columns:minmax(96px,.9fr) minmax(0,1fr) minmax(0,1fr) !important;
@@ -1819,11 +1800,9 @@ body.is-mobile .stat-compare-grid .stat-row .sc-val{
 }
 body.is-mobile .stat-compare-grid .stat-head-row .sc-name { color:transparent !important; font-size:0 !important; }
 
-/* 최적화 범위 정렬 */
 .trait-opt-tier-row label,
 .trait-opt-tier-row select { text-align:center !important; text-align-last:center !important; justify-content:center !important; }
 
-/* 버프 버튼 그리드 */
 .common-buff-row .buff-choice-item,.select-buff-row .buff-choice-item,.flower-buff-row .buff-choice-item{
   position:relative !important;
   display:flex !important;
@@ -1861,13 +1840,11 @@ body.is-mobile .common-buff-grid { grid-template-columns:repeat(2,minmax(0,1fr))
 body.is-mobile .flower-buff-grid { grid-template-columns:1fr !important; }
 body.is-mobile .select-buff-grid { grid-template-columns:repeat(2,minmax(0,1fr)) !important; }
 
-/* 모바일 버프 컨트롤 */
 body.is-mobile .unit-enhance-card .seg-btns { gap:6px !important; }
 body.is-mobile .unit-enhance-card .seg-btns button { min-width:0 !important; padding-left:8px !important; padding-right:8px !important; }
 body.is-mobile .unit-enhance-card .month-rune-selects,
 body.is-mobile .unit-enhance-card .unit-enhance-inline-controls .pill-row { overflow:visible !important; }
 
-/* PC/태블릿 룬효과/버프 규격 통일 */
 body.is-pc-landscape .unit-enhance-card,
 body.is-pc-portrait .unit-enhance-card,
 body.is-tablet .unit-enhance-card{
@@ -1920,7 +1897,6 @@ body.is-tablet .unit-enhance-card .buff-choice-item{
   min-height:var(--unit-enhance-btn-h) !important;
 }
 
-/* 반응형 최종 정렬 */
 body .col-left > .unit-enhance-card { padding:0 14px 12px !important; }
 body .col-left > .unit-enhance-card > .sg-title { width:calc(100% + 28px) !important; margin:0 0 10px -14px !important; }
 body .col-left .sg > .sg-title,
@@ -1960,10 +1936,8 @@ body.is-pc-portrait .col-left > .sg { margin-bottom:12px !important; }
 body.is-tablet .col-left > .sg:last-child,
 body.is-pc-portrait .col-left > .sg:last-child { margin-bottom:0 !important; }
 
-/* 전체 레이아웃 헤더 높이 / 입력 가독성 */
 :root { --dps-card-head-h:40px; --dps-card-head-text:var(--section-head-text, #ffffff); }
 
-/* PC/태블릿 헤더 높이 통일 */
 .col-left .sg > .sg-title,
 .col-mid .stat-dps-card > .section-title,
 .col-mid .bus-cut-card > h3,
@@ -2030,7 +2004,6 @@ body.is-pc-portrait .col-left > .sg:last-child { margin-bottom:0 !important; }
   white-space:nowrap !important;
 }
 
-/* 모바일 탭 스크롤바 숨김 */
 body.is-tabbed,
 body.is-tabbed .wrap,
 body.is-tabbed .col-work,
@@ -2043,7 +2016,6 @@ body.is-tabbed .col-left::-webkit-scrollbar,
 body.is-tabbed .col-mid::-webkit-scrollbar,
 body.is-tabbed .col-right::-webkit-scrollbar { width:0 !important; height:0 !important; display:none !important; }
 
-/* 모바일 탭 카드 구조 */
 body.is-tabbed .mobile-page > .sg,
 body.is-tabbed .mobile-page > .data-card,
 body.is-tabbed .mobile-page > .col-right{
@@ -2071,7 +2043,6 @@ body.is-tabbed .mobile-page > .col-right .trait-board-panel{
 }
 body.is-tabbed .mobile-page > .col-right .trait-board-panel .tp-body { width:100% !important; margin:0 !important; padding:0 !important; }
 
-/* 모바일 탭 하단 헤더 높이 */
 body.is-tabbed .mobile-page > .sg > .sg-title,
 body.is-tabbed .mobile-page > .data-card > .section-title,
 body.is-tabbed .mobile-page > .data-card > h3,
@@ -2099,7 +2070,6 @@ body.is-tabbed .mobile-page .final-damage-card > h3{
   letter-spacing:0 !important;
   text-transform:none !important;
 }
-/* 태블릿 크기/배치 보정 */
 body.is-tablet label,
 body.is-tablet .resource-box label,
 body.is-tablet .resource-usage-row .usage-name,
@@ -2130,7 +2100,6 @@ body.is-tablet .seg-btns button,
 body.is-tablet .mini-btn,
 body.is-tablet .trait-group .tr-ctrl button { font-weight:900 !important; border-width:1px !important; }
 
-/* 저장상태 배지 색상 */
 body.is-tabbed .sg.priority > .sg-title.trait-work-head .storage-status,
 body.is-tabbed .col-left .sg > .sg-title.trait-work-head .storage-status{
   background:#ecfdf5 !important;
@@ -2225,12 +2194,10 @@ body.is-tabbed .mobile-page > .sg.priority > .sg-title.trait-work-head{
 body.is-mobile .mobile-page > .sg.priority > .sg-title.trait-work-head > span:first-child,
 body.is-tabbed .mobile-page > .sg.priority > .sg-title.trait-work-head > span:first-child { color:#fff !important; }
 
-/* 좁은 PC 결과 컬럼 가독성 보정 */
 body.is-pc-landscape .col-mid .final-damage-card .skill-damage-layout { grid-template-columns:minmax(0,1fr) !important; }
 body.is-pc-landscape .col-mid .final-damage-card .skill-setting-panel,
 body.is-pc-landscape .col-mid .final-damage-card .skill-result-panel { width:100% !important; min-width:0 !important; }
 
-/* 현재 대시보드 테마 / 최종 우선순위 */
 :root{
   --v57-bg:#f1f5fb;
   --v57-panel:#ffffff;
@@ -2595,7 +2562,6 @@ html body .stat-dps-card .enemy-info-grid > .enemy-info-title{
   text-align:center !important;
 }
 
-
 @media (max-width:600px){
   body.is-mobile .dps-matrix thead th:first-child,
   body.is-mobile .dps-matrix tbody th { width:52px !important; min-width:52px !important; max-width:52px !important; }
@@ -2621,12 +2587,10 @@ body .clean-rune-card .enchant-combined .enchant-result-label > span{
   text-overflow:ellipsis !important;
 }
 
-/* 특성 도구 컨트롤 */
 body .unit-enhance-card .seg-btns button.active:hover,
 body .unit-enhance-card .seg-btns button.is-active:hover,
 body .unit-enhance-card .buff-choice-item.is-active:hover { filter:brightness(1.04) !important; }
 
-/* 인첸트 라벨 크기 */
 html[class] body[class] .wrap .col-work .col-left .clean-rune-card .enchant-combined .enchant-combined-grid .enchant-combined-row > label.enchant-result-label > span{
   display:flex !important;
   align-items:center !important;
@@ -2636,7 +2600,6 @@ html[class] body[class] .wrap .col-work .col-left .clean-rune-card .enchant-comb
   border-radius:8px !important;
 }
 
-/* 특성 요약 카드 */
 body .trait-board-panel,
 body:not(.is-mobile) .trait-board-panel,
 body.is-tabbed .mobile-page > .col-right .trait-board-panel{
@@ -2714,7 +2677,6 @@ body .trait-board-panel > .tp-body{
   body.is-tabbed .mobile-page .trait-board-panel > .sp-box::before { height:38px; }
 }
 
-/* 플랫폼 공통 라벨 / 액션 컨트롤 */
 .stat-dps-summary::before { content:none !important; display:none !important; }
 
 body .xp-sp-card .resource-box label,
@@ -2785,7 +2747,6 @@ body .final-damage-card .skill-ir > label{
   transform:translateY(-1px) !important;
 }
 
-/* PC 세로 룬정보 2x2 배치 유지 */
 body.is-pc-portrait .clean-rune-card .rune-panel.tidy-rune-panel{
   display:grid !important;
   grid-template-columns:repeat(2,minmax(0,1fr)) !important;
@@ -2797,7 +2758,6 @@ body.is-pc-portrait .clean-rune-card .rune-option-card { grid-column:2 !importan
 body.is-pc-portrait .clean-rune-card .additional-editor { grid-column:1 !important; grid-row:2 !important; }
 body.is-pc-portrait .clean-rune-card .enchant-combined { grid-column:2 !important; grid-row:2 !important; margin-top:0 !important; }
 
-/* 패널 강조선 */
 .hdr.app-header::after{
   content:"";
   position:absolute;
@@ -2891,7 +2851,6 @@ body .unit-enhance-card .buff-choice-item.is-active:hover{
   box-shadow:0 2px 0 #2149a8,0 6px 13px rgba(46,94,210,.28),inset 0 1px 0 rgba(255,255,255,.24) !important;
 }
 
-/* 강화 컨트롤 / SP 행 크기 */
 html body .trait-board-panel > .sp-box > .trait-dashboard-tools{
   display:grid !important;
   grid-template-columns:92px minmax(0,1fr) 92px minmax(0,1fr) !important;
@@ -2922,7 +2881,6 @@ html body .trait-board-panel > .sp-box > .trait-dashboard-tools .trait-opt-tier-
   html body .trait-board-panel > .sp-box > .trait-dashboard-tools .trait-opt-tier-row > select { height:29px !important; min-height:29px !important; }
 }
 
-/* 편의기능 버튼 */
 html body .sg.priority .save-row .btn.subtle{
   height:36px !important;
   min-height:36px !important;
@@ -3010,7 +2968,6 @@ html[class] body.is-mobile[class] .wrap .col-work .sg.priority .save-row > a.btn
   line-height:1 !important;
 }
 
-/* 공통 모서리 / 경계선 정리 */
 html body .col-left .sg > .sg-title::before,
 html body .col-mid .stat-dps-card > .section-title::before,
 html body .col-mid .bus-cut-card > h3::before,
@@ -3065,7 +3022,6 @@ html[class] body.is-tablet[class] .wrap .col-work .clean-rune-card.clean-rune-ca
   border-left:1px solid var(--field-label-accent, #d4e1f0) !important;
 }
 
-/* 안내 문구 / 버스 라벨 */
 html body .clean-rune-card .additional-editor .additional-help{
   display:flex !important;
   align-items:center !important;
@@ -3082,7 +3038,6 @@ html body .bus-cut-card .mini-table tbody tr > td:first-child{
   text-align:center !important;
 }
 
-/* 기본정보 라벨 크기 */
 html body .xp-sp-card .difficulty-panel .resist-buff-card > .ir > label{
   min-height:32px !important;
   height:32px !important;
@@ -3104,7 +3059,6 @@ html body .trait-board-panel .trait-group .tr > div:first-child{
 html body .trait-board-panel .trait-group .tr-name { color:#182b49 !important; }
 html body .trait-board-panel .trait-group .tr-type { color:#64748b !important; }
 
-/* 반응형 읽기전용 값 */
 html[class] body[class] .wrap .col-work .xp-sp-card .resource-box.auto-resource > b,
 html[class] body[class] .wrap .col-work .xp-sp-card .resource-box.readonly-resource > b,
 html[class] body[class] .wrap .col-work .xp-sp-card .resource-usage-row > .usage-values{
@@ -3114,7 +3068,6 @@ html[class] body[class] .wrap .col-work .xp-sp-card .resource-usage-row > .usage
   box-shadow:none !important;
 }
 
-/* 모바일 특성 컨트롤 / 스탯 정렬 / 네비게이션 */
 html body:not(.is-mobile) .stat-compare-grid .stat-row:not(.stat-head-row) > .sc-name{
   justify-content:center !important;
   text-align:center !important;
@@ -3232,7 +3185,6 @@ html body:not(.is-mobile) .stat-compare-grid .stat-row:not(.stat-head-row) > .sc
   }
 }
 
-/* DPS표 위험구간 최종 강조 */
 html body .dps-matrix td.dps-current-cell{
   position:relative !important;
   z-index:8 !important;
@@ -3293,7 +3245,6 @@ html body .dps-matrix tbody tr td.dps-risk-cell{
   box-shadow:inset 0 0 0 2px #8f0f2b !important;
 }
 
-/* 공통 짙은 남색 섹션 헤더 */
 :root{
   --section-head-bg:linear-gradient(135deg,#151c27 0%,#1d2838 58%,#2b3a4e 100%);
   --section-head-bd:#111923;
@@ -3320,7 +3271,6 @@ html body .col-left .sg > .sg-title > span:first-child,
 html body .col-mid .bus-cut-card > h3 > span:first-child,
 html body .col-mid .final-damage-card > h3 > span:first-child { color:#fff !important; }
 
-/* 위험 작업 버튼 강조 */
 html body .trait-board-panel button.btn.danger[data-action="clearAll"],
 html body .trait-board-panel button.btn.danger[data-action="clearUtility"]{
   border-color:#b91c1c !important;
@@ -3370,7 +3320,6 @@ html body .trait-board-panel > .sp-box > .trait-dashboard-tools{
   }
 }
 
-/* 특성 티어 헤더 색상 */
 html body .trait-group > h4 .trait-title { color:#fff !important; }
 html body .trait-group > h4 .trait-tools .mini-btn { background:#fff !important; background-image:none !important; box-shadow:none !important; }
 html body .trait-group > h4 .trait-tools .mini-btn.master { border-color:#bfdbfe !important; color:#1d4ed8 !important; }
@@ -3389,7 +3338,6 @@ html body .trait-group > h4 .trait-tools .mini-btn.reset:hover{
 
 body.is-tabbed .mobile-page-zero-rank{scrollbar-width:none !important}
 body.is-tabbed .mobile-page-zero-rank::-webkit-scrollbar{display:none !important}
-
 
 /* ── 12. 승단 / 더제로 보드 ── */
 .col-left .zero-rank-content { height:720px !important; max-height:none !important; min-height:620px !important; }
@@ -3445,8 +3393,6 @@ body.is-mobile .mobile-page-zero-rank .zero-calc-table-wrap{
 }
 body.is-mobile .mobile-page-zero-rank .zero-rank-table { width:100% !important; min-width:480px !important; }
 
-
-/* 승단표 / 혜택 / 계산 연동 강조 */
 .zero-rank-table tbody tr.zero-rank-current{
   background:linear-gradient(135deg,#eff6ff 0%,#dbeafe 55%,#bfdbfe 100%) !important;
   border-color:#60a5fa !important;
@@ -3526,8 +3472,6 @@ body.is-mobile .mobile-page-zero-rank .zero-rank-table { width:100% !important; 
 .zero-rank-result-card.zero-rank-upgrade .zero-current-rank{color:#2563eb !important;}
 .zero-rank-result-card.zero-rank-upgrade .zero-target-rank{color:#b45309 !important;}
 
-
-/* 더제로 명예 수동 입력 */
 .zero-calc-table .zero-honor-input{
   width:100% !important;
   max-width:none !important;
@@ -3548,7 +3492,6 @@ body.is-mobile .mobile-page-zero-rank .zero-rank-table { width:100% !important; 
 }
 .zero-calc-table .zero-honor-input::placeholder { color:#9aa8bb; font-size:calc(9px * var(--app-font-scale)); text-transform:none; }
 .zero-calc-table .zero-honor-input:focus { outline:none; border-color:transparent; box-shadow:inset 0 0 0 2px rgba(49,87,213,.35) !important; }
-
 
 body.is-mobile .month-rune-modal{width:calc(100vw - 10px);max-height:calc(var(--mobile-vh, 100vh) - 10px);margin:5px auto;border-radius:14px}
 body.is-mobile .month-rune-head{position:relative;grid-template-columns:32px minmax(0,1fr) 32px;gap:6px;padding:8px}
@@ -3586,7 +3529,6 @@ body.is-tablet .month-rune-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
 body.is-tablet .jewel-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
 body.is-tablet .month-rune-head{grid-template-columns:34px minmax(0,1fr) 34px;gap:8px;padding:10px}
 
-/* 모바일 더제로 승단 요약 / 계산 카드 */
 body.is-mobile .zero-mobile-summary-hidden{display:none !important}
 body.is-mobile .zero-rank-tab.active{
   border-color:#3157d5 !important;
@@ -3758,7 +3700,6 @@ body.is-mobile .zero-row-score{
   color:#173a82;
 }
 
-/* DPS표 전용 틀 고정 보정: 난이도 헤더/고행 열이 스와이프 중 사라지지 않도록 유지 */
 html body .dps-table-scroll{position:relative !important;isolation:isolate !important;}
 html body .dps-matrix thead th{
   position:sticky !important;
@@ -3798,8 +3739,6 @@ html body .dps-matrix td.dps-current-cell{
   z-index:1 !important;
 }
 
-
-/* 기본정보 / SP 은행 단일 버튼 보정 */
 html body .xp-sp-card .resource-panel .sp-usage-resource b,
 html body .xp-sp-card .resource-panel .sp-remain-resource b{
   justify-content:center !important;
@@ -3869,7 +3808,6 @@ html body.is-narrow-mobile .xp-sp-card .sp-bank-basic-row > button.sp-bank-basic
   height:30px !important;
   font-size:calc(10.5px * var(--app-font-scale)) !important;
 }
-/* 특성보드 / 투자 제한 / TOP5 정리 */
 html body .trait-board-panel,
 html body:not(.is-mobile) .trait-board-panel,
 html body.is-tabbed .mobile-page > .col-right .trait-board-panel{
@@ -4100,8 +4038,6 @@ html body .trait-board-panel > .tp-body{width:100% !important;margin:0 !importan
   html body.is-mobile .trait-eff-apply{height:23px !important;min-height:23px !important;padding:0 4px !important;font-size:calc(9.3px * var(--app-font-scale)) !important;}
 }
 
-
-/* 기본정보 재배치 / 파워 블레스 / DPS 요약 고정 */
 html body .xp-sp-card .xp-sp-split.basic-info-grid{
   display:grid !important;
   grid-template-columns:minmax(0,1fr) minmax(0,1fr) !important;
@@ -4329,7 +4265,6 @@ html body.is-narrow-mobile .col-mid .stat-dps-card .stat-dps-summary .dps-risk-b
   text-align:center !important;
 }
 
-/* 모바일 최종 보정 */
 html body.is-mobile .trait-limit-grid,
 html body.is-narrow-mobile .trait-limit-grid{
   grid-template-columns:1fr !important;
