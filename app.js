@@ -411,22 +411,10 @@ function formatRuneChoiceDisplay(type, value){
 function runeChoiceDisplayFromValues(values={}){
   return formatRuneChoiceDisplay(values.runeChoiceType, values.runeChoiceValue);
 }
-function inferLegacyRuneChoice(values={}){
-  const candidates=[['harmony','rHarmony'],['td','rTD'],['ua','rUA'],['ap','rAP']];
-  for(const [type,id] of candidates){
-    const value=normalizeRuneChoiceValue(values[id]);
-    if(value!==0) return {type,value};
-  }
-  return null;
-}
 function normalizeRuneChoiceValues(values={}){
   const out={...values};
-  const legacy=inferLegacyRuneChoice(out);
-  const currentValue=normalizeRuneChoiceValue(out.runeChoiceValue);
-  const type=normalizeRuneChoiceType(out.runeChoiceType || legacy?.type || 'harmony');
-  const value=currentValue!==0 ? currentValue : (legacy ? legacy.value : 0);
-  out.runeChoiceType=type;
-  out.runeChoiceValue=String(value);
+  out.runeChoiceType=normalizeRuneChoiceType(out.runeChoiceType || 'harmony');
+  out.runeChoiceValue=String(normalizeRuneChoiceValue(out.runeChoiceValue));
   return out;
 }
 
@@ -2618,10 +2606,10 @@ function compareSavedValueDisplay(value,id){
 }
 function buildSavedValueCompareRows(changeState,currentState,options={}){
   const onlyDiffs=options.onlyDiffs!==false;
-  const ordered=userStateElementIds().filter(id=>id!=='calcMode');
+  const ordered=userStateElementIds();
   const skipped=new Set(['backupFileInput','excelCompareFile','excelCompareSheet','enchantCode','runeChoiceType','runeChoiceValue',...ENCHANT_INPUT_IDS]);
   const ids=[...new Set([...ordered,'dpsTableMinDps',...Object.keys(currentState.values||{}),...Object.keys(changeState.values||{})])]
-    .filter(id=>id && id!=='calcMode' && !skipped.has(id) && isUserStateValueId(id));
+    .filter(id=>id && !skipped.has(id) && isUserStateValueId(id));
   const rows=[];
   const runeRow=buildRuneChoiceCompareRow('룬정보', changeState.values||{}, currentState.values||{});
   if(!onlyDiffs || runeRow.status!=='same') rows.push(runeRow);
@@ -3583,11 +3571,11 @@ const USER_STATE_VALUE_IDS=new Set([
   'optTier','utilOptTier','traitLimitAD','traitLimitAS','traitLimitCRI','traitLimitCD','traitLimitMC','traitLimitDR','traitLimitTD','traitLimitUA','traitLimitMultiTarget','traitLimitInfinite',
   'skillDouble','skillMode','skillRound'
 ]);
-const LEGACY_INTERNAL_VALUE_IDS=new Set([
+const INTERNAL_VALUE_IDS=new Set([
   'enemyArmor','dt','ep','personalASBuff','personalLimitBreak','personalJewel','powerBunkerAD','postMasterAD','additionalADBuff','additionalADValue','rushADBuff',
-  'rAP','rTD','rUA','rHarmony','sysAD','addDR','addSR','addHR','basicExtraSlot1','basicExtraSlot2','basicExtraSlot3','basicExtraSlot4','basicExtraSlot5','masterOptTier','calcMode'
+  'rAP','rTD','rUA','rHarmony','sysAD','addDR','addSR','addHR','basicExtraSlot1','basicExtraSlot2','basicExtraSlot3','basicExtraSlot4','basicExtraSlot5'
 ]);
-const IGNORED_SAVED_VALUE_IDS=[...(DPS_CONFIG.state.skipElementIds || []),'calcMode',...LEGACY_INTERNAL_VALUE_IDS];
+const IGNORED_SAVED_VALUE_IDS=[...(DPS_CONFIG.state.skipElementIds || []),...INTERNAL_VALUE_IDS];
 function isUserStateValueId(id){ return USER_STATE_VALUE_IDS.has(id); }
 function userStateElementIds(){ return storageElementIds().filter(isUserStateValueId); }
 let isLoadingState=false;
@@ -3730,12 +3718,8 @@ function sanitizeSavedValues(values){
 
 function normalizeSavedState(data){
   if(!data || typeof data!=='object') return null;
-  const legacyAdditional=data.additional || data.additionals || data.additionalInputs || {};
   const rawValues=(data.values && typeof data.values==='object') ? data.values : {};
-  const values=sanitizeSavedValues({
-    ...(legacyAdditional && typeof legacyAdditional==='object' ? legacyAdditional : {}),
-    ...rawValues
-  });
+  const values=sanitizeSavedValues(rawValues);
   const inv=(data.inv && typeof data.inv==='object') ? {...data.inv} : {};
   if(!Object.keys(values).length && !Object.keys(inv).length) return null;
   return makeStorageEnvelope({
