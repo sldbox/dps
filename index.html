@@ -3,13 +3,13 @@
 <head>
 <script>
 window.DPS_APP_VERSION = "V2.2";
-window.DPS_BUILD_VERSION = "2606141700";
+window.DPS_BUILD_VERSION = "2606142025";
 window.DPS_ASSET_VERSIONS = {
-  "app.js": "2606141700",
-  "style.css": "2606141700",
-  "data.js": "2606141700",
-  "image/logo/logo.png": "2606141700",
-  "image/logo/icon.png": "2606141700"
+  "app.js": "2606142025",
+  "style.css": "2606142025",
+  "data.js": "2606142025",
+  "image/logo/logo.png": "2606142025",
+  "image/logo/icon.png": "2606142025"
 };
 window.dpsAssetVersion = function(key){
   var versions = window.DPS_ASSET_VERSIONS || {};
@@ -148,12 +148,13 @@ setTimeout(function(){
   var h=window.innerHeight||document.documentElement.clientHeight||0;
   var shortSide=Math.min(w,h);
   var longSide=Math.max(w,h);
-  var mode=(shortSide<=600)?'is-mobile':((shortSide<=1024&&longSide<=1200)?'is-tablet':(h>w?'is-pc-portrait':'is-pc-landscape'));
+  var mode=(shortSide<=600)?'is-mobile':((shortSide<=1024&&longSide<=1366)?'is-tablet':(h>w?'is-pc-portrait':'is-pc-landscape'));
   var dir=h>w?' is-portrait-view':'';
   var device=(mode==='is-mobile')?' is-mobile-device':(mode==='is-tablet'?' is-tablet-device':'');
   var extra=(mode==='is-mobile'&&shortSide<=430)?' is-narrow-mobile':'';
-  document.body.className=(document.body.className+' '+mode+dir+device+extra).trim();
-  document.documentElement.className=(document.documentElement.className+' '+mode+dir+device+extra).trim();
+  var tabbed=(mode==='is-mobile'||mode==='is-tablet')?' is-tabbed':'';
+  document.body.className=(document.body.className+' '+mode+dir+device+extra+tabbed).trim();
+  document.documentElement.className=(document.documentElement.className+' '+mode+dir+device+extra+tabbed).trim();
 })();
 </script>
 <div id="dpsBootScreen" aria-live="polite"><div class="boot-card"><div class="boot-title">DPS 계산기 적용 중</div><div class="boot-desc">최신 빌드와 스타일을 불러오는 중입니다.</div></div></div>

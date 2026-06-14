@@ -24,7 +24,7 @@
     const portrait = h > w;
 
     if (shortSide <= 600) return 'is-mobile';
-    if (shortSide <= 1024 && longSide <= 1200) return 'is-tablet';
+    if (shortSide <= 1024 && longSide <= 1366) return 'is-tablet';
     if (portrait) return 'is-pc-portrait';
     return 'is-pc-landscape';
   }
@@ -53,7 +53,7 @@
     document.documentElement.classList.remove(...MODES);
     document.body.classList.add(mode);
     document.documentElement.classList.add(mode);
-    if (mode === 'is-mobile') {
+    if (mode === 'is-mobile' || mode === 'is-tablet') {
       document.body.classList.add('is-tabbed');
       document.documentElement.classList.add('is-tabbed');
     }
