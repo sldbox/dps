@@ -3,14 +3,14 @@
 <head>
 <meta name="google-site-verification" content="RTuDWbMdnKgbpRpl05eXh9epFwWRSxju4NOl8OtjMsI" />
 <script>
-window.APP_VERSION = "dps-2606221900";
-window.DPS_BUILD_VERSION = "dps-2606221900";
+window.APP_VERSION = "dps-2606230000";
+window.DPS_BUILD_VERSION = "dps-2606230000";
 window.DPS_ASSET_VERSIONS = {
-  "app.js": "dps-2606221900",
-  "responsive-layout.js": "dps-2606221900",
-  "style.css": "dps-2606221900",
-  "data.js": "dps-2606221900",
-  "icon.png": "dps-2606221900"
+  "app.js": "dps-2606230000",
+  "responsive-layout.js": "dps-2606230000",
+  "style.css": "dps-2606230000",
+  "data.js": "dps-2606230000",
+  "icon.png": "dps-2606230000"
 };
 window.dpsAssetVersion = function(key){
   var versions = window.DPS_ASSET_VERSIONS || {};
@@ -42,6 +42,35 @@ window.dpsImageAssetUrl = function(src, key){
   }
   return window.dpsAssetUrl(src, key);
 };
+window.dpsCheckIndexUpdate = function(){
+  if(!window.fetch || !window.location || window.location.protocol === 'file:') return;
+  var current = window.DPS_BUILD_VERSION || window.APP_VERSION || '';
+  var url = new URL(window.location.href);
+  url.searchParams.set('__dps_check', String(Date.now()));
+  fetch(url.href, { cache:'no-store' }).then(function(res){
+    if(!res.ok) return '';
+    return res.text();
+  }).then(function(html){
+    var match = String(html || '').match(/window\.(?:DPS_BUILD_VERSION|APP_VERSION)\s*=\s*["']([^"']+)["']/);
+    var latest = match && match[1];
+    if(!latest || latest === current) return;
+    var key = 'dps-auto-refresh:' + latest;
+    try{
+      if(sessionStorage.getItem(key) === '1') return;
+      sessionStorage.setItem(key, '1');
+    }catch(e){}
+    var next = new URL(window.location.href);
+    next.searchParams.set('fresh', latest);
+    next.searchParams.delete('__dps_check');
+    window.location.replace(next.href);
+  }).catch(function(){});
+};
+setTimeout(window.dpsCheckIndexUpdate, 1200);
+window.addEventListener('focus', window.dpsCheckIndexUpdate);
+document.addEventListener('visibilitychange', function(){
+  if(!document.hidden) window.dpsCheckIndexUpdate();
+});
+setInterval(window.dpsCheckIndexUpdate, 180000);
 </script>
 
 
@@ -150,14 +179,14 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 <meta content="https://sldbox.github.io/dps/" property="og:url"/>
 <meta content="개복디 특성 계산기" property="og:title"/>
 <meta content="특성 투자, 재화 사용량, 표기 스탯, 총데미지, DPS를 한 번에 계산할 수 있는 개복디 전용 계산기입니다." property="og:description"/>
-<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2606221900" property="og:image"/>
-<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2606221900" property="og:image:secure_url"/>
+<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2606230000" property="og:image"/>
+<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2606230000" property="og:image:secure_url"/>
 <meta content="image/png" property="og:image:type"/>
 <meta content="개복디 특성 계산기 로고" property="og:image:alt"/>
 <meta content="summary_large_image" name="twitter:card"/>
 <meta content="개복디 특성 계산기" name="twitter:title"/>
 <meta content="특성 투자, 재화 사용량, 표기 스탯, 총데미지, DPS를 한 번에 계산할 수 있는 개복디 전용 계산기입니다." name="twitter:description"/>
-<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2606221900" name="twitter:image"/>
+<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2606230000" name="twitter:image"/>
 <meta content="개복디 특성 계산기 로고" name="twitter:image:alt"/>
 <link href="https://cdn.jsdelivr.net" rel="preconnect"/>
 <link crossorigin="" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" rel="stylesheet"/>
