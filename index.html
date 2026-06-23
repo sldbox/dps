@@ -3,14 +3,14 @@
 <head>
 <meta name="google-site-verification" content="RTuDWbMdnKgbpRpl05eXh9epFwWRSxju4NOl8OtjMsI" />
 <script>
-window.APP_VERSION = "dps-2606231001";
-window.DPS_BUILD_VERSION = "dps-2606231001";
+window.APP_VERSION = "dps-2606231500";
+window.DPS_BUILD_VERSION = "dps-2606231500";
 window.DPS_ASSET_VERSIONS = {
-  "app.js": "dps-2606231001",
-  "responsive-layout.js": "dps-2606231001",
-  "style.css": "dps-2606231001",
-  "data.js": "dps-2606231001",
-  "icon.png": "dps-2606231001"
+  "app.js": "dps-2606231500",
+  "responsive-layout.js": "dps-2606231500",
+  "style.css": "dps-2606231500",
+  "data.js": "dps-2606231500",
+  "icon.png": "dps-2606231500"
 };
 window.dpsAssetVersion = function(key){
   var versions = window.DPS_ASSET_VERSIONS || {};
@@ -179,14 +179,14 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 <meta content="https://sldbox.github.io/dps/" property="og:url"/>
 <meta content="개복디 특성 계산기" property="og:title"/>
 <meta content="특성 투자, 재화 사용량, 표기 스탯, 총데미지, DPS를 한 번에 계산할 수 있는 개복디 전용 계산기입니다." property="og:description"/>
-<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2606231001" property="og:image"/>
-<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2606231001" property="og:image:secure_url"/>
+<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2606231500" property="og:image"/>
+<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2606231500" property="og:image:secure_url"/>
 <meta content="image/png" property="og:image:type"/>
 <meta content="개복디 특성 계산기 로고" property="og:image:alt"/>
 <meta content="summary_large_image" name="twitter:card"/>
 <meta content="개복디 특성 계산기" name="twitter:title"/>
 <meta content="특성 투자, 재화 사용량, 표기 스탯, 총데미지, DPS를 한 번에 계산할 수 있는 개복디 전용 계산기입니다." name="twitter:description"/>
-<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2606231001" name="twitter:image"/>
+<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2606231500" name="twitter:image"/>
 <meta content="개복디 특성 계산기 로고" name="twitter:image:alt"/>
 <link href="https://cdn.jsdelivr.net" rel="preconnect"/>
 <link crossorigin="" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" rel="stylesheet"/>
@@ -865,17 +865,18 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 </div>
 
 <div class="data-card bus-cut-card">
-<h3 class="bus-cut-title"><span>버스보드</span><small class="bus-cut-note">총 SP -20% 기준</small></h3>
+<h3 class="bus-cut-title"><span>버스보드</span></h3>
 <table class="mini-table"><thead><tr><th>버스 단계</th><th>2인 협동</th><th>3인 협동</th></tr></thead><tbody id="xpCutRows"></tbody></table>
 </div>
 <div class="data-card final-damage-card">
-<h3 class="skill-damage-title"><span>성소스킬보드</span><b id="skillAPView">AP : 자동</b></h3>
+<h3 class="skill-damage-title"><span>성소스킬보드</span></h3>
 <div class="skill-damage-layout">
 <div class="skill-setting-panel">
-<div class="ir skill-ir"><label>더블스페</label><select id="skillDouble"><option selected="" value="1">1</option><option value="1.5">1.5</option><option value="1.67">1.67</option></select></div>
+<div class="ir skill-ir"><label>더블스페</label><select id="skillDouble"><option value="1">1</option><option value="1.5">1.5</option><option selected="" value="1.67">1.67</option></select></div>
 <div class="ir skill-ir"><label>모드</label><select id="skillMode"><option selected="" value="normal">일반모드</option><option value="tower">도전의 탑</option></select></div>
-<div class="ir skill-ir"><label>라운드</label><input id="skillRound" type="text" value="0" inputmode="decimal"/></div>
-<div class="skill-note" id="skillPenaltyView">라운드별 데미지 감소: —</div>
+<div class="ir skill-ir"><label>라운드</label><input id="skillRound" type="text" value="300" inputmode="decimal"/></div>
+<div class="ir skill-ir"><label>마법공격력</label><b class="skill-display-value" id="skillAPView">자동</b></div>
+<div class="ir skill-ir"><label>데미지감소율</label><b class="skill-display-value" id="skillPenaltyView">—</b></div>
 </div>
 <div class="skill-result-panel">
 <div class="skill-list-head"><span>스킬</span><span>피해량</span></div>

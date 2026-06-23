@@ -1240,16 +1240,58 @@ function renderEnchantPreview(){
     if(out) out.textContent=val;
   });
 }
+const XP_CUT_DIVISOR_ROWS=[
+  {stage:'1단계', party2:10, party3:6},
+  {stage:'2단계', party2:20, party3:12},
+  {stage:'3단계', party2:30, party3:22},
+  {stage:'4단계', party2:40, party3:30}
+];
+let xpCutRowFeedbackTimer=0;
+let xpCutRowFeedbackCells=[];
+function xpCutFeedbackLabel(divisor){
+  return `÷${divisor}배`;
+}
 function renderXpCut(){
+  restoreXpCutRowFeedback();
   const base=Math.max(0, v('sp'))*0.8;
-  const rows=[['1단계',base/10,base/6],['2단계',base/20,base/12],['3단계',base/30,base/22],['4단계',base/40,base/30]];
-  const el=$('xpCutRows'); if(!el) return;
-  el.innerHTML=rows.map(r=>`<tr><td>${r[0]}</td><td>${big(r[1])}</td><td>${big(r[2])}</td></tr>`).join('');
+  const el=$('xpCutRows');
+  if(!el) return;
+  const stageCell=(row)=>`<td>${row.stage}</td>`;
+  const valueCell=(divisor)=>{
+    const value=big(base/divisor);
+    return `<td class="bus-cut-value" data-value="${value}" data-feedback="${xpCutFeedbackLabel(divisor)}">${value}</td>`;
+  };
+  el.innerHTML=XP_CUT_DIVISOR_ROWS.map(row=>`<tr class="bus-cut-row" role="button" tabindex="0">${stageCell(row)}${valueCell(row.party2)}${valueCell(row.party3)}</tr>`).join('');
+}
+function restoreXpCutRowFeedback(){
+  if(xpCutRowFeedbackTimer) clearTimeout(xpCutRowFeedbackTimer);
+  xpCutRowFeedbackTimer=0;
+  xpCutRowFeedbackCells.forEach(cell=>{
+    if(!cell || !cell.isConnected) return;
+    cell.textContent=cell.dataset.value || cell.textContent;
+    cell.classList.remove('is-feedback');
+  });
+  xpCutRowFeedbackCells=[];
+}
+function showXpCutRowFeedback(row){
+  if(!row) return false;
+  restoreXpCutRowFeedback();
+  const cells=Array.from(row.querySelectorAll('.bus-cut-value'));
+  if(!cells.length) return false;
+  cells.forEach(cell=>{
+    const label=cell.dataset.feedback || '';
+    if(!label) return;
+    cell.textContent=label;
+    cell.classList.add('is-feedback');
+  });
+  xpCutRowFeedbackCells=cells;
+  xpCutRowFeedbackTimer=setTimeout(restoreXpCutRowFeedback, 1000);
+  return true;
 }
 function renderSkillDamage(s){
   const ap=s?.displayAPU ?? 535;
   const apView=$('skillAPView');
-  if(apView) apView.textContent=`AP : ${fmt(ap,0)}`;
+  if(apView) apView.textContent=fmt(ap,0);
   const doubleSpace=v('skillDouble');
   const round=Math.max(1,v('skillRound'));
   const isTower=vs('skillMode')==='tower';
@@ -1257,24 +1299,7 @@ function renderSkillDamage(s){
   const perRound=isTower ? 0.016601 : 0.005;
   const penalty=Math.max(0, Math.min(0.99, (round-baseRound)*perRound));
   const pv=$('skillPenaltyView');
-  if(pv){
-    const noteItem=(label,value)=>{
-      const item=document.createElement('span');
-      item.className='skill-note-item';
-      const labelEl=document.createElement('span');
-      labelEl.className='skill-note-label';
-      labelEl.textContent=label;
-      const valueEl=document.createElement('strong');
-      valueEl.textContent=value;
-      item.replaceChildren(labelEl,valueEl);
-      return item;
-    };
-    pv.replaceChildren(
-      noteItem('모드명',isTower?'도전의 탑':'일반모드'),
-      noteItem('라운드',`${round}R`),
-      noteItem('데미지감소',`${(penalty*100).toFixed(1)}%`)
-    );
-  }
+  if(pv) pv.textContent=`${(penalty*100).toFixed(1)}%`;
   const data=[
     ['어스퀘이크',0.0223,0.000066,10],
     ['포이즌미스트',0.0432,0.0001755,15],
@@ -5009,6 +5034,21 @@ function bindActionEvents(){
     fn(trigger, e);
   });
 }
+function bindBusCutEvents(){
+  document.addEventListener('click', e=>{
+    const row=e.target.closest('.bus-cut-row');
+    if(!row || !$('xpCutRows')?.contains(row)) return;
+    e.preventDefault();
+    showXpCutRowFeedback(row);
+  });
+  document.addEventListener('keydown', e=>{
+    if(e.key!=='Enter' && e.key!==' ') return;
+    const row=e.target.closest?.('.bus-cut-row');
+    if(!row || !$('xpCutRows')?.contains(row)) return;
+    e.preventDefault();
+    showXpCutRowFeedback(row);
+  });
+}
 const REACTIVE_INPUT_EXCLUDED_IDS=new Set([
   'excelCompareFile',
   'excelCompareSheet',
@@ -5087,6 +5127,7 @@ function bindAppEvents(){
   appEventsBound=true;
   bindFontScaleViewportGuard();
   bindActionEvents();
+  bindBusCutEvents();
   bindTraitHoldEvents();
   bindTraitInputEvents();
   bindDpsTableEvents();

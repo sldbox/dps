@@ -103,15 +103,7 @@
   --color-orange-50:#24190c;
   --color-orange-200:#8a5f25;
   --color-orange-800:#f0b66b;
-  --on-dark:#f8fbff;
-  --header-chip-height:26px;
-  --header-chip-padding:0 12px;
-  --header-chip-radius:999px;
-  --header-chip-bg:linear-gradient(180deg,#10233d 0%,#0d1522 100%);
-  --header-chip-bd:#60a5fa;
-  --header-chip-text:#e6f0ff;
-  --header-chip-font-size:calc(10.5px * var(--app-font-scale));
-  --header-chip-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 2px 7px rgba(0,0,0,.24);}
+  --on-dark:#f8fbff;}
 *{box-sizing:border-box;margin:0;padding:0;scrollbar-width:none;-ms-overflow-style:none}
 *::-webkit-scrollbar{width:0;height:0;display:none}
 body{font:calc(14px * var(--app-font-scale))/1.55 var(--font-main);min-height:100vh;overflow:hidden;font-size:calc(13px * var(--app-font-scale))}
@@ -542,31 +534,6 @@ body, input, button, select, textarea{font-family:var(--font-main)}
 .font-scale-btn, .font-scale-value{height:26px;cursor:pointer;min-width:30px;padding:0 7px}
 .font-scale-value{min-width:44px;font-family:Consolas,var(--font-main)}
 .font-scale-btn:hover, .font-scale-value:hover{background:#172438;color:var(--color-blue-700)}
-/* ── 5. 헤더 우측 상태칩 ── */
-.bus-cut-note, #skillAPView{
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  gap:4px;
-  min-width:0;
-  min-height:var(--header-chip-height);
-  height:var(--header-chip-height);
-  padding:var(--header-chip-padding);
-  border:1px solid var(--header-chip-bd);
-  border-radius:var(--header-chip-radius);
-  background:var(--header-chip-bg);
-  background-image:var(--header-chip-bg);
-  color:var(--header-chip-text);
-  font-size:var(--header-chip-font-size);
-  font-weight:900;
-  line-height:1;
-  letter-spacing:-.01em;
-  text-align:center;
-  text-shadow:none;
-  box-shadow:var(--header-chip-shadow);
-  white-space:nowrap;
-  word-break:keep-all;
-}
 .dps-card.is-dps-risk{border-color:var(--state-danger-line);background:linear-gradient(180deg,#2b1017 0%,var(--color-white) 100%);box-shadow:0 0 0 2px rgba(190,18,60,.08),0 10px 18px rgba(190,18,60,.08)}
 .dps-card.is-dps-risk .dps-num{background:none;-webkit-background-clip:initial;background-clip:initial;color:var(--state-danger-text)}
 .dps-card.is-dps-risk .dps-lbl{color:var(--state-danger-text)}
@@ -781,18 +748,19 @@ body.is-mobile .zero-score-list li, body.is-mobile .zero-benefit-rank li{font-si
 .bus-cut-card .mini-table td{height:28px;display:flex;align-items:center;justify-content:center;border:0;background:transparent;padding:0 8px;font-size:calc(11.5px * var(--app-font-scale));font-weight:800}
 .bus-cut-card .mini-table td:first-child{background:var(--ui-label, var(--color-white));border:1px solid var(--ui-line-strong, #3a4d67);border-radius:8px;font-weight:900}
 .bus-cut-card .mini-table td:nth-child(2), .bus-cut-card .mini-table td:nth-child(3){gap:6px;color:var(--color-text-main);font-weight:900}
+.bus-cut-card .mini-table .bus-cut-row{cursor:pointer;user-select:none;border-radius:8px;transition:background-color .15s ease}
+.bus-cut-card .mini-table .bus-cut-row:focus-visible{outline:none;box-shadow:var(--ui-focus)}
+.bus-cut-card .mini-table .bus-cut-value{border-radius:8px;transition:background-color .15s ease,border-color .15s ease,box-shadow .15s ease,color .15s ease}
+.bus-cut-card .mini-table .bus-cut-value.is-feedback{background:var(--ui-button-active-bg);border:1px solid var(--ui-button-active-border);color:var(--ui-button-active-text);box-shadow:var(--ui-button-active-shadow);font-size:calc(11px * var(--app-font-scale));letter-spacing:-.01em}
 .bus-cut-card .mini-table td:nth-child(2)::before, .bus-cut-card .mini-table td:nth-child(3)::before{display:inline-flex;align-items:center;justify-content:center;min-width:28px;height:20px;padding:0 5px;border:1px solid var(--color-blue-200);border-radius:999px;background:var(--color-blue-50);color:var(--color-blue-700);font-size:calc(10.5px * var(--app-font-scale));font-weight:900;line-height:1}
 .bus-cut-card .mini-table td:nth-child(2)::before{content:"2인"}
 .bus-cut-card .mini-table td:nth-child(3)::before{content:"3인"}
 .final-damage-card{padding-bottom:10px}
 .skill-damage-layout{display:grid;grid-template-columns:210px minmax(0,1fr);gap:8px;align-items:start}
-.skill-setting-panel, .skill-result-panel{min-width:0}
+.skill-setting-panel, .skill-result-panel{min-width:0;padding:0;border:0;border-radius:0;background:transparent}
 .skill-setting-panel .skill-ir{grid-template-columns:80px minmax(0,1fr);margin-bottom:7px}
-.skill-setting-panel .skill-ir label, .skill-setting-panel .skill-ir input, .skill-setting-panel .skill-ir select{height:30px;min-height:30px;text-align:center;text-align-last:center}
-.skill-note{display:grid;grid-template-columns:1fr;gap:4px;margin:4px 0 0;padding:0;border:0;border-radius:0;background:transparent;color:var(--color-text-main);font-size:calc(10.5px * var(--app-font-scale));font-weight:900;line-height:1.2;text-align:center;white-space:normal}
-.skill-note-item{display:grid;grid-template-columns:minmax(74px,.72fr) minmax(0,1fr);align-items:center;gap:6px;min-height:22px;padding:0;color:var(--color-text-main);white-space:nowrap}
-.skill-note-label{color:#93a4b9;font-size:.92em;font-weight:900;text-align:center}
-.skill-note strong{color:var(--state-warn-text,#f0b66b);font-family:Consolas,monospace;font-size:1.06em;font-weight:900;text-align:center}
+.skill-setting-panel .skill-ir label, .skill-setting-panel .skill-ir input, .skill-setting-panel .skill-ir select, .skill-setting-panel .skill-ir .skill-display-value{height:30px;min-height:30px;text-align:center;text-align-last:center}
+.skill-display-value{display:flex;align-items:center;justify-content:center;border:1px solid var(--role-readonly-bd,#3a4c66);border-radius:var(--ui-control-radius);background:var(--role-readonly-bg,#1a2433);color:var(--color-text-main);font-family:Consolas,var(--font-main);font-size:calc(11.5px * var(--app-font-scale));font-weight:900;line-height:1;box-shadow:none;text-shadow:none}
 .skill-list-head{display:grid;grid-template-columns:minmax(0,1fr) 96px;gap:6px;align-items:center;height:28px;margin-bottom:5px;font-size:calc(11px * var(--app-font-scale));font-weight:900}
 .skill-list-head span{display:flex;align-items:center;justify-content:center;height:28px;border:1px solid var(--role-readonly-bd,#3a4c66);border-radius:8px;background:var(--role-readonly-bg,#1a2433);color:var(--color-text-main);text-align:center}
 .skill-damage-list, .skill-damage-list tbody, .skill-damage-list tr{display:block;width:100%}
@@ -803,7 +771,6 @@ body.is-mobile .zero-score-list li, body.is-mobile .zero-benefit-rank li{font-si
 .skill-damage-list td:nth-child(2){font-family:Consolas,monospace}
 .skill-damage-list td:nth-child(3){display:none}
 .skill-damage-title{overflow:visible}
-#skillAPView{margin-left:auto;margin-right:4px}
 body.is-pc-landscape .clean-rune-card .rune-panel.tidy-rune-panel, body:not(.is-mobile):not(.is-tablet):not(.is-pc-portrait) .clean-rune-card .rune-panel.tidy-rune-panel{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;align-items:start}
 body.is-pc-landscape .clean-rune-card .rune-basic-card, body:not(.is-mobile):not(.is-tablet):not(.is-pc-portrait) .clean-rune-card .rune-basic-card{grid-column:1;grid-row:1;width:100%;min-width:0;max-width:none}
 body.is-pc-landscape .clean-rune-card .rune-option-card, body:not(.is-mobile):not(.is-tablet):not(.is-pc-portrait) .clean-rune-card .rune-option-card{grid-column:2;grid-row:1;width:100%;min-width:0;max-width:none}
@@ -1054,7 +1021,6 @@ body.is-tablet .col-left > .sg:last-child, body.is-pc-portrait .col-left > .sg:l
 .col-left .sg > .sg-title{margin:0 -14px 10px;border-left:0;border-right:0;border-top:0;border-radius:calc(var(--ui-radius, 15px) - 1px) calc(var(--ui-radius, 15px) - 1px) 0 0}
 .col-mid .stat-dps-card > .section-title, .col-mid .bus-cut-card > h3, .col-mid .final-damage-card > h3{margin:0 -10px 10px;border-left:0;border-right:0;border-top:0;border-radius:12px 12px 0 0}
 .col-right .trait-group > h4{margin:0;border-left:0;border-right:0;border-top:0;border-radius:12px 12px 0 0}
-.bus-cut-note{margin-left:auto}
 body.is-tabbed, body.is-tabbed .wrap, body.is-tabbed .col-work, body.is-tabbed .mobile-page{scrollbar-width:none;-ms-overflow-style:none}
 body.is-tabbed::-webkit-scrollbar, body.is-tabbed .wrap::-webkit-scrollbar, body.is-tabbed .col-work::-webkit-scrollbar, body.is-tabbed .mobile-page::-webkit-scrollbar, body.is-tabbed .col-left::-webkit-scrollbar, body.is-tabbed .col-mid::-webkit-scrollbar, body.is-tabbed .col-right::-webkit-scrollbar{width:0;height:0;display:none}
 body.is-tabbed .mobile-page > .sg, body.is-tabbed .mobile-page > .data-card{position:relative;width:100%;max-width:100%;min-width:0;margin:0 0 10px;padding:10px;box-sizing:border-box;overflow:hidden;background:var(--color-white);border:1px solid #26364d}
@@ -1170,9 +1136,7 @@ body.is-pc-portrait .clean-rune-card .enchant-combined{grid-column:2;grid-row:2;
 .enhance-summary-card:nth-child(2) b{color:#73c7e8}
 .enhance-summary-card:nth-child(3) b{color:#c4b5fd}
 .dps-num{background:none;-webkit-background-clip:initial;background-clip:initial;color:#eaf2ff}
-.bus-cut-card .mini-table tr{transition:background-color .15s ease}
-.bus-cut-card .mini-table tr:hover{background:#172438}
-.skill-result-panel, .skill-setting-panel{padding:0;border:0;border-radius:0;background:transparent}
+.bus-cut-card .mini-table .bus-cut-row:hover{background:#172438}
 @media (max-width:600px){
   .col-left .sg > .sg-title::before, .col-mid .stat-dps-card > .section-title::before, .col-mid .bus-cut-card > h3::before, .col-mid .final-damage-card > h3::before, .trait-group > h4::before, body.is-tabbed .mobile-page > .sg > .sg-title::before, body.is-tabbed .mobile-page > .data-card > .section-title::before, body.is-tabbed .mobile-page > .data-card > h3:not(.zero-rank-title)::before{height:15px}
   .enhance-summary-card{min-height:52px}
@@ -1414,7 +1378,6 @@ body .clean-rune-card .rune-option-grid > label,
 body .clean-rune-card .additional-row > label,
 body .clean-rune-card .enchant-result-label > span,
 body .final-damage-card .skill-ir > label,
-body .skill-setting-panel .skill-ir > label,
 body .bus-cut-card .mini-table tbody td:first-child{
   border:1px solid var(--ui-line-strong,#3a4d67);
   border-left-color:var(--ui-line-strong,#3a4d67);
@@ -1437,9 +1400,7 @@ body .clean-rune-card .rune-option-grid select:not(:disabled),
 body .clean-rune-card .additional-row input:not([type="hidden"]),
 body .clean-rune-card .enchant-combined-row input:not([type="hidden"]),
 body .final-damage-card .skill-ir input:not([type="hidden"]),
-body .final-damage-card .skill-ir select:not(:disabled),
-body .skill-setting-panel .skill-ir input:not([type="hidden"]),
-body .skill-setting-panel .skill-ir select:not(:disabled){
+body .final-damage-card .skill-ir select:not(:disabled){
   border:1px solid var(--role-interactive-bd,#3c6fb6);
   border-radius:var(--ui-control-radius);
   background:var(--role-interactive-bg,#10233d);
@@ -1453,6 +1414,7 @@ body .xp-sp-card .basic-info-row > b,
 body .clean-rune-card .enchant-result-value,
 body .trait-limit-grid input.trait-limit-unlimited,
 body .stat-row .sc-val,
+body .skill-display-value,
 body .enchant-combined-row b,
 body input[readonly],
 body input:disabled,
@@ -1528,17 +1490,20 @@ body.is-narrow-mobile .zero-benefit-list{
 body .skill-damage-title,
 body .skill-list-head,
 body .skill-damage-list th,
-body .skill-damage-list td{
+body .skill-damage-list td,
+body .skill-display-value{
   word-break:keep-all;
   overflow-wrap:anywhere;
 }
 body .skill-damage-list th,
-body .skill-damage-list td{
+body .skill-damage-list td,
+body .skill-display-value{
   white-space:normal;
   line-height:1.25;
   min-height:30px;
 }
-body .skill-damage-list td{
+body .skill-damage-list td,
+body .skill-display-value{
   border-color:var(--role-readonly-bd,#3a4c66);
   background:var(--role-readonly-bg,#1a2433);
   color:var(--color-text-main);
