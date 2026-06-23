@@ -3,14 +3,14 @@
 <head>
 <meta name="google-site-verification" content="RTuDWbMdnKgbpRpl05eXh9epFwWRSxju4NOl8OtjMsI" />
 <script>
-window.APP_VERSION = "dps-2606231500";
-window.DPS_BUILD_VERSION = "dps-2606231500";
+window.APP_VERSION = "dps-2606231630";
+window.DPS_BUILD_VERSION = "dps-2606231630";
 window.DPS_ASSET_VERSIONS = {
-  "app.js": "dps-2606231500",
-  "responsive-layout.js": "dps-2606231500",
-  "style.css": "dps-2606231500",
-  "data.js": "dps-2606231500",
-  "icon.png": "dps-2606231500"
+  "app.js": "dps-2606231630",
+  "responsive-layout.js": "dps-2606231630",
+  "style.css": "dps-2606231630",
+  "data.js": "dps-2606231630",
+  "icon.png": "dps-2606231630"
 };
 window.dpsAssetVersion = function(key){
   var versions = window.DPS_ASSET_VERSIONS || {};
@@ -179,14 +179,14 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 <meta content="https://sldbox.github.io/dps/" property="og:url"/>
 <meta content="개복디 특성 계산기" property="og:title"/>
 <meta content="특성 투자, 재화 사용량, 표기 스탯, 총데미지, DPS를 한 번에 계산할 수 있는 개복디 전용 계산기입니다." property="og:description"/>
-<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2606231500" property="og:image"/>
-<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2606231500" property="og:image:secure_url"/>
+<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2606231630" property="og:image"/>
+<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2606231630" property="og:image:secure_url"/>
 <meta content="image/png" property="og:image:type"/>
 <meta content="개복디 특성 계산기 로고" property="og:image:alt"/>
 <meta content="summary_large_image" name="twitter:card"/>
 <meta content="개복디 특성 계산기" name="twitter:title"/>
 <meta content="특성 투자, 재화 사용량, 표기 스탯, 총데미지, DPS를 한 번에 계산할 수 있는 개복디 전용 계산기입니다." name="twitter:description"/>
-<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2606231500" name="twitter:image"/>
+<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2606231630" name="twitter:image"/>
 <meta content="개복디 특성 계산기 로고" name="twitter:image:alt"/>
 <link href="https://cdn.jsdelivr.net" rel="preconnect"/>
 <link crossorigin="" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" rel="stylesheet"/>
@@ -248,6 +248,7 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 </script>
 <div id="dpsBootScreen" aria-live="polite"><div class="boot-card"><div class="boot-title">특성 계산기 적용 중</div><div class="boot-desc">최신 빌드와 스타일을 불러오는 중입니다.</div></div></div>
 <div class="wrap">
+<!-- 앱 헤더 / 자료 바로가기 / 글씨 크기 -->
 <div class="hdr app-header">
 <div class="hdr-brand">
 <div aria-label="DPS 로고" class="hdr-logo">DPS</div>
@@ -275,7 +276,9 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 </div>
 </div>
 </div>
+<!-- 앱 본문: 좌측 입력 / 우측 특성 / 중앙 결과 -->
 <div class="col-work">
+<!-- 좌측 입력 패널: 기본정보 / 룬효과 / 룬정보 -->
 <div class="col-left">
 <div class="sg xp-sp-card">
 <div class="sg-title basic-info-head"><span>기본정보</span></div>
@@ -747,6 +750,7 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
     </section>
   </div>
 </div>
+<!-- 모바일 참고 패널: 이달의룬 / 쥬얼 / DPS표 -->
 <section class="sg mobile-reference-panel mobile-reference-runes" data-mobile-reference-panel="runes" aria-label="이달의룬">
 <div class="sg-title"><span>이달의룬</span></div>
 <div class="mobile-reference-body" id="mobileMonthRuneMount"></div>
@@ -761,6 +765,7 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 </section>
 </div>
 
+<!-- 우측 특성 패널: 프리셋 / 최적화 / 제한 / TOP5 / 투자 목록 -->
 <div class="col-right">
 <div class="trait-board-panel">
 <div class="trait-standalone-panel" aria-label="특성 프리셋">
@@ -769,12 +774,12 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 <div class="trait-preset-name-row">
 <label class="trait-preset-label" for="traitPresetName">프리셋 이름</label>
 <input id="traitPresetName" type="text" placeholder="예) 도전의탑, 어비스, 협동전" autocomplete="off" maxlength="40"/>
-<button class="btn pri trait-preset-save-btn" data-action="saveTraitPreset" type="button">프리셋 저장</button>
+<button class="btn pri" data-action="saveTraitPreset" type="button">프리셋 저장</button>
 </div>
 <div class="trait-preset-load-row">
 <label class="trait-preset-label" for="traitPresetSelect">프리셋 목록</label>
 <select id="traitPresetSelect" aria-label="특성 프리셋 목록"><option value="" disabled selected hidden>저장된 프리셋 없음</option></select>
-<button class="btn pri trait-preset-load-btn" data-action="loadTraitPreset" type="button">프리셋 로드</button>
+<button class="btn pri" data-action="loadTraitPreset" type="button">프리셋 로드</button>
 </div>
 <div class="trait-preset-actions">
 <button class="btn subtle" data-action="renameTraitPreset" type="button">프리셋명 변경</button>
@@ -829,6 +834,7 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 <div class="tp-body" id="traitBody"></div>
 </div>
 </div>
+<!-- 중앙 결과 패널: DPS / 스탯 / 버스보드 / 성소스킬보드 -->
 <div class="col-mid">
 <div class="data-card stat-dps-card">
 <div class="section-title">DPS보드</div>
@@ -886,6 +892,7 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 </div>
 </div></div>
 </div>
+<!-- 공통 토스트 / 스크립트 로더 -->
 <div aria-live="polite" class="toast-root" id="toastRoot"></div>
 <script>
 function loadScriptSequence(files){

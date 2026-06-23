@@ -152,6 +152,11 @@ function setSelectOptions(select, options){
     select.appendChild(option);
   });
 }
+function setClassState(el, classNames, active){
+  if(!el) return;
+  const names=Array.isArray(classNames) ? classNames : [classNames];
+  names.forEach(name=>el.classList.toggle(name, !!active));
+}
 const RUNE_CHOICE_TARGETS=[['ap','rAP'],['ua','rUA'],['td','rTD'],['harmony','rHarmony']];
 const RUNE_CHOICE_TYPE_LABELS={
   ap:'마법공격력',
@@ -403,7 +408,7 @@ function syncSelectButtons(){
     const id=group.dataset.target;
     const val=$(id)?.value;
     group.querySelectorAll('button[data-value]').forEach(btn=>{
-      btn.classList.toggle('active', btn.dataset.value===val);
+      setClassState(btn, 'active', btn.dataset.value===val);
     });
   });
 }
@@ -411,7 +416,7 @@ function syncBuffChoiceButtons(){
   qsa('.buff-choice-item').forEach(item=>{
     const input=item.querySelector('input[type="checkbox"]');
     const active=!!(input && input.checked);
-    item.classList.toggle('is-active', active);
+    setClassState(item, 'is-active', active);
     item.setAttribute('aria-pressed', active ? 'true' : 'false');
   });
 }
@@ -1240,6 +1245,7 @@ function renderEnchantPreview(){
     if(out) out.textContent=val;
   });
 }
+/* 버스보드: 렌더링 / 행 클릭 피드백 */
 const XP_CUT_DIVISOR_ROWS=[
   {stage:'1단계', party2:10, party3:6},
   {stage:'2단계', party2:20, party3:12},
@@ -1248,27 +1254,24 @@ const XP_CUT_DIVISOR_ROWS=[
 ];
 let xpCutRowFeedbackTimer=0;
 let xpCutRowFeedbackCells=[];
-function xpCutFeedbackLabel(divisor){
-  return `÷${divisor}배`;
-}
 function renderXpCut(){
   restoreXpCutRowFeedback();
   const base=Math.max(0, v('sp'))*0.8;
   const el=$('xpCutRows');
   if(!el) return;
-  const stageCell=(row)=>`<td>${row.stage}</td>`;
-  const valueCell=(divisor)=>{
+  const valueCell=(partyLabel, divisor)=>{
     const value=big(base/divisor);
-    return `<td class="bus-cut-value" data-value="${value}" data-feedback="${xpCutFeedbackLabel(divisor)}">${value}</td>`;
+    return `<td class="bus-cut-value" data-value="${value}" data-feedback="÷${divisor}배"><span class="bus-cut-party">${partyLabel}</span><span class="bus-cut-text">${value}</span></td>`;
   };
-  el.innerHTML=XP_CUT_DIVISOR_ROWS.map(row=>`<tr class="bus-cut-row" role="button" tabindex="0">${stageCell(row)}${valueCell(row.party2)}${valueCell(row.party3)}</tr>`).join('');
+  el.innerHTML=XP_CUT_DIVISOR_ROWS.map(row=>`<tr class="bus-cut-row" role="button" tabindex="0"><td>${row.stage}</td>${valueCell('2인', row.party2)}${valueCell('3인', row.party3)}</tr>`).join('');
 }
 function restoreXpCutRowFeedback(){
   if(xpCutRowFeedbackTimer) clearTimeout(xpCutRowFeedbackTimer);
   xpCutRowFeedbackTimer=0;
   xpCutRowFeedbackCells.forEach(cell=>{
     if(!cell || !cell.isConnected) return;
-    cell.textContent=cell.dataset.value || cell.textContent;
+    const text=cell.querySelector('.bus-cut-text');
+    if(text) text.textContent=cell.dataset.value || text.textContent;
     cell.classList.remove('is-feedback');
   });
   xpCutRowFeedbackCells=[];
@@ -1279,15 +1282,28 @@ function showXpCutRowFeedback(row){
   const cells=Array.from(row.querySelectorAll('.bus-cut-value'));
   if(!cells.length) return false;
   cells.forEach(cell=>{
-    const label=cell.dataset.feedback || '';
-    if(!label) return;
-    cell.textContent=label;
+    const text=cell.querySelector('.bus-cut-text');
+    if(!text || !cell.dataset.feedback) return;
+    text.textContent=cell.dataset.feedback;
     cell.classList.add('is-feedback');
   });
   xpCutRowFeedbackCells=cells;
   xpCutRowFeedbackTimer=setTimeout(restoreXpCutRowFeedback, 1000);
   return true;
 }
+function activateXpCutRowFeedback(target,e){
+  const row=target?.closest?.('.bus-cut-row');
+  if(!row || !$('xpCutRows')?.contains(row)) return false;
+  e?.preventDefault?.();
+  return showXpCutRowFeedback(row);
+}
+function bindBusCutEvents(){
+  document.addEventListener('click', e=>activateXpCutRowFeedback(e.target,e));
+  document.addEventListener('keydown', e=>{
+    if(e.key==='Enter' || e.key===' ') activateXpCutRowFeedback(e.target,e);
+  });
+}
+/* 성소스킬보드: 입력값 동기화 / 피해량 렌더링 */
 function renderSkillDamage(s){
   const ap=s?.displayAPU ?? 535;
   const apView=$('skillAPView');
@@ -1811,7 +1827,7 @@ function selectMonthRuneModalTab(tabName){
   const next=['compare','runes','jewels','dps'].includes(tabName) ? tabName : 'compare';
   modal.querySelectorAll('[data-month-rune-panel]').forEach(panel=>{
     const active=panel.dataset.monthRunePanel===next;
-    panel.classList.toggle('is-active',active);
+    setClassState(panel, 'is-active', active);
     panel.hidden=!active;
   });
   renderMonthRuneModalHeader(next);
@@ -1853,6 +1869,43 @@ function bindMonthRuneEvents(){
     if(e.target.closest('[data-month-rune-close]')) closeMonthRune();
   });
   document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeMonthRune(); });
+}
+function bindDpsTableEvents(){
+  document.addEventListener('click', function(e){
+    const modeTarget=e.target.closest('[data-dps-table-mode]');
+    if(!modeTarget) return;
+    switchDpsTableMode(modeTarget.getAttribute('data-dps-table-mode'));
+  });
+  document.addEventListener('keydown', function(e){
+    const minInput=e.target.closest('#dpsTableMinDps,#dpsTableMinDpsMain');
+    if(!minInput) return;
+    if(e.key==='.' || e.key===',' || e.key==='Decimal'){
+      e.preventDefault();
+      return;
+    }
+    if(e.key==='Enter'){
+      e.preventDefault();
+      setDpsTableMinDps(minInput.value,{format:true});
+      minInput.blur();
+    }
+  }, true);
+  document.addEventListener('input', function(e){
+    const minInput=e.target.closest('#dpsTableMinDps,#dpsTableMinDpsMain');
+    if(!minInput) return;
+    const before=minInput.value;
+    setDpsTableMinDps(before);
+    const fresh=$(minInput.id);
+    if(fresh){
+      fresh.focus({preventScroll:true});
+      const pos=fresh.value.length;
+      try{ fresh.setSelectionRange(pos,pos); }catch(_e){}
+    }
+  });
+  document.addEventListener('focusout', function(e){
+    const minInput=e.target.closest('#dpsTableMinDps,#dpsTableMinDpsMain');
+    if(!minInput) return;
+    setDpsTableMinDps(minInput.value,{format:true});
+  }, true);
 }
 /* ===== 08. 엑셀파일·저장파일 비교 / 현재 입력값 적용 ===== */
 const compareState={workbook:null,backupState:null,traitPresetBundle:null,sourceType:null,lastResult:null,activeFilter:'all',restoreState:null,applied:false,selectedSheetName:''};
@@ -2288,203 +2341,6 @@ function buildExcelInputRows(cells,specCells){
   });
   return rows;
 }
-const ZERO_EXCEL_SHEET_NAME='더제로 승단';
-const ZERO_EXCEL_PENANCE_ROWS=[
-  'Practice','Very Easy','Easy','Normal','Hard','Very Hard','Hell','Inferno','Lunatic','Holic','Epic','Ultimate','Impossible','The Final'
-].map((name,index)=>({name,row:13+index}));
-function getZeroScoreSheetCells(workbook){
-  try{
-    return workbook?.sheets?.some(sheet=>sheet.name===ZERO_EXCEL_SHEET_NAME) ? workbook.getCells(ZERO_EXCEL_SHEET_NAME) : null;
-  }catch(_e){ return null; }
-}
-function normalizeZeroHonorValue(value){
-  const text=excelText(value).toLowerCase().replace(/명예/g,'').trim();
-  const first=text.charAt(0);
-  if(['b','a','s','x'].includes(first)) return first;
-  if(['없음','none','off','n','0','-',''].includes(text)) return '';
-  return '';
-}
-function zeroHonorDisplay(value){
-  return value ? String(value).toUpperCase() : '없음';
-}
-function zeroScoreFieldValue(row, kind){
-  if(!row || typeof row!=='object') return undefined;
-  const keys=kind==='current'
-    ? ['current','현재 일반']
-    : ['target','목표 일반'];
-  for(const key of keys){
-    if(Object.prototype.hasOwnProperty.call(row,key)) return row[key];
-  }
-  return undefined;
-}
-function zeroScoreHonorValue(row, kind){
-  if(!row || typeof row!=='object') return '';
-  const keys=kind==='current'
-    ? ['currentHonor','현재 명예']
-    : ['targetHonor','목표 명예'];
-  for(const key of keys){
-    if(Object.prototype.hasOwnProperty.call(row,key)) return normalizeZeroHonorValue(row[key]);
-  }
-  return '';
-}
-function zeroScoreTowerHonorValue(row, kind){
-  if(!row || typeof row!=='object') return undefined;
-  const keys=kind==='current'
-    ? ['honorCurrent','현재 명예탑']
-    : ['honorTarget','목표 명예탑'];
-  for(const key of keys){
-    if(Object.prototype.hasOwnProperty.call(row,key)) return row[key];
-  }
-  return row.type==='honorTower' ? zeroScoreFieldValue(row,kind) : undefined;
-}
-function zeroScoreStateFromExcel(zeroCells){
-  if(!zeroCells) return null;
-  const rows=[];
-  ZERO_EXCEL_PENANCE_ROWS.forEach(({row})=>{
-    rows.push({
-      type:'penance',
-      current:String(Math.max(0,Math.min(20,Math.round(excelNumber(zeroCells[`B${row}`]) ?? 0)))),
-      target:String(Math.max(0,Math.min(20,Math.round(excelNumber(zeroCells[`C${row}`]) ?? 0)))),
-      star:excelFlag(zeroCells[`D${row}`]),
-      currentHonor:normalizeZeroHonorValue(zeroCells[`E${row}`]),
-      targetHonor:normalizeZeroHonorValue(zeroCells[`F${row}`])
-    });
-  });
-  rows.push({
-    type:'towerCombo',
-    current:String(Math.max(0,Math.min(90,Math.round(excelNumber(zeroCells.B27) ?? 0)))),
-    target:String(Math.max(0,Math.min(90,Math.round(excelNumber(zeroCells.C27) ?? 0)))),
-    honorCurrent:String(Math.max(0,Math.min(90,Math.round(excelNumber(zeroCells.B28) ?? 0)))),
-    honorTarget:String(Math.max(0,Math.min(90,Math.round(excelNumber(zeroCells.C28) ?? 0)))),
-    star:false,currentHonor:'',targetHonor:''
-  });
-  return {rows};
-}
-function zeroScoreRowCalculation(row){
-  const type=row?.type || 'penance';
-  let currentScore=0, targetScore=0, score=0;
-  if(type==='penance'){
-    const cur=zeroScoreNumber(zeroScoreFieldValue(row,'current'),0,20);
-    const tar=zeroScoreNumber(zeroScoreFieldValue(row,'target'),0,20);
-    const currentPenanceScore=zeroPenanceScore(cur);
-    const targetPenanceScore=zeroPenanceScore(tar);
-    const currentHonorScore=zeroHonorScore(zeroScoreHonorValue(row,'current'));
-    const targetHonorScore=zeroHonorScore(zeroScoreHonorValue(row,'target'));
-    const star=row.star ? 2 : 0;
-    currentScore=currentPenanceScore+currentHonorScore+star;
-    targetScore=targetPenanceScore+targetHonorScore;
-    score=Math.max(0,targetPenanceScore-currentPenanceScore)+Math.max(0,targetHonorScore-currentHonorScore);
-  }else if(type==='tower'){
-    currentScore=zeroTowerScore(zeroScoreFieldValue(row,'current'));
-    targetScore=zeroTowerScore(zeroScoreFieldValue(row,'target'));
-    score=Math.max(0,targetScore-currentScore);
-  }else if(type==='honorTower'){
-    currentScore=zeroHonorTowerScore(zeroScoreFieldValue(row,'current'));
-    targetScore=zeroHonorTowerScore(zeroScoreFieldValue(row,'target'));
-    score=Math.max(0,targetScore-currentScore);
-  }else if(type==='towerCombo'){
-    const towerCurrentScore=zeroTowerScore(zeroScoreFieldValue(row,'current'));
-    const towerTargetScore=zeroTowerScore(zeroScoreFieldValue(row,'target'));
-    const honorCurrentScore=zeroHonorTowerScore(zeroScoreTowerHonorValue(row,'current'));
-    const honorTargetScore=zeroHonorTowerScore(zeroScoreTowerHonorValue(row,'target'));
-    currentScore=towerCurrentScore+honorCurrentScore;
-    targetScore=towerTargetScore+honorTargetScore;
-    score=Math.max(0,towerTargetScore-towerCurrentScore)+Math.max(0,honorTargetScore-honorCurrentScore);
-  }
-  return {currentScore,targetScore,score};
-}
-function zeroScoreSummaryFromState(zeroScore){
-  const rows=Array.isArray(zeroScore?.rows) ? zeroScore.rows : [];
-  let currentTotal=0,total=0;
-  rows.forEach(row=>{
-    const calc=zeroScoreRowCalculation(row);
-    currentTotal+=calc.currentScore;
-    total+=calc.score;
-  });
-  return {currentTotal,total,targetScore:currentTotal+total};
-}
-function zeroTowerComboFromRows(rows, index=14){
-  const list=Array.isArray(rows) ? rows : [];
-  const base=list[index] || {};
-  if(base.type==='towerCombo'){
-    return {
-      type:'towerCombo',
-      current:zeroScoreFieldValue(base,'current') ?? '0',
-      target:zeroScoreFieldValue(base,'target') ?? '0',
-      honorCurrent:zeroScoreTowerHonorValue(base,'current') ?? '0',
-      honorTarget:zeroScoreTowerHonorValue(base,'target') ?? '0',
-      star:false,currentHonor:'',targetHonor:''
-    };
-  }
-  const honor=base.type==='honorTower' ? base : (list[index+1] || {});
-  return {
-    type:'towerCombo',
-    current:zeroScoreFieldValue(base,'current') ?? '0',
-    target:zeroScoreFieldValue(base,'target') ?? '0',
-    honorCurrent:zeroScoreTowerHonorValue(honor,'current') ?? '0',
-    honorTarget:zeroScoreTowerHonorValue(honor,'target') ?? '0',
-    star:false,currentHonor:'',targetHonor:''
-  };
-}
-function normalizeZeroScoreState(zeroScore){
-  const sourceRows=Array.isArray(zeroScore?.rows) ? zeroScore.rows : [];
-  const rows=ZERO_EXCEL_PENANCE_ROWS.map((_,index)=>{
-    const row=sourceRows[index] || {};
-    return {
-      type:'penance',
-      current:String(zeroScoreNumber(zeroScoreFieldValue(row,'current'),0,20)),
-      target:String(zeroScoreNumber(zeroScoreFieldValue(row,'target'),0,20)),
-      star:!!row.star,
-      currentHonor:zeroScoreHonorValue(row,'current'),
-      targetHonor:zeroScoreHonorValue(row,'target')
-    };
-  });
-  const towerCombo=zeroTowerComboFromRows(sourceRows);
-  rows.push({
-    type:'towerCombo',
-    current:String(zeroScoreNumber(zeroScoreFieldValue(towerCombo,'current'),0,90)),
-    target:String(zeroScoreNumber(zeroScoreFieldValue(towerCombo,'target'),0,90)),
-    honorCurrent:String(zeroScoreNumber(zeroScoreTowerHonorValue(towerCombo,'current'),0,90)),
-    honorTarget:String(zeroScoreNumber(zeroScoreTowerHonorValue(towerCombo,'target'),0,90)),
-    star:false,currentHonor:'',targetHonor:''
-  });
-  return {rows};
-}
-function compareZeroTextRow(name, changeValue, currentValue){
-  return buildCompareTextRow('승단계산',name,changeValue,currentValue);
-}
-function compareZeroNumberRow(kind,name,changeValue,currentValue){
-  return buildCompareNumberRow(kind,name,changeValue,currentValue,0.0001);
-}
-function buildZeroScoreCompareRows(zeroCells){
-  if(!zeroCells) return [];
-  const webState=collectZeroScoreState() || {rows:[]};
-  const rows=[];
-  ZERO_EXCEL_PENANCE_ROWS.forEach(({name,row},index)=>{
-    const web=webState.rows[index] || {};
-    const webCalc=zeroScoreRowCalculation(web);
-    rows.push(compareZeroNumberRow('승단계산',`${name} 현재 일반`,zeroCells[`B${row}`],web.current ?? 0));
-    rows.push(compareZeroNumberRow('승단계산',`${name} 목표 일반`,zeroCells[`C${row}`],web.target ?? 0));
-    rows.push(compareZeroTextRow(`${name} 24스타`,excelFlag(zeroCells[`D${row}`])?'ON':'OFF',web.star?'ON':'OFF'));
-    rows.push(compareZeroTextRow(`${name} 현재 명예`,zeroHonorDisplay(normalizeZeroHonorValue(zeroCells[`E${row}`])),zeroHonorDisplay(web.currentHonor||'')));
-    rows.push(compareZeroTextRow(`${name} 목표 명예`,zeroHonorDisplay(normalizeZeroHonorValue(zeroCells[`F${row}`])),zeroHonorDisplay(web.targetHonor||'')));
-    rows.push(compareZeroNumberRow('승단계산 결과',`${name} 추가점수`,zeroCells[`G${row}`],webCalc.score));
-  });
-  const comboExcel={
-    type:'towerCombo',
-    current:String(Math.max(0,Math.min(90,Math.round(excelNumber(zeroCells.B27) ?? 0)))),
-    target:String(Math.max(0,Math.min(90,Math.round(excelNumber(zeroCells.C27) ?? 0)))),
-    honorCurrent:String(Math.max(0,Math.min(90,Math.round(excelNumber(zeroCells.B28) ?? 0)))),
-    honorTarget:String(Math.max(0,Math.min(90,Math.round(excelNumber(zeroCells.C28) ?? 0)))),
-    star:false,currentHonor:'',targetHonor:''
-  };
-  const comboWeb=zeroTowerComboFromRows(webState.rows);
-  addZeroTowerComboCompareRows(rows,'도전의탑',comboExcel,comboWeb);
-  const webSummary=zeroScoreSummaryFromState(webState);
-  rows.push(compareZeroNumberRow('승단계산 결과','현재 승단점수',zeroCells.H28,webSummary.currentTotal));
-  rows.push(compareZeroNumberRow('승단계산 결과','목표 완료 시',zeroCells.I28,webSummary.targetScore));
-  return rows;
-}
 function validateExcelCompareSheet(cells,sheetName){
   if(!Number.isFinite(Number(cells.M19))||!Number.isFinite(Number(cells.L4))){
     throw new Error(`"${sheetName}" 시트는 현재 계산기와 비교할 수 있는 셀 구조가 아닙니다.`);
@@ -2902,39 +2758,6 @@ function buildSavedTraitCompareRows(changeState){
     return buildCompareNumberRow('특성',t[1],changeValue,currentValue,0.0001);
   }).filter(row=>row.status!=='same');
 }
-function addZeroPenanceCompareRows(rows,name,change={},current={}){
-  const currentCalc=zeroScoreRowCalculation(current);
-  const changeCalc=zeroScoreRowCalculation(change);
-  rows.push(compareZeroNumberRow('승단계산',`${name} 현재 일반`,change.current ?? 0,current.current ?? 0));
-  rows.push(compareZeroNumberRow('승단계산',`${name} 목표 일반`,change.target ?? 0,current.target ?? 0));
-  rows.push(compareZeroTextRow(`${name} 24스타`,change.star?'ON':'OFF',current.star?'ON':'OFF'));
-  rows.push(compareZeroTextRow(`${name} 현재 명예`,zeroHonorDisplay(change.currentHonor||''),zeroHonorDisplay(current.currentHonor||'')));
-  rows.push(compareZeroTextRow(`${name} 목표 명예`,zeroHonorDisplay(change.targetHonor||''),zeroHonorDisplay(current.targetHonor||'')));
-  rows.push(compareZeroNumberRow('승단계산 결과',`${name} 추가점수`,changeCalc.score,currentCalc.score));
-}
-function addZeroTowerComboCompareRows(rows,label,change={},current={}){
-  rows.push(compareZeroNumberRow('승단계산',`${label} 현재 일반`,change.current ?? 0,current.current ?? 0));
-  rows.push(compareZeroNumberRow('승단계산',`${label} 목표 일반`,change.target ?? 0,current.target ?? 0));
-  rows.push(compareZeroTextRow(`${label} 24스타`,'비활성화','비활성화'));
-  rows.push(compareZeroNumberRow('승단계산',`${label} 현재 명예`,change.honorCurrent ?? 0,current.honorCurrent ?? 0));
-  rows.push(compareZeroNumberRow('승단계산',`${label} 목표 명예`,change.honorTarget ?? 0,current.honorTarget ?? 0));
-  rows.push(compareZeroNumberRow('승단계산 결과',`${label} 목표 추가점수`,zeroScoreRowCalculation(change).score,zeroScoreRowCalculation(current).score));
-}
-function buildSavedZeroScoreCompareRows(changeZeroScore,currentZeroScore,options={}){
-  const onlyDiffs=options.onlyDiffs!==false;
-  const changeState=normalizeZeroScoreState(changeZeroScore);
-  const currentState=normalizeZeroScoreState(currentZeroScore);
-  const changeRows=changeState.rows;
-  const currentRows=currentState.rows;
-  const rows=[];
-  ZERO_EXCEL_PENANCE_ROWS.forEach(({name},index)=>addZeroPenanceCompareRows(rows,name,changeRows[index] || {},currentRows[index] || {}));
-  addZeroTowerComboCompareRows(rows,'도전의탑',changeRows[14] || {},currentRows[14] || {});
-  const changeSummary=zeroScoreSummaryFromState(changeState);
-  const currentSummary=zeroScoreSummaryFromState(currentState);
-  rows.push(compareZeroNumberRow('승단계산 결과','현재 승단점수',changeSummary.currentTotal,currentSummary.currentTotal));
-  rows.push(compareZeroNumberRow('승단계산 결과','목표 완료 시',changeSummary.targetScore,currentSummary.targetScore));
-  return onlyDiffs ? rows.filter(row=>row.status!=='same') : rows;
-}
 function snapshotComparisonState(changeState,currentState){
   const restoreState=currentState || makeStateObject();
   applyStateObject(changeState);
@@ -2986,29 +2809,6 @@ function buildJsonComparison(changeState,options={}){
 function renderJsonComparison(changeState){
   renderExcelComparison(buildJsonComparison(changeState));
 }
-function selectedCompareTraitPreset(){
-  if(compareState.sourceType!=='traitPreset' || !compareState.traitPresetBundle) return null;
-  const presets=Array.isArray(compareState.traitPresetBundle.presets) ? compareState.traitPresetBundle.presets : [];
-  if(!presets.length) return null;
-  const select=$('excelCompareSheet');
-  const candidate=String((select && !select.disabled && select.value) || compareState.selectedSheetName || '').trim();
-  const preset=presets.find(item=>item.id===candidate) || presets[0] || null;
-  if(preset){
-    compareState.selectedSheetName=preset.id;
-    if(select && select.value!==preset.id) select.value=preset.id;
-  }
-  return preset;
-}
-function buildTraitPresetComparison(preset){
-  if(!preset) throw new Error('비교할 특성 프리셋을 선택하세요.');
-  const state=normalizeSavedState(preset.state);
-  if(!state) throw new Error('특성 프리셋 데이터가 올바르지 않습니다.');
-  const bundle=compareState.traitPresetBundle || {};
-  return buildJsonComparison({...state,fileName:bundle.fileName || '특성 프리셋 파일',sheetName:preset.name},{fileName:bundle.fileName || '특성 프리셋 파일',sheetName:preset.name,sourceType:'traitPreset'});
-}
-function renderTraitPresetComparison(preset){
-  renderExcelComparison(buildTraitPresetComparison(preset));
-}
 function applySelectedComparison(){
   if(compareState.sourceType==='json') return applySelectedJsonBackup();
   if(compareState.sourceType==='traitPreset') return applySelectedTraitPreset();
@@ -3031,31 +2831,6 @@ function applySelectedJsonBackup(){
     compareState.restoreState=null;
     compareState.applied=false;
     logAppError('[backup apply failed]',e);
-    showToast(e?.message||String(e),'err');
-    updateCompareActionButtons();
-  }
-}
-function applySelectedTraitPreset(){
-  const preset=selectedCompareTraitPreset();
-  if(!preset || compareState.applied) return;
-  const previousState=makeStateObject();
-  try{
-    const state=normalizeSavedState(preset.state);
-    if(!state) throw new Error('특성 프리셋 데이터가 올바르지 않습니다.');
-    applyStateObject(state);
-    const saved=saveState({silent:true});
-    if(saved===false) throw new Error('변경값은 적용했지만 브라우저 저장에 실패했습니다. 저장공간/권한을 확인하세요.');
-    compareState.restoreState=previousState;
-    compareState.applied=true;
-    hydrateCompareControls();
-    renderTraitPresetComparison(preset);
-    updateCompareActionButtons();
-    showToast(`프리셋 적용 완료: ${preset.name}`,'ok');
-  }catch(e){
-    try{ applyStateObject(previousState); }catch(rollbackError){ logAppError('[trait preset compare rollback failed]', rollbackError); }
-    compareState.restoreState=null;
-    compareState.applied=false;
-    logAppError('[trait preset compare apply failed]',e);
     showToast(e?.message||String(e),'err');
     updateCompareActionButtons();
   }
@@ -3090,29 +2865,6 @@ function applySelectedExcelSheet(){
     compareState.applied=false;
     logAppError('[Excel apply failed]',e);
     showToast(e?.message||String(e),'err');
-    updateCompareActionButtons();
-  }
-}
-function compareSelectedTraitPreset(options={}){
-  if(!compareState.traitPresetBundle) return;
-  hydrateCompareControls();
-  const preset=selectedCompareTraitPreset();
-  if(!preset) return;
-  compareState.lastResult=null;
-  const body=$('excelCompareBody');
-  const apply=$('excelCompareApplyBtn');
-  const reset=$('excelCompareResetBtn');
-  if(!options.preserveRestore) clearCompareRestoreState();
-  try{
-    compareState.sourceType='traitPreset';
-    compareState.selectedSheetName=preset.id;
-    renderTraitPresetComparison(preset);
-    updateCompareActionButtons();
-  }catch(e){
-    logAppError('[trait preset compare failed]',e);
-    if(apply) apply.disabled=true;
-    if(reset) reset.disabled=false;
-    if(body) body.innerHTML=`<div class="excel-compare-error">${escapeCompareHtml(e?.message||String(e))}</div>`;
     updateCompareActionButtons();
   }
 }
@@ -3237,43 +2989,6 @@ function bindExcelCompareEvents(){
   });
   document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeCompareInfo(); });
 }
-function bindDpsTableEvents(){
-  document.addEventListener('click', function(e){
-    const modeTarget=e.target.closest('[data-dps-table-mode]');
-    if(!modeTarget) return;
-    switchDpsTableMode(modeTarget.getAttribute('data-dps-table-mode'));
-  });
-  document.addEventListener('keydown', function(e){
-    const minInput=e.target.closest('#dpsTableMinDps,#dpsTableMinDpsMain');
-    if(!minInput) return;
-    if(e.key==='.' || e.key===',' || e.key==='Decimal'){
-      e.preventDefault();
-      return;
-    }
-    if(e.key==='Enter'){
-      e.preventDefault();
-      setDpsTableMinDps(minInput.value,{format:true});
-      minInput.blur();
-    }
-  }, true);
-  document.addEventListener('input', function(e){
-    const minInput=e.target.closest('#dpsTableMinDps,#dpsTableMinDpsMain');
-    if(!minInput) return;
-    const before=minInput.value;
-    setDpsTableMinDps(before);
-    const fresh=$(minInput.id);
-    if(fresh){
-      fresh.focus({preventScroll:true});
-      const pos=fresh.value.length;
-      try{ fresh.setSelectionRange(pos,pos); }catch(_e){}
-    }
-  });
-  document.addEventListener('focusout', function(e){
-    const minInput=e.target.closest('#dpsTableMinDps,#dpsTableMinDpsMain');
-    if(!minInput) return;
-    setDpsTableMinDps(minInput.value,{format:true});
-  }, true);
-}
 /* ===== 09. 특성보드 / V1 최적화 / 초기화 ===== */
 const INFINITE_TRAIT_TIER='무한∞';
 const TIERS=['루키','비기너','아마추어','프로','엑스퍼트','마스터','디바인','더원1','더원2',INFINITE_TRAIT_TIER,'EP특성','RP특성','심연특성'];
@@ -3287,7 +3002,7 @@ function updateTraits(){
       const isMax=n>=mx;
       const cost=nextCost(row);
       const rStr=traitEffectText(row,type,rate);
-      return `<div class="tr ${isMax?'maxed':''}">
+      return `<div class="tr">
         <div><div class="tr-name">${name}</div><div class="tr-type">${rStr}${isMax?' · 최대 투자됨':` · 다음비용 ${fullNumber(cost)}`}</div></div>
         <div class="tr-ctrl">
           <button type="button" data-action="traitAdjust" data-row="${row}" data-delta="-1" ${n<=0?'disabled':''}>−</button>
@@ -3380,6 +3095,47 @@ function adjustTraitBy(row,d,step=1){
     return true;
   }
   return false;
+}
+let traitHoldTimer=null;
+let traitHoldRepeatTimer=null;
+let traitHoldSuppressClickUntil=0;
+function stopTraitAdjustHold(){
+  if(traitHoldTimer) clearTimeout(traitHoldTimer);
+  if(traitHoldRepeatTimer) clearTimeout(traitHoldRepeatTimer);
+  traitHoldTimer=null;
+  traitHoldRepeatTimer=null;
+  traitHoldSuppressClickUntil=Date.now()+260;
+}
+function startTraitAdjustHold(trigger,e){
+  if(!trigger || trigger.disabled) return;
+  const row=+trigger.dataset.row;
+  const delta=+trigger.dataset.delta;
+  if(!Number.isFinite(row) || !Number.isFinite(delta) || delta===0) return;
+  if(e){ e.preventDefault(); e.stopPropagation(); }
+  stopTraitAdjustHold();
+  let count=0;
+  const every=Math.max(1,DPS_CONFIG.ui.traitHoldAccelEvery||7);
+  const maxStep=Math.max(1,DPS_CONFIG.ui.traitHoldMaxStep||50);
+  const apply=()=>{
+    const step=Math.min(maxStep, 1+Math.floor(count/every));
+    count++;
+    adjustTraitBy(row,delta,step);
+  };
+  apply();
+  traitHoldTimer=setTimeout(function repeat(){
+    apply();
+    traitHoldRepeatTimer=setTimeout(repeat, DPS_CONFIG.ui.traitHoldRepeatMs||55);
+  }, DPS_CONFIG.ui.traitHoldInitialDelay||320);
+}
+function bindTraitHoldEvents(){
+  document.addEventListener('pointerdown', e=>{
+    const btn=e.target.closest('[data-action="traitAdjust"]');
+    if(!btn) return;
+    startTraitAdjustHold(btn,e);
+  }, true);
+  ['pointerup','pointercancel','pointerleave','blur'].forEach(type=>{
+    window.addEventListener(type, stopTraitAdjustHold, true);
+  });
 }
 function setInv(row,val){
   if(row===116) return;
@@ -3512,6 +3268,15 @@ function syncTraitLimitInputDisplay(el){
 }
 function syncTraitLimitInputs(){
   TRAIT_LIMIT_INPUT_IDS.forEach(id=>syncTraitLimitInputDisplay($(id)));
+}
+function bindTraitLimitDisplayEvents(){
+  document.addEventListener('focusin', e=>prepareTraitLimitInputForEdit(e.target), true);
+  document.addEventListener('focusout', e=>{
+    if(e.target && TRAIT_LIMIT_INPUT_IDS.has(e.target.id)){
+      syncTraitLimitInputDisplay(e.target);
+      requestAppUpdate();
+    }
+  }, true);
 }
 function prepareTraitLimitInputForEdit(el){
   if(!el || !TRAIT_LIMIT_INPUT_IDS.has(el.id)) return;
@@ -4137,7 +3902,7 @@ function stateFileBaseName(fileName=''){
   return normalizeTraitPresetName(String(fileName || '').replace(/\.[^.]+$/,'')) || '가져온 프리셋';
 }
 
-/* ===== 10-1. 특성 프리셋 저장 / 로드 ===== */
+/* ===== 10-1. 특성 프리셋 저장 / 로드 / 비교 ===== */
 function normalizeTraitPresetName(value){
   return String(value ?? '').replace(/\s+/g,' ').trim().slice(0,40);
 }
@@ -4558,6 +4323,78 @@ async function importTraitPresetFile(file){
     return false;
   }
 }
+/* 특성 프리셋: 비교 패널 연동 */
+function selectedCompareTraitPreset(){
+  if(compareState.sourceType!=='traitPreset' || !compareState.traitPresetBundle) return null;
+  const presets=Array.isArray(compareState.traitPresetBundle.presets) ? compareState.traitPresetBundle.presets : [];
+  if(!presets.length) return null;
+  const select=$('excelCompareSheet');
+  const candidate=String((select && !select.disabled && select.value) || compareState.selectedSheetName || '').trim();
+  const preset=presets.find(item=>item.id===candidate) || presets[0] || null;
+  if(preset){
+    compareState.selectedSheetName=preset.id;
+    if(select && select.value!==preset.id) select.value=preset.id;
+  }
+  return preset;
+}
+function buildTraitPresetComparison(preset){
+  if(!preset) throw new Error('비교할 특성 프리셋을 선택하세요.');
+  const state=normalizeSavedState(preset.state);
+  if(!state) throw new Error('특성 프리셋 데이터가 올바르지 않습니다.');
+  const bundle=compareState.traitPresetBundle || {};
+  return buildJsonComparison({...state,fileName:bundle.fileName || '특성 프리셋 파일',sheetName:preset.name},{fileName:bundle.fileName || '특성 프리셋 파일',sheetName:preset.name,sourceType:'traitPreset'});
+}
+function renderTraitPresetComparison(preset){
+  renderExcelComparison(buildTraitPresetComparison(preset));
+}
+function applySelectedTraitPreset(){
+  const preset=selectedCompareTraitPreset();
+  if(!preset || compareState.applied) return;
+  const previousState=makeStateObject();
+  try{
+    const state=normalizeSavedState(preset.state);
+    if(!state) throw new Error('특성 프리셋 데이터가 올바르지 않습니다.');
+    applyStateObject(state);
+    const saved=saveState({silent:true});
+    if(saved===false) throw new Error('변경값은 적용했지만 브라우저 저장에 실패했습니다. 저장공간/권한을 확인하세요.');
+    compareState.restoreState=previousState;
+    compareState.applied=true;
+    hydrateCompareControls();
+    renderTraitPresetComparison(preset);
+    updateCompareActionButtons();
+    showToast(`프리셋 적용 완료: ${preset.name}`,'ok');
+  }catch(e){
+    try{ applyStateObject(previousState); }catch(rollbackError){ logAppError('[trait preset compare rollback failed]', rollbackError); }
+    compareState.restoreState=null;
+    compareState.applied=false;
+    logAppError('[trait preset compare apply failed]',e);
+    showToast(e?.message||String(e),'err');
+    updateCompareActionButtons();
+  }
+}
+function compareSelectedTraitPreset(options={}){
+  if(!compareState.traitPresetBundle) return;
+  hydrateCompareControls();
+  const preset=selectedCompareTraitPreset();
+  if(!preset) return;
+  compareState.lastResult=null;
+  const body=$('excelCompareBody');
+  const apply=$('excelCompareApplyBtn');
+  const reset=$('excelCompareResetBtn');
+  if(!options.preserveRestore) clearCompareRestoreState();
+  try{
+    compareState.sourceType='traitPreset';
+    compareState.selectedSheetName=preset.id;
+    renderTraitPresetComparison(preset);
+    updateCompareActionButtons();
+  }catch(e){
+    logAppError('[trait preset compare failed]',e);
+    if(apply) apply.disabled=true;
+    if(reset) reset.disabled=false;
+    if(body) body.innerHTML=`<div class="excel-compare-error">${escapeCompareHtml(e?.message||String(e))}</div>`;
+    updateCompareActionButtons();
+  }
+}
 function compareTraitPreset(){
   const id=selectedTraitPresetId();
   const store=loadTraitPresetStore();
@@ -4704,63 +4541,26 @@ function requestConfirmAction(key,message,run){
   };
   return false;
 }
-let traitHoldTimer=null;
-let traitHoldRepeatTimer=null;
-let traitHoldSuppressClickUntil=0;
-function stopTraitAdjustHold(){
-  if(traitHoldTimer) clearTimeout(traitHoldTimer);
-  if(traitHoldRepeatTimer) clearTimeout(traitHoldRepeatTimer);
-  traitHoldTimer=null;
-  traitHoldRepeatTimer=null;
-  traitHoldSuppressClickUntil=Date.now()+260;
-}
-function startTraitAdjustHold(trigger,e){
-  if(!trigger || trigger.disabled) return;
-  const row=+trigger.dataset.row;
-  const delta=+trigger.dataset.delta;
-  if(!Number.isFinite(row) || !Number.isFinite(delta) || delta===0) return;
-  if(e){ e.preventDefault(); e.stopPropagation(); }
-  stopTraitAdjustHold();
-  let count=0;
-  const every=Math.max(1,DPS_CONFIG.ui.traitHoldAccelEvery||7);
-  const maxStep=Math.max(1,DPS_CONFIG.ui.traitHoldMaxStep||50);
-  const apply=()=>{
-    const step=Math.min(maxStep, 1+Math.floor(count/every));
-    count++;
-    adjustTraitBy(row,delta,step);
-  };
-  apply();
-  traitHoldTimer=setTimeout(function repeat(){
-    apply();
-    traitHoldRepeatTimer=setTimeout(repeat, DPS_CONFIG.ui.traitHoldRepeatMs||55);
-  }, DPS_CONFIG.ui.traitHoldInitialDelay||320);
-}
-function bindTraitHoldEvents(){
-  document.addEventListener('pointerdown', e=>{
-    const btn=e.target.closest('[data-action="traitAdjust"]');
-    if(!btn) return;
-    startTraitAdjustHold(btn,e);
-  }, true);
-  ['pointerup','pointercancel','pointerleave','blur'].forEach(type=>{
-    window.addEventListener(type, stopTraitAdjustHold, true);
-  });
-}
 /* ===== 12. 더제로 승단 계산기 ===== */
+/* 더제로 승단: 엑셀/저장파일 비교 상태 변환 */
+const ZERO_EXCEL_SHEET_NAME='더제로 승단';
+const ZERO_EXCEL_PENANCE_ROWS=[
+  'Practice','Very Easy','Easy','Normal','Hard','Very Hard','Hell','Inferno','Lunatic','Holic','Epic','Ultimate','Impossible','The Final'
+].map((name,index)=>({name,row:13+index}));
+/* 더제로 승단: 점수 계산 공통 */
 function zeroScoreNumber(value, min, max){
   const n=Number(value);
   if(!Number.isFinite(n)) return min;
   return Math.max(min, Math.min(max, Math.floor(n)));
 }
-function zeroPenanceScore(level){
+function zeroRangeScore(value, start, maxValue, pointForStep){
   let sum=0;
-  const max=zeroScoreNumber(level,0,20);
-  for(let i=1;i<=max;i++){
-    if(i<=13) sum+=1;
-    else if(i<=16) sum+=2;
-    else if(i===17) sum+=3;
-    else sum+=7;
-  }
+  const max=zeroScoreNumber(value,0,maxValue);
+  for(let i=start;i<=max;i++) sum+=pointForStep(i) || 0;
   return sum;
+}
+function zeroPenanceScore(level){
+  return zeroRangeScore(level,1,20,i=>i<=13 ? 1 : (i<=16 ? 2 : (i===17 ? 3 : 7)));
 }
 const ZERO_HONOR_STAGES=[{key:'b', point:2},{key:'a', point:4},{key:'s', point:6},{key:'x', point:8}];
 function zeroHonorScore(stage){
@@ -4768,28 +4568,237 @@ function zeroHonorScore(stage){
   return found ? found.point : 0;
 }
 function zeroTowerScore(floor){
-  let sum=0;
-  const max=zeroScoreNumber(floor,0,90);
-  for(let i=41;i<=max;i++){
-    if(i<=60) sum+=1;
-    else if(i<=70) sum+=2;
-    else sum+=3;
-  }
-  return sum;
+  return zeroRangeScore(floor,41,90,i=>i<=60 ? 1 : (i<=70 ? 2 : 3));
 }
 function zeroHonorTowerScore(floor){
-  let sum=0;
-  const max=zeroScoreNumber(floor,0,90);
-  for(let i=50;i<=max;i++){
-    if(i<=68){
-      if(i%2===0) sum+=1;
-    }else if(i>=70 && i<=79){
-      sum+=1;
-    }else if(i>=80){
-      sum+=2;
-    }
+  return zeroRangeScore(floor,50,90,i=>i<=68 ? (i%2===0 ? 1 : 0) : (i<=79 ? 1 : 2));
+}
+function getZeroScoreSheetCells(workbook){
+  try{
+    return workbook?.sheets?.some(sheet=>sheet.name===ZERO_EXCEL_SHEET_NAME) ? workbook.getCells(ZERO_EXCEL_SHEET_NAME) : null;
+  }catch(_e){ return null; }
+}
+function normalizeZeroHonorValue(value){
+  const text=excelText(value).toLowerCase().replace(/명예/g,'').trim();
+  const first=text.charAt(0);
+  if(['b','a','s','x'].includes(first)) return first;
+  if(['없음','none','off','n','0','-',''].includes(text)) return '';
+  return '';
+}
+function zeroHonorDisplay(value){
+  return value ? String(value).toUpperCase() : '없음';
+}
+function zeroScoreFieldValue(row, kind){
+  if(!row || typeof row!=='object') return undefined;
+  const keys=kind==='current'
+    ? ['current','현재 일반']
+    : ['target','목표 일반'];
+  for(const key of keys){
+    if(Object.prototype.hasOwnProperty.call(row,key)) return row[key];
   }
-  return sum;
+  return undefined;
+}
+function zeroScoreHonorValue(row, kind){
+  if(!row || typeof row!=='object') return '';
+  const keys=kind==='current'
+    ? ['currentHonor','현재 명예']
+    : ['targetHonor','목표 명예'];
+  for(const key of keys){
+    if(Object.prototype.hasOwnProperty.call(row,key)) return normalizeZeroHonorValue(row[key]);
+  }
+  return '';
+}
+function zeroScoreTowerHonorValue(row, kind){
+  if(!row || typeof row!=='object') return undefined;
+  const keys=kind==='current'
+    ? ['honorCurrent','현재 명예탑']
+    : ['honorTarget','목표 명예탑'];
+  for(const key of keys){
+    if(Object.prototype.hasOwnProperty.call(row,key)) return row[key];
+  }
+  return row.type==='honorTower' ? zeroScoreFieldValue(row,kind) : undefined;
+}
+function zeroScoreStateFromExcel(zeroCells){
+  if(!zeroCells) return null;
+  const rows=[];
+  ZERO_EXCEL_PENANCE_ROWS.forEach(({row})=>{
+    rows.push({
+      type:'penance',
+      current:String(Math.max(0,Math.min(20,Math.round(excelNumber(zeroCells[`B${row}`]) ?? 0)))),
+      target:String(Math.max(0,Math.min(20,Math.round(excelNumber(zeroCells[`C${row}`]) ?? 0)))),
+      star:excelFlag(zeroCells[`D${row}`]),
+      currentHonor:normalizeZeroHonorValue(zeroCells[`E${row}`]),
+      targetHonor:normalizeZeroHonorValue(zeroCells[`F${row}`])
+    });
+  });
+  rows.push({
+    type:'towerCombo',
+    current:String(Math.max(0,Math.min(90,Math.round(excelNumber(zeroCells.B27) ?? 0)))),
+    target:String(Math.max(0,Math.min(90,Math.round(excelNumber(zeroCells.C27) ?? 0)))),
+    honorCurrent:String(Math.max(0,Math.min(90,Math.round(excelNumber(zeroCells.B28) ?? 0)))),
+    honorTarget:String(Math.max(0,Math.min(90,Math.round(excelNumber(zeroCells.C28) ?? 0)))),
+    star:false,currentHonor:'',targetHonor:''
+  });
+  return {rows};
+}
+function zeroScoreRowCalculation(row){
+  const type=row?.type || 'penance';
+  let currentScore=0, targetScore=0, score=0;
+  if(type==='penance'){
+    const cur=zeroScoreNumber(zeroScoreFieldValue(row,'current'),0,20);
+    const tar=zeroScoreNumber(zeroScoreFieldValue(row,'target'),0,20);
+    const currentPenanceScore=zeroPenanceScore(cur);
+    const targetPenanceScore=zeroPenanceScore(tar);
+    const currentHonorScore=zeroHonorScore(zeroScoreHonorValue(row,'current'));
+    const targetHonorScore=zeroHonorScore(zeroScoreHonorValue(row,'target'));
+    const star=row.star ? 2 : 0;
+    currentScore=currentPenanceScore+currentHonorScore+star;
+    targetScore=targetPenanceScore+targetHonorScore;
+    score=Math.max(0,targetPenanceScore-currentPenanceScore)+Math.max(0,targetHonorScore-currentHonorScore);
+  }else if(type==='tower'){
+    currentScore=zeroTowerScore(zeroScoreFieldValue(row,'current'));
+    targetScore=zeroTowerScore(zeroScoreFieldValue(row,'target'));
+    score=Math.max(0,targetScore-currentScore);
+  }else if(type==='honorTower'){
+    currentScore=zeroHonorTowerScore(zeroScoreFieldValue(row,'current'));
+    targetScore=zeroHonorTowerScore(zeroScoreFieldValue(row,'target'));
+    score=Math.max(0,targetScore-currentScore);
+  }else if(type==='towerCombo'){
+    const towerCurrentScore=zeroTowerScore(zeroScoreFieldValue(row,'current'));
+    const towerTargetScore=zeroTowerScore(zeroScoreFieldValue(row,'target'));
+    const honorCurrentScore=zeroHonorTowerScore(zeroScoreTowerHonorValue(row,'current'));
+    const honorTargetScore=zeroHonorTowerScore(zeroScoreTowerHonorValue(row,'target'));
+    currentScore=towerCurrentScore+honorCurrentScore;
+    targetScore=towerTargetScore+honorTargetScore;
+    score=Math.max(0,towerTargetScore-towerCurrentScore)+Math.max(0,honorTargetScore-honorCurrentScore);
+  }
+  return {currentScore,targetScore,score};
+}
+function zeroScoreSummaryFromState(zeroScore){
+  const rows=Array.isArray(zeroScore?.rows) ? zeroScore.rows : [];
+  let currentTotal=0,total=0;
+  rows.forEach(row=>{
+    const calc=zeroScoreRowCalculation(row);
+    currentTotal+=calc.currentScore;
+    total+=calc.score;
+  });
+  return {currentTotal,total,targetScore:currentTotal+total};
+}
+function zeroTowerComboFromRows(rows, index=14){
+  const list=Array.isArray(rows) ? rows : [];
+  const base=list[index] || {};
+  if(base.type==='towerCombo'){
+    return {
+      type:'towerCombo',
+      current:zeroScoreFieldValue(base,'current') ?? '0',
+      target:zeroScoreFieldValue(base,'target') ?? '0',
+      honorCurrent:zeroScoreTowerHonorValue(base,'current') ?? '0',
+      honorTarget:zeroScoreTowerHonorValue(base,'target') ?? '0',
+      star:false,currentHonor:'',targetHonor:''
+    };
+  }
+  const honor=base.type==='honorTower' ? base : (list[index+1] || {});
+  return {
+    type:'towerCombo',
+    current:zeroScoreFieldValue(base,'current') ?? '0',
+    target:zeroScoreFieldValue(base,'target') ?? '0',
+    honorCurrent:zeroScoreTowerHonorValue(honor,'current') ?? '0',
+    honorTarget:zeroScoreTowerHonorValue(honor,'target') ?? '0',
+    star:false,currentHonor:'',targetHonor:''
+  };
+}
+function normalizeZeroScoreState(zeroScore){
+  const sourceRows=Array.isArray(zeroScore?.rows) ? zeroScore.rows : [];
+  const rows=ZERO_EXCEL_PENANCE_ROWS.map((_,index)=>{
+    const row=sourceRows[index] || {};
+    return {
+      type:'penance',
+      current:String(zeroScoreNumber(zeroScoreFieldValue(row,'current'),0,20)),
+      target:String(zeroScoreNumber(zeroScoreFieldValue(row,'target'),0,20)),
+      star:!!row.star,
+      currentHonor:zeroScoreHonorValue(row,'current'),
+      targetHonor:zeroScoreHonorValue(row,'target')
+    };
+  });
+  const towerCombo=zeroTowerComboFromRows(sourceRows);
+  rows.push({
+    type:'towerCombo',
+    current:String(zeroScoreNumber(zeroScoreFieldValue(towerCombo,'current'),0,90)),
+    target:String(zeroScoreNumber(zeroScoreFieldValue(towerCombo,'target'),0,90)),
+    honorCurrent:String(zeroScoreNumber(zeroScoreTowerHonorValue(towerCombo,'current'),0,90)),
+    honorTarget:String(zeroScoreNumber(zeroScoreTowerHonorValue(towerCombo,'target'),0,90)),
+    star:false,currentHonor:'',targetHonor:''
+  });
+  return {rows};
+}
+function compareZeroTextRow(name, changeValue, currentValue){
+  return buildCompareTextRow('승단계산',name,changeValue,currentValue);
+}
+function compareZeroNumberRow(kind,name,changeValue,currentValue){
+  return buildCompareNumberRow(kind,name,changeValue,currentValue,0.0001);
+}
+/* 더제로 승단: 저장파일/프리셋 비교 행 생성 */
+function addZeroPenanceCompareRows(rows,name,change={},current={}){
+  const currentCalc=zeroScoreRowCalculation(current);
+  const changeCalc=zeroScoreRowCalculation(change);
+  rows.push(compareZeroNumberRow('승단계산',`${name} 현재 일반`,change.current ?? 0,current.current ?? 0));
+  rows.push(compareZeroNumberRow('승단계산',`${name} 목표 일반`,change.target ?? 0,current.target ?? 0));
+  rows.push(compareZeroTextRow(`${name} 24스타`,change.star?'ON':'OFF',current.star?'ON':'OFF'));
+  rows.push(compareZeroTextRow(`${name} 현재 명예`,zeroHonorDisplay(change.currentHonor||''),zeroHonorDisplay(current.currentHonor||'')));
+  rows.push(compareZeroTextRow(`${name} 목표 명예`,zeroHonorDisplay(change.targetHonor||''),zeroHonorDisplay(current.targetHonor||'')));
+  rows.push(compareZeroNumberRow('승단계산 결과',`${name} 추가점수`,changeCalc.score,currentCalc.score));
+}
+function addZeroTowerComboCompareRows(rows,label,change={},current={}){
+  rows.push(compareZeroNumberRow('승단계산',`${label} 현재 일반`,change.current ?? 0,current.current ?? 0));
+  rows.push(compareZeroNumberRow('승단계산',`${label} 목표 일반`,change.target ?? 0,current.target ?? 0));
+  rows.push(compareZeroTextRow(`${label} 24스타`,'비활성화','비활성화'));
+  rows.push(compareZeroNumberRow('승단계산',`${label} 현재 명예`,change.honorCurrent ?? 0,current.honorCurrent ?? 0));
+  rows.push(compareZeroNumberRow('승단계산',`${label} 목표 명예`,change.honorTarget ?? 0,current.honorTarget ?? 0));
+  rows.push(compareZeroNumberRow('승단계산 결과',`${label} 목표 추가점수`,zeroScoreRowCalculation(change).score,zeroScoreRowCalculation(current).score));
+}
+function buildSavedZeroScoreCompareRows(changeZeroScore,currentZeroScore,options={}){
+  const onlyDiffs=options.onlyDiffs!==false;
+  const changeState=normalizeZeroScoreState(changeZeroScore);
+  const currentState=normalizeZeroScoreState(currentZeroScore);
+  const changeRows=changeState.rows;
+  const currentRows=currentState.rows;
+  const rows=[];
+  ZERO_EXCEL_PENANCE_ROWS.forEach(({name},index)=>addZeroPenanceCompareRows(rows,name,changeRows[index] || {},currentRows[index] || {}));
+  addZeroTowerComboCompareRows(rows,'도전의탑',changeRows[14] || {},currentRows[14] || {});
+  const changeSummary=zeroScoreSummaryFromState(changeState);
+  const currentSummary=zeroScoreSummaryFromState(currentState);
+  rows.push(compareZeroNumberRow('승단계산 결과','현재 승단점수',changeSummary.currentTotal,currentSummary.currentTotal));
+  rows.push(compareZeroNumberRow('승단계산 결과','목표 완료 시',changeSummary.targetScore,currentSummary.targetScore));
+  return onlyDiffs ? rows.filter(row=>row.status!=='same') : rows;
+}
+function buildZeroScoreCompareRows(zeroCells){
+  if(!zeroCells) return [];
+  const webState=collectZeroScoreState() || {rows:[]};
+  const rows=[];
+  ZERO_EXCEL_PENANCE_ROWS.forEach(({name,row},index)=>{
+    const web=webState.rows[index] || {};
+    const webCalc=zeroScoreRowCalculation(web);
+    rows.push(compareZeroNumberRow('승단계산',`${name} 현재 일반`,zeroCells[`B${row}`],web.current ?? 0));
+    rows.push(compareZeroNumberRow('승단계산',`${name} 목표 일반`,zeroCells[`C${row}`],web.target ?? 0));
+    rows.push(compareZeroTextRow(`${name} 24스타`,excelFlag(zeroCells[`D${row}`])?'ON':'OFF',web.star?'ON':'OFF'));
+    rows.push(compareZeroTextRow(`${name} 현재 명예`,zeroHonorDisplay(normalizeZeroHonorValue(zeroCells[`E${row}`])),zeroHonorDisplay(web.currentHonor||'')));
+    rows.push(compareZeroTextRow(`${name} 목표 명예`,zeroHonorDisplay(normalizeZeroHonorValue(zeroCells[`F${row}`])),zeroHonorDisplay(web.targetHonor||'')));
+    rows.push(compareZeroNumberRow('승단계산 결과',`${name} 추가점수`,zeroCells[`G${row}`],webCalc.score));
+  });
+  const comboExcel={
+    type:'towerCombo',
+    current:String(Math.max(0,Math.min(90,Math.round(excelNumber(zeroCells.B27) ?? 0)))),
+    target:String(Math.max(0,Math.min(90,Math.round(excelNumber(zeroCells.C27) ?? 0)))),
+    honorCurrent:String(Math.max(0,Math.min(90,Math.round(excelNumber(zeroCells.B28) ?? 0)))),
+    honorTarget:String(Math.max(0,Math.min(90,Math.round(excelNumber(zeroCells.C28) ?? 0)))),
+    star:false,currentHonor:'',targetHonor:''
+  };
+  const comboWeb=zeroTowerComboFromRows(webState.rows);
+  addZeroTowerComboCompareRows(rows,'도전의탑',comboExcel,comboWeb);
+  const webSummary=zeroScoreSummaryFromState(webState);
+  rows.push(compareZeroNumberRow('승단계산 결과','현재 승단점수',zeroCells.H28,webSummary.currentTotal));
+  rows.push(compareZeroNumberRow('승단계산 결과','목표 완료 시',zeroCells.I28,webSummary.targetScore));
+  return rows;
 }
 const ZERO_RANK_FALLBACK_TABLE=[
   {name:'입문',score:0},{name:'견습',score:100},{name:'숙련',score:150},{name:'전문',score:200},
@@ -4926,8 +4935,7 @@ function collectZeroScoreState(){
 }
 function setZeroScoreStarButton(starBtn,active){
   if(!starBtn) return;
-  starBtn.classList.toggle('active', active);
-  starBtn.classList.toggle('is-active', active);
+  setClassState(starBtn, ['active','is-active'], active);
   starBtn.setAttribute('aria-pressed', active ? 'true' : 'false');
   starBtn.textContent=active ? 'ON +2' : '+2';
 }
@@ -4983,30 +4991,29 @@ function setZeroRankTab(trigger){
   const key=trigger.dataset.zeroRankTab || 'rank';
   card.querySelectorAll('.zero-rank-tab').forEach(btn=>{
     const active=btn.dataset.zeroRankTab===key;
-    btn.classList.toggle('active', active);
-    btn.classList.toggle('is-active', active);
+    setClassState(btn, ['active','is-active'], active);
     btn.setAttribute('aria-selected', active ? 'true' : 'false');
   });
   card.querySelectorAll('.zero-rank-panel').forEach(panel=>{
-    panel.classList.toggle('active', panel.dataset.zeroRankPanel===key);
+    setClassState(panel, 'active', panel.dataset.zeroRankPanel===key);
   });
 }
-/* ===== 13. 이벤트 바인딩 / 앱 초기화 ===== */
+/* ===== 13. 공통 이벤트 바인딩 / 앱 초기화 ===== */
 let appEventsBound=false;
 const ACTION_HANDLERS={
   optimizeSP,
   optimizeUtility,
   clearUtility:()=>requestConfirmAction('clearUtility','한 번 더 누르면 유틸 초기화', clearUtility),
-  applyTraitEfficiencyTop:(trigger)=>applyTraitEfficiencyTop(trigger),
+  applyTraitEfficiencyTop,
   clearAll:()=>requestConfirmAction('clearAll','한 번 더 누르면 유틸 제외 특성 초기화', clearAll),
-  saveTraitPreset:()=>saveTraitPreset(),
-  loadTraitPreset:()=>loadTraitPreset(),
-  renameTraitPreset:()=>renameTraitPreset(),
-  deleteTraitPreset:()=>deleteTraitPreset(),
-  setDefaultTraitPreset:()=>setDefaultTraitPreset(),
-  exportTraitPresets:()=>exportTraitPresets(),
-  importTraitPresets:()=>openTraitPresetImportPicker(),
-  compareTraitPreset:()=>compareTraitPreset(),
+  saveTraitPreset,
+  loadTraitPreset,
+  renameTraitPreset,
+  deleteTraitPreset,
+  setDefaultTraitPreset,
+  exportTraitPresets,
+  importTraitPresets: openTraitPresetImportPicker,
+  compareTraitPreset,
   openDpsTable,
   openMonthRuneTab:(trigger)=>openMonthRune(trigger?.dataset?.monthRuneOpenTab || 'compare'),
   zeroRankTab:(trigger)=>setZeroRankTab(trigger),
@@ -5034,21 +5041,6 @@ function bindActionEvents(){
     fn(trigger, e);
   });
 }
-function bindBusCutEvents(){
-  document.addEventListener('click', e=>{
-    const row=e.target.closest('.bus-cut-row');
-    if(!row || !$('xpCutRows')?.contains(row)) return;
-    e.preventDefault();
-    showXpCutRowFeedback(row);
-  });
-  document.addEventListener('keydown', e=>{
-    if(e.key!=='Enter' && e.key!==' ') return;
-    const row=e.target.closest?.('.bus-cut-row');
-    if(!row || !$('xpCutRows')?.contains(row)) return;
-    e.preventDefault();
-    showXpCutRowFeedback(row);
-  });
-}
 const REACTIVE_INPUT_EXCLUDED_IDS=new Set([
   'excelCompareFile',
   'excelCompareSheet',
@@ -5065,15 +5057,6 @@ function shouldHandleReactiveInput(target){
   if(REACTIVE_INPUT_EXCLUDED_IDS.has(target.id)) return false;
   if(target.classList && target.classList.contains('tv-input')) return false;
   return target.matches && target.matches('input, select, textarea');
-}
-function bindTraitLimitDisplayEvents(){
-  document.addEventListener('focusin', e=>prepareTraitLimitInputForEdit(e.target), true);
-  document.addEventListener('focusout', e=>{
-    if(e.target && TRAIT_LIMIT_INPUT_IDS.has(e.target.id)){
-      syncTraitLimitInputDisplay(e.target);
-      requestAppUpdate();
-    }
-  }, true);
 }
 function bindReactiveInputs(){
   let raf=0;
@@ -5114,7 +5097,7 @@ function bindReactiveInputs(){
   document.addEventListener('change', e=>schedule(e.target), true);
 }
 function bindButtonPressFeedback(){
-  const selector='button,.btn,.mini-btn,.trait-master-btn,.seg-btns button';
+  const selector='button,.btn';
   document.addEventListener('pointerdown', e=>{
     const btn=e.target && e.target.closest ? e.target.closest(selector) : null;
     if(!btn || btn.disabled) return;

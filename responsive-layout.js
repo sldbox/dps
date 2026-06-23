@@ -2,6 +2,7 @@
 (() => {
   'use strict';
 
+  /* DOM / 페이지 정의 */
   const qs = (selector) => document.querySelector(selector);
   const qsa = (selector) => Array.from(document.querySelectorAll(selector));
   const MODES = ['is-pc-landscape', 'is-pc-portrait', 'is-tablet', 'is-mobile', 'is-portrait-view', 'is-mobile-device', 'is-tablet-device', 'is-narrow-mobile', 'is-tabbed'];
@@ -30,6 +31,7 @@
     resumeTimers: []
   };
 
+  /* 뷰포트 판정 / 모드 적용 */
   function getViewportSize() {
     const root = document.documentElement;
     return {
@@ -97,6 +99,7 @@
     updateMobileOffsets();
   }
 
+  /* 모바일 탭 페이지 생성 / 복구 */
   function rememberPosition(el) {
     if (!el || state.restore.has(el)) return;
     const marker = document.createComment(`mobile-restore:${el.className || el.tagName}`);
@@ -232,6 +235,7 @@
     }
   }
 
+  /* 입력 보조 / 레이아웃 갱신 이벤트 */
   function isTextInput(el) {
     if (!el || el.disabled || el.readOnly) return false;
     if (el.tagName === 'TEXTAREA') return true;
@@ -267,7 +271,6 @@
 
   function runResponsiveRefresh() {
     applyMode();
-    updateMobileOffsets();
   }
 
   function scheduleResumeApply() {
@@ -285,16 +288,15 @@
     }
   }
 
+  /* 초기화 / 외부 동기화 API */
   function init() {
-    applyMode();
+    runResponsiveRefresh();
     bindInputAutoSelect();
-    updateMobileOffsets();
     markResponsiveReady();
   }
 
   window.dpsSyncResponsiveLayout = function(){
-    applyMode();
-    updateMobileOffsets();
+    runResponsiveRefresh();
     requestAnimationFrame(updateMobileOffsets);
     markResponsiveReady();
   };
