@@ -1068,7 +1068,7 @@ function enforceBudgets(){
   });
 }
 function allowedRowsByTier(){
-  const target=vs('optTier')||'무한∞';
+  const target=vs('optTier')||'루키';
   const idx=TIERS.indexOf(target);
   return new Set(TRAITS.filter(t=>TIERS.indexOf(t[2])>=0 && TIERS.indexOf(t[2])<=idx).map(t=>t[0]));
 }
@@ -3189,7 +3189,7 @@ function isUtilityOptimizationTrait(t, maxTierIndex=null){
   return UTILITY_OPT_TYPES.has(type);
 }
 function utilityRowsOrNotify(){
-  const idx=UTILITY_OPT_TIERS.indexOf(vs('utilOptTier')||'더원2');
+  const idx=UTILITY_OPT_TIERS.indexOf(vs('utilOptTier')||'루키');
   const maxTierIndex=idx>=0 ? idx : UTILITY_OPT_TIERS.indexOf('더원2');
   const rows=TRAITS.filter(t=>isUtilityOptimizationTrait(t, maxTierIndex)).map(t=>t[0]);
   if(rows.length) return rows;
@@ -3243,7 +3243,7 @@ const TRAIT_LIMIT_CONFIG=[
   {id:'traitLimitUA',key:'UA',name:'유닛 가속',value:s=>s.displayUA}
 ];
 const TRAIT_LIMIT_DEFAULTS={
-  traitLimitAD:'0', traitLimitAS:'0', traitLimitCRI:'0', traitLimitCD:'0', traitLimitMC:'0', traitLimitDR:'0', traitLimitTD:'0', traitLimitUA:'0', traitLimitMultiTarget:'ON', traitLimitInfinite:'ON'
+  traitLimitAD:'0', traitLimitAS:'0', traitLimitCRI:'0', traitLimitCD:'0', traitLimitMC:'0', traitLimitDR:'0', traitLimitTD:'0', traitLimitUA:'0', traitLimitMultiTarget:'OFF', traitLimitInfinite:'OFF'
 };
 const TRAIT_LIMIT_INPUT_IDS=new Set(TRAIT_LIMIT_CONFIG.map(item=>item.id));
 const TRAIT_LIMIT_MULTI_TYPES=new Set(['MD','MP','MCP']);
@@ -3685,8 +3685,8 @@ function makePublicDefaultState(){
     const el=$(id);
     if(el) values[id]=elementDefaultValue(el);
   });
-  if(!Object.prototype.hasOwnProperty.call(values,'optTier')) values.optTier='무한∞';
-  if(!Object.prototype.hasOwnProperty.call(values,'utilOptTier')) values.utilOptTier='더원2';
+  if(!Object.prototype.hasOwnProperty.call(values,'optTier')) values.optTier='루키';
+  if(!Object.prototype.hasOwnProperty.call(values,'utilOptTier')) values.utilOptTier='루키';
   Object.entries(TRAIT_LIMIT_DEFAULTS).forEach(([id,value])=>{ if(!Object.prototype.hasOwnProperty.call(values,id)) values[id]=value; });
   values.dpsTableMinDps='1.0';
   const inv={};
@@ -3726,8 +3726,8 @@ function makeStateObject(){
       values[id]=value;
     }
   });
-  values.optTier=vs('optTier') || values.optTier || '무한∞';
-  values.utilOptTier=vs('utilOptTier') || values.utilOptTier || '더원2';
+  values.optTier=vs('optTier') || values.optTier || '루키';
+  values.utilOptTier=vs('utilOptTier') || values.utilOptTier || '루키';
   Object.entries(TRAIT_LIMIT_DEFAULTS).forEach(([id,value])=>{ values[id]=vs(id) || values[id] || value; });
   if(Object.prototype.hasOwnProperty.call(values,'spBankApply')) values.spBankApply=normalizeSpBankApplyValue(values.spBankApply);
   TRAIT_LIMIT_INPUT_IDS.forEach(id=>{ values[id]=normalizeTraitLimitStorageValue(values[id] ?? TRAIT_LIMIT_DEFAULTS[id] ?? '0'); });
@@ -4064,21 +4064,26 @@ function applyTraitPresetState(preset,options={}){
     if(saved===false) throw new Error('프리셋은 적용했지만 브라우저 저장에 실패했습니다.');
   }
 }
-function loadTraitPreset(){
-  const id=selectedTraitPresetId();
+function loadTraitPresetById(id,options={}){
   const store=loadTraitPresetStore();
   const preset=store.presets.find(item=>item.id===id);
-  if(!preset){ notifyStorageAction('불러올 프리셋을 선택하세요.','err'); return false; }
+  if(!preset){
+    if(options.notifyMissing!==false) notifyStorageAction('불러올 프리셋을 선택하세요.','err');
+    return false;
+  }
   try{
     applyTraitPresetState(preset,{persist:true});
     refreshTraitPresetControls(id);
-    notifyStorageAction(`프리셋 로드 완료: ${preset.name}`,'ok');
+    if(options.notifySuccess!==false) notifyStorageAction(`프리셋 로드 완료: ${preset.name}`,'ok');
     return true;
   }catch(e){
     logAppError('[trait preset load failed]',e);
     notifyStorageAction(e?.message || '프리셋 로드 실패','err');
     return false;
   }
+}
+function loadTraitPreset(){
+  return loadTraitPresetById(selectedTraitPresetId());
 }
 function renameTraitPreset(){
   const id=selectedTraitPresetId();
@@ -4143,26 +4148,117 @@ function setDefaultTraitPreset(){
     return false;
   }
 }
-function makeTraitPresetFileName(){
+function resetToFirstVisitState(){
+  try{
+    try{
+      localStorage.removeItem(STORAGE_KEY);
+      localStorage.removeItem(TRAIT_PRESET_STORAGE_KEY);
+      localStorage.removeItem(DPS_CONFIG.storage.fontKey);
+    }catch(e){}
+    resetToFactoryState();
+    try{ localStorage.removeItem(DPS_CONFIG.storage.fontKey); }catch(e){}
+    refreshTraitPresetControls('');
+    notifyStorageAction('전체 초기화 완료','ok');
+    return true;
+  }catch(e){
+    logAppError('[full reset failed]',e);
+    notifyStorageAction(e?.message || '전체 초기화 실패','err');
+    return false;
+  }
+}
+let traitPresetResetButtonTimer=0;
+function resetTraitPresetResetButton(trigger){
+  const btn=trigger || $('traitPresetResetAllBtn');
+  if(!btn) return;
+  btn.dataset.confirming='0';
+  btn.textContent='전체 초기화';
+}
+function requestTraitPresetFullReset(trigger){
+  const btn=trigger || $('traitPresetResetAllBtn');
+  const delay=DPS_CONFIG.ui.confirmDelayMs || 1600;
+  if(btn?.dataset.confirming==='1'){
+    clearTimeout(traitPresetResetButtonTimer);
+    resetTraitPresetResetButton(btn);
+    return resetToFirstVisitState();
+  }
+  if(btn){
+    btn.dataset.confirming='1';
+    btn.textContent='한번 더';
+    clearTimeout(traitPresetResetButtonTimer);
+    traitPresetResetButtonTimer=setTimeout(()=>resetTraitPresetResetButton(btn), delay);
+  }
+  notifyStorageAction('한 번 더 누르면 전체 초기화','warn');
+  return false;
+}
+function currentWebDpsVersion(){
+  return String(window.DPS_BUILD_VERSION || window.APP_VERSION || STORAGE_VERSION || 'dev');
+}
+function makeTraitPresetFileName(customName=''){
+  const cleaned=String(customName ?? '')
+    .replace(/\.[Tt][Xx][Tt]$/,'')
+    .replace(/[\\/:*?"<>|]/g,'_')
+    .replace(/[\u0000-\u001f\u007f]/g,'')
+    .replace(/\s+/g,' ')
+    .trim()
+    .replace(/[. ]+$/,'')
+    .slice(0,80);
+  if(cleaned) return `${cleaned}.txt`;
   const now=new Date(), pad=n=>String(n).padStart(2,'0');
   const date=String(now.getFullYear()).slice(2)+pad(now.getMonth()+1)+pad(now.getDate());
-  return `DPS-특성프리셋-${date}.txt`;
+  return `특성프리셋-${date}.txt`;
 }
-function exportTraitPresets(){
+function createTraitPresetExportModal(){
+  createModalShell('traitPresetExportModal','trait-preset-excel-modal-shell',`
+    <div class="trait-preset-excel-backdrop" data-trait-preset-export-close="1"></div>
+    <section class="trait-preset-excel-modal" role="dialog" aria-modal="true" aria-labelledby="traitPresetExportTitle">
+      <header class="trait-preset-excel-head">
+        <h2 id="traitPresetExportTitle">특성 프리셋 내보내기</h2>
+        <button type="button" class="trait-preset-excel-close" data-trait-preset-export-close="1" aria-label="특성 프리셋 내보내기 닫기">×</button>
+      </header>
+      <div class="trait-preset-excel-body">
+        <label class="trait-preset-excel-field"><span>저장 파일명</span><input id="traitPresetExportName" type="text" maxlength="80" autocomplete="off" placeholder="파일명을 입력하세요"/></label>
+        <button class="btn pri trait-preset-excel-save" type="button" data-trait-preset-export-save="1">내보내기</button>
+      </div>
+    </section>`);
+}
+function openTraitPresetExportModal(){
   try{
     const store=loadTraitPresetStore();
     if(!store.presets.length){ notifyStorageAction('내보낼 프리셋이 없습니다.','err'); return false; }
     const defaultPreset=store.presets.find(item=>item.id===store.defaultPresetId);
-    const payload=JSON.stringify({...store,type:TRAIT_PRESET_FILE_TYPE,fileVersion:TRAIT_PRESET_FILE_VERSION,exportedAt:new Date().toISOString(),defaultPresetName:defaultPreset?.name || ''}, null, 2);
+    createTraitPresetExportModal();
+    const input=$('traitPresetExportName');
+    if(input) input.value=defaultPreset?.name || '';
+    setModalOpen('traitPresetExportModal','trait-preset-excel-modal-open',true);
+    setTimeout(()=>{ input?.focus(); input?.select(); },0);
+    return true;
+  }catch(e){
+    logAppError('[trait preset export modal failed]',e);
+    notifyStorageAction(e?.message || '특성 프리셋 내보내기 준비 실패','err');
+    return false;
+  }
+}
+function closeTraitPresetExportModal(){
+  setModalOpen('traitPresetExportModal','trait-preset-excel-modal-open',false);
+}
+function downloadTraitPresetExport(customName=''){
+  try{
+    const store=loadTraitPresetStore();
+    if(!store.presets.length){ notifyStorageAction('내보낼 프리셋이 없습니다.','err'); return false; }
+    const defaultPreset=store.presets.find(item=>item.id===store.defaultPresetId);
+    const exportStore={...store};
+    delete exportStore.webDpsVersion;
+    const payload=JSON.stringify({webDpsVersion:currentWebDpsVersion(),...exportStore,type:TRAIT_PRESET_FILE_TYPE,fileVersion:TRAIT_PRESET_FILE_VERSION,exportedAt:new Date().toISOString(),defaultPresetName:defaultPreset?.name || ''}, null, 2);
     const blob=new Blob([payload], {type:'text/plain;charset=utf-8'});
     const url=URL.createObjectURL(blob);
     const a=document.createElement('a');
     a.href=url;
-    a.download=makeTraitPresetFileName();
+    a.download=makeTraitPresetFileName(customName);
     document.body.appendChild(a);
     a.click();
     a.remove();
     URL.revokeObjectURL(url);
+    closeTraitPresetExportModal();
     notifyStorageAction('특성 프리셋 내보내기 완료','ok');
     return true;
   }catch(e){
@@ -4170,6 +4266,9 @@ function exportTraitPresets(){
     notifyStorageAction(e?.message || '특성 프리셋 내보내기 실패','err');
     return false;
   }
+}
+function exportTraitPresets(){
+  return openTraitPresetExportModal();
 }
 function openTraitPresetImportPicker(){
   setTimeout(()=>{
@@ -4191,29 +4290,38 @@ function normalizeTraitPresetImportData(parsed,fileName=''){
 }
 function mergeTraitPresetImport(imported){
   let store=loadTraitPresetStore();
-  let added=0, replaced=0;
+  let added=0, replaced=0, firstImportedPresetId='', defaultImportedPresetId='';
   const idMap=new Map();
-  imported.presets.forEach(preset=>{
-    const index=store.presets.findIndex(item=>item.name===preset.name);
-    if(index>=0){
-      const id=store.presets[index].id;
+  imported.presets.forEach((preset,index)=>{
+    const existingIndex=store.presets.findIndex(item=>item.name===preset.name);
+    if(existingIndex>=0){
+      const id=store.presets[existingIndex].id;
       idMap.set(preset.id,id);
-      store.presets[index]={...preset,id,createdAt:store.presets[index].createdAt || preset.createdAt,updatedAt:Date.now()};
+      store.presets[existingIndex]={...preset,id,createdAt:store.presets[existingIndex].createdAt || preset.createdAt,updatedAt:Date.now()};
+      if(index===0) firstImportedPresetId=id;
       replaced++;
     }else{
       const id=store.presets.some(item=>item.id===preset.id) ? makeTraitPresetId() : preset.id;
       idMap.set(preset.id,id);
       store.presets.push({...preset,id,createdAt:preset.createdAt || Date.now(),updatedAt:Date.now()});
+      if(index===0) firstImportedPresetId=id;
       added++;
     }
   });
-  if(imported.defaultPresetId && idMap.has(imported.defaultPresetId)) store.defaultPresetId=idMap.get(imported.defaultPresetId);
-  else if(imported.defaultPresetName){
-    const defaultPreset=store.presets.find(item=>item.name===imported.defaultPresetName);
-    if(defaultPreset) store.defaultPresetId=defaultPreset.id;
+  if(imported.defaultPresetId && idMap.has(imported.defaultPresetId)){
+    defaultImportedPresetId=idMap.get(imported.defaultPresetId);
+    store.defaultPresetId=defaultImportedPresetId;
+  }else if(imported.defaultPresetName){
+    const importedDefault=imported.presets.find(item=>item.name===imported.defaultPresetName);
+    const mappedId=importedDefault ? idMap.get(importedDefault.id) : '';
+    const defaultPreset=mappedId ? store.presets.find(item=>item.id===mappedId) : store.presets.find(item=>item.name===imported.defaultPresetName);
+    if(defaultPreset){
+      defaultImportedPresetId=defaultPreset.id;
+      store.defaultPresetId=defaultImportedPresetId;
+    }
   }
   store=saveTraitPresetStore(store);
-  return {store,added,replaced};
+  return {store,added,replaced,firstImportedPresetId,defaultImportedPresetId};
 }
 function isExcelPresetImportFile(file){
   const name=String(file?.name||'').toLowerCase();
@@ -4291,10 +4399,11 @@ function saveSelectedExcelSheetAsTraitPreset(){
       state:importedState
     }]};
     const result=mergeTraitPresetImport(imported);
-    const savedPreset=result.store.presets.find(item=>item.name===name);
-    refreshTraitPresetControls(savedPreset?.id || '');
+    const savedPresetId=result.firstImportedPresetId || result.store.presets.find(item=>item.name===name)?.id || '';
+    if(savedPresetId) loadTraitPresetById(savedPresetId,{notifySuccess:false});
+    else refreshTraitPresetControls('');
     closeTraitPresetExcelImportModal();
-    notifyStorageAction(result.replaced ? `엑셀 프리셋 갱신 완료: ${name}` : `엑셀 프리셋 저장 완료: ${name}`,'ok');
+    notifyStorageAction(result.replaced ? `엑셀 프리셋 갱신 및 로드 완료: ${name}` : `엑셀 프리셋 저장 및 로드 완료: ${name}`,'ok');
     return true;
   }catch(e){
     logAppError('[trait preset excel import failed]',e);
@@ -4314,8 +4423,10 @@ async function importTraitPresetFile(file){
     const parsed=safeJsonParse(raw);
     const imported=normalizeTraitPresetImportData(parsed,file?.name || '');
     const result=mergeTraitPresetImport(imported);
-    refreshTraitPresetControls(result.store.defaultPresetId || '');
-    notifyStorageAction(`프리셋 가져오기 완료 · 추가 ${result.added} / 갱신 ${result.replaced}`,'ok');
+    const loadId=result.defaultImportedPresetId || result.firstImportedPresetId || '';
+    if(loadId) loadTraitPresetById(loadId,{notifySuccess:false});
+    else refreshTraitPresetControls('');
+    notifyStorageAction(`프리셋 가져오기 및 로드 완료 · 추가 ${result.added} / 갱신 ${result.replaced}`,'ok');
     return true;
   }catch(e){
     logAppError('[trait preset import failed]',e);
@@ -4446,9 +4557,18 @@ function bindTraitPresetEvents(){
   document.addEventListener('click',e=>{
     if(e.target.closest('[data-trait-preset-excel-close]')) closeTraitPresetExcelImportModal();
     if(e.target.closest('[data-trait-preset-excel-save]')) saveSelectedExcelSheetAsTraitPreset();
+    if(e.target.closest('[data-trait-preset-export-close]')) closeTraitPresetExportModal();
+    if(e.target.closest('[data-trait-preset-export-save]')) downloadTraitPresetExport($('traitPresetExportName')?.value || '');
   });
   document.addEventListener('keydown',e=>{
-    if(e.key==='Escape' && $('traitPresetExcelImportModal')?.classList.contains('is-open')) closeTraitPresetExcelImportModal();
+    if(e.key==='Escape'){
+      if($('traitPresetExcelImportModal')?.classList.contains('is-open')) closeTraitPresetExcelImportModal();
+      if($('traitPresetExportModal')?.classList.contains('is-open')) closeTraitPresetExportModal();
+    }
+    if(e.key==='Enter' && e.target?.id==='traitPresetExportName'){
+      e.preventDefault();
+      downloadTraitPresetExport(e.target.value || '');
+    }
   });
 }
 /* ===== 11. 화면 제어 / 글자 크기 / 확인 작업 ===== */
@@ -5011,6 +5131,7 @@ const ACTION_HANDLERS={
   renameTraitPreset,
   deleteTraitPreset,
   setDefaultTraitPreset,
+  resetAllTraitPresetState:requestTraitPresetFullReset,
   exportTraitPresets,
   importTraitPresets: openTraitPresetImportPicker,
   compareTraitPreset,
@@ -5047,6 +5168,7 @@ const REACTIVE_INPUT_EXCLUDED_IDS=new Set([
   'traitPresetName',
   'traitPresetSelect',
   'traitPresetImportFile',
+  'traitPresetExportName',
   'dpsTableMinDps',
   'dpsTableMinDpsMain'
 ]);
