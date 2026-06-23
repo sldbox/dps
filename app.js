@@ -128,7 +128,16 @@ function showToast(message, type='ok'){
     }, 2200);
   }catch(e){}
 }
-function v(id){const el=$(id); if(!el) return 0; const raw=String(el.value??'').replace(/,/g,'').trim(); return +raw||0;}
+const ROUND_INPUT_MIN=1;
+const ROUND_INPUT_MAX=300;
+function normalizedRoundNumber(value, fallback=ROUND_INPUT_MIN){
+  const raw=String(value ?? '').replace(/,/g,'').trim();
+  const num=raw==='' ? NaN : Number(raw);
+  const base=Number.isFinite(num) ? num : fallback;
+  return Math.max(ROUND_INPUT_MIN, Math.min(ROUND_INPUT_MAX, Math.round(base)));
+}
+function normalizedRoundString(value){ return String(normalizedRoundNumber(value)); }
+function v(id){const el=$(id); if(!el) return 0; const raw=String(el.value??'').replace(/,/g,'').trim(); if(id==='round'||id==='skillRound') return normalizedRoundNumber(raw); return +raw||0;}
 function vs(id){const el=$(id); return el ? el.value : '';}
 const BASE_DISPLAY_STATS={ad:5, as:5, cri:5};
 function effectiveXpValue(){return Math.max(1, v('xp'));}
@@ -1087,16 +1096,20 @@ function shouldHideDpsForRound(){
   const raw=String($('round')?.value ?? '').replace(/,/g,'').trim();
   return raw==='0' || Number(raw)===0;
 }
-function normalizeRoundInput(){
-  const el=$('round');
+function normalizeRoundInput(id='round'){
+  const el=$(id);
   if(!el) return false;
-  const raw=String(el.value ?? '').replace(/,/g,'').trim();
-  const num=Number(raw);
-  if(raw==='' || !Number.isFinite(num) || num<1){
-    el.value='1';
+  const next=normalizedRoundString(el.value);
+  if(String(el.value)!==next){
+    el.value=next;
     return true;
   }
   return false;
+}
+function normalizeRoundInputs(){
+  const a=normalizeRoundInput('round');
+  const b=normalizeRoundInput('skillRound');
+  return a || b;
 }
 function resetDifficultyDependentFields(){
   const pen=$('penance');
@@ -1207,6 +1220,7 @@ function syncControlDisplays(){
 }
 function recalc(){
   try{
+    normalizeRoundInputs();
     syncExclusiveRuneOptions();
     syncRuneChoice();
     syncEnchantInputs();
@@ -1309,7 +1323,7 @@ function renderSkillDamage(s){
   const apView=$('skillAPView');
   if(apView) apView.textContent=fmt(ap,0);
   const doubleSpace=v('skillDouble');
-  const round=Math.max(1,v('skillRound'));
+  const round=v('skillRound');
   const isTower=vs('skillMode')==='tower';
   const baseRound=isTower ? 30 : 100;
   const perRound=isTower ? 0.016601 : 0.005;
@@ -3721,6 +3735,7 @@ function makeStateObject(){
     if(!el) return;
     let value=readElementValue(el);
     if(value!==undefined){
+      if(id==='round' || id==='skillRound') value=normalizedRoundString(value);
       if(TRAIT_LIMIT_INPUT_IDS.has(id)) value=normalizeTraitLimitStorageValue(value);
       if(id==='spBankApply') value=normalizeSpBankApplyValue(value);
       values[id]=value;
@@ -3770,6 +3785,9 @@ function sanitizeSavedValues(values){
     const penanceMax=(normalizeOnOffValue(out.coopMode,'OFF')==='ON' && isCoopAllowedDifficulty(out.diff)) ? COOP_PENANCE_MAX : SOLO_PENANCE_MAX;
     out.penance=String(Math.max(0, Math.min(penanceMax, Math.round(+out.penance || 0))));
   }
+  ['round','skillRound'].forEach(id=>{
+    if(Object.prototype.hasOwnProperty.call(out,id)) out[id]=normalizedRoundString(out[id]);
+  });
   if(Object.prototype.hasOwnProperty.call(out,'pbless')){
     const master=String(out.enhanceMaster || 'OFF');
     out.pbless=normalizePowerBlessValueForMaster(master, out.pbless);
@@ -5186,7 +5204,7 @@ function bindReactiveInputs(){
     if(!shouldHandleReactiveInput(target)) return;
     if(target.matches('.money-input')) formatMoneyInput(target);
     if(target.id==='xp') normalizeXpInput();
-    if(target.id==='round') normalizeRoundInput();
+    if(target.id==='round' || target.id==='skillRound') normalizeRoundInput(target.id);
     if(target.id==='diff'){
       resetDifficultyDependentFields();
       resetTeamOnDifficultyChange();

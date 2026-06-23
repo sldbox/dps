@@ -3,14 +3,14 @@
 <head>
 <meta name="google-site-verification" content="RTuDWbMdnKgbpRpl05eXh9epFwWRSxju4NOl8OtjMsI" />
 <script>
-window.APP_VERSION = "dps-2606232145";
-window.DPS_BUILD_VERSION = "dps-2606232145";
+window.APP_VERSION = "dps-2606232203";
+window.DPS_BUILD_VERSION = "dps-2606232203";
 window.DPS_ASSET_VERSIONS = {
-  "app.js": "dps-2606232145",
-  "responsive-layout.js": "dps-2606232145",
-  "style.css": "dps-2606232145",
-  "data.js": "dps-2606232145",
-  "icon.png": "dps-2606232145"
+  "app.js": "dps-2606232203",
+  "responsive-layout.js": "dps-2606232203",
+  "style.css": "dps-2606232203",
+  "data.js": "dps-2606232203",
+  "icon.png": "dps-2606232203"
 };
 window.dpsAssetVersion = function(key){
   var versions = window.DPS_ASSET_VERSIONS || {};
@@ -179,14 +179,14 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 <meta content="https://sldbox.github.io/dps/" property="og:url"/>
 <meta content="개복디 특성 계산기" property="og:title"/>
 <meta content="특성 투자, 재화 사용량, 표기 스탯, 총데미지, DPS를 한 번에 계산할 수 있는 개복디 전용 계산기입니다." property="og:description"/>
-<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2606232145" property="og:image"/>
-<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2606232145" property="og:image:secure_url"/>
+<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2606232203" property="og:image"/>
+<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2606232203" property="og:image:secure_url"/>
 <meta content="image/png" property="og:image:type"/>
 <meta content="개복디 특성 계산기 로고" property="og:image:alt"/>
 <meta content="summary_large_image" name="twitter:card"/>
 <meta content="개복디 특성 계산기" name="twitter:title"/>
 <meta content="특성 투자, 재화 사용량, 표기 스탯, 총데미지, DPS를 한 번에 계산할 수 있는 개복디 전용 계산기입니다." name="twitter:description"/>
-<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2606232145" name="twitter:image"/>
+<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2606232203" name="twitter:image"/>
 <meta content="개복디 특성 계산기 로고" name="twitter:image:alt"/>
 <link href="https://cdn.jsdelivr.net" rel="preconnect"/>
 <link crossorigin="" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" rel="stylesheet"/>
@@ -311,7 +311,7 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 <option>Hall Of Fame</option><option>Abyss road</option><option>Deep Abyss</option><option>도전의 탑</option>
 </select></div>
 <div class="basic-info-row" data-basic-row="penance"><label for="penance">고행 단계</label><select id="penance"><option selected="" value="0">없음</option><option value="1">1 고행</option><option value="2">2 고행</option><option value="3">3 고행</option><option value="4">4 고행</option><option value="5">5 고행</option><option value="6">6 고행</option><option value="7">7 고행</option><option value="8">8 고행</option><option value="9">9 고행</option><option value="10">10 고행</option><option value="11">11 고행</option><option value="12">12 고행</option><option value="13">13 고행</option><option value="14">14 고행</option><option value="15">15 고행</option><option value="16">16 고행</option><option value="17">17 고행</option><option value="18">18 고행</option><option value="19">19 고행</option><option value="20">20 고행</option></select></div>
-<div class="basic-info-row" data-basic-row="round"><label for="round">목표 라운드</label><input id="round" type="text" value="1" inputmode="decimal"/></div>
+<div class="basic-info-row" data-basic-row="round"><label for="round">목표 라운드</label><input id="round" type="text" value="1" inputmode="numeric" max="300"/></div>
 <div class="basic-info-row" data-basic-row="solo-mode"><label for="soloMode">개인</label><select id="soloMode"><option selected="" value="ON">ON</option><option value="OFF">OFF</option></select></div>
 <div class="basic-info-row" data-basic-row="coop-mode"><label for="coopMode">협동</label><select id="coopMode"><option selected="" value="OFF">OFF</option><option value="ON">ON</option></select></div>
 <div class="basic-info-row" data-basic-row="coop-players"><label for="coopPlayers">협동 인원수</label><select id="coopPlayers" disabled><option selected="" value="">협동 활성화 필요</option></select></div>
@@ -880,7 +880,7 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 <div class="skill-setting-panel">
 <div class="ir skill-ir"><label>더블스페</label><select id="skillDouble"><option selected="" value="1">1</option><option value="1.5">1.5</option><option value="1.67">1.67</option></select></div>
 <div class="ir skill-ir"><label>모드</label><select id="skillMode"><option selected="" value="normal">일반모드</option><option value="tower">도전의 탑</option></select></div>
-<div class="ir skill-ir"><label>라운드</label><input id="skillRound" type="text" value="1" inputmode="decimal"/></div>
+<div class="ir skill-ir"><label>라운드</label><input id="skillRound" type="text" value="1" inputmode="numeric" max="300"/></div>
 <div class="ir skill-ir"><label>마법공격력</label><b class="skill-display-value" id="skillAPView">자동</b></div>
 <div class="ir skill-ir"><label>데미지감소율</label><b class="skill-display-value" id="skillPenaltyView">—</b></div>
 </div>
