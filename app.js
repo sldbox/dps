@@ -1118,15 +1118,17 @@ function getDpsContextValues(){
   const roundValue=rawRound==='' ? NaN : Number(rawRound);
   const roundInt=Number.isFinite(roundValue) ? Math.round(roundValue) : null;
   const diff=selectedControlText(diffEl);
+  const mode=isCoopMode() ? '협동' : '개인';
   const penance=penValue>0 ? `${penValue} 고행` : '고행 없음';
   const round=roundInt!==null ? `${roundInt} 라운드` : '라운드 —';
   const floor=roundInt!==null ? `${roundInt}층` : '층 —';
   const penanceShort=String(penValue);
   const roundShort=roundInt!==null ? String(roundInt) : '—';
-  return {diff, penValue, roundValue, penance, round, floor, penanceShort, roundShort};
+  return {mode, diff, penValue, roundValue, penance, round, floor, penanceShort, roundShort};
 }
 function updateDpsContextSummary(){
   const ctx=getDpsContextValues();
+  setText('dpsContextMode', ctx.mode);
   setText('dpsContextDiff', ctx.diff);
   setText('dpsContextPenance', ctx.penanceShort);
   setText('dpsContextRound', ctx.roundShort);
@@ -3689,8 +3691,7 @@ function traitRecommendationInvestText(cand){
   return cand.changes.map(([row,add])=>`${traitName(row)} +${add}`).join(' / ');
 }
 function traitRecommendationCostText(cand){
-  const label=cand?.kind==='SOUL' ? '심연' : (cand?.kind || '재화');
-  return `${label} ${fullNumber(cand?.cost||0)}`;
+  return fullNumber(cand?.cost||0);
 }
 function traitRecommendationRoundedGainValue(gain){
   const n=Number(gain);
@@ -4207,6 +4208,8 @@ function refreshTraitPresetControls(selectedId){
     const empty=document.createElement('option');
     empty.value='';
     empty.textContent=store.presets.length ? '프리셋 목록' : '저장된 프리셋 없음';
+    empty.disabled=true;
+    empty.hidden=true;
     select.appendChild(empty);
     store.presets.forEach(preset=>{
       const option=document.createElement('option');

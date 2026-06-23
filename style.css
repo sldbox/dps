@@ -646,11 +646,11 @@ input:not([type="hidden"]):not([readonly]):not(:disabled), select:not(:disabled)
 .col-mid .stat-dps-card .stat-grid{background:transparent;border:0;box-shadow:none;border-radius:0}
 .col-mid .stat-dps-summary{margin:0 0 8px;padding:10px 12px 14px;border:1px solid #344966;border-top:3px solid #7aa7ff;border-radius:12px;background:radial-gradient(circle at 78% 20%,rgba(80,130,235,.16),transparent 35%),
     linear-gradient(145deg,#111a28 0%,#172438 100%);box-shadow:0 8px 20px rgba(35,79,184,.11)}
-.dps-context-summary{display:inline-grid;grid-template-columns:max-content max-content max-content;align-items:center;justify-content:center;justify-items:center;column-gap:22px;row-gap:2px;margin:8px auto 0;width:auto;max-width:100%;color:#a9c8ff;font-size:calc(11px * var(--app-font-scale));font-weight:900;line-height:1.05;text-align:center;white-space:nowrap;overflow:visible}
+.dps-context-summary{display:inline-grid;grid-template-columns:max-content max-content max-content max-content;align-items:center;justify-content:center;justify-items:center;column-gap:18px;row-gap:2px;margin:8px auto 0;width:auto;max-width:100%;color:#a9c8ff;font-size:calc(11px * var(--app-font-scale));font-weight:900;line-height:1.05;text-align:center;white-space:nowrap;overflow:visible}
 .dps-context-summary span{min-width:0;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:0;border:0;border-radius:0;background:transparent;color:#a9c8ff;font-size:calc(11px * var(--app-font-scale));font-weight:900;line-height:1.05;text-align:center;white-space:nowrap;overflow:visible;text-overflow:clip}
 .dps-context-summary span::before{content:attr(data-label);display:block;color:inherit;font-size:calc(9px * var(--app-font-scale));font-weight:900;line-height:1}
 .dps-card.is-dps-risk .dps-context-summary, .dps-card.is-dps-risk .dps-context-summary span, .dps-card.is-dps-risk .dps-context-summary span::before{color:var(--state-danger-text)}
-body.is-mobile .dps-context-summary, body.is-narrow-mobile .dps-context-summary{column-gap:16px;font-size:calc(10px * var(--app-font-scale));letter-spacing:-.15px}
+body.is-mobile .dps-context-summary, body.is-narrow-mobile .dps-context-summary{column-gap:12px;font-size:calc(10px * var(--app-font-scale));letter-spacing:-.15px}
 body.is-mobile .dps-context-summary span, body.is-narrow-mobile .dps-context-summary span{font-size:calc(10px * var(--app-font-scale))}
 body.is-mobile .dps-context-summary span::before, body.is-narrow-mobile .dps-context-summary span::before{font-size:calc(8.3px * var(--app-font-scale))}
 .col-mid .stat-dps-card .stat-grid{margin:0;overflow:visible}
@@ -1323,9 +1323,9 @@ body.is-tabbed .mobile-page .trait-standalone-panel .trait-subgroup-title{
   border-radius:12px 12px 0 0;
 }
 body .trait-optimizer-panel .optimizer-head-title{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-body .trait-optimizer-panel .trait-dashboard-tools, body .trait-optimizer-panel .trait-board-control-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-auto-rows:38px;gap:8px;width:100%;margin:0;padding:8px 10px 10px;border:0;border-radius:0;background:transparent;box-shadow:none;align-items:stretch}
-body .trait-optimizer-panel .trait-dashboard-tools .btn, body .trait-optimizer-panel .trait-dashboard-tools select, body .trait-optimizer-panel .trait-dashboard-tools .trait-range-label{width:100%;min-width:0;height:38px;min-height:38px;margin:0;border-radius:var(--ui-control-radius);display:flex;align-items:center;justify-content:center;text-align:center;text-align-last:center;font-size:calc(11px * var(--app-font-scale));font-weight:900;line-height:1;white-space:nowrap}
-body .trait-optimizer-panel .trait-dashboard-tools .trait-range-label{padding:0 10px;border:1px solid var(--field-label-bd, #30435f);background:var(--field-label-bg, #172235);color:var(--field-label-text, #d7e4f3);cursor:default;overflow:hidden;text-overflow:ellipsis}
+body .trait-optimizer-panel .trait-dashboard-tools, body .trait-optimizer-panel .trait-board-control-grid{display:grid;grid-template-columns:1fr;grid-auto-rows:auto;gap:8px;width:100%;margin:0;padding:8px 10px 10px;border:0;border-radius:0;background:transparent;box-shadow:none;align-items:stretch}
+body .trait-optimizer-panel .trait-optimizer-row{display:grid;grid-template-columns:minmax(92px,.95fr) minmax(118px,1.1fr) minmax(92px,.95fr);gap:8px;align-items:stretch;min-width:0}
+body .trait-optimizer-panel .trait-dashboard-tools .btn, body .trait-optimizer-panel .trait-dashboard-tools select{width:100%;min-width:0;height:38px;min-height:38px;margin:0;border-radius:var(--ui-control-radius);display:flex;align-items:center;justify-content:center;text-align:center;text-align-last:center;font-size:calc(11px * var(--app-font-scale));font-weight:900;line-height:1;white-space:nowrap}
 body .trait-optimizer-panel .trait-dashboard-tools .btn{padding:0 10px}
 body .trait-optimizer-panel .trait-dashboard-tools select{padding:0 22px 0 8px;border:1px solid var(--role-interactive-bd);border-radius:var(--ui-control-radius);background:var(--role-interactive-bg,#10233d);background-image:none;color:var(--color-text-main);font-weight:900;box-shadow:inset 0 1px 2px rgba(32,57,91,.035);text-shadow:none}
 body .trait-preset-title{justify-content:space-between}
@@ -1357,7 +1357,7 @@ body .trait-limit-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr)
 body .trait-limit-grid label{min-width:0;height:34px;display:grid;grid-template-columns:minmax(118px,1.15fr) minmax(76px,.85fr);align-items:center;gap:6px;padding:0;border:0;border-radius:0;background:transparent;color:var(--color-slate-900);font-size:calc(10.2px * var(--app-font-scale));font-weight:900;line-height:1}
 body .trait-limit-grid label span{min-width:0;height:34px;min-height:34px;padding:0 6px;display:flex;align-items:center;justify-content:center;border-radius:8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:center}
 body .trait-limit-grid input, body .trait-limit-grid select{min-width:0;width:100%;height:34px;min-height:34px;margin:0;padding:0 7px;font-size:calc(10.5px * var(--app-font-scale));text-align:center;text-align-last:center;}
-body .trait-efficiency-grid{display:grid;grid-template-columns:minmax(82px,1.5fr) minmax(42px,.55fr) minmax(66px,.75fr) minmax(78px,.9fr) minmax(44px,.55fr);gap:5px;align-items:center}
+body .trait-efficiency-grid{display:grid;grid-template-columns:minmax(74px,1.05fr) minmax(46px,.65fr) minmax(74px,.9fr) minmax(92px,1.05fr) minmax(48px,.6fr);gap:5px;align-items:center}
 body .trait-efficiency-head{min-height:24px;padding:0 4px;color:var(--color-slate-700);font-size:calc(10.2px * var(--app-font-scale));font-weight:900;text-align:center}
 body .trait-efficiency-row{min-height:28px;margin-top:4px;padding:3px 4px;border:1px solid var(--ui-line-soft,#26364d);border-radius:9px;background:var(--color-white);color:var(--color-slate-900);font-size:calc(10.8px * var(--app-font-scale));font-weight:800;text-align:center}
 body .trait-efficiency-row span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -1366,8 +1366,9 @@ body .trait-efficiency-row .mini-btn.master.trait-eff-apply{height:24px;min-heig
 body .trait-efficiency-empty{padding:9px 4px;color:var(--color-slate-500);font-size:calc(11px * var(--app-font-scale));font-weight:800;text-align:center}
 body .trait-board-panel > .tp-body{width:100%;margin:0;padding:0;overflow:visible}
 @media (max-width:600px){
-  body.is-mobile .trait-optimizer-panel .trait-dashboard-tools{grid-auto-rows:32px;gap:6px;padding:7px 8px 9px}
-  body.is-mobile .trait-optimizer-panel .trait-dashboard-tools .btn, body.is-mobile .trait-optimizer-panel .trait-dashboard-tools select, body.is-mobile .trait-optimizer-panel .trait-dashboard-tools .trait-range-label{height:32px;min-height:32px;font-size:calc(10.2px * var(--app-font-scale))}
+  body.is-mobile .trait-optimizer-panel .trait-dashboard-tools{gap:6px;padding:7px 8px 9px}
+  body.is-mobile .trait-optimizer-panel .trait-optimizer-row{grid-template-columns:minmax(72px,.9fr) minmax(94px,1.1fr) minmax(72px,.9fr);gap:6px}
+  body.is-mobile .trait-optimizer-panel .trait-dashboard-tools .btn, body.is-mobile .trait-optimizer-panel .trait-dashboard-tools select{height:32px;min-height:32px;font-size:calc(10.2px * var(--app-font-scale))}
   body.is-mobile .trait-optimizer-panel .trait-dashboard-tools select{padding:0 16px 0 5px}
   body.is-mobile .trait-preset-excel-modal-shell{padding:10px}
   body.is-mobile .trait-preset-excel-body{gap:6px;padding:8px}
@@ -1393,7 +1394,7 @@ body .trait-board-panel > .tp-body{width:100%;margin:0;padding:0;overflow:visibl
   body.is-mobile .trait-subgroup-body{padding:8px}
   body.is-mobile .trait-limit-grid label{height:32px;gap:4px;font-size:calc(9.3px * var(--app-font-scale))}
   body.is-mobile .trait-limit-grid label span, body.is-mobile .trait-limit-grid input, body.is-mobile .trait-limit-grid select{height:32px;min-height:32px;font-size:calc(9.2px * var(--app-font-scale))}
-  body.is-mobile .trait-efficiency-grid{grid-template-columns:minmax(58px,1.25fr) minmax(32px,.48fr) minmax(54px,.72fr) minmax(62px,.82fr) minmax(38px,.52fr);gap:3px}
+  body.is-mobile .trait-efficiency-grid{grid-template-columns:minmax(58px,1fr) minmax(34px,.52fr) minmax(58px,.75fr) minmax(68px,.9fr) minmax(38px,.52fr);gap:3px}
   body.is-mobile .trait-efficiency-head{font-size:calc(9.4px * var(--app-font-scale));padding:0 2px}
   body.is-mobile .trait-efficiency-row{min-height:27px;padding:2px;font-size:calc(9.6px * var(--app-font-scale))}
   body.is-mobile .trait-efficiency-row .mini-btn.master.trait-eff-apply{height:23px;min-height:23px;padding:0 4px;font-size:calc(9.3px * var(--app-font-scale));cursor:pointer}
