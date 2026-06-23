@@ -38,6 +38,17 @@
   --ui-button-active-border:var(--btn-action-border-hover);
   --ui-button-active-text:var(--btn-action-text);
   --ui-button-active-shadow:var(--btn-action-shadow);
+  --ui-button-common-h:31px;
+  --ui-button-common-pad-x:10px;
+  --ui-button-common-font:calc(11.5px * var(--app-font-scale));
+  --ui-button-gap:4px;
+  --ui-action-button-h:36px;
+  --ui-choice-button-h:31px;
+  --ui-tab-button-h:32px;
+  --ui-toggle-button-h:28px;
+  --ui-step-button-h:30px;
+  --ui-toolbar-button-h:30px;
+  --ui-icon-button-size:30px;
   --ui-field-border:var(--ui-button-border);
   --ui-field-hover-border:var(--ui-button-hover-border);
   --ui-field-focus-border:var(--ui-button-hover-border);
@@ -116,7 +127,6 @@ body{font:calc(14px * var(--app-font-scale))/1.55 var(--font-main);min-height:10
 .ir{display:grid;align-items:center;grid-template-columns:84px 1fr}
 .ir input, .ir select{width:100%;transition:border-color .2s}
 .btn{flex:1;cursor:pointer;height:36px;padding:0 10px;}
-.btn:hover:not(:disabled){border-color:var(--ui-button-hover-border);background:var(--ui-button-hover-bg);color:var(--ui-button-hover-text);filter:none}
 .col-mid{overflow-y:auto;align-content:start;gap:10px;grid-template-columns:1fr 1fr;grid-column:3;grid-row:2;display:block;min-width:360px;border-right:0}
 .dps-card{text-align:center;margin-bottom:10px;}
 .dps-lbl{text-transform:uppercase;margin-bottom:4px;font-size:calc(11px * var(--app-font-scale));font-weight:900}
@@ -154,8 +164,6 @@ body{font:calc(14px * var(--app-font-scale))/1.55 var(--font-main);min-height:10
 .col-left .ir label{color:var(--ui-text);word-break:keep-all;border:1px solid var(--ui-line2);border-radius:8px;background:var(--ui-label);}
 .col-left .ir input, .col-left .ir select{min-width:0}
 .data-card{padding:10px;}
-.btn.subtle{border-color:var(--ui-button-border);background:var(--ui-button-bg);color:var(--ui-button-text)}
-.btn.subtle:hover:not(:disabled){border-color:var(--ui-button-hover-border);background:var(--ui-button-hover-bg);color:var(--ui-button-hover-text)}
 .col-work{grid-column:1;grid-row:2;height:calc(100vh - 44px);overflow:hidden;padding:10px;background:var(--bg);grid-template-columns:minmax(520px,660px) minmax(420px,1fr);gap:12px;display:contents}
 .col-left, .col-mid{border:0;border-radius:0;box-shadow:none}
 .col-mid .dps-card, .col-mid .section-title, .col-mid .stat-grid{grid-column:1/-1}
@@ -291,9 +299,6 @@ select.choice-input, .rune-stat-row select, .ir select{border-color:#344966;}
 .trait-group .tr > div:first-child{min-width:0;overflow:hidden}
 .trait-group .tr-ctrl{display:grid;align-items:center;justify-content:end;width:232px;overflow:visible}
 .trait-value-pair{min-width:102px;width:102px;grid-template-columns:48px 12px 1fr}
-.trait-group .tr-ctrl button:active:not(:disabled), .trait-group .tr-ctrl button.is-pressed:not(:disabled), .trait-master-btn:active:not(:disabled), .trait-master-btn.is-pressed:not(:disabled), .btn:active:not(:disabled), .btn.is-pressed:not(:disabled), .trait-tools .mini-btn:active:not(:disabled), .trait-tools .mini-btn.is-pressed:not(:disabled), .seg-btns button:active:not(:disabled), .seg-btns button.is-pressed:not(:disabled){transform:translateY(1px) scale(.98);box-shadow:inset 0 2px 5px rgba(0,0,0,.34);filter:saturate(1.12)}
-.btn.pri:active:not(:disabled), .btn.pri.is-pressed:not(:disabled), .trait-tools .mini-btn.master:active:not(:disabled), .trait-tools .mini-btn.master.is-pressed:not(:disabled){background:var(--ui-button-active-bg);border-color:var(--ui-button-active-border);color:var(--ui-button-active-text)}
-.trait-group .tr-ctrl button:active:not(:disabled), .trait-group .tr-ctrl button.is-pressed:not(:disabled), .trait-master-btn:active:not(:disabled), .trait-master-btn.is-pressed:not(:disabled){background:var(--color-blue-200);border-color:var(--btn-action-border-hover);color:var(--color-blue-700)}
 .col-left .sg-title, .section-title, .trait-group h4{border-left:0;padding-left:0}
 .col-left .sg-title::before, .section-title::before, .trait-group h4::before{content:none;display:none;width:0;height:0;min-width:0;min-height:0;margin:0;padding:0;background:none}
 .col-left .sg-title{display:flex;align-items:center;justify-content:flex-start;margin:0 0 10px;font-size:calc(12.5px * var(--app-font-scale));text-transform:none;box-shadow:inset 0 1px 0 rgba(255,255,255,.07);white-space:normal;word-break:keep-all;}
@@ -305,8 +310,6 @@ select.choice-input, .rune-stat-row select, .ir select{border-color:#344966;}
 .ir label, .sc-name{color:var(--color-slate-700)}
 .ir input, .ir select, .tv-input, select.choice-input{border-color:#344966;background:#111a28;color:var(--color-text-main);box-shadow:inset 0 1px 0 rgba(255,255,255,.07)}
 .ir input:focus, .ir select:focus, .tv-input:focus, select.choice-input:focus{border-color:var(--ui-accent);box-shadow:var(--ui-focus), inset 0 1px 0 rgba(255,255,255,.07);outline:none}
-.btn:active, .btn.is-pressed, .seg-btns button:active, .trait-group .tr-ctrl button:active{transform:translateY(1px);box-shadow:inset 0 2px 5px rgba(0,0,0,.32)}
-.btn.pri:hover:not(:disabled){background:var(--btn-action-hover)}
 .sc-val{color:var(--color-slate-900)}
 .stat-row:hover, .trait-group .tr{border-bottom-color:#202c3f}
 .col-left .sg, .clean-rune-card, .xp-sp-panel, .data-card, .dps-card, .trait-group{box-shadow:var(--ui-shadow);border-color:var(--ui-line)}
@@ -332,6 +335,30 @@ select.choice-input, .rune-stat-row select, .ir select{border-color:#344966;}
 .sg.unit-enhance-card .unit-enhance-left .mini-ir{grid-template-columns:112px minmax(0,1fr);gap:8px}
 .sg.unit-enhance-card .unit-enhance-left .unit-enhance-inline-controls .seg-btns button{font-size:calc(11.5px * var(--app-font-scale));letter-spacing:-.2px}
 .sg.unit-enhance-card .unit-enhance-left .mini-ir.mini-ir-button-row .seg-btns button[data-value="0"]{font-size:calc(11px * var(--app-font-scale))}
+/* 룬효과/버프: 공통 버튼 행 구조 */
+.sg.unit-enhance-card{--unit-enhance-label-w:124px;--unit-enhance-btn-h:31px;--unit-enhance-row-gap:8px;--unit-enhance-btn-gap:6px;--unit-enhance-btn-cols:repeat(5,minmax(0,1fr))}
+.sg.unit-enhance-card .unit-enhance-main-row{display:grid;grid-template-columns:1fr;gap:10px;align-items:start;}
+.sg.unit-enhance-card .unit-enhance-left, .sg.unit-enhance-card .unit-enhance-right, .sg.unit-enhance-card .unit-enhance-control-stack, .sg.unit-enhance-card .month-rune-selects, .sg.unit-enhance-card .unit-enhance-button-grid, .sg.unit-enhance-card .seg-btns{width:100%;min-width:0}
+.sg.unit-enhance-card .unit-enhance-left .unit-enhance-control-stack{border:none;box-shadow:none;background:transparent;padding:0;display:grid;row-gap:var(--unit-enhance-row-gap);column-gap:0}
+.sg.unit-enhance-card .unit-enhance-left .month-rune-selects, .sg.unit-enhance-card .unit-enhance-inline-controls{display:grid;row-gap:var(--unit-enhance-row-gap);column-gap:0}
+.sg.unit-enhance-card .unit-enhance-left .unit-enhance-option-row{display:grid;grid-template-columns:var(--unit-enhance-label-w) minmax(0,1fr);column-gap:8px;row-gap:var(--unit-enhance-row-gap);align-items:stretch;}
+.sg.unit-enhance-card .unit-enhance-left .unit-enhance-option-row > label{width:100%;min-width:0;height:auto;min-height:var(--unit-enhance-btn-h);align-self:stretch;border-color:var(--ui-unified-line-strong)}
+.sg.unit-enhance-card .unit-enhance-left .unit-enhance-option-row .unit-enhance-button-grid{display:grid;grid-template-columns:var(--unit-enhance-btn-cols);column-gap:var(--unit-enhance-btn-gap);row-gap:var(--unit-enhance-row-gap);justify-content:stretch;align-items:stretch}
+.sg.unit-enhance-card .unit-enhance-left .unit-enhance-option-row .unit-enhance-button-grid > .ui-choice-btn{width:100%;min-width:0;height:var(--unit-enhance-btn-h);min-height:var(--unit-enhance-btn-h);padding:0 6px;overflow:hidden;text-overflow:ellipsis}
+.sg.unit-enhance-card .unit-enhance-right .unit-enhance-summary-stack{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.sg.unit-enhance-card .unit-enhance-right .enhance-summary-card{min-height:54px;gap:3px;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center}
+.sg.unit-enhance-card .unit-enhance-right .enhance-summary-card span{font-size:calc(10.5px * var(--app-font-scale));font-weight:900;color:var(--ui-unified-muted);white-space:nowrap}
+.sg.unit-enhance-card .unit-enhance-right .enhance-summary-card b{font-size:calc(18px * var(--app-font-scale));line-height:1.02;font-weight:900;color:var(--ui-unified-text);letter-spacing:-.35px}
+.common-buff-grid, .flower-buff-grid{display:grid;column-gap:var(--unit-enhance-btn-gap,6px);row-gap:var(--unit-enhance-row-gap,8px);width:100%;align-items:stretch;grid-template-columns:var(--unit-enhance-btn-cols,repeat(5,minmax(0,1fr)))}
+.select-buff-grid{display:grid;column-gap:var(--unit-enhance-btn-gap,6px);row-gap:var(--unit-enhance-btn-gap,6px);width:100%;align-items:stretch;grid-template-columns:var(--unit-enhance-btn-cols,repeat(5,minmax(0,1fr)))}
+.common-buff-row .buff-choice-item, .select-buff-row .buff-choice-item, .flower-buff-row .buff-choice-item{position:relative;display:flex;align-items:center;justify-content:center;width:100%;min-width:0;min-height:var(--unit-enhance-btn-h,31px);height:var(--unit-enhance-btn-h,31px);padding:0 8px;border:1px solid var(--ui-button-border);border-radius:var(--ui-control-radius);background:var(--ui-button-bg);color:var(--ui-button-text);box-shadow:var(--ui-button-shadow);font-size:calc(11.5px * var(--app-font-scale));font-weight:900;cursor:pointer;user-select:none;white-space:nowrap;text-align:center;line-height:1;overflow:hidden;text-overflow:ellipsis;text-shadow:none;transform:none;transition:background .15s ease,border-color .15s ease,color .15s ease,box-shadow .15s ease,transform .1s ease;box-sizing:border-box}
+.common-buff-row .buff-choice-item input, .select-buff-row .buff-choice-item input, .flower-buff-row .buff-choice-item input{display:none}
+.unit-enhance-card .buff-choice-item span{display:block;width:100%;min-width:0;text-align:center;overflow:hidden;text-overflow:ellipsis}
+.common-buff-row .buff-choice-item:hover, .select-buff-row .buff-choice-item:hover, .flower-buff-row .buff-choice-item:hover{border-color:var(--ui-button-hover-border);background:var(--ui-button-hover-bg);color:var(--ui-button-hover-text);box-shadow:var(--ui-button-shadow);filter:none}
+.common-buff-row .buff-choice-item:active, .select-buff-row .buff-choice-item:active, .flower-buff-row .buff-choice-item:active{transform:translateY(1px);box-shadow:inset 0 2px 5px rgba(0,0,0,.32)}
+.common-buff-row .buff-choice-item:focus-visible, .select-buff-row .buff-choice-item:focus-visible, .flower-buff-row .buff-choice-item:focus-visible{outline:none;border-color:var(--ui-button-hover-border);box-shadow:var(--ui-focus),var(--ui-button-shadow)}
+.common-buff-row .buff-choice-item.is-active, .select-buff-row .buff-choice-item.is-active, .flower-buff-row .buff-choice-item.is-active{background:var(--ui-button-active-bg);border-color:var(--ui-button-active-border);color:var(--ui-button-active-text);box-shadow:var(--ui-button-active-shadow);transform:none}
+.common-buff-row .buff-choice-item.is-active:hover, .select-buff-row .buff-choice-item.is-active:hover, .flower-buff-row .buff-choice-item.is-active:hover{background:var(--ui-button-active-bg);border-color:var(--ui-button-active-border);color:var(--ui-button-active-text);box-shadow:var(--ui-button-active-shadow);filter:none}
 .hdr-logo{display:flex;align-items:center;justify-content:center;padding:0;font-family:Consolas,monospace;font-size:calc(12px * var(--app-font-scale));font-weight:900;overflow:hidden}
 /* 참고/비교 모달: 월룬·쥬얼·DPS·엑셀 비교 공통 */
 .month-rune-modal-open{overflow:hidden}
@@ -494,7 +521,7 @@ body .dps-card.stat-dps-summary.is-dps-risk .dps-context-summary > span::before{
 .excel-compare-empty small{margin-top:8px;color:var(--color-slate-500);font-weight:700;line-height:1.45}
 .excel-compare-error{border-color:#7f1d2d;background:#2b1017;color:#991b1b}
 .excel-compare-summary{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px;margin-bottom:10px}
-.excel-compare-summary-card{display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:0;min-height:58px;padding:8px 10px;border:1px solid #26364d;border-radius:10px;background:var(--color-white);text-align:center;font:inherit;cursor:pointer;appearance:none;transition:border-color .15s,background .15s,box-shadow .15s,transform .15s}
+.excel-compare-summary-card{min-width:0;min-height:58px;padding:8px 10px;text-align:center;font:inherit}
 .excel-compare-summary span{color:var(--color-slate-500);font-size:calc(10.5px * var(--app-font-scale));font-weight:800;white-space:nowrap}
 .excel-compare-summary b{overflow:hidden;color:var(--color-text-main);font-size:calc(12px * var(--app-font-scale));font-weight:900;text-overflow:ellipsis;white-space:nowrap}
 .excel-compare-summary-card.is-all span{color:var(--color-text-main);font-size:calc(12px * var(--app-font-scale));font-weight:900}
@@ -576,22 +603,6 @@ body, input, button, select, textarea{font-family:var(--font-main)}
 .ir input, .ir select, .rune-stat-row input, .rune-stat-row select, .rune-option-grid select, .skill-ir input, .skill-ir select, .final-damage-card .ir input, .final-damage-card .ir select{min-height:31px;height:31px;border:1px solid var(--ui-unified-line-strong);border-radius:8px;background:var(--ui-unified-input);color:var(--ui-unified-text);font-size:calc(12px * var(--app-font-scale));font-weight:800;font-family:Consolas,monospace;text-align:right;text-align-last:right;padding:0 10px;min-width:0}
 .ir select, .rune-option-grid select, .rune-stat-row select, .skill-ir select{cursor:pointer}
 .ir input:focus, .ir select:focus, .rune-stat-row input:focus, .rune-stat-row select:focus, .rune-option-grid select:focus, .skill-ir input:focus, .skill-ir select:focus{outline:none;border-color:#7aa7ff;box-shadow:var(--ui-focus)}
-.btn, .seg-btns button, .trait-tools .mini-btn, .trait-group .tr-ctrl button, .trait-master-btn, .font-scale-btn, .font-scale-value{min-height:31px;border-radius:var(--ui-control-radius);border:1px solid var(--ui-button-border);background:var(--ui-button-bg);color:var(--ui-button-text);font-size:calc(11.5px * var(--app-font-scale));font-weight:900;line-height:1;white-space:nowrap;word-break:keep-all;display:inline-flex;align-items:center;justify-content:center;gap:4px;box-shadow:var(--ui-button-shadow)}
-.btn:hover, .seg-btns button:hover, .trait-tools .mini-btn:hover, .trait-group .tr-ctrl button:hover:not(:disabled){border-color:var(--ui-button-hover-border);background:var(--ui-button-hover-bg);color:var(--ui-button-hover-text);filter:none;transform:none}
-button:disabled, .trait-group .tr-ctrl button:disabled{opacity:.42;cursor:default;color:var(--color-slate-400);background:var(--color-slate-50);border-color:var(--color-slate-200);box-shadow:none}
-.sg.unit-enhance-card{--unit-enhance-label-w:124px;--unit-enhance-btn-h:31px;--unit-enhance-row-gap:8px;--unit-enhance-btn-gap:6px;--unit-enhance-btn-cols:repeat(5,minmax(0,1fr))}
-.sg.unit-enhance-card .unit-enhance-main-row{display:grid;grid-template-columns:1fr;gap:10px;align-items:start;}
-.sg.unit-enhance-card .unit-enhance-left, .sg.unit-enhance-card .unit-enhance-right, .sg.unit-enhance-card .unit-enhance-control-stack, .sg.unit-enhance-card .month-rune-selects, .sg.unit-enhance-card .unit-enhance-button-grid, .sg.unit-enhance-card .seg-btns{width:100%;min-width:0}
-.sg.unit-enhance-card .unit-enhance-left .unit-enhance-control-stack{border:none;box-shadow:none;background:transparent;padding:0;display:grid;row-gap:var(--unit-enhance-row-gap);column-gap:0}
-.sg.unit-enhance-card .unit-enhance-left .month-rune-selects, .sg.unit-enhance-card .unit-enhance-inline-controls{display:grid;row-gap:var(--unit-enhance-row-gap);column-gap:0}
-.sg.unit-enhance-card .unit-enhance-left .unit-enhance-option-row{display:grid;grid-template-columns:var(--unit-enhance-label-w) minmax(0,1fr);column-gap:8px;row-gap:var(--unit-enhance-row-gap);align-items:stretch;}
-.sg.unit-enhance-card .unit-enhance-left .unit-enhance-option-row > label{width:100%;min-width:0;height:auto;min-height:var(--unit-enhance-btn-h);align-self:stretch;border-color:var(--ui-unified-line-strong)}
-.sg.unit-enhance-card .unit-enhance-left .unit-enhance-option-row .unit-enhance-button-grid{display:grid;grid-template-columns:var(--unit-enhance-btn-cols);column-gap:var(--unit-enhance-btn-gap);row-gap:var(--unit-enhance-row-gap);justify-content:stretch;align-items:stretch}
-.sg.unit-enhance-card .unit-enhance-left .unit-enhance-option-row .unit-enhance-button-grid > button{width:100%;min-width:0;height:var(--unit-enhance-btn-h);min-height:var(--unit-enhance-btn-h);padding:0 6px;overflow:hidden;text-overflow:ellipsis}
-.sg.unit-enhance-card .unit-enhance-right .unit-enhance-summary-stack{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
-.sg.unit-enhance-card .unit-enhance-right .enhance-summary-card{min-height:54px;gap:3px;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center}
-.sg.unit-enhance-card .unit-enhance-right .enhance-summary-card span{font-size:calc(10.5px * var(--app-font-scale));font-weight:900;color:var(--ui-unified-muted);white-space:nowrap}
-.sg.unit-enhance-card .unit-enhance-right .enhance-summary-card b{font-size:calc(18px * var(--app-font-scale));line-height:1.02;font-weight:900;color:var(--ui-unified-text);letter-spacing:-.35px}
 .stat-row .sc-name{border-radius:0;border:0;border-right:1px solid var(--result-table-line,#26364d);background:var(--result-table-label-bg,#172438)}
 .stat-row .sc-val, .mini-table td, .mini-table th{font-family:Consolas,monospace}
 .mini-table th{background:#10233d;color:#cfe0ff;font-weight:900}
@@ -600,9 +611,6 @@ button:disabled, .trait-group .tr-ctrl button:disabled{opacity:.42;cursor:defaul
 .dps-table-panel button.active, .dps-table-panel .active{background:var(--ui-unified-blue);border-color:var(--btn-action-border);color:var(--btn-action-text)}
 input:not([type="hidden"]):not([readonly]):not(:disabled), select:not(:disabled), textarea:not([readonly]):not(:disabled){background:var(--role-interactive-bg);border-color:var(--role-interactive-bd);color:var(--color-slate-900)}
 .stat-row .sc-val, .enchant-combined-row b, input[readonly], input:disabled, select:disabled{background:var(--role-readonly-bg);border-color:var(--role-readonly-bd);color:var(--color-text-main)}
-.btn, .seg-btns button, .trait-tools .mini-btn, .trait-group .tr-ctrl button, .font-scale-btn, .font-scale-value{box-shadow:var(--ui-button-shadow);text-shadow:none;transform:none}
-.btn.pri, .seg-btns button.active, .trait-tools .mini-btn.master, .dps-table-tab.is-active{background:var(--ui-button-active-bg);border-color:var(--ui-button-active-border);color:var(--ui-button-active-text);box-shadow:var(--ui-button-active-shadow)}
-.btn.pri:hover, .seg-btns button.active:hover, .trait-tools .mini-btn.master:hover{background:var(--ui-button-active-bg);border-color:var(--ui-button-active-border);color:var(--ui-button-active-text);box-shadow:var(--ui-button-active-shadow);filter:none}
 .col-left .sg, .col-left .sg.xp-sp-card, .col-left .sg.rune-spec, .col-mid .stat-dps-card, .col-mid .bus-cut-card, .col-mid .final-damage-card, .col-right .trait-group{overflow:hidden}
 .col-left .sg > .sg-title, .col-mid .stat-dps-card > .section-title, .col-mid .bus-cut-card > h3, .col-mid .final-damage-card > h3, .trait-group h4{display:flex;align-items:center;justify-content:space-between;gap:8px;background:var(--section-head-bg);border:1px solid var(--section-head-bd);border-radius:12px 12px 0 0;color:var(--section-head-text);box-shadow:none;font-size:calc(12.5px * var(--app-font-scale));font-weight:900;line-height:1;letter-spacing:0;text-transform:none;opacity:1}
 #sp, #xp, #bxp, #rp, #soul, #autoEpView, #epRemainBasicView, #rpRemainBasicView, #soulRemainBasicView{text-align:center;justify-content:center;text-align-last:center}
@@ -652,8 +660,6 @@ body:not(.is-tabbed) .col-left, body:not(.is-tabbed) .col-right, body:not(.is-ta
 .clean-rune-card .enchant-combined, .clean-rune-card .enchant-combined-grid, .clean-rune-card .enchant-combined-row{background:transparent;border:0;border-radius:0;box-shadow:none}
 .clean-rune-card .enchant-combined-grid{display:grid;grid-template-columns:1fr;padding:0;gap:7px}
 .clean-rune-card .enchant-combined-row{grid-template-columns:minmax(72px,.9fr) minmax(58px,.7fr) minmax(58px,.7fr)}
-.common-buff-grid, .flower-buff-grid{display:grid;column-gap:var(--unit-enhance-btn-gap,6px);row-gap:var(--unit-enhance-row-gap,8px);width:100%;align-items:stretch;grid-template-columns:var(--unit-enhance-btn-cols,repeat(5,minmax(0,1fr)))}
-.select-buff-grid{display:grid;column-gap:var(--unit-enhance-btn-gap,6px);row-gap:var(--unit-enhance-btn-gap,6px);width:100%;align-items:stretch;grid-template-columns:var(--unit-enhance-btn-cols,repeat(5,minmax(0,1fr)))}
 .col-right{min-width:520px;padding:10px 8px}
 .tp-body{gap:8px}
 .trait-group{margin-bottom:8px}
@@ -809,6 +815,23 @@ body:not(.is-mobile) .trait-board-panel .tp-body{padding-top:10px}
 body:not(.is-mobile) .trait-board-panel .trait-group{margin-bottom:10px}
 
 /* ── 7. 공통 시각 토큰 적용 / 전역 상호작용 ── */
+/* 버튼 UI 공통 규격: 역할별 버튼은 같은 상태/색상 규칙을 공유하고, 높이만 역할별 변수로 분리한다. */
+.ui-action-btn, .ui-choice-btn, .ui-tab-btn, .ui-toggle-btn, .ui-step-btn, .ui-toolbar-btn, .ui-icon-btn, .ui-choice-card, .btn, .seg-btns button, .trait-tools .mini-btn, .trait-group .tr-ctrl button, .trait-master-btn, .font-scale-btn, .font-scale-value{box-sizing:border-box;appearance:none;border-radius:var(--ui-control-radius);border:1px solid var(--ui-button-border);background:var(--ui-button-bg);color:var(--ui-button-text);font-size:var(--ui-button-common-font);font-weight:900;line-height:1;white-space:nowrap;word-break:keep-all;text-align:center;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;gap:var(--ui-button-gap);box-shadow:var(--ui-button-shadow);text-shadow:none;transform:none;cursor:pointer;transition:background .15s ease,border-color .15s ease,color .15s ease,box-shadow .15s ease,transform .1s ease}
+.ui-action-btn, .btn{min-height:var(--ui-action-button-h);padding:0 var(--ui-button-common-pad-x)}
+.ui-choice-btn, .seg-btns button{min-height:var(--ui-choice-button-h);height:var(--ui-choice-button-h);padding:0 8px}
+.ui-tab-btn{min-height:var(--ui-tab-button-h);height:var(--ui-tab-button-h);padding:0 12px}
+.ui-toggle-btn{min-height:var(--ui-toggle-button-h);height:var(--ui-toggle-button-h);padding:0 8px}
+.ui-step-btn{min-width:var(--ui-step-button-h);min-height:var(--ui-step-button-h);height:var(--ui-step-button-h);padding:0 6px}
+.ui-toolbar-btn, .font-scale-btn, .font-scale-value{min-height:var(--ui-toolbar-button-h);height:var(--ui-toolbar-button-h);padding:0 9px}
+.ui-icon-btn{width:var(--ui-icon-button-size);min-width:var(--ui-icon-button-size);height:var(--ui-icon-button-size);min-height:var(--ui-icon-button-size);padding:0}
+.ui-choice-card{min-height:58px;padding:8px 10px;flex-direction:column}
+.ui-action-btn:hover:not(:disabled), .ui-choice-btn:hover:not(:disabled), .ui-tab-btn:hover:not(:disabled), .ui-toggle-btn:hover:not(:disabled), .ui-step-btn:hover:not(:disabled), .ui-toolbar-btn:hover:not(:disabled), .ui-icon-btn:hover:not(:disabled), .ui-choice-card:hover:not(:disabled), .btn:hover, .seg-btns button:hover, .trait-tools .mini-btn:hover, .trait-group .tr-ctrl button:hover:not(:disabled){border-color:var(--ui-button-hover-border);background:var(--ui-button-hover-bg);color:var(--ui-button-hover-text);filter:none;transform:none;text-decoration:none}
+button:disabled, .ui-action-btn:disabled, .ui-choice-btn:disabled, .ui-tab-btn:disabled, .ui-toggle-btn:disabled, .ui-step-btn:disabled, .ui-toolbar-btn:disabled, .ui-icon-btn:disabled, .trait-group .tr-ctrl button:disabled{opacity:.42;cursor:default;color:var(--color-slate-400);background:var(--color-slate-50);border-color:var(--color-slate-200);box-shadow:none}
+.ui-action-btn:active:not(:disabled), .ui-action-btn.is-pressed:not(:disabled), .ui-choice-btn:active:not(:disabled), .ui-choice-btn.is-pressed:not(:disabled), .ui-tab-btn:active:not(:disabled), .ui-tab-btn.is-pressed:not(:disabled), .ui-toggle-btn:active:not(:disabled), .ui-toggle-btn.is-pressed:not(:disabled), .ui-step-btn:active:not(:disabled), .ui-step-btn.is-pressed:not(:disabled), .ui-toolbar-btn:active:not(:disabled), .ui-toolbar-btn.is-pressed:not(:disabled), .ui-icon-btn:active:not(:disabled), .ui-icon-btn.is-pressed:not(:disabled), .ui-choice-card:active:not(:disabled), .ui-choice-card.is-pressed:not(:disabled), .trait-group .tr-ctrl button:active:not(:disabled), .trait-group .tr-ctrl button.is-pressed:not(:disabled), .trait-master-btn:active:not(:disabled), .trait-master-btn.is-pressed:not(:disabled), .btn:active:not(:disabled), .btn.is-pressed:not(:disabled), .trait-tools .mini-btn:active:not(:disabled), .trait-tools .mini-btn.is-pressed:not(:disabled), .seg-btns button:active:not(:disabled), .seg-btns button.is-pressed:not(:disabled){transform:translateY(1px) scale(.98);box-shadow:inset 0 2px 5px rgba(0,0,0,.34);filter:saturate(1.12)}
+.btn.pri:active:not(:disabled), .btn.pri.is-pressed:not(:disabled), .trait-tools .mini-btn.master:active:not(:disabled), .trait-tools .mini-btn.master.is-pressed:not(:disabled){background:var(--ui-button-active-bg);border-color:var(--ui-button-active-border);color:var(--ui-button-active-text)}
+.trait-group .tr-ctrl button:active:not(:disabled), .trait-group .tr-ctrl button.is-pressed:not(:disabled), .trait-master-btn:active:not(:disabled), .trait-master-btn.is-pressed:not(:disabled){background:var(--color-blue-200);border-color:var(--btn-action-border-hover);color:var(--color-blue-700)}
+.btn.pri, .ui-action-btn.btn.pri, .ui-choice-btn.active, .ui-choice-btn.is-active, .ui-tab-btn.active, .ui-tab-btn.is-active, .ui-tab-btn[aria-selected="true"], .ui-toggle-btn.active, .ui-toggle-btn.is-active, .ui-toggle-btn[aria-pressed="true"], .ui-choice-card.is-active, .seg-btns button.active, .trait-tools .mini-btn.master, .dps-table-tab.is-active{background:var(--ui-button-active-bg);border-color:var(--ui-button-active-border);color:var(--ui-button-active-text);box-shadow:var(--ui-button-active-shadow)}
+.btn.pri:hover, .ui-action-btn.btn.pri:hover, .ui-choice-btn.active:hover, .ui-choice-btn.is-active:hover, .ui-tab-btn.active:hover, .ui-tab-btn.is-active:hover, .ui-tab-btn[aria-selected="true"]:hover, .ui-toggle-btn.active:hover, .ui-toggle-btn.is-active:hover, .ui-toggle-btn[aria-pressed="true"]:hover, .ui-choice-card.is-active:hover, .seg-btns button.active:hover, .trait-tools .mini-btn.master:hover{background:var(--ui-button-active-bg);border-color:var(--ui-button-active-border);color:var(--ui-button-active-text);box-shadow:var(--ui-button-active-shadow);filter:none}
 body{letter-spacing:-.01em}
 button, select{touch-action:manipulation}
 body.is-pc-landscape .wrap, body:not(.is-mobile):not(.is-tablet):not(.is-pc-portrait) .wrap{grid-template-columns:minmax(470px,1.28fr) minmax(400px,1.02fr) minmax(300px,.78fr);min-width:0;background:var(--ui-bg)}
@@ -821,7 +844,6 @@ body.is-pc-landscape .col-left, body.is-pc-landscape .col-right, body.is-pc-land
 .rune-panel-title, .skill-list-head{color:#24447d}
 .ir label, .mini-ir label, .rune-stat-row label, .rune-option-grid label, .additional-row label, .enchant-combined-row label{border-color:var(--ui-line-strong);}
 input[readonly], input:disabled, select:disabled, body:not(.is-mobile) .enchant-result-value{border-radius:var(--ui-control-radius);}
-.btn, .seg-btns button, .mini-btn, .trait-group .tr-ctrl button, .font-scale-btn, .font-scale-value{border-radius:var(--ui-control-radius);transition:background .15s ease,border-color .15s ease,color .15s ease,box-shadow .15s ease,transform .1s ease}
 .dps-num{letter-spacing:-.04em}
 @media (max-width:1320px) and (min-width:1025px){
   body.is-pc-landscape .wrap, body:not(.is-mobile):not(.is-tablet):not(.is-pc-portrait) .wrap{grid-template-columns:minmax(430px,1.2fr) minmax(390px,1fr) minmax(285px,.78fr)}
@@ -982,14 +1004,7 @@ body.is-tablet .stat-dps-card .stat-compare-grid .stat-row > .sc-name{border-lef
 body.is-tablet .stat-dps-card .stat-compare-grid .stat-row > .sc-val{background:var(--result-table-value-bg,var(--color-white));color:var(--color-slate-900);font-family:Consolas,monospace;font-size:calc(11px * var(--app-font-scale));font-weight:900}
 body.is-mobile .stat-compare-grid .stat-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));min-height:30px;align-items:stretch}
 body.is-mobile .stat-compare-grid .stat-row .sc-name, body.is-mobile .stat-compare-grid .stat-row .sc-val{min-height:30px;display:flex;align-items:center;justify-content:center;text-align:center;text-align-last:center;padding:0 4px;font-size:calc(10.3px * var(--app-font-scale));line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.common-buff-row .buff-choice-item, .select-buff-row .buff-choice-item, .flower-buff-row .buff-choice-item{position:relative;display:flex;align-items:center;justify-content:center;width:100%;min-width:0;min-height:var(--unit-enhance-btn-h,31px);height:var(--unit-enhance-btn-h,31px);padding:0 8px;border:1px solid var(--ui-button-border);border-radius:var(--ui-control-radius);background:var(--ui-button-bg);color:var(--ui-button-text);box-shadow:var(--ui-button-shadow);font-size:calc(11.5px * var(--app-font-scale));font-weight:900;cursor:pointer;user-select:none;white-space:nowrap;text-align:center;line-height:1;overflow:hidden;text-overflow:ellipsis;text-shadow:none;transform:none;transition:background .15s ease,border-color .15s ease,color .15s ease,box-shadow .15s ease,transform .1s ease;box-sizing:border-box}
-.common-buff-row .buff-choice-item input, .select-buff-row .buff-choice-item input, .flower-buff-row .buff-choice-item input{display:none}
-.unit-enhance-card .buff-choice-item span{display:block;width:100%;min-width:0;text-align:center;overflow:hidden;text-overflow:ellipsis}
-.common-buff-row .buff-choice-item:hover, .select-buff-row .buff-choice-item:hover, .flower-buff-row .buff-choice-item:hover{border-color:var(--ui-button-hover-border);background:var(--ui-button-hover-bg);color:var(--ui-button-hover-text);box-shadow:var(--ui-button-shadow);filter:none}
-.common-buff-row .buff-choice-item:active, .select-buff-row .buff-choice-item:active, .flower-buff-row .buff-choice-item:active{transform:translateY(1px);box-shadow:inset 0 2px 5px rgba(0,0,0,.32)}
-.common-buff-row .buff-choice-item:focus-visible, .select-buff-row .buff-choice-item:focus-visible, .flower-buff-row .buff-choice-item:focus-visible{outline:none;border-color:var(--ui-button-hover-border);box-shadow:var(--ui-focus),var(--ui-button-shadow)}
-.common-buff-row .buff-choice-item.is-active, .select-buff-row .buff-choice-item.is-active, .flower-buff-row .buff-choice-item.is-active{background:var(--ui-button-active-bg);border-color:var(--ui-button-active-border);color:var(--ui-button-active-text);box-shadow:var(--ui-button-active-shadow);transform:none}
-.common-buff-row .buff-choice-item.is-active:hover, .select-buff-row .buff-choice-item.is-active:hover, .flower-buff-row .buff-choice-item.is-active:hover{background:var(--ui-button-active-bg);border-color:var(--ui-button-active-border);color:var(--ui-button-active-text);box-shadow:var(--ui-button-active-shadow);filter:none}
+/* 룬효과/버프: 모바일 전용 버튼 행 */
 body.is-mobile .common-buff-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
 body.is-mobile .flower-buff-grid{grid-template-columns:1fr}
 body.is-mobile .select-buff-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
@@ -1024,7 +1039,7 @@ body.is-tabbed .mobile-page > .col-right .trait-board-panel .tp-body{width:100%;
 body.is-tabbed .mobile-page > .sg > .sg-title, body.is-tabbed .mobile-page > .data-card > .section-title, body.is-tabbed .mobile-page > .data-card > h3:not(.zero-rank-title), body.is-tabbed .mobile-page .bus-cut-card > h3, body.is-tabbed .mobile-page .final-damage-card > h3, body.is-tabbed .mobile-page .zero-rank-title, body.is-tabbed .mobile-page .optimizer-head, body.is-tabbed .mobile-page .trait-subgroup-title{width:auto;height:var(--dps-card-head-h);min-height:var(--dps-card-head-h);margin:-10px -10px 12px;padding:0 14px;box-sizing:border-box;display:flex;align-items:center;justify-content:space-between;gap:8px;background:var(--dps-card-head-bg);border:0;border-bottom:1px solid var(--dps-card-head-bd);border-radius:calc(var(--ui-radius, 15px) - 1px) calc(var(--ui-radius, 15px) - 1px) 0 0;color:var(--dps-card-head-text);box-shadow:none;font-size:calc(12.5px * var(--app-font-scale));font-weight:900;line-height:1;letter-spacing:0;text-transform:none}
 body.is-tablet label, body.is-tablet .rune-stat-row label, body.is-tablet .rune-option-grid label, body.is-tablet .additional-row label, body.is-tablet .enchant-combined-row label, body.is-tablet .mini-ir label, body.is-tablet .stat-row .sc-name{font-weight:900;border-color:var(--ui-line-strong, #3a4d67)}
 body.is-tablet input:not([type="hidden"]), body.is-tablet select, body.is-tablet textarea, body.is-tablet .enchant-combined-row b, body.is-tablet .additional-row b{min-height:31px;border-width:1px;border-style:solid;border-radius:8px;font-weight:900;box-shadow:none}
-body.is-tablet .btn, body.is-tablet .seg-btns button, body.is-tablet .mini-btn, body.is-tablet .trait-group .tr-ctrl button{font-weight:900;border-width:1px}
+body.is-tablet .ui-action-btn, body.is-tablet .ui-choice-btn, body.is-tablet .ui-tab-btn, body.is-tablet .ui-toggle-btn, body.is-tablet .ui-step-btn, body.is-tablet .ui-toolbar-btn, body.is-tablet .ui-icon-btn, body.is-tablet .btn, body.is-tablet .seg-btns button, body.is-tablet .mini-btn, body.is-tablet .trait-group .tr-ctrl button{font-weight:900;border-width:1px}
 body.is-tablet .unit-enhance-card .buff-choice-item{font-weight:900;border-width:1px;border-color:var(--ui-button-border);background:var(--ui-button-bg);color:var(--ui-button-text);box-shadow:var(--ui-button-shadow)}
 body.is-tablet .unit-enhance-card .buff-choice-item.is-active{border-color:var(--ui-button-active-border);background:var(--ui-button-active-bg);color:var(--ui-button-active-text);box-shadow:var(--ui-button-active-shadow)}
 
@@ -1055,10 +1070,11 @@ input:not([type="hidden"]):not([readonly]):not(:disabled):not(.zero-calc-current
 input:not([type="hidden"]):not([readonly]):not(:disabled):hover, select:not(:disabled):hover, textarea:not([readonly]):not(:disabled):hover{--ui-field-current-border:var(--ui-field-hover-border);background:#111a28}
 input[readonly], input:disabled, select:disabled, body:not(.is-mobile) .enchant-result-value{background:#1b160d;border-color:#8a6a2a;color:#f0b66b}
 input:not([type="hidden"]):not([readonly]):not(:disabled):focus, select:not(:disabled):focus, textarea:not([readonly]):not(:disabled):focus{--ui-field-current-border:var(--ui-field-focus-border);outline:none;background:var(--color-white);box-shadow:var(--ui-field-focus-shadow)}
-button:not(.zero-rank-tab):not(.zero-star-toggle):focus-visible{outline:none;border-color:var(--ui-button-hover-border);box-shadow:var(--ui-focus),var(--ui-button-shadow)}
-.btn, .seg-btns button, .mini-btn, .trait-group .tr-ctrl button{background:var(--ui-button-bg);border-color:var(--ui-button-border);border-radius:var(--ui-control-radius);color:var(--ui-button-text);box-shadow:var(--ui-button-shadow)}
-.btn:hover, .seg-btns button:hover:not(:disabled), .mini-btn:hover:not(:disabled), .trait-group .tr-ctrl button:hover:not(:disabled){background:var(--ui-button-hover-bg);border-color:var(--ui-button-hover-border);color:var(--ui-button-hover-text)}
+.ui-action-btn:focus-visible, .ui-choice-btn:focus-visible, .ui-tab-btn:focus-visible, .ui-toggle-btn:focus-visible, .ui-step-btn:focus-visible, .ui-toolbar-btn:focus-visible, .ui-icon-btn:focus-visible, .ui-choice-card:focus-visible, button:not(.zero-rank-tab):not(.zero-star-toggle):focus-visible{outline:none;border-color:var(--ui-button-hover-border);box-shadow:var(--ui-focus),var(--ui-button-shadow)}
+.ui-action-btn, .ui-choice-btn, .ui-tab-btn, .ui-toggle-btn, .ui-step-btn, .ui-toolbar-btn, .ui-icon-btn, .ui-choice-card, .btn, .seg-btns button, .mini-btn, .trait-group .tr-ctrl button{background:var(--ui-button-bg);border-color:var(--ui-button-border);border-radius:var(--ui-control-radius);color:var(--ui-button-text);box-shadow:var(--ui-button-shadow)}
+.ui-action-btn:hover:not(:disabled), .ui-choice-btn:hover:not(:disabled), .ui-tab-btn:hover:not(:disabled), .ui-toggle-btn:hover:not(:disabled), .ui-step-btn:hover:not(:disabled), .ui-toolbar-btn:hover:not(:disabled), .ui-icon-btn:hover:not(:disabled), .ui-choice-card:hover:not(:disabled), .btn:hover, .seg-btns button:hover:not(:disabled), .mini-btn:hover:not(:disabled), .trait-group .tr-ctrl button:hover:not(:disabled){background:var(--ui-button-hover-bg);border-color:var(--ui-button-hover-border);color:var(--ui-button-hover-text)}
 .btn.pri, .seg-btns button.active, .seg-btns button.is-active, .buff-choice-item.is-active{background:var(--ui-button-active-bg);border-color:var(--ui-button-active-border);color:var(--ui-button-active-text);box-shadow:var(--ui-button-active-shadow)}
+.ui-tab-btn.active, .ui-tab-btn.is-active, .ui-tab-btn[aria-selected="true"], .ui-toggle-btn.active, .ui-toggle-btn.is-active, .ui-toggle-btn[aria-pressed="true"], .ui-choice-card.is-active{background:var(--ui-button-active-bg);border-color:var(--ui-button-active-border);color:var(--ui-button-active-text);box-shadow:var(--ui-button-active-shadow)}
 .stat-dps-summary{position:relative;overflow:hidden}
 .dps-lbl{color:#9bb8e8;letter-spacing:1.5px}
 .dps-num{text-shadow:0 2px 12px rgba(35,79,184,.11)}
@@ -1318,8 +1334,8 @@ body .stat-dps-summary .dps-risk-badge, body .col-mid .stat-dps-card .stat-dps-s
 .zero-calc-table input, .zero-calc-table select, .zero-calc-table .zero-row-score{display:flex;align-items:center;justify-content:center;width:100%;max-width:none;height:28px;min-height:28px;margin:0;padding:0 6px;border:1px solid var(--role-interactive-bd);border-radius:var(--ui-control-radius);outline:0;background:var(--role-interactive-bg,#10233d);background-image:none;text-align:center;color:#d7e6ff;font-family:Consolas,monospace;font-size:calc(10.5px * var(--app-font-scale));font-weight:900;box-shadow:inset 0 1px 2px rgba(32,57,91,.035);box-sizing:border-box;text-shadow:none}
 .zero-calc-table input, .zero-calc-table select{display:block}
 .zero-calc-table input:focus, .zero-calc-table select:focus{--ui-field-current-border:var(--ui-field-focus-border);background:var(--color-white);box-shadow:var(--ui-field-focus-shadow)}
-.zero-star-toggle{display:flex;align-items:center;justify-content:center;width:100%;height:28px;min-height:28px;margin:0;padding:0 6px;border:1px solid var(--ui-button-border);border-radius:999px;background:var(--ui-button-bg);color:var(--ui-button-text);font-size:calc(10px * var(--app-font-scale));font-weight:1000;cursor:pointer;box-shadow:var(--ui-button-shadow);box-sizing:border-box;transition:background .15s ease,border-color .15s ease,color .15s ease,box-shadow .15s ease,transform .1s ease;text-shadow:none}
-.zero-star-toggle:hover:not(:disabled):not(.active):not(.is-active):not([aria-pressed="true"]){border-color:var(--ui-button-hover-border);background:var(--ui-button-hover-bg);color:var(--ui-button-hover-text);box-shadow:var(--ui-button-shadow);filter:none}
+.zero-star-toggle{width:100%;height:28px;min-height:28px;margin:0;padding:0 6px;border-radius:999px;font-size:calc(10px * var(--app-font-scale));font-weight:1000}
+.zero-star-toggle:hover:not(:disabled):not(.active):not(.is-active):not([aria-pressed="true"]){filter:none}
 .zero-star-toggle.active, .zero-star-toggle.is-active, .zero-star-toggle[aria-pressed="true"]{border-color:var(--ui-button-active-border);background:var(--ui-button-active-bg);color:var(--ui-button-active-text);box-shadow:var(--ui-button-active-shadow)}
 .zero-star-toggle:disabled, .zero-star-toggle.zero-star-disabled{cursor:not-allowed;border-color:var(--role-readonly-bd, #3a4d67);background:var(--role-readonly-bg, #111a28);color:var(--color-slate-500);box-shadow:none}
 .zero-star-toggle:focus-visible{outline:none;border-color:var(--ui-button-hover-border);box-shadow:var(--ui-focus),var(--ui-button-shadow)}
@@ -1544,9 +1560,9 @@ body .trait-board-panel .trait-group .tr-type{color:var(--color-slate-500)}
 /* 헤더 참고 링크 / 모바일 참고 패널 */
 .header-reference-actions{display:flex;align-items:center;justify-content:flex-end;gap:6px;min-width:0}
 .btn.subtle.header-reference-btn,
-.btn.subtle.header-nexus-link{display:inline-flex;align-items:center;justify-content:center;height:32px;min-width:74px;padding:0 10px;border:1px solid var(--ui-button-border);border-radius:10px;background:var(--ui-button-bg);color:var(--ui-button-text);font-size:calc(11.5px * var(--app-font-scale));font-weight:900;line-height:1;white-space:nowrap;box-shadow:var(--ui-button-shadow);text-shadow:none;text-decoration:none}
+.btn.subtle.header-nexus-link{height:32px;min-height:32px;min-width:74px;padding:0 10px;font-size:calc(11.5px * var(--app-font-scale));text-decoration:none}
 .btn.subtle.header-reference-btn:hover:not(:disabled),
-.btn.subtle.header-nexus-link:hover{border-color:var(--ui-button-hover-border);background:var(--ui-button-hover-bg);color:var(--ui-button-hover-text);box-shadow:var(--ui-button-shadow);text-decoration:none}
+.btn.subtle.header-nexus-link:hover{text-decoration:none}
 .btn.subtle.header-reference-btn:active:not(:disabled),
 .btn.subtle.header-nexus-link:active{transform:translateY(1px);box-shadow:inset 0 2px 5px rgba(0,0,0,.32)}
 .btn.subtle.header-nexus-link span{display:inline-flex;align-items:center;justify-content:center;margin-left:4px;font-size:.9em;line-height:1}

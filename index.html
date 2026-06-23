@@ -3,14 +3,14 @@
 <head>
 <meta name="google-site-verification" content="RTuDWbMdnKgbpRpl05eXh9epFwWRSxju4NOl8OtjMsI" />
 <script>
-window.APP_VERSION = "dps-2606240100";
-window.DPS_BUILD_VERSION = "dps-2606240100";
+window.APP_VERSION = "dps-2606240201";
+window.DPS_BUILD_VERSION = "dps-2606240201";
 window.DPS_ASSET_VERSIONS = {
-  "app.js": "dps-2606240100",
-  "responsive-layout.js": "dps-2606240100",
-  "style.css": "dps-2606240100",
-  "data.js": "dps-2606240100",
-  "icon.png": "dps-2606240100"
+  "app.js": "dps-2606240201",
+  "responsive-layout.js": "dps-2606240201",
+  "style.css": "dps-2606240201",
+  "data.js": "dps-2606240201",
+  "icon.png": "dps-2606240201"
 };
 window.dpsAssetVersion = function(key){
   var versions = window.DPS_ASSET_VERSIONS || {};
@@ -179,14 +179,14 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 <meta content="https://sldbox.github.io/dps/" property="og:url"/>
 <meta content="개복디 특성 계산기" property="og:title"/>
 <meta content="특성 투자, 재화 사용량, 표기 스탯, 총데미지, DPS를 한 번에 계산할 수 있는 개복디 전용 계산기입니다." property="og:description"/>
-<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2606240100" property="og:image"/>
-<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2606240100" property="og:image:secure_url"/>
+<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2606240201" property="og:image"/>
+<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2606240201" property="og:image:secure_url"/>
 <meta content="image/png" property="og:image:type"/>
 <meta content="개복디 특성 계산기 로고" property="og:image:alt"/>
 <meta content="summary_large_image" name="twitter:card"/>
 <meta content="개복디 특성 계산기" name="twitter:title"/>
 <meta content="특성 투자, 재화 사용량, 표기 스탯, 총데미지, DPS를 한 번에 계산할 수 있는 개복디 전용 계산기입니다." name="twitter:description"/>
-<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2606240100" name="twitter:image"/>
+<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2606240201" name="twitter:image"/>
 <meta content="개복디 특성 계산기 로고" name="twitter:image:alt"/>
 <link href="https://cdn.jsdelivr.net" rel="preconnect"/>
 <link crossorigin="" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" rel="stylesheet"/>
@@ -264,15 +264,15 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 </div>
 <div class="hdr-meta">
 <div class="header-reference-actions" aria-label="자료 바로가기">
-<button class="btn subtle header-reference-btn" data-action="openDpsTable" type="button">DPS표</button>
-<button class="btn subtle header-reference-btn" data-action="openMonthRuneTab" data-month-rune-open-tab="runes" type="button">이달의룬</button>
-<button class="btn subtle header-reference-btn" data-action="openMonthRuneTab" data-month-rune-open-tab="jewels" type="button">쥬얼</button>
+<button class="btn subtle ui-action-btn header-reference-btn" data-action="openDpsTable" type="button">DPS표</button>
+<button class="btn subtle ui-action-btn header-reference-btn" data-action="openMonthRuneTab" data-month-rune-open-tab="runes" type="button">이달의룬</button>
+<button class="btn subtle ui-action-btn header-reference-btn" data-action="openMonthRuneTab" data-month-rune-open-tab="jewels" type="button">쥬얼</button>
 </div>
-<a class="btn subtle header-nexus-link" href="https://sldbox.github.io/site/">넥서스 <span aria-hidden="true">↗</span></a>
+<a class="btn subtle ui-action-btn header-nexus-link" href="https://sldbox.github.io/site/">넥서스 <span aria-hidden="true">↗</span></a>
 <div aria-label="글씨 크기 조절" class="font-scale-ctrl">
-<button class="font-scale-btn" data-action="decreaseFont" type="button">A-</button>
-<button class="font-scale-value" data-action="resetFont" id="fontScaleLabel" type="button">100%</button>
-<button class="font-scale-btn" data-action="increaseFont" type="button">A+</button>
+<button class="ui-toolbar-btn font-scale-btn" data-action="decreaseFont" type="button">A-</button>
+<button class="ui-toolbar-btn font-scale-value" data-action="resetFont" id="fontScaleLabel" type="button">100%</button>
+<button class="ui-toolbar-btn font-scale-btn" data-action="increaseFont" type="button">A+</button>
 </div>
 </div>
 </div>
@@ -334,68 +334,68 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 <div class="unit-enhance-left">
 <div class="unit-enhance-control-stack">
 <div class="month-rune-selects">
-<div class="mini-ir mini-ir-button-row unit-enhance-option-row"><label>4월 일반</label><div class="seg-btns unit-enhance-button-grid" data-target="aprRuneNormal"><button data-action="selectButton" data-value="0" type="button">없음</button><button data-action="selectButton" data-value="1" type="button">1</button><button data-action="selectButton" data-value="2" type="button">2</button><button data-action="selectButton" data-value="3" type="button">3</button><button data-action="selectButton" data-value="4" type="button">4</button></div><select class="hidden-field" id="aprRuneNormal"><option selected="" value="0">없음</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option></select></div>
-<div class="mini-ir mini-ir-button-row unit-enhance-option-row"><label>4월 강화(+)</label><div class="seg-btns unit-enhance-button-grid" data-target="aprRunePlus"><button data-action="selectButton" data-value="0" type="button">없음</button><button data-action="selectButton" data-value="1" type="button">1</button><button data-action="selectButton" data-value="2" type="button">2</button><button data-action="selectButton" data-value="3" type="button">3</button><button data-action="selectButton" data-value="4" type="button">4</button></div><select class="hidden-field" id="aprRunePlus"><option selected="" value="0">없음</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option></select></div>
-<div class="mini-ir mini-ir-button-row unit-enhance-option-row"><label>9월 일반</label><div class="seg-btns unit-enhance-button-grid" data-target="sepRuneNormal"><button data-action="selectButton" data-value="0" type="button">없음</button><button data-action="selectButton" data-value="1" type="button">1</button><button data-action="selectButton" data-value="2" type="button">2</button><button data-action="selectButton" data-value="3" type="button">3</button><button data-action="selectButton" data-value="4" type="button">4</button></div><select class="hidden-field" id="sepRuneNormal"><option selected="" value="0">없음</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option></select></div>
-<div class="mini-ir mini-ir-button-row unit-enhance-option-row"><label>9월 강화(+)</label><div class="seg-btns unit-enhance-button-grid" data-target="sepRunePlus"><button data-action="selectButton" data-value="0" type="button">없음</button><button data-action="selectButton" data-value="1" type="button">1</button><button data-action="selectButton" data-value="2" type="button">2</button><button data-action="selectButton" data-value="3" type="button">3</button><button data-action="selectButton" data-value="4" type="button">4</button></div><select class="hidden-field" id="sepRunePlus"><option selected="" value="0">없음</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option></select></div>
+<div class="mini-ir mini-ir-button-row unit-enhance-option-row"><label>4월 일반</label><div class="seg-btns unit-enhance-button-grid" data-target="aprRuneNormal"><button class="ui-choice-btn" data-action="selectButton" data-value="0" type="button">없음</button><button class="ui-choice-btn" data-action="selectButton" data-value="1" type="button">1</button><button class="ui-choice-btn" data-action="selectButton" data-value="2" type="button">2</button><button class="ui-choice-btn" data-action="selectButton" data-value="3" type="button">3</button><button class="ui-choice-btn" data-action="selectButton" data-value="4" type="button">4</button></div><select class="hidden-field" id="aprRuneNormal"><option selected="" value="0">없음</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option></select></div>
+<div class="mini-ir mini-ir-button-row unit-enhance-option-row"><label>4월 강화(+)</label><div class="seg-btns unit-enhance-button-grid" data-target="aprRunePlus"><button class="ui-choice-btn" data-action="selectButton" data-value="0" type="button">없음</button><button class="ui-choice-btn" data-action="selectButton" data-value="1" type="button">1</button><button class="ui-choice-btn" data-action="selectButton" data-value="2" type="button">2</button><button class="ui-choice-btn" data-action="selectButton" data-value="3" type="button">3</button><button class="ui-choice-btn" data-action="selectButton" data-value="4" type="button">4</button></div><select class="hidden-field" id="aprRunePlus"><option selected="" value="0">없음</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option></select></div>
+<div class="mini-ir mini-ir-button-row unit-enhance-option-row"><label>9월 일반</label><div class="seg-btns unit-enhance-button-grid" data-target="sepRuneNormal"><button class="ui-choice-btn" data-action="selectButton" data-value="0" type="button">없음</button><button class="ui-choice-btn" data-action="selectButton" data-value="1" type="button">1</button><button class="ui-choice-btn" data-action="selectButton" data-value="2" type="button">2</button><button class="ui-choice-btn" data-action="selectButton" data-value="3" type="button">3</button><button class="ui-choice-btn" data-action="selectButton" data-value="4" type="button">4</button></div><select class="hidden-field" id="sepRuneNormal"><option selected="" value="0">없음</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option></select></div>
+<div class="mini-ir mini-ir-button-row unit-enhance-option-row"><label>9월 강화(+)</label><div class="seg-btns unit-enhance-button-grid" data-target="sepRunePlus"><button class="ui-choice-btn" data-action="selectButton" data-value="0" type="button">없음</button><button class="ui-choice-btn" data-action="selectButton" data-value="1" type="button">1</button><button class="ui-choice-btn" data-action="selectButton" data-value="2" type="button">2</button><button class="ui-choice-btn" data-action="selectButton" data-value="3" type="button">3</button><button class="ui-choice-btn" data-action="selectButton" data-value="4" type="button">4</button></div><select class="hidden-field" id="sepRunePlus"><option selected="" value="0">없음</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option></select></div>
 </div>
 <div class="enhance-controls unit-enhance-inline-controls">
 <div class="mini-ir mini-ir-button-row unit-enhance-option-row">
 <label>오버핸스</label>
 <div class="seg-btns unit-enhance-button-grid" data-target="overEnhance">
-<button data-action="selectButton" data-value="0" type="button">없음</button>
-<button data-action="selectButton" data-value="3" type="button">3</button>
-<button data-action="selectButton" data-value="5" type="button">5</button>
-<button data-action="selectButton" data-value="6" type="button">6</button>
+<button class="ui-choice-btn" data-action="selectButton" data-value="0" type="button">없음</button>
+<button class="ui-choice-btn" data-action="selectButton" data-value="3" type="button">3</button>
+<button class="ui-choice-btn" data-action="selectButton" data-value="5" type="button">5</button>
+<button class="ui-choice-btn" data-action="selectButton" data-value="6" type="button">6</button>
 </div>
 <select class="hidden-field" id="overEnhance"><option selected="" value="0">없음</option><option value="3">3</option><option value="5">5</option><option value="6">6</option></select>
 </div>
 <div class="mini-ir mini-ir-button-row unit-enhance-option-row">
 <label>리페핸스</label>
 <div class="seg-btns unit-enhance-button-grid" data-target="repairEnhance">
-<button data-action="selectButton" data-value="OFF" type="button">없음</button>
-<button data-action="selectButton" data-value="ON" type="button">리페핸스</button>
-<button data-action="selectButton" data-value="ON+" type="button">리페핸스+</button>
+<button class="ui-choice-btn" data-action="selectButton" data-value="OFF" type="button">없음</button>
+<button class="ui-choice-btn" data-action="selectButton" data-value="ON" type="button">리페핸스</button>
+<button class="ui-choice-btn" data-action="selectButton" data-value="ON+" type="button">리페핸스+</button>
 </div>
 <select class="hidden-field" id="repairEnhance"><option selected="" value="OFF">OFF</option><option value="ON">ON</option><option value="ON+">ON+</option></select>
 </div>
 <div class="mini-ir mini-ir-button-row unit-enhance-option-row">
 <label>강화의 달인</label>
 <div class="seg-btns unit-enhance-button-grid" data-target="enhanceMaster">
-<button data-action="selectButton" data-value="OFF" type="button">없음</button>
-<button data-action="selectButton" data-value="ON" type="button">전체활성화</button>
-<button data-action="selectButton" data-value="ON+" type="button">선택 강화</button>
+<button class="ui-choice-btn" data-action="selectButton" data-value="OFF" type="button">없음</button>
+<button class="ui-choice-btn" data-action="selectButton" data-value="ON" type="button">전체활성화</button>
+<button class="ui-choice-btn" data-action="selectButton" data-value="ON+" type="button">선택 강화</button>
 </div>
 <select class="hidden-field" id="enhanceMaster"><option selected="" value="OFF">OFF</option><option value="ON">ON</option><option value="ON+">ON+</option></select>
 </div>
 <div class="mini-ir mini-ir-button-row unit-enhance-option-row common-buff-row">
 <label>공통 적용 버프</label>
 <div class="unit-enhance-button-grid common-buff-grid">
-<label class="buff-choice-item"><input class="buff-choice-input" id="dailyCouponBuff" type="checkbox"/><span>일일쿠폰</span></label>
-<label class="buff-choice-item"><input class="buff-choice-input" id="shareUserBuff" type="checkbox"/><span>나눔유저</span></label>
-<label class="buff-choice-item"><input class="buff-choice-input" id="unitUniqueBuff" type="checkbox"/><span>단일유닛버프</span></label>
-<label class="buff-choice-item"><input class="buff-choice-input" id="basePierceBuff" type="checkbox"/><span>방어력관통 10%</span></label>
+<label class="ui-choice-btn buff-choice-item"><input class="buff-choice-input" id="dailyCouponBuff" type="checkbox"/><span>일일쿠폰</span></label>
+<label class="ui-choice-btn buff-choice-item"><input class="buff-choice-input" id="shareUserBuff" type="checkbox"/><span>나눔유저</span></label>
+<label class="ui-choice-btn buff-choice-item"><input class="buff-choice-input" id="unitUniqueBuff" type="checkbox"/><span>단일유닛버프</span></label>
+<label class="ui-choice-btn buff-choice-item"><input class="buff-choice-input" id="basePierceBuff" type="checkbox"/><span>방어력관통 10%</span></label>
 </div>
 </div>
 <div class="mini-ir mini-ir-button-row unit-enhance-option-row select-buff-row">
 <label>선택 버프</label>
 <div class="unit-enhance-button-grid select-buff-grid">
-<label class="buff-choice-item"><input class="buff-choice-input" id="prodArtifact" type="checkbox"/><span>유물</span></label>
-<label class="buff-choice-item"><input class="buff-choice-input" id="prodNova" type="checkbox"/><span>비밀 작전 노바</span></label>
-<label class="buff-choice-item"><input class="buff-choice-input" id="prodTeratron" type="checkbox"/><span>테라트론</span></label>
-<label class="buff-choice-item"><input class="buff-choice-input" id="prodAmon" type="checkbox"/><span>아몬</span></label>
-<label class="buff-choice-item"><input class="buff-choice-input" id="prodAdun" type="checkbox"/><span>아둔의 창</span></label>
-<label class="buff-choice-item"><input class="buff-choice-input" id="prodKerrigan" type="checkbox"/><span>불새 케리건</span></label>
-<label class="buff-choice-item"><input class="buff-choice-input" id="prodOvermind" type="checkbox"/><span>초월체</span></label>
-<label class="buff-choice-item"><input class="buff-choice-input" id="prodNarud" type="checkbox"/><span>나루드</span></label>
+<label class="ui-choice-btn buff-choice-item"><input class="buff-choice-input" id="prodArtifact" type="checkbox"/><span>유물</span></label>
+<label class="ui-choice-btn buff-choice-item"><input class="buff-choice-input" id="prodNova" type="checkbox"/><span>비밀 작전 노바</span></label>
+<label class="ui-choice-btn buff-choice-item"><input class="buff-choice-input" id="prodTeratron" type="checkbox"/><span>테라트론</span></label>
+<label class="ui-choice-btn buff-choice-item"><input class="buff-choice-input" id="prodAmon" type="checkbox"/><span>아몬</span></label>
+<label class="ui-choice-btn buff-choice-item"><input class="buff-choice-input" id="prodAdun" type="checkbox"/><span>아둔의 창</span></label>
+<label class="ui-choice-btn buff-choice-item"><input class="buff-choice-input" id="prodKerrigan" type="checkbox"/><span>불새 케리건</span></label>
+<label class="ui-choice-btn buff-choice-item"><input class="buff-choice-input" id="prodOvermind" type="checkbox"/><span>초월체</span></label>
+<label class="ui-choice-btn buff-choice-item"><input class="buff-choice-input" id="prodNarud" type="checkbox"/><span>나루드</span></label>
 </div>
 </div>
 <div class="mini-ir mini-ir-button-row unit-enhance-option-row flower-buff-row">
 <label>꽃가루 버프</label>
 <div class="unit-enhance-button-grid flower-buff-grid">
-<label class="buff-choice-item"><input class="buff-choice-input" id="flowerSkill1" type="checkbox"/><span>근성의 꽃가루</span></label>
-<label class="buff-choice-item"><input class="buff-choice-input" id="flowerSkill2" type="checkbox"/><span>바람의 꽃가루</span></label>
-<label class="buff-choice-item"><input class="buff-choice-input" id="flowerSkill3" type="checkbox"/><span>안개의 꽃가루</span></label>
+<label class="ui-choice-btn buff-choice-item"><input class="buff-choice-input" id="flowerSkill1" type="checkbox"/><span>근성의 꽃가루</span></label>
+<label class="ui-choice-btn buff-choice-item"><input class="buff-choice-input" id="flowerSkill2" type="checkbox"/><span>바람의 꽃가루</span></label>
+<label class="ui-choice-btn buff-choice-item"><input class="buff-choice-input" id="flowerSkill3" type="checkbox"/><span>안개의 꽃가루</span></label>
 </div>
 </div>
 </div>
@@ -533,9 +533,9 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 <div class="data-card zero-rank-card">
   <h3 class="zero-rank-title">더제로 승단 정보</h3>
   <div class="zero-rank-tabs" role="tablist" aria-label="더제로 승단 정보 탭">
-    <button class="zero-rank-tab active" data-action="zeroRankTab" data-zero-rank-tab="rank" type="button" role="tab" aria-selected="true">승단표</button>
-    <button class="zero-rank-tab" data-action="zeroRankTab" data-zero-rank-tab="score" type="button" role="tab" aria-selected="false">정보/혜택</button>
-    <button class="zero-rank-tab" data-action="zeroRankTab" data-zero-rank-tab="calc" type="button" role="tab" aria-selected="false">계산</button>
+    <button class="ui-tab-btn zero-rank-tab active" data-action="zeroRankTab" data-zero-rank-tab="rank" type="button" role="tab" aria-selected="true">승단표</button>
+    <button class="ui-tab-btn zero-rank-tab" data-action="zeroRankTab" data-zero-rank-tab="score" type="button" role="tab" aria-selected="false">정보/혜택</button>
+    <button class="ui-tab-btn zero-rank-tab" data-action="zeroRankTab" data-zero-rank-tab="calc" type="button" role="tab" aria-selected="false">계산</button>
   </div>
   <div class="zero-rank-content">
     <section class="zero-rank-panel active" data-zero-rank-panel="rank">
@@ -612,7 +612,7 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
             <td class="zero-calc-name">Practice</td>
             <td><input class="zero-calc-current" inputmode="numeric" type="text" value="0"/></td>
             <td><input class="zero-calc-target" inputmode="numeric" type="text" value="0"/></td>
-            <td><button class="zero-star-toggle" data-action="zeroScoreStar" type="button" aria-pressed="false">+2</button></td>
+            <td><button class="ui-toggle-btn zero-star-toggle" data-action="zeroScoreStar" type="button" aria-pressed="false">+2</button></td>
             <td><input class="zero-current-honor zero-honor-input" inputmode="latin" maxlength="1" placeholder="B" type="text" value=""/></td>
             <td><input class="zero-target-honor zero-honor-input" inputmode="latin" maxlength="1" placeholder="X" type="text" value=""/></td>
             <td><b class="zero-row-score">0</b></td>
@@ -621,7 +621,7 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
             <td class="zero-calc-name">Very Easy</td>
             <td><input class="zero-calc-current" inputmode="numeric" type="text" value="0"/></td>
             <td><input class="zero-calc-target" inputmode="numeric" type="text" value="0"/></td>
-            <td><button class="zero-star-toggle" data-action="zeroScoreStar" type="button" aria-pressed="false">+2</button></td>
+            <td><button class="ui-toggle-btn zero-star-toggle" data-action="zeroScoreStar" type="button" aria-pressed="false">+2</button></td>
             <td><input class="zero-current-honor zero-honor-input" inputmode="latin" maxlength="1" placeholder="B" type="text" value=""/></td>
             <td><input class="zero-target-honor zero-honor-input" inputmode="latin" maxlength="1" placeholder="X" type="text" value=""/></td>
             <td><b class="zero-row-score">0</b></td>
@@ -630,7 +630,7 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
             <td class="zero-calc-name">Easy</td>
             <td><input class="zero-calc-current" inputmode="numeric" type="text" value="0"/></td>
             <td><input class="zero-calc-target" inputmode="numeric" type="text" value="0"/></td>
-            <td><button class="zero-star-toggle" data-action="zeroScoreStar" type="button" aria-pressed="false">+2</button></td>
+            <td><button class="ui-toggle-btn zero-star-toggle" data-action="zeroScoreStar" type="button" aria-pressed="false">+2</button></td>
             <td><input class="zero-current-honor zero-honor-input" inputmode="latin" maxlength="1" placeholder="B" type="text" value=""/></td>
             <td><input class="zero-target-honor zero-honor-input" inputmode="latin" maxlength="1" placeholder="X" type="text" value=""/></td>
             <td><b class="zero-row-score">0</b></td>
@@ -639,7 +639,7 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
             <td class="zero-calc-name">Normal</td>
             <td><input class="zero-calc-current" inputmode="numeric" type="text" value="0"/></td>
             <td><input class="zero-calc-target" inputmode="numeric" type="text" value="0"/></td>
-            <td><button class="zero-star-toggle" data-action="zeroScoreStar" type="button" aria-pressed="false">+2</button></td>
+            <td><button class="ui-toggle-btn zero-star-toggle" data-action="zeroScoreStar" type="button" aria-pressed="false">+2</button></td>
             <td><input class="zero-current-honor zero-honor-input" inputmode="latin" maxlength="1" placeholder="B" type="text" value=""/></td>
             <td><input class="zero-target-honor zero-honor-input" inputmode="latin" maxlength="1" placeholder="X" type="text" value=""/></td>
             <td><b class="zero-row-score">0</b></td>
@@ -648,7 +648,7 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
             <td class="zero-calc-name">Hard</td>
             <td><input class="zero-calc-current" inputmode="numeric" type="text" value="0"/></td>
             <td><input class="zero-calc-target" inputmode="numeric" type="text" value="0"/></td>
-            <td><button class="zero-star-toggle" data-action="zeroScoreStar" type="button" aria-pressed="false">+2</button></td>
+            <td><button class="ui-toggle-btn zero-star-toggle" data-action="zeroScoreStar" type="button" aria-pressed="false">+2</button></td>
             <td><input class="zero-current-honor zero-honor-input" inputmode="latin" maxlength="1" placeholder="B" type="text" value=""/></td>
             <td><input class="zero-target-honor zero-honor-input" inputmode="latin" maxlength="1" placeholder="X" type="text" value=""/></td>
             <td><b class="zero-row-score">0</b></td>
@@ -657,7 +657,7 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
             <td class="zero-calc-name">Very Hard</td>
             <td><input class="zero-calc-current" inputmode="numeric" type="text" value="0"/></td>
             <td><input class="zero-calc-target" inputmode="numeric" type="text" value="0"/></td>
-            <td><button class="zero-star-toggle" data-action="zeroScoreStar" type="button" aria-pressed="false">+2</button></td>
+            <td><button class="ui-toggle-btn zero-star-toggle" data-action="zeroScoreStar" type="button" aria-pressed="false">+2</button></td>
             <td><input class="zero-current-honor zero-honor-input" inputmode="latin" maxlength="1" placeholder="B" type="text" value=""/></td>
             <td><input class="zero-target-honor zero-honor-input" inputmode="latin" maxlength="1" placeholder="X" type="text" value=""/></td>
             <td><b class="zero-row-score">0</b></td>
@@ -666,7 +666,7 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
             <td class="zero-calc-name">Hell</td>
             <td><input class="zero-calc-current" inputmode="numeric" type="text" value="0"/></td>
             <td><input class="zero-calc-target" inputmode="numeric" type="text" value="0"/></td>
-            <td><button class="zero-star-toggle" data-action="zeroScoreStar" type="button" aria-pressed="false">+2</button></td>
+            <td><button class="ui-toggle-btn zero-star-toggle" data-action="zeroScoreStar" type="button" aria-pressed="false">+2</button></td>
             <td><input class="zero-current-honor zero-honor-input" inputmode="latin" maxlength="1" placeholder="B" type="text" value=""/></td>
             <td><input class="zero-target-honor zero-honor-input" inputmode="latin" maxlength="1" placeholder="X" type="text" value=""/></td>
             <td><b class="zero-row-score">0</b></td>
@@ -675,7 +675,7 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
             <td class="zero-calc-name">Inferno</td>
             <td><input class="zero-calc-current" inputmode="numeric" type="text" value="0"/></td>
             <td><input class="zero-calc-target" inputmode="numeric" type="text" value="0"/></td>
-            <td><button class="zero-star-toggle" data-action="zeroScoreStar" type="button" aria-pressed="false">+2</button></td>
+            <td><button class="ui-toggle-btn zero-star-toggle" data-action="zeroScoreStar" type="button" aria-pressed="false">+2</button></td>
             <td><input class="zero-current-honor zero-honor-input" inputmode="latin" maxlength="1" placeholder="B" type="text" value=""/></td>
             <td><input class="zero-target-honor zero-honor-input" inputmode="latin" maxlength="1" placeholder="X" type="text" value=""/></td>
             <td><b class="zero-row-score">0</b></td>
@@ -684,7 +684,7 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
             <td class="zero-calc-name">Lunatic</td>
             <td><input class="zero-calc-current" inputmode="numeric" type="text" value="0"/></td>
             <td><input class="zero-calc-target" inputmode="numeric" type="text" value="0"/></td>
-            <td><button class="zero-star-toggle" data-action="zeroScoreStar" type="button" aria-pressed="false">+2</button></td>
+            <td><button class="ui-toggle-btn zero-star-toggle" data-action="zeroScoreStar" type="button" aria-pressed="false">+2</button></td>
             <td><input class="zero-current-honor zero-honor-input" inputmode="latin" maxlength="1" placeholder="B" type="text" value=""/></td>
             <td><input class="zero-target-honor zero-honor-input" inputmode="latin" maxlength="1" placeholder="X" type="text" value=""/></td>
             <td><b class="zero-row-score">0</b></td>
@@ -693,7 +693,7 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
             <td class="zero-calc-name">Holic</td>
             <td><input class="zero-calc-current" inputmode="numeric" type="text" value="0"/></td>
             <td><input class="zero-calc-target" inputmode="numeric" type="text" value="0"/></td>
-            <td><button class="zero-star-toggle" data-action="zeroScoreStar" type="button" aria-pressed="false">+2</button></td>
+            <td><button class="ui-toggle-btn zero-star-toggle" data-action="zeroScoreStar" type="button" aria-pressed="false">+2</button></td>
             <td><input class="zero-current-honor zero-honor-input" inputmode="latin" maxlength="1" placeholder="B" type="text" value=""/></td>
             <td><input class="zero-target-honor zero-honor-input" inputmode="latin" maxlength="1" placeholder="X" type="text" value=""/></td>
             <td><b class="zero-row-score">0</b></td>
@@ -702,7 +702,7 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
             <td class="zero-calc-name">Epic</td>
             <td><input class="zero-calc-current" inputmode="numeric" type="text" value="0"/></td>
             <td><input class="zero-calc-target" inputmode="numeric" type="text" value="0"/></td>
-            <td><button class="zero-star-toggle" data-action="zeroScoreStar" type="button" aria-pressed="false">+2</button></td>
+            <td><button class="ui-toggle-btn zero-star-toggle" data-action="zeroScoreStar" type="button" aria-pressed="false">+2</button></td>
             <td><input class="zero-current-honor zero-honor-input" inputmode="latin" maxlength="1" placeholder="B" type="text" value=""/></td>
             <td><input class="zero-target-honor zero-honor-input" inputmode="latin" maxlength="1" placeholder="X" type="text" value=""/></td>
             <td><b class="zero-row-score">0</b></td>
@@ -711,7 +711,7 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
             <td class="zero-calc-name">Ultimate</td>
             <td><input class="zero-calc-current" inputmode="numeric" type="text" value="0"/></td>
             <td><input class="zero-calc-target" inputmode="numeric" type="text" value="0"/></td>
-            <td><button class="zero-star-toggle" data-action="zeroScoreStar" type="button" aria-pressed="false">+2</button></td>
+            <td><button class="ui-toggle-btn zero-star-toggle" data-action="zeroScoreStar" type="button" aria-pressed="false">+2</button></td>
             <td><input class="zero-current-honor zero-honor-input" inputmode="latin" maxlength="1" placeholder="B" type="text" value=""/></td>
             <td><input class="zero-target-honor zero-honor-input" inputmode="latin" maxlength="1" placeholder="X" type="text" value=""/></td>
             <td><b class="zero-row-score">0</b></td>
@@ -720,7 +720,7 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
             <td class="zero-calc-name">Impossible</td>
             <td><input class="zero-calc-current" inputmode="numeric" type="text" value="0"/></td>
             <td><input class="zero-calc-target" inputmode="numeric" type="text" value="0"/></td>
-            <td><button class="zero-star-toggle" data-action="zeroScoreStar" type="button" aria-pressed="false">+2</button></td>
+            <td><button class="ui-toggle-btn zero-star-toggle" data-action="zeroScoreStar" type="button" aria-pressed="false">+2</button></td>
             <td><input class="zero-current-honor zero-honor-input" inputmode="latin" maxlength="1" placeholder="B" type="text" value=""/></td>
             <td><input class="zero-target-honor zero-honor-input" inputmode="latin" maxlength="1" placeholder="X" type="text" value=""/></td>
             <td><b class="zero-row-score">0</b></td>
@@ -729,7 +729,7 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
             <td class="zero-calc-name">The Final</td>
             <td><input class="zero-calc-current" inputmode="numeric" type="text" value="0"/></td>
             <td><input class="zero-calc-target" inputmode="numeric" type="text" value="0"/></td>
-            <td><button class="zero-star-toggle" data-action="zeroScoreStar" type="button" aria-pressed="false">+2</button></td>
+            <td><button class="ui-toggle-btn zero-star-toggle" data-action="zeroScoreStar" type="button" aria-pressed="false">+2</button></td>
             <td><input class="zero-current-honor zero-honor-input" inputmode="latin" maxlength="1" placeholder="B" type="text" value=""/></td>
             <td><input class="zero-target-honor zero-honor-input" inputmode="latin" maxlength="1" placeholder="X" type="text" value=""/></td>
             <td><b class="zero-row-score">0</b></td>
@@ -738,7 +738,7 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
             <td class="zero-calc-name">도전의탑</td>
             <td><input class="zero-calc-current" inputmode="numeric" type="text" value="0"/></td>
             <td><input class="zero-calc-target" inputmode="numeric" type="text" value="0"/></td>
-            <td><button class="zero-star-toggle zero-star-disabled" type="button" disabled aria-disabled="true" aria-pressed="false">비활성화</button></td>
+            <td><button class="ui-toggle-btn zero-star-toggle zero-star-disabled" type="button" disabled aria-disabled="true" aria-pressed="false">비활성화</button></td>
             <td><input class="zero-tower-honor-current" inputmode="numeric" type="text" value="0"/></td>
             <td><input class="zero-tower-honor-target" inputmode="numeric" type="text" value="0"/></td>
             <td><b class="zero-row-score">0</b></td>
@@ -769,25 +769,25 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 <div class="col-right">
 <div class="trait-board-panel">
 <div class="trait-standalone-panel" aria-label="특성 프리셋">
-<div class="trait-preset-title trait-subgroup-title"><span class="trait-preset-heading">특성 프리셋</span><span class="trait-preset-default-badge" id="traitPresetDefaultView">기본: 없음</span><button class="btn subtle trait-preset-reset-btn" data-action="resetAllTraitPresetState" id="traitPresetResetAllBtn" type="button">전체 초기화</button></div>
+<div class="trait-preset-title trait-subgroup-title"><span class="trait-preset-heading">특성 프리셋</span><span class="trait-preset-default-badge" id="traitPresetDefaultView">기본: 없음</span><button class="btn subtle ui-action-btn trait-preset-reset-btn" data-action="resetAllTraitPresetState" id="traitPresetResetAllBtn" type="button">전체 초기화</button></div>
 <div class="trait-preset-body trait-subgroup-body">
 <div class="trait-preset-name-row">
 <label class="trait-preset-label" for="traitPresetName">프리셋 이름</label>
 <input id="traitPresetName" type="text" placeholder="예) 도전의탑, 어비스, 협동전" autocomplete="off" maxlength="40"/>
-<button class="btn pri" data-action="saveTraitPreset" type="button">프리셋 저장</button>
+<button class="btn pri ui-action-btn" data-action="saveTraitPreset" type="button">프리셋 저장</button>
 </div>
 <div class="trait-preset-load-row">
 <label class="trait-preset-label" for="traitPresetSelect">프리셋 목록</label>
 <select id="traitPresetSelect" aria-label="특성 프리셋 목록"><option value="" disabled selected hidden>저장된 프리셋 없음</option></select>
-<button class="btn pri" data-action="loadTraitPreset" type="button">프리셋 로드</button>
+<button class="btn pri ui-action-btn" data-action="loadTraitPreset" type="button">프리셋 로드</button>
 </div>
 <div class="trait-preset-actions">
-<button class="btn subtle" data-action="renameTraitPreset" type="button">프리셋명 변경</button>
-<button class="btn subtle" data-action="setDefaultTraitPreset" id="traitPresetDefaultBtn" type="button">기본 지정</button>
-<button class="btn subtle" data-action="deleteTraitPreset" type="button">프리셋 삭제</button>
-<button class="btn subtle" data-action="exportTraitPresets" type="button">내보내기</button>
-<button class="btn subtle" data-action="importTraitPresets" type="button">가져오기</button>
-<button class="btn subtle" data-action="compareTraitPreset" type="button">프리셋 비교</button>
+<button class="btn subtle ui-action-btn" data-action="renameTraitPreset" type="button">프리셋명 변경</button>
+<button class="btn subtle ui-action-btn" data-action="setDefaultTraitPreset" id="traitPresetDefaultBtn" type="button">기본 지정</button>
+<button class="btn subtle ui-action-btn" data-action="deleteTraitPreset" type="button">프리셋 삭제</button>
+<button class="btn subtle ui-action-btn" data-action="exportTraitPresets" type="button">내보내기</button>
+<button class="btn subtle ui-action-btn" data-action="importTraitPresets" type="button">가져오기</button>
+<button class="btn subtle ui-action-btn" data-action="compareTraitPreset" type="button">프리셋 비교</button>
 </div>
 <input id="traitPresetImportFile" class="hidden-field" type="file" accept=".txt,.json,.xlsx,.xlsm,application/json,text/plain,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel.sheet.macroEnabled.12"/>
 </div>
@@ -796,14 +796,14 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 <div class="optimizer-head"><span class="optimizer-head-title">특성보드</span></div>
 <div class="trait-dashboard-tools trait-board-control-grid">
 <div class="trait-optimizer-row">
-<button class="btn pri" data-action="optimizeSP" type="button">특성 최적화</button>
+<button class="btn pri ui-action-btn" data-action="optimizeSP" type="button">특성 최적화</button>
 <select id="optTier" aria-label="최적화 범위 목록"><option selected="">루키</option><option>비기너</option><option>아마추어</option><option>프로</option><option>엑스퍼트</option><option>마스터</option><option>디바인</option><option>더원1</option><option>더원2</option><option>무한∞</option><option>EP특성</option><option>RP특성</option><option>심연특성</option></select>
-<button class="btn subtle" data-action="clearAll" type="button">특성 초기화</button>
+<button class="btn subtle ui-action-btn" data-action="clearAll" type="button">특성 초기화</button>
 </div>
 <div class="trait-optimizer-row">
-<button class="btn pri" data-action="optimizeUtility" type="button">유틸 마스터</button>
+<button class="btn pri ui-action-btn" data-action="optimizeUtility" type="button">유틸 마스터</button>
 <select id="utilOptTier" aria-label="유틸 마스터 범위 목록"><option selected="">루키</option><option>비기너</option><option>아마추어</option><option>프로</option><option>엑스퍼트</option><option>마스터</option><option>디바인</option><option>더원1</option><option>더원2</option></select>
-<button class="btn subtle" data-action="clearUtility" type="button">유틸 초기화</button>
+<button class="btn subtle ui-action-btn" data-action="clearUtility" type="button">유틸 초기화</button>
 </div>
 </div>
 </div>

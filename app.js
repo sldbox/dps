@@ -1572,7 +1572,7 @@ function renderDpsTableTabs(round, options={}){
   ].map(tab=>{
     const active=activeDpsTableMode===tab.key;
     return `
-      <button type="button" class="dps-table-tab ${active?'is-active':''}" data-dps-table-mode="${tab.key}" role="tab" aria-selected="${active?'true':'false'}">
+      <button type="button" class="ui-tab-btn dps-table-tab ${active?'is-active':''}" data-dps-table-mode="${tab.key}" role="tab" aria-selected="${active?'true':'false'}">
         <b>${tab.label}</b>${compact?'':`<span>${tab.sub}</span>`}
       </button>
     `;
@@ -1587,11 +1587,11 @@ const MONTH_RUNE_MODAL_TITLES={
 const MONTH_RUNE_MODAL_CLASS_NAMES=['is-modal-compare','is-modal-runes','is-modal-jewels','is-modal-dps'];
 function buildCompareHeaderControls(){
   return `<div class="excel-compare-controls excel-compare-header-controls">
-    <label class="excel-compare-file-btn">파일 선택<input id="excelCompareFile" type="file" accept=".xlsm,.xlsx,.json,.txt,application/json,text/plain,application/vnd.ms-excel.sheet.macroEnabled.12"></label>
+    <label class="ui-action-btn excel-compare-file-btn">파일 선택<input id="excelCompareFile" type="file" accept=".xlsm,.xlsx,.json,.txt,application/json,text/plain,application/vnd.ms-excel.sheet.macroEnabled.12"></label>
     <select id="excelCompareSheet" aria-label="비교할 항목" disabled><option>항목 선택</option></select>
-    <button id="excelCompareResetBtn" class="excel-compare-reset-btn" type="button" data-excel-compare-reset="1" disabled>초기화</button>
-    <button id="excelCompareApplyBtn" class="excel-compare-apply-btn" type="button" data-excel-compare-apply="1" disabled>현재 입력값에 적용</button>
-    <button id="excelCompareRestoreBtn" class="excel-compare-restore-btn" type="button" data-excel-compare-restore="1" disabled>현재값 복원</button>
+    <button id="excelCompareResetBtn" class="ui-action-btn excel-compare-reset-btn" type="button" data-excel-compare-reset="1" disabled>초기화</button>
+    <button id="excelCompareApplyBtn" class="ui-action-btn excel-compare-apply-btn" type="button" data-excel-compare-apply="1" disabled>현재 입력값에 적용</button>
+    <button id="excelCompareRestoreBtn" class="ui-action-btn excel-compare-restore-btn" type="button" data-excel-compare-restore="1" disabled>현재값 복원</button>
   </div>`;
 }
 function renderMonthRuneModalHeader(tabName){
@@ -1857,7 +1857,7 @@ function createMonthRuneModal(){
       <header class="month-rune-head">
         <h2 id="monthRuneTitle" class="month-rune-title">프리셋 비교</h2>
         <div class="month-rune-header-actions" id="monthRuneHeaderActions"></div>
-        <button type="button" class="month-rune-close" data-month-rune-close="1" aria-label="프리셋 비교 닫기">×</button>
+        <button type="button" class="ui-icon-btn month-rune-close" data-month-rune-close="1" aria-label="프리셋 비교 닫기">×</button>
       </header>
       <div class="month-rune-body">
         <section class="month-rune-panel is-active" data-month-rune-panel="compare" role="tabpanel" aria-labelledby="monthRuneTitle">${buildCompareApplyPanel()}</section>
@@ -2498,7 +2498,7 @@ function compareSummaryCard(filter,label,count,active){
   const content=isAll
     ? `<span>${label}</span>`
     : `<span>${label}</span><b>${valueText}</b>`;
-  return `<button type="button" class="excel-compare-summary-card ${stateClass} ${selectedClass}" data-excel-compare-filter="${filter}" aria-pressed="${active===filter?'true':'false'}">${content}</button>`;
+  return `<button type="button" class="ui-choice-card excel-compare-summary-card ${stateClass} ${selectedClass}" data-excel-compare-filter="${filter}" aria-pressed="${active===filter?'true':'false'}">${content}</button>`;
 }
 function compareRowMatchesFilter(row,filter){
   if(filter==='all') return true;
@@ -3019,18 +3019,18 @@ function updateTraits(){
       return `<div class="tr">
         <div><div class="tr-name">${name}</div><div class="tr-type">${rStr}${isMax?' · 최대 투자됨':` · 다음비용 ${fullNumber(cost)}`}</div></div>
         <div class="tr-ctrl">
-          <button type="button" data-action="traitAdjust" data-row="${row}" data-delta="-1" ${n<=0?'disabled':''}>−</button>
+          <button type="button" class="ui-step-btn" data-action="traitAdjust" data-row="${row}" data-delta="-1" ${n<=0?'disabled':''}>−</button>
           <div class="trait-value-pair">
             <input class="tv-input" type="text" inputmode="numeric" value="${n}" data-row="${row}">
             <span class="trait-max-sep">/</span>
             <span class="trait-max-val">${mx}</span>
           </div>
-          <button type="button" data-action="traitAdjust" data-row="${row}" data-delta="1" ${isMax?'disabled':''}>+</button>
-          <button type="button" class="trait-master-btn" data-action="traitMax" data-row="${row}" ${isMax?'disabled':''}>MAX</button>
+          <button type="button" class="ui-step-btn" data-action="traitAdjust" data-row="${row}" data-delta="1" ${isMax?'disabled':''}>+</button>
+          <button type="button" class="ui-action-btn trait-master-btn" data-action="traitMax" data-row="${row}" ${isMax?'disabled':''}>MAX</button>
         </div>
       </div>`;
     }).join('');
-    return `<div class="trait-group"><h4><span class="trait-title">${tier}</span><span class="trait-tools"><button type="button" class="mini-btn master" data-action="masterTier" data-tier="${tier}">구간 마스터</button><button type="button" class="mini-btn reset" data-action="resetTier" data-tier="${tier}">초기화</button></span></h4>${rows}</div>`;
+    return `<div class="trait-group"><h4><span class="trait-title">${tier}</span><span class="trait-tools"><button type="button" class="ui-action-btn mini-btn master" data-action="masterTier" data-tier="${tier}">구간 마스터</button><button type="button" class="ui-action-btn mini-btn reset" data-action="resetTier" data-tier="${tier}">초기화</button></span></h4>${rows}</div>`;
   }).join('');
 }
 let traitKeyNavGuardUntil=0;
@@ -3519,7 +3519,7 @@ function renderTraitEfficiencyItem(cand,idx){
       <span>${escapeCompareHtml(traitRecommendationInvestText(cand))}</span>
       <span>${escapeCompareHtml(traitRecommendationGainText(cand.gain))}</span>
       <span>${escapeCompareHtml(traitRecommendationCostText(cand))}</span>
-      <button type="button" class="mini-btn master trait-eff-apply" data-action="applyTraitEfficiencyTop" data-rank="${idx}">적용</button>
+      <button type="button" class="ui-action-btn mini-btn master trait-eff-apply" data-action="applyTraitEfficiencyTop" data-rank="${idx}">적용</button>
     </div>`;
 }
 function renderTraitEfficiencyTop5(){
@@ -4231,11 +4231,11 @@ function createTraitPresetExportModal(){
     <section class="trait-preset-excel-modal" role="dialog" aria-modal="true" aria-labelledby="traitPresetExportTitle">
       <header class="trait-preset-excel-head">
         <h2 id="traitPresetExportTitle">특성 프리셋 내보내기</h2>
-        <button type="button" class="trait-preset-excel-close" data-trait-preset-export-close="1" aria-label="특성 프리셋 내보내기 닫기">×</button>
+        <button type="button" class="ui-icon-btn trait-preset-excel-close" data-trait-preset-export-close="1" aria-label="특성 프리셋 내보내기 닫기">×</button>
       </header>
       <div class="trait-preset-excel-body">
         <label class="trait-preset-excel-field"><span>저장 파일명</span><input id="traitPresetExportName" type="text" maxlength="80" autocomplete="off" placeholder="파일명을 입력하세요"/></label>
-        <button class="btn pri trait-preset-excel-save" type="button" data-trait-preset-export-save="1">내보내기</button>
+        <button class="btn pri ui-action-btn trait-preset-excel-save" type="button" data-trait-preset-export-save="1">내보내기</button>
       </div>
     </section>`);
 }
@@ -4353,13 +4353,13 @@ function createTraitPresetExcelImportModal(){
     <section class="trait-preset-excel-modal" role="dialog" aria-modal="true" aria-labelledby="traitPresetExcelTitle">
       <header class="trait-preset-excel-head">
         <h2 id="traitPresetExcelTitle">엑셀 프리셋 가져오기</h2>
-        <button type="button" class="trait-preset-excel-close" data-trait-preset-excel-close="1" aria-label="엑셀 프리셋 가져오기 닫기">×</button>
+        <button type="button" class="ui-icon-btn trait-preset-excel-close" data-trait-preset-excel-close="1" aria-label="엑셀 프리셋 가져오기 닫기">×</button>
       </header>
       <div class="trait-preset-excel-body">
         <div class="trait-preset-excel-file" id="traitPresetExcelFileView">엑셀 파일</div>
         <label class="trait-preset-excel-field"><span>시트 선택</span><select id="traitPresetExcelSheet"></select></label>
         <label class="trait-preset-excel-field"><span>프리셋 이름 지정</span><input id="traitPresetExcelName" type="text" maxlength="40" autocomplete="off"/></label>
-        <button class="btn pri trait-preset-excel-save" type="button" data-trait-preset-excel-save="1">선택 시트 프리셋 저장</button>
+        <button class="btn pri ui-action-btn trait-preset-excel-save" type="button" data-trait-preset-excel-save="1">선택 시트 프리셋 저장</button>
       </div>
     </section>`);
 }
