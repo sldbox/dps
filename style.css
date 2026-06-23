@@ -1374,21 +1374,9 @@ body .trait-board-panel > .tp-body{width:100%;margin:0;padding:0;overflow:visibl
   body.is-mobile .trait-preset-excel-body{gap:6px;padding:8px}
   body.is-mobile .trait-preset-excel-field{grid-template-columns:76px minmax(0,1fr);gap:6px}
   body.is-mobile .trait-preset-excel-field span, body.is-mobile .trait-preset-excel-field input, body.is-mobile .trait-preset-excel-field select, body.is-mobile .trait-preset-excel-save{height:32px;min-height:32px;font-size:calc(10.2px * var(--app-font-scale))}
-  body.is-mobile .trait-preset-body{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;padding:8px}
-  body.is-mobile .trait-preset-name-row, body.is-mobile .trait-preset-load-row{display:contents}
-  body.is-mobile .trait-preset-name-row .trait-preset-label{order:1}
-  body.is-mobile .trait-preset-load-row .trait-preset-label{order:2}
-  body.is-mobile #traitPresetName{order:3}
-  body.is-mobile #traitPresetSelect{order:4}
-  body.is-mobile .trait-preset-save-btn{order:5}
-  body.is-mobile .trait-preset-load-btn{order:6}
-  body.is-mobile .trait-preset-actions{grid-column:1/-1;order:7;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
-  body.is-mobile .trait-preset-actions [data-action="renameTraitPreset"]{order:1}
-  body.is-mobile .trait-preset-actions [data-action="setDefaultTraitPreset"]{order:2}
-  body.is-mobile .trait-preset-actions [data-action="exportTraitPresets"]{order:3}
-  body.is-mobile .trait-preset-actions [data-action="importTraitPresets"]{order:4}
-  body.is-mobile .trait-preset-actions [data-action="compareTraitPreset"]{order:5}
-  body.is-mobile .trait-preset-actions [data-action="deleteTraitPreset"]{order:6}
+  body.is-mobile .trait-preset-body{grid-template-columns:1fr;gap:6px;padding:8px}
+  body.is-mobile .trait-preset-name-row, body.is-mobile .trait-preset-load-row{display:grid;grid-template-columns:minmax(76px,.55fr) minmax(0,1.45fr) minmax(74px,.65fr);gap:6px;align-items:center}
+  body.is-mobile .trait-preset-actions{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
   body.is-mobile .trait-preset-label, body.is-mobile .trait-preset-body input:not([type="file"]), body.is-mobile .trait-preset-body select, body.is-mobile .trait-preset-body .btn{height:32px;min-height:32px;font-size:calc(10.2px * var(--app-font-scale))}
   body.is-mobile .trait-subgroup-title{height:40px;min-height:40px;font-size:calc(12.5px * var(--app-font-scale))}
   body.is-mobile .trait-subgroup-body{padding:8px}
