@@ -1579,7 +1579,7 @@ function renderDpsTableTabs(round, options={}){
   }).join('');
 }
 const MONTH_RUNE_MODAL_TITLES={
-  compare:'프리셋 비교',
+  compare:'프리셋 분석',
   runes:'이달의 룬',
   jewels:'쥬얼',
   dps:'DPS표'
@@ -1855,9 +1855,9 @@ function createMonthRuneModal(){
     <div class="month-rune-backdrop" data-month-rune-close="1"></div>
     <section class="month-rune-modal is-modal-compare" role="dialog" aria-modal="true" aria-labelledby="monthRuneTitle">
       <header class="month-rune-head">
-        <h2 id="monthRuneTitle" class="month-rune-title">프리셋 비교</h2>
+        <h2 id="monthRuneTitle" class="month-rune-title">프리셋 분석</h2>
         <div class="month-rune-header-actions" id="monthRuneHeaderActions"></div>
-        <button type="button" class="ui-icon-btn month-rune-close" data-month-rune-close="1" aria-label="프리셋 비교 닫기">×</button>
+        <button type="button" class="ui-icon-btn month-rune-close" data-month-rune-close="1" aria-label="프리셋 분석 닫기">×</button>
       </header>
       <div class="month-rune-body">
         <section class="month-rune-panel is-active" data-month-rune-panel="compare" role="tabpanel" aria-labelledby="monthRuneTitle">${buildCompareApplyPanel()}</section>
@@ -2234,7 +2234,7 @@ const EXCEL_SELECT_INPUT_IDS=new Set(Object.entries(FIELD_REGISTRY).filter(([,fi
 const COMPARE_VALUE_META=Object.fromEntries(Object.entries(FIELD_REGISTRY).filter(([,field])=>field.compare).map(([id,field])=>[id,{kind:field.kind,name:field.name}]));
 const USER_STATE_VALUE_IDS=new Set(fieldEntriesByFlag('save'));
 const ENCHANT_COMPARE_ITEMS=[['enchAD','공격력'],['enchCRI','크리티컬 확률'],['enchUA','유닛 가속'],['enchTD','총 데미지'],['enchSR','실드 감소'],['enchHR','체력 감소']];
-const LATEST_SPEC_ADDITIONAL_STRUCTURE_MESSAGE='불러온 엑셀파일은 5.4392 버전과 구조가 달라 프리셋 비교 기능을 사용할 수 없습니다.';
+const LATEST_SPEC_ADDITIONAL_STRUCTURE_MESSAGE='불러온 엑셀파일은 5.4392 버전과 구조가 달라 프리셋 분석 기능을 사용할 수 없습니다.';
 const LATEST_SPEC_ADDITIONAL_LABELS=[['Q36','AD'],['Q37','AS'],['Q38','CD'],['Q39','CRI'],['Q40','AP'],['Q41','TD'],['Q42','UA']];
 const SPEC_ADDITIONAL_CELLS={addAD:'R36',addAS:'R37',addCD:'R38',addCRI:'R39',addAP:'R40',addTD:'R41',addUA:'R42'};
 function normalizeStructureText(value){
@@ -2927,7 +2927,7 @@ function compareSelectedExcelSheet(options={}){
   }
 }
 function isTraitPresetCompareBundle(parsed){
-  return !!(parsed && typeof parsed==='object' && parsed.type===TRAIT_PRESET_FILE_TYPE && Array.isArray(parsed.presets));
+  return !!(parsed && typeof parsed==='object' && isTraitPresetFileType(parsed.type) && Array.isArray(parsed.presets));
 }
 async function readCompareJsonSource(file){
   const raw=await readFileAsText(file);
@@ -3001,7 +3001,7 @@ function bindExcelCompareEvents(){
     }
     if(e.target.closest('[data-excel-compare-apply]')) applySelectedComparison();
     if(e.target.closest('[data-excel-compare-restore]')) restoreComparisonCurrentState();
-    if(e.target.closest('[data-excel-compare-reset]')) requestConfirmAction('excelCompareReset','한 번 더 누르면 프리셋 비교 초기화', resetExcelComparison);
+    if(e.target.closest('[data-excel-compare-reset]')) requestConfirmAction('excelCompareReset','한 번 더 누르면 프리셋 분석 초기화', resetExcelComparison);
   });
   document.addEventListener('change',e=>{
     if(e.target.id==='excelCompareFile'&&e.target.files?.[0]){
@@ -3649,8 +3649,12 @@ const STORAGE_SCOPE=DPS_CONFIG.storage.scope;
 const STORAGE_KEY=DPS_CONFIG.storage.key;
 const CLIENT_KEY=DPS_CONFIG.storage.clientKey;
 const TRAIT_PRESET_STORAGE_KEY=DPS_CONFIG.storage.traitPresetKey || 'gbd_dps_calculator:trait_presets';
-const TRAIT_PRESET_FILE_TYPE='gbd_dps_trait_presets';
+const TRAIT_PRESET_FILE_TYPE='sld_dps_trait_presets';
+const TRAIT_PRESET_LEGACY_FILE_TYPES=new Set(['gbd_dps_trait_presets']);
 const TRAIT_PRESET_FILE_VERSION=1;
+function isTraitPresetFileType(type){
+  return type===TRAIT_PRESET_FILE_TYPE || TRAIT_PRESET_LEGACY_FILE_TYPES.has(type);
+}
 const INTERNAL_VALUE_IDS=new Set([
   'enemyArmor','dt','ep','personalASBuff','personalLimitBreak','personalJewel','powerBunkerAD','postMasterAD','additionalADBuff','additionalADValue','rushADBuff',
   'rAP','rTD','rUA','rHarmony','sysAD','addDR','addSR','addHR','basicExtraSlot1','basicExtraSlot2'
@@ -4235,6 +4239,10 @@ function makeTraitPresetFileName(customName=''){
   const date=String(now.getFullYear()).slice(2)+pad(now.getMonth()+1)+pad(now.getDate());
   return `특성프리셋-${date}.txt`;
 }
+let traitPresetExportDownloadLocked=false;
+function setTraitPresetExportSavingState(active){
+  qsa('[data-trait-preset-export-save]').forEach(btn=>{ btn.disabled=!!active; });
+}
 function createTraitPresetExportModal(){
   createModalShell('traitPresetExportModal','trait-preset-excel-modal-shell',`
     <div class="trait-preset-excel-backdrop" data-trait-preset-export-close="1"></div>
@@ -4270,11 +4278,14 @@ function closeTraitPresetExportModal(){
   setModalOpen('traitPresetExportModal','trait-preset-excel-modal-open',false);
 }
 function downloadTraitPresetExport(customName=''){
+  if(traitPresetExportDownloadLocked) return false;
+  traitPresetExportDownloadLocked=true;
+  setTraitPresetExportSavingState(true);
   try{
     const store=loadTraitPresetStore();
     if(!store.presets.length){ notifyStorageAction('내보낼 프리셋이 없습니다.','err'); return false; }
     const defaultPreset=store.presets.find(item=>item.id===store.defaultPresetId);
-    const exportStore={...store};
+    const exportStore=normalizeTraitPresetStore({...store,type:TRAIT_PRESET_FILE_TYPE});
     delete exportStore.webDpsVersion;
     const payload=JSON.stringify({webDpsVersion:currentWebDpsVersion(),...exportStore,type:TRAIT_PRESET_FILE_TYPE,fileVersion:TRAIT_PRESET_FILE_VERSION,exportedAt:new Date().toISOString(),defaultPresetName:defaultPreset?.name || ''}, null, 2);
     const blob=new Blob([payload], {type:'text/plain;charset=utf-8'});
@@ -4293,6 +4304,11 @@ function downloadTraitPresetExport(customName=''){
     logAppError('[trait preset export failed]',e);
     notifyStorageAction(e?.message || '특성 프리셋 내보내기 실패','err');
     return false;
+  }finally{
+    window.setTimeout(()=>{
+      traitPresetExportDownloadLocked=false;
+      setTraitPresetExportSavingState(false);
+    }, 300);
   }
 }
 function exportTraitPresets(){
@@ -4550,7 +4566,7 @@ function compareTraitPreset(){
     compareState.selectedSheetName=id;
   }
   openCompareInfo();
-  if(preset) showToast(`프리셋 비교에 연결: ${preset.name}`,'ok');
+  if(preset) showToast(`프리셋 분석에 연결: ${preset.name}`,'ok');
   return true;
 }
 function applyDefaultTraitPresetOnBoot(){
@@ -4587,7 +4603,11 @@ function bindTraitPresetEvents(){
     if(e.target.closest('[data-trait-preset-excel-close]')) closeTraitPresetExcelImportModal();
     if(e.target.closest('[data-trait-preset-excel-save]')) saveSelectedExcelSheetAsTraitPreset();
     if(e.target.closest('[data-trait-preset-export-close]')) closeTraitPresetExportModal();
-    if(e.target.closest('[data-trait-preset-export-save]')) downloadTraitPresetExport($('traitPresetExportName')?.value || '');
+    if(e.target.closest('[data-trait-preset-export-save]')){
+      e.preventDefault();
+      e.stopPropagation();
+      downloadTraitPresetExport($('traitPresetExportName')?.value || '');
+    }
   });
   document.addEventListener('keydown',e=>{
     if(e.key==='Escape'){
@@ -4596,6 +4616,7 @@ function bindTraitPresetEvents(){
     }
     if(e.key==='Enter' && e.target?.id==='traitPresetExportName'){
       e.preventDefault();
+      e.stopPropagation();
       downloadTraitPresetExport(e.target.value || '');
     }
   });
@@ -4886,7 +4907,7 @@ function compareZeroTextRow(name, changeValue, currentValue){
 function compareZeroNumberRow(kind,name,changeValue,currentValue){
   return buildCompareNumberRow(kind,name,changeValue,currentValue,0.0001);
 }
-/* 더제로 승단: 저장파일/프리셋 비교 행 생성 */
+/* 더제로 승단: 저장파일/프리셋 분석 행 생성 */
 function addZeroPenanceCompareRows(rows,name,change={},current={}){
   const currentCalc=zeroScoreRowCalculation(current);
   const changeCalc=zeroScoreRowCalculation(change);
