@@ -3652,6 +3652,7 @@ const TRAIT_PRESET_STORAGE_KEY=DPS_CONFIG.storage.traitPresetKey || 'gbd_dps_cal
 const TRAIT_PRESET_FILE_TYPE='sld_dps_trait_presets';
 const TRAIT_PRESET_LEGACY_FILE_TYPES=new Set(['gbd_dps_trait_presets']);
 const TRAIT_PRESET_FILE_VERSION=1;
+const TRAIT_PRESET_NAME_PLACEHOLDER='예시) 더파300라버스';
 function isTraitPresetFileType(type){
   return type===TRAIT_PRESET_FILE_TYPE || TRAIT_PRESET_LEGACY_FILE_TYPES.has(type);
 }
@@ -4018,20 +4019,36 @@ function saveTraitPresetStore(store){
 function selectedTraitPresetId(){
   return $('traitPresetSelect')?.value || '';
 }
+function resetTraitPresetNameInput(){
+  const input=$('traitPresetName');
+  if(!input) return;
+  input.value='';
+  input.placeholder=TRAIT_PRESET_NAME_PLACEHOLDER;
+}
+function resolveTraitPresetSelection(store,requestedId=''){
+  const presets=Array.isArray(store?.presets) ? store.presets : [];
+  if(!presets.length) return '';
+  const requested=String(requestedId || '');
+  if(requested && presets.some(preset=>preset.id===requested)) return requested;
+  const defaultId=String(store?.defaultPresetId || '');
+  if(defaultId && presets.some(preset=>preset.id===defaultId)) return defaultId;
+  return presets[0].id || '';
+}
 function refreshTraitPresetControls(selectedId){
   const store=loadTraitPresetStore();
   const select=$('traitPresetSelect');
   const nameInput=$('traitPresetName');
   const defaultView=$('traitPresetDefaultView');
   const defaultBtn=$('traitPresetDefaultBtn');
-  const selected=selectedId || selectedTraitPresetId();
+  const selected=resolveTraitPresetSelection(store,selectedId || selectedTraitPresetId());
   if(select){
+    const hasPresets=store.presets.length>0;
     select.innerHTML='';
     const empty=document.createElement('option');
     empty.value='';
-    empty.textContent=store.presets.length ? '프리셋 목록' : '저장된 프리셋 없음';
+    empty.textContent=hasPresets ? '프리셋 목록' : '저장된 프리셋 없음';
     empty.disabled=true;
-    empty.hidden=true;
+    empty.hidden=hasPresets;
     select.appendChild(empty);
     store.presets.forEach(preset=>{
       const option=document.createElement('option');
@@ -4039,8 +4056,8 @@ function refreshTraitPresetControls(selectedId){
       option.textContent=preset.id===store.defaultPresetId ? `${preset.name} · 기본` : preset.name;
       select.appendChild(option);
     });
-    if(store.presets.some(preset=>preset.id===selected)) select.value=selected;
-    else select.value='';
+    select.value=selected || '';
+    select.disabled=!hasPresets;
   }
   const currentId=select?.value || '';
   const current=store.presets.find(preset=>preset.id===currentId);
@@ -4051,7 +4068,7 @@ function refreshTraitPresetControls(selectedId){
     btn.disabled=!current;
   });
   qsa('[data-action="exportTraitPresets"]').forEach(btn=>{ btn.disabled=!store.presets.length; });
-  if(nameInput && current && !nameInput.value.trim()) nameInput.placeholder=current.name;
+  if(nameInput) nameInput.placeholder=TRAIT_PRESET_NAME_PLACEHOLDER;
 }
 function saveTraitPreset(){
   const input=$('traitPresetName');
@@ -4077,7 +4094,7 @@ function saveTraitPreset(){
     }
     store=saveTraitPresetStore(store);
     refreshTraitPresetControls(id);
-    if(input) input.value='';
+    resetTraitPresetNameInput();
     notifyStorageAction(index>=0 ? `프리셋 덮어쓰기 완료: ${name}` : `프리셋 저장 완료: ${name}`,'ok');
     return true;
   }catch(e){
@@ -4190,6 +4207,7 @@ function resetToFirstVisitState(){
     resetToFactoryState();
     try{ localStorage.removeItem(DPS_CONFIG.storage.fontKey); }catch(e){}
     refreshTraitPresetControls('');
+    resetTraitPresetNameInput();
     notifyStorageAction('전체 초기화 완료','ok');
     return true;
   }catch(e){
