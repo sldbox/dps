@@ -2234,6 +2234,7 @@ const EXCEL_SELECT_INPUT_IDS=new Set(Object.entries(FIELD_REGISTRY).filter(([,fi
 const COMPARE_VALUE_META=Object.fromEntries(Object.entries(FIELD_REGISTRY).filter(([,field])=>field.compare).map(([id,field])=>[id,{kind:field.kind,name:field.name}]));
 const USER_STATE_VALUE_IDS=new Set(fieldEntriesByFlag('save'));
 const ENCHANT_COMPARE_ITEMS=[['enchAD','공격력'],['enchCRI','크리티컬 확률'],['enchUA','유닛 가속'],['enchTD','총 데미지'],['enchSR','실드 감소'],['enchHR','체력 감소']];
+const LATEST_SPEC_ADDITIONAL_STRUCTURE_MESSAGE='불러온 엑셀파일은 5.4392 버전과 구조가 달라 프리셋 비교 기능을 사용할 수 없습니다.';
 const LATEST_SPEC_ADDITIONAL_LABELS=[['Q36','AD'],['Q37','AS'],['Q38','CD'],['Q39','CRI'],['Q40','AP'],['Q41','TD'],['Q42','UA']];
 const SPEC_ADDITIONAL_CELLS={addAD:'R36',addAS:'R37',addCD:'R38',addCRI:'R39',addAP:'R40',addTD:'R41',addUA:'R42'};
 function normalizeStructureText(value){
@@ -2243,7 +2244,16 @@ function inspectSpecAdditionalStructure(specCells){
   const mismatches=LATEST_SPEC_ADDITIONAL_LABELS.filter(([ref,expected])=>
     normalizeStructureText(specCells[ref])!==normalizeStructureText(expected)
   ).map(([ref,expected])=>({ref,expected,actual:excelText(specCells[ref])||'값 없음'}));
-  return { valid:mismatches.length===0, mismatches, message:'불러온 엑셀파일은 5.4392 버전과 구조가 달라 프리셋 비교 기능을 사용할 수 없습니다.' };
+  return { valid:mismatches.length===0, mismatches, message:LATEST_SPEC_ADDITIONAL_STRUCTURE_MESSAGE };
+}
+function validateTraitPresetExcelSpecAdditionalStructure(workbook){
+  try{
+    const specCells=workbook?.getCells?.('스펙');
+    const additionalInfo=inspectSpecAdditionalStructure(specCells || {});
+    if(!additionalInfo.valid) throw new Error(additionalInfo.message);
+  }catch(e){
+    throw new Error(LATEST_SPEC_ADDITIONAL_STRUCTURE_MESSAGE);
+  }
 }
 function getSpecAdditionalValue(specCells, id){
   const ref=SPEC_ADDITIONAL_CELLS[id];
@@ -4434,6 +4444,7 @@ async function importTraitPresetFile(file){
     if(isExcelPresetImportFile(file)){
       const workbook=await readExcelWorkbook(file);
       if(!workbook.sheets?.length) throw new Error('엑셀 시트를 찾을 수 없습니다.');
+      validateTraitPresetExcelSpecAdditionalStructure(workbook);
       openTraitPresetExcelImportModal(workbook,file?.name || '엑셀파일');
       return true;
     }
