@@ -174,8 +174,7 @@ body{font:calc(14px * var(--app-font-scale))/1.55 var(--font-main);min-height:10
 .trait-tools{display:flex;gap:4px;flex:0 0 auto}
 
 /* ── 3. 좌측 입력 패널 / 룬·인첸트·강화 / 비교 모달 기반 ── */
-/* 좌측 입력: 기본 숨김값 / 룬 선택 */
-#dt{display:none}
+/* 좌측 입력: 룬 선택 */
 .col-left .sg-title, .month-rune-selects{grid-template-columns:repeat(3,minmax(0,1fr));display:grid;gap:8px}
 .mini-ir{display:grid;grid-template-columns:1fr;}
 .mini-ir label{color:var(--color-slate-600);}
@@ -1217,10 +1216,11 @@ body .trait-optimizer-panel .trait-dashboard-tools select{padding:0 22px 0 8px;b
 body .trait-preset-title{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr) minmax(0,1fr);align-items:center;gap:8px}
 body .trait-preset-heading{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:left}
 body .trait-preset-default-badge{min-width:0;padding:0 8px;border:0;border-radius:0;background:transparent;color:var(--section-head-text,#f8fbff);font-size:calc(10.5px * var(--app-font-scale));font-weight:900;line-height:1;display:flex;align-items:center;justify-content:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;box-shadow:none;text-align:center}
-body .trait-preset-reset-btn{box-sizing:border-box;width:74px;min-width:74px;max-width:74px;height:28px;min-height:28px;max-height:28px;margin:0;padding:0 6px;font-size:calc(10.5px * var(--app-font-scale));line-height:1;justify-self:end;white-space:nowrap;display:inline-flex;align-items:center;justify-content:center}
+body .trait-preset-reset-btn{box-sizing:border-box;width:100%;min-width:0;height:30px;min-height:30px;margin:0;padding:0 8px;font-size:calc(10.5px * var(--app-font-scale));line-height:1;white-space:nowrap;display:inline-flex;align-items:center;justify-content:center}
 body .trait-preset-body{display:grid;grid-template-columns:1fr;gap:8px;padding:10px}
 body .trait-preset-name-row, body .trait-preset-load-row{display:grid;grid-template-columns:minmax(88px,.55fr) minmax(0,1.45fr) minmax(84px,.65fr);gap:8px;align-items:center}
 body .trait-preset-actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+body .trait-preset-status{min-height:0;padding:0;display:flex;align-items:center;justify-content:flex-end;border:0;border-radius:0;background:transparent;color:var(--section-head-text,#f8fbff);font-size:calc(10px * var(--app-font-scale));font-weight:900;line-height:1;text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;box-shadow:none}
 body .trait-preset-label{min-width:0;height:36px;min-height:36px;padding:0 8px;display:flex;align-items:center;justify-content:center;border:1px solid var(--field-label-bd,#30435f);border-left-color:var(--field-label-accent,#425b7e);border-radius:8px;background:var(--field-label-bg,#172235);color:var(--field-label-text,#d7e4f3);font-size:calc(10.5px * var(--app-font-scale));font-weight:900;line-height:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:center}
 body .trait-preset-body input:not([type="file"]), body .trait-preset-body select{width:100%;min-width:0;height:36px;min-height:36px;margin:0;padding:0 8px;border:1px solid var(--role-interactive-bd,#3c6fb6);border-radius:var(--ui-control-radius);background:var(--role-interactive-bg,#10233d);background-image:none;color:var(--color-slate-900);font-size:calc(11px * var(--app-font-scale));font-weight:900;text-align:center;text-align-last:center;box-shadow:inset 0 1px 2px rgba(32,57,91,.035);text-shadow:none}
 body .trait-preset-body select:disabled{appearance:none;-webkit-appearance:none;background-image:none;opacity:1;cursor:not-allowed;color:#64748b;border-color:#26364d;background:#070c14;box-shadow:inset 0 1px 3px rgba(0,0,0,.42);filter:grayscale(.55)}
@@ -1263,10 +1263,11 @@ body .trait-board-panel > .tp-body{width:100%;margin:0;padding:0;overflow:visibl
   body.is-mobile .trait-preset-excel-field{grid-template-columns:76px minmax(0,1fr);gap:6px}
   body.is-mobile .trait-preset-excel-field span, body.is-mobile .trait-preset-excel-field input, body.is-mobile .trait-preset-excel-field select, body.is-mobile .trait-preset-excel-save{height:32px;min-height:32px;font-size:calc(10.2px * var(--app-font-scale))}
   body.is-mobile .trait-preset-body{grid-template-columns:1fr;gap:6px;padding:8px}
+  body.is-mobile .trait-preset-status{min-height:0;padding:0;font-size:calc(9.2px * var(--app-font-scale));justify-content:flex-end;text-align:right}
   body.is-mobile .trait-preset-name-row, body.is-mobile .trait-preset-load-row{display:grid;grid-template-columns:minmax(76px,.55fr) minmax(0,1.45fr) minmax(74px,.65fr);gap:6px;align-items:center}
   body.is-mobile .trait-preset-actions{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
   body.is-mobile .trait-preset-label, body.is-mobile .trait-preset-body input:not([type="file"]), body.is-mobile .trait-preset-body select, body.is-mobile .trait-preset-body .btn{height:32px;min-height:32px;font-size:calc(10.2px * var(--app-font-scale))}
-  body.is-mobile .trait-preset-reset-btn{box-sizing:border-box;width:74px;min-width:74px;max-width:74px;height:28px;min-height:28px;max-height:28px;padding:0 6px;font-size:calc(10.5px * var(--app-font-scale));line-height:1;display:inline-flex;align-items:center;justify-content:center}
+  body.is-mobile .trait-preset-reset-btn{box-sizing:border-box;width:100%;min-width:0;height:30px;min-height:30px;padding:0 8px;font-size:calc(10.5px * var(--app-font-scale));line-height:1;display:inline-flex;align-items:center;justify-content:center}
   body.is-mobile .trait-subgroup-title{height:40px;min-height:40px;font-size:calc(12.5px * var(--app-font-scale))}
   body.is-mobile .trait-subgroup-body{padding:8px}
   body.is-mobile .trait-limit-grid label{height:32px;gap:4px;font-size:calc(9.3px * var(--app-font-scale))}

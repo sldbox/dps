@@ -11,7 +11,8 @@ var DPS_CONFIG={
     key:'gbd_dps_calculator:personal_state',
     fontKey:'gbd_dps_calculator:font_scale',
     clientKey:'gbd_dps_calculator:client_id',
-    traitPresetKey:'gbd_dps_calculator:trait_presets'
+    traitPresetKey:'gbd_dps_calculator:trait_presets',
+    traitPresetStatusKey:'gbd_dps_calculator:trait_preset_status'
   },
 
   state:{
@@ -388,7 +389,6 @@ function renderEnemyData(data){
   setText('enemyHpQuick', fullNumber(data.hp));
   setText('enemyShieldQuick', fullNumber(data.shield));
   setText('enemyCountQuick', enemyDisplayCountText(data.round));
-  setValue('enemyArmor', data.armor);
 }
 function syncRuneChoice(){
   const type=vs('runeChoiceType') || 'harmony';
@@ -411,6 +411,7 @@ function setSelectButton(id,value){
   if(id==='enhanceMaster') syncPowerBlessOptions({auto:true});
   syncSelectButtons();
   requestAppUpdate();
+  scheduleAutoSaveToast();
 }
 function syncSelectButtons(){
   qsa('.seg-btns[data-target]').forEach(group=>{
@@ -789,8 +790,7 @@ function upperOptionStats(){
 }
 const UNIT_GRADE_AD={D:-10,C:-5,B:0,A:5,S:10,SS:20,SSS:30,X:40,XD:50,SXD:50,RXD:100};
 const UNIT_GRADE_AS={D:0,C:0,B:0,A:0,S:0,SS:0,SSS:0,X:0,XD:0,SXD:25,RXD:30};
-function currentUnitGrade(){return vs('unitGrade') || 'S';}
-function isPersonalUnit(){return (vs('currentUnit') || 'M2') === (vs('personalUnit') || '유물');}
+function activeUnitGrade(){return vs('unitGrade') || 'S';}
 function checkboxOn(id, fallback=false){
   const el=$(id);
   if(!el) return fallback;
@@ -801,16 +801,13 @@ function xpInputStatBonus(){
 }
 function unitADPrivateBonus(){
   const enh=unitEnhanceStats();
-  const gradeAd=UNIT_GRADE_AD[currentUnitGrade()] ?? UNIT_GRADE_AD.S;
+  const gradeAd=UNIT_GRADE_AD[activeUnitGrade()] ?? UNIT_GRADE_AD.S;
   const level=(v('unitLevel')||11)*5;
   const uniqueBuff=checkboxOn('unitUniqueBuff', true) ? 30 + 10*(enh.septemberPlus ?? 4) : 0;
   return gradeAd + level + uniqueBuff + (enh.value||0) - abyssAdPenalty();
 }
 function personalUaDtMultiplier(){
-  const dt=(vs('dt')==='ON'?1.15:1);
-  const limitBreak=isPersonalUnit() ? (v('personalLimitBreak') || 50) : 0;
-  const jewel=isPersonalUnit() ? (v('personalJewel') || 0) : 0;
-  return dt * (1+limitBreak/100) * (1+jewel);
+  return vs('dt')==='ON' ? 1.15 : 1;
 }
 function syncAutoEP(){
   const ep=Math.floor(effectiveXpValue()/100000) + Math.floor(Math.max(0, v('bxp'))/50000);
@@ -822,11 +819,9 @@ function syncAutoEP(){
 }
 function effectiveAdditionalStats(){
   // Excel spec sheet applies additional rune stats to Hyper/Penance, Tower, and Abyss sheets alike.
-  return { ad:v('addAD'), as:v('addAS'), cd:v('addCD'), cri:v('addCRI'), ap:v('addAP'), td:v('addTD'), ua:v('addUA'), dr:v('addDR'), sr:v('addSR'), hr:v('addHR') };
+  return { ad:v('addAD'), as:v('addAS'), cd:v('addCD'), cri:v('addCRI'), ap:v('addAP'), td:v('addTD'), ua:v('addUA'), dr:0, sr:0, hr:0 };
 }
 function growthGraduationAttackBonus(){
-  const manual=v('sysAD');
-  if(manual) return manual;
   return effectiveXpValue()>=2000000 ? 20 : 0;
 }
 
@@ -864,15 +859,12 @@ function computeStatsRaw(){
   const cd50opt=optionStats.cd;
   const additionalStats=effectiveAdditionalStats();
   const AP9 = BASE_DISPLAY_STATS.ad + sumStat('AD') + v('rAD') + optionStats.ad + upperStats.ad + ascVlookup3 + reinf + v('rModAD')
-            + v('pbless') + shareAD + xpStat.ad + (v('powerBunkerAD')||0) + (v('postMasterAD')||0)
-            + enchantAt(0).ad + epBuff
-            + ((vs('additionalADBuff')==='ON') ? (v('additionalADValue')||0) : 0)
-            + ((vs('rushADBuff')==='ON') ? 50 : 0)
+            + v('pbless') + shareAD + xpStat.ad + enchantAt(0).ad + epBuff
             + growthGraduationAttackBonus() + additionalStats.ad;
   const AP10 = -diff.ad;
   const M4 = AP9 + AP10 + unitADBonus + upperStats.actualAd;
   const M7_base = BASE_DISPLAY_STATS.as + sumStat('AS') + v('rAS') + upperStats.as + ascVlookup4 + reinf + shareAS + xpStat.as + v('rModAS') + additionalStats.as;
-  const M7 = isPersonalUnit() ? 0 : M7_base;
+  const M7 = M7_base;
   const M8 = BASE_DISPLAY_STATS.cri + sumStat('CRI') + v('rCRI') + v('rModCRI') + reinf + dailyCouponCRI + shareCRI + xpStat.cri + gradeCri + optionStats.cri + upperStats.cri + additionalStats.cri;
   const cdReinf = reinf > 10 ? reinf - 10 : 0;
   const rawCD = 100 + sumStat('CD') + v('rCD') + cd50opt + cdReinf + upperStats.cd + ascVlookup5 + additionalStats.cd + v('rModCD');
@@ -911,11 +903,10 @@ function computeStatsRaw(){
     diff.dmg*(1-penDmg/100)
   ) * upperStats.dps0Mul;
   const AB4=(1+M4/100)*(M11/100);
-  const AB5=dps2(M8, M10, M9, M16, M17, M18, isPersonalUnit()?1:0);
+  const AB5=dps2(M8, M10, M9, M16, M17, M18, 0);
   const dt=personalUaDtMultiplier();
-  const personalAs=!isPersonalUnit() && (vs('personalASBuff') || 'OFF')==='ON' ? 15 : 0;
-  const gradeAs=isPersonalUnit() ? 0 : (UNIT_GRADE_AS[currentUnitGrade()] ?? 0);
-  const AB6=(1+(M7+upperStats.actualAs+personalAs+gradeAs)/100)*(1-diff.as/100)*M13*dt;
+  const gradeAs=UNIT_GRADE_AS[activeUnitGrade()] ?? 0;
+  const AB6=(1+(M7+upperStats.actualAs+gradeAs)/100)*(1-diff.as/100)*M13*dt;
   const M19=(AB3*AB4*AB5*AB6) * contentDpsDisplayMultiplier(vs('diff'), targetRound, displayHR, displaySR);
   let spU=0,spO=0,epU=0,rpU=0,soulU=0;
   TRAITS.forEach(t=>{
@@ -1406,7 +1397,10 @@ function setDpsTableMinDps(value, options={}){
   syncDpsMinDpsInputs();
   updateDpsRiskViews();
   if(isDpsTableOpen()) renderDpsTablePanelContent();
-  if(!storageState.isLoading) saveState({silent:true});
+  if(!storageState.isLoading){
+    saveState({silent:true});
+    scheduleAutoSaveToast();
+  }
 }
 function parseDpsTableMinDps(){
   const normalized=normalizeDpsTableMinDpsValue(dpsTableMinDps);
@@ -2220,11 +2214,6 @@ const FIELD_REGISTRY={
   skillDouble:{kind:'성소스킬보드',name:'더블스페',compare:true,save:true,excel:'number'},
   skillMode:{kind:'성소스킬보드',name:'모드',compare:true,save:true},
   skillRound:{kind:'성소스킬보드',name:'라운드',compare:true,save:true,excel:'number'},
-  addDR:{kind:'에디셔널',name:'방어력 감소',compare:true,excel:'number'},
-  addSR:{kind:'에디셔널',name:'실드 감소',compare:true,excel:'number'},
-  addHR:{kind:'에디셔널',name:'체력 감소',compare:true,excel:'number'},
-  currentUnit:{kind:'유닛정보',name:'현재 유닛',compare:true},
-  personalUnit:{kind:'유닛정보',name:'개인 유닛',compare:true},
   unitGrade:{kind:'유닛정보',name:'유닛 등급',compare:true},
   unitLevel:{kind:'유닛정보',name:'유닛 레벨',compare:true},
 };
@@ -2257,7 +2246,7 @@ function validateTraitPresetExcelSpecAdditionalStructure(workbook){
 }
 function getSpecAdditionalValue(specCells, id){
   const ref=SPEC_ADDITIONAL_CELLS[id];
-  const value=ref ? specCells[ref] : id.startsWith('add') ? 0 : undefined;
+  const value=ref ? specCells[ref] : undefined;
   return DECIMAL_DISPLAY_INPUT_IDS.has(id) ? normalizeDecimalDisplayValue(value) : value;
 }
 function getSpecEnchantCode(specCells){
@@ -2682,7 +2671,6 @@ function buildExcelState(cells, specCells, zeroCells){
     ['penance',firstExcelValue(cells,['B6','N42','AD8'])],
     ['round',firstExcelValue(cells,['B7','N43'])],
     ['team',cells.D5],
-    ['currentUnit',cells.F37],['personalUnit',cells.E11],
     ['unitGrade',cells.H4],['unitLevel',cells.H5],
     ['unitUniqueBuff',cells.H6],['basePierceBuff',cells.H8],
     ['erosionStack',cells.H10],['jewelErosionRes',cells.H11],
@@ -2698,8 +2686,7 @@ function buildExcelState(cells, specCells, zeroCells){
     ['addAD',getSpecAdditionalValue(specCells,'addAD')],['addAS',getSpecAdditionalValue(specCells,'addAS')],
     ['addCD',getSpecAdditionalValue(specCells,'addCD')],['addCRI',getSpecAdditionalValue(specCells,'addCRI')],
     ['addAP',getSpecAdditionalValue(specCells,'addAP')],['addTD',getSpecAdditionalValue(specCells,'addTD')],
-    ['addUA',getSpecAdditionalValue(specCells,'addUA')],['addDR',getSpecAdditionalValue(specCells,'addDR')],
-    ['addSR',getSpecAdditionalValue(specCells,'addSR')],['addHR',getSpecAdditionalValue(specCells,'addHR')]
+    ['addUA',getSpecAdditionalValue(specCells,'addUA')]
   ].forEach(([id,value])=>{ applied+=assign(id,value); });
   if(cells.D4!==undefined && cells.D4!==null && cells.D4!==''){
     const masterValue=values.enhanceMaster || excelEnhanceMasterValue(cells.H16);
@@ -3116,6 +3103,7 @@ function adjustTraitBy(row,d,step=1){
   }
   if(applied>0){
     recalc();
+    scheduleAutoSaveToast();
     return true;
   }
   return false;
@@ -3168,6 +3156,7 @@ function setInv(row,val){
   const applied=setRowToAffordableValue(row,wanted);
   if(applied<wanted) try{showToast('보유 재화 한도까지만 입력되었습니다','err');}catch(e){}
   recalc();
+  scheduleAutoSaveToast();
 }
 function adjMax(row){
   try{
@@ -3175,6 +3164,7 @@ function adjMax(row){
     const before=INV[row]||0;
     fillRowToBudget(row);
     recalc();
+    scheduleAutoSaveToast();
     try{showToast((INV[row]||0)>before?'가능한 만큼 MAX 적용':'보유 재화가 부족합니다',(INV[row]||0)>before?'ok':'err');}catch(e){}
     return (INV[row]||0)>before;
   }catch(e){
@@ -3189,6 +3179,7 @@ function masterTier(tier){
     fillRowToBudget(row);
   });
   recalc();
+  scheduleAutoSaveToast();
   try{showToast('보유 재화 한도 내 구간 마스터 완료','ok');}catch(e){}
 }
 function resetTier(tier){
@@ -3199,6 +3190,7 @@ function resetTier(tier){
   });
   if(116 in INV) INV[116]=1;
   recalc();
+  scheduleAutoSaveToast();
   try{showToast('구간 초기화 완료','ok');}catch(e){}
 }
 const UTILITY_OPT_TYPES=new Set(['유틸','경험치','AP','RA']);
@@ -3230,6 +3222,7 @@ function optimizeUtility(){
     if((INV[row]||0)!==before) changed++;
   });
   recalc();
+  scheduleAutoSaveToast();
   try{showToast(changed ? '유틸 마스터 완료' : '보유 재화가 부족하거나 이미 최대입니다', changed ? 'ok' : 'err');}catch(e){}
   return changed>0;
 }
@@ -3245,6 +3238,7 @@ function clearUtility(){
   });
   if(116 in INV) INV[116]=1;
   recalc();
+  scheduleAutoSaveToast();
   try{showToast(changed ? '유틸 초기화 완료' : '초기화할 유틸 특성이 없습니다', changed ? 'ok' : 'err');}catch(e){}
   return changed>0;
 }
@@ -3563,6 +3557,7 @@ function applyTraitEfficiencyTop(trigger){
     INV[row]=Math.min(TMAX[row]||999,(INV[row]||0)+add);
   }
   recalc();
+  scheduleAutoSaveToast();
   try{showToast(`${cand.label} ${traitRecommendationInvestText(cand)} 적용 완료`,'ok');}catch(e){}
   return true;
 }
@@ -3623,6 +3618,7 @@ function optimizeSP(){
     }
   }
   recalc();
+  scheduleAutoSaveToast();
   try{showToast('특성 최적화 완료', 'ok');}catch(e){}
 }
 function clearAll(){
@@ -3635,6 +3631,7 @@ function clearAll(){
     });
     if(116 in INV) INV[116]=1;
     recalc();
+    scheduleAutoSaveToast();
     try{showToast('특성 초기화 완료 · 유틸 특성 유지','ok');}catch(e){}
     return true;
   }catch(e){
@@ -3657,13 +3654,12 @@ function isTraitPresetFileType(type){
   return type===TRAIT_PRESET_FILE_TYPE || TRAIT_PRESET_LEGACY_FILE_TYPES.has(type);
 }
 const INTERNAL_VALUE_IDS=new Set([
-  'enemyArmor','dt','ep','personalASBuff','personalLimitBreak','personalJewel','powerBunkerAD','postMasterAD','additionalADBuff','additionalADValue','rushADBuff',
-  'rAP','rTD','rUA','rHarmony','sysAD','addDR','addSR','addHR','basicExtraSlot1','basicExtraSlot2'
+  'dt','ep','rAP','rTD','rUA','rHarmony'
 ]);
 const IGNORED_SAVED_VALUE_IDS=[...(DPS_CONFIG.state.skipElementIds || []),...INTERNAL_VALUE_IDS];
 function isUserStateValueId(id){ return USER_STATE_VALUE_IDS.has(id); }
 function userStateElementIds(){ return storageElementIds().filter(isUserStateValueId); }
-const storageState={isLoading:false,suppressSave:false,factoryState:null,saveFailCount:0};
+const storageState={isLoading:false,suppressSave:false,factoryState:null,saveFailCount:0,hasSavedState:false};
 function isStorageLocked(){return storageState.isLoading || storageState.suppressSave;}
 function storageElementIds(){
   const skip=new Set(DPS_CONFIG.state.skipElementIds || []);
@@ -3841,6 +3837,67 @@ function normalizeSavedState(data){
     clientId:data.clientId
   });
 }
+
+function mergeSharedValuesIntoPresetState(presetState, sharedState){
+  const preset=normalizeSavedState(presetState);
+  if(!preset) return null;
+  const shared=normalizeSavedState(sharedState);
+  if(!shared) return preset;
+  return makeStorageEnvelope({
+    values:{...preset.values, ...shared.values},
+    inv:preset.inv,
+    zeroScore:shared.zeroScore || preset.zeroScore,
+    savedAt:preset.savedAt,
+    storageVersion:preset.storageVersion,
+    scope:preset.scope,
+    ui:preset.ui,
+    clientId:preset.clientId
+  });
+}
+function buildTraitPresetApplyState(preset, options={}){
+  const state=normalizeSavedState(preset?.state);
+  if(!state) return null;
+  if(options.preserveSharedValues===false) return state;
+  return mergeSharedValuesIntoPresetState(state, makeStateObject());
+}
+function syncTraitPresetStoreWithCurrentState(currentState, options={}){
+  if(options.syncTraitPresets===false || isStorageLocked()) return;
+  let store;
+  try{ store=loadTraitPresetStore(); }catch(e){ return; }
+  if(!store.presets.length) return;
+  const state=normalizeSavedState(currentState);
+  if(!state) return;
+  const selectedId=String(options.selectedTraitPresetId || selectedTraitPresetId() || '');
+  let changed=false;
+  const now=Date.now();
+  store.presets=store.presets.map(preset=>{
+    const presetState=normalizeSavedState(preset.state);
+    if(!presetState) return preset;
+    const nextState=makeStorageEnvelope({
+      values:{...presetState.values, ...state.values},
+      inv:preset.id===selectedId ? state.inv : presetState.inv,
+      zeroScore:state.zeroScore || presetState.zeroScore,
+      savedAt:now,
+      storageVersion:state.storageVersion,
+      scope:presetState.scope,
+      ui:presetState.ui,
+      clientId:presetState.clientId
+    });
+    changed=true;
+    return {...preset, updatedAt:preset.id===selectedId ? now : preset.updatedAt, meta:traitPresetMetaFromSavedState(nextState), state:nextState};
+  });
+  if(changed) saveTraitPresetStore(store);
+}
+let autoSaveToastTimer=0;
+function scheduleAutoSaveToast(){
+  if(isStorageLocked()) return;
+  if(autoSaveToastTimer) clearTimeout(autoSaveToastTimer);
+  autoSaveToastTimer=setTimeout(()=>{
+    autoSaveToastTimer=0;
+    const saved=saveState({silent:true});
+    if(saved!==false) notifyStorageAction('저장됨','ok',{statusAction:'save'});
+  }, 550);
+}
 function applyStateObject(data){
   if(!data) return;
   storageState.isLoading=true;
@@ -3895,8 +3952,33 @@ function safeJsonParse(raw){
   }
   return null;
 }
-function notifyStorageAction(message, type='ok'){
-  try{ showToast(message, type); }catch(e){}
+const TRAIT_PRESET_STATUS_STORAGE_KEY=DPS_CONFIG.storage.traitPresetStatusKey || 'gbd_dps_calculator:trait_preset_status';
+const TRAIT_PRESET_STATUS_LABELS={save:'저장됨',load:'불러옴',delete:'삭제됨',import:'가져옴',export:'내보냄'};
+function padStatusPart(value){return String(value).padStart(2,'0');}
+function formatTraitPresetStatus(action, date=new Date()){
+  const label=TRAIT_PRESET_STATUS_LABELS[action];
+  if(!label) return '';
+  return `${padStatusPart(date.getFullYear()%100)}-${padStatusPart(date.getMonth()+1)}-${padStatusPart(date.getDate())}-${padStatusPart(date.getHours())}:${padStatusPart(date.getMinutes())} ${label}`;
+}
+function updateTraitPresetStatus(message, options={}){
+  const text=message || '최근 상태 없음';
+  const view=$('traitPresetStatusView');
+  if(view) view.textContent=text;
+  if(options.persist){
+    try{ localStorage.setItem(TRAIT_PRESET_STATUS_STORAGE_KEY, String(message || '')); }catch(e){}
+  }
+}
+function restoreTraitPresetStatus(){
+  let message='';
+  try{ message=localStorage.getItem(TRAIT_PRESET_STATUS_STORAGE_KEY) || ''; }catch(e){}
+  updateTraitPresetStatus(message);
+}
+function notifyStorageAction(message, type='ok', options={}){
+  const statusAction=options.statusAction || '';
+  const statusMessage=type==='ok' && statusAction ? formatTraitPresetStatus(statusAction) : '';
+  const displayMessage=statusMessage || message;
+  if(statusMessage) updateTraitPresetStatus(statusMessage, {persist:true});
+  try{ showToast(displayMessage, type); }catch(e){}
 }
 function saveState(options={}){
   const silent=!!options.silent;
@@ -3904,8 +3986,10 @@ function saveState(options={}){
   try{
     const state=makeStateObject();
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    storageState.hasSavedState=true;
     storageState.saveFailCount=0;
-    if(!silent) notifyStorageAction('입력값 저장 완료','ok');
+    syncTraitPresetStoreWithCurrentState(state, options);
+    if(!silent) notifyStorageAction('입력값 저장 완료','ok',{statusAction:'save'});
     return true;
   }catch(e){
     logAppError(e);
@@ -3921,12 +4005,14 @@ function loadState(){
   try{
     const raw=localStorage.getItem(STORAGE_KEY);
     const saved=raw ? normalizeSavedState(safeJsonParse(raw)) : null;
+    storageState.hasSavedState=!!saved;
     if(!saved){
       resetToFactoryState();
       return;
     }
     applyStateObject(saved);
   }catch(e){
+    storageState.hasSavedState=false;
     logAppWarn('loadState failed', e);
     resetToFactoryState();
   }
@@ -3946,24 +4032,22 @@ function makeTraitPresetId(){
 function emptyTraitPresetStore(){
   return {type:TRAIT_PRESET_FILE_TYPE,fileVersion:TRAIT_PRESET_FILE_VERSION,storageVersion:STORAGE_VERSION,updatedAt:Date.now(),defaultPresetId:'',presets:[]};
 }
-function traitPresetMetaFromState(){
-  return {
-    diff:vs('diff') || '',
-    penance:vs('penance') || '0',
-    round:vs('round') || '1',
-    mode:isCoopMode() ? `협동${coopPlayerCount()}인` : '개인'
-  };
-}
-function traitPresetMetaFromSavedState(state){
-  const values=(state && typeof state==='object' && state.values && typeof state.values==='object') ? state.values : {};
+function traitPresetMetaFromValues(values={}){
   const coopMode=normalizeOnOffValue(values.coopMode,'OFF')==='ON';
-  const players=normalizeCoopPlayersValue(values.coopPlayers || values.team || '');
+  const players=normalizeCoopPlayersValue(values.coopPlayers || values.team || COOP_PLAYERS_DEFAULT);
   return {
     diff:String(values.diff || ''),
     penance:String(values.penance || '0'),
     round:String(values.round || '1'),
-    mode:coopMode ? `협동${players || coopPlayerCount()}인` : '개인'
+    mode:coopMode ? `협동${players}인` : '개인'
   };
+}
+function traitPresetMetaFromState(){
+  return traitPresetMetaFromValues({diff:vs('diff'),penance:vs('penance'),round:vs('round'),coopMode:vs('coopMode'),coopPlayers:vs('coopPlayers'),team:vs('team')});
+}
+function traitPresetMetaFromSavedState(state){
+  const values=(state && typeof state==='object' && state.values && typeof state.values==='object') ? state.values : {};
+  return traitPresetMetaFromValues(values);
 }
 function normalizeTraitPresetItem(item,index=0){
   if(!item || typeof item!=='object') return null;
@@ -4095,7 +4179,7 @@ function saveTraitPreset(){
     store=saveTraitPresetStore(store);
     refreshTraitPresetControls(id);
     resetTraitPresetNameInput();
-    notifyStorageAction(index>=0 ? `프리셋 덮어쓰기 완료: ${name}` : `프리셋 저장 완료: ${name}`,'ok');
+    notifyStorageAction(index>=0 ? `프리셋 덮어쓰기 완료: ${name}` : `프리셋 저장 완료: ${name}`,'ok',{statusAction:'save'});
     return true;
   }catch(e){
     logAppError('[trait preset save failed]',e);
@@ -4104,12 +4188,12 @@ function saveTraitPreset(){
   }
 }
 function applyTraitPresetState(preset,options={}){
-  const state=normalizeSavedState(preset?.state);
+  const state=buildTraitPresetApplyState(preset, options);
   if(!state) throw new Error('프리셋 데이터가 올바르지 않습니다.');
   state.ui={fontScale:getFontScale()};
   applyStateObject(state);
   if(options.persist!==false){
-    const saved=saveState({silent:true});
+    const saved=saveState({silent:true, syncTraitPresets:options.syncTraitPresets, selectedTraitPresetId:options.syncTraitPresetId});
     if(saved===false) throw new Error('프리셋은 적용했지만 브라우저 저장에 실패했습니다.');
   }
 }
@@ -4121,9 +4205,9 @@ function loadTraitPresetById(id,options={}){
     return false;
   }
   try{
-    applyTraitPresetState(preset,{persist:true});
+    applyTraitPresetState(preset,{persist:true,preserveSharedValues:options.preserveSharedValues!==false,syncTraitPresetId:id});
     refreshTraitPresetControls(id);
-    if(options.notifySuccess!==false) notifyStorageAction(`프리셋 로드 완료: ${preset.name}`,'ok');
+    if(options.notifySuccess!==false) notifyStorageAction(`프리셋 로드 완료: ${preset.name}`,'ok',{statusAction:'load'});
     return true;
   }catch(e){
     logAppError('[trait preset load failed]',e);
@@ -4150,7 +4234,7 @@ function renameTraitPreset(){
     preset.updatedAt=Date.now();
     store=saveTraitPresetStore(store);
     refreshTraitPresetControls(id);
-    notifyStorageAction(`프리셋 이름 변경 완료: ${next}`,'ok');
+    notifyStorageAction(`프리셋 이름 변경 완료: ${next}`,'ok',{statusAction:'save'});
     return true;
   }catch(e){
     logAppError('[trait preset rename failed]',e);
@@ -4170,7 +4254,7 @@ function deleteTraitPreset(){
       if(nextStore.defaultPresetId===id) nextStore.defaultPresetId='';
       saveTraitPresetStore(nextStore);
       refreshTraitPresetControls();
-      notifyStorageAction(`프리셋 삭제 완료: ${preset.name}`,'ok');
+      notifyStorageAction(`프리셋 삭제 완료: ${preset.name}`,'ok',{statusAction:'delete'});
       return true;
     }catch(e){
       logAppError('[trait preset delete failed]',e);
@@ -4189,7 +4273,7 @@ function setDefaultTraitPreset(){
     store.defaultPresetId=removing ? '' : id;
     store=saveTraitPresetStore(store);
     refreshTraitPresetControls(id);
-    notifyStorageAction(removing ? '기본 프리셋 해제 완료' : `기본 프리셋 지정 완료: ${preset.name}`,'ok');
+    notifyStorageAction(removing ? '기본 프리셋 해제 완료' : `기본 프리셋 지정 완료: ${preset.name}`,'ok',{statusAction:'save'});
     return true;
   }catch(e){
     logAppError('[trait preset default failed]',e);
@@ -4277,6 +4361,7 @@ function createTraitPresetExportModal(){
 }
 function openTraitPresetExportModal(){
   try{
+    if(!isStorageLocked()) saveState({silent:true});
     const store=loadTraitPresetStore();
     if(!store.presets.length){ notifyStorageAction('내보낼 프리셋이 없습니다.','err'); return false; }
     const defaultPreset=store.presets.find(item=>item.id===store.defaultPresetId);
@@ -4300,6 +4385,7 @@ function downloadTraitPresetExport(customName=''){
   traitPresetExportDownloadLocked=true;
   setTraitPresetExportSavingState(true);
   try{
+    if(!isStorageLocked()) saveState({silent:true});
     const store=loadTraitPresetStore();
     if(!store.presets.length){ notifyStorageAction('내보낼 프리셋이 없습니다.','err'); return false; }
     const defaultPreset=store.presets.find(item=>item.id===store.defaultPresetId);
@@ -4316,7 +4402,7 @@ function downloadTraitPresetExport(customName=''){
     a.remove();
     URL.revokeObjectURL(url);
     closeTraitPresetExportModal();
-    notifyStorageAction('특성 프리셋 내보내기 완료','ok');
+    notifyStorageAction('특성 프리셋 내보내기 완료','ok',{statusAction:'export'});
     return true;
   }catch(e){
     logAppError('[trait preset export failed]',e);
@@ -4462,10 +4548,10 @@ function saveSelectedExcelSheetAsTraitPreset(){
     }]};
     const result=mergeTraitPresetImport(imported);
     const savedPresetId=result.firstImportedPresetId || result.store.presets.find(item=>item.name===name)?.id || '';
-    if(savedPresetId) loadTraitPresetById(savedPresetId,{notifySuccess:false});
+    if(savedPresetId) loadTraitPresetById(savedPresetId,{notifySuccess:false,preserveSharedValues:false});
     else refreshTraitPresetControls('');
     closeTraitPresetExcelImportModal();
-    notifyStorageAction(result.replaced ? `엑셀 프리셋 갱신 및 로드 완료: ${name}` : `엑셀 프리셋 저장 및 로드 완료: ${name}`,'ok');
+    notifyStorageAction(result.replaced ? `엑셀 프리셋 갱신 및 로드 완료: ${name}` : `엑셀 프리셋 저장 및 로드 완료: ${name}`,'ok',{statusAction:'import'});
     return true;
   }catch(e){
     logAppError('[trait preset excel import failed]',e);
@@ -4487,9 +4573,9 @@ async function importTraitPresetFile(file){
     const imported=normalizeTraitPresetImportData(parsed,file?.name || '');
     const result=mergeTraitPresetImport(imported);
     const loadId=result.defaultImportedPresetId || result.firstImportedPresetId || '';
-    if(loadId) loadTraitPresetById(loadId,{notifySuccess:false});
+    if(loadId) loadTraitPresetById(loadId,{notifySuccess:false,preserveSharedValues:false});
     else refreshTraitPresetControls('');
-    notifyStorageAction(`프리셋 가져오기 및 로드 완료 · 추가 ${result.added} / 갱신 ${result.replaced}`,'ok');
+    notifyStorageAction(`프리셋 가져오기 및 로드 완료 · 추가 ${result.added} / 갱신 ${result.replaced}`,'ok',{statusAction:'import'});
     return true;
   }catch(e){
     logAppError('[trait preset import failed]',e);
@@ -4526,7 +4612,7 @@ function applySelectedTraitPreset(){
   if(!preset || compareState.applied) return;
   const previousState=makeStateObject();
   try{
-    const state=normalizeSavedState(preset.state);
+    const state=buildTraitPresetApplyState(preset,{preserveSharedValues:true});
     if(!state) throw new Error('특성 프리셋 데이터가 올바르지 않습니다.');
     applyStateObject(state);
     const saved=saveState({silent:true});
@@ -4592,7 +4678,7 @@ function applyDefaultTraitPresetOnBoot(){
   const preset=store.presets.find(item=>item.id===store.defaultPresetId);
   if(!preset) return false;
   try{
-    applyTraitPresetState(preset,{persist:false});
+    applyTraitPresetState(preset,{persist:false,preserveSharedValues:storageState.hasSavedState});
     return true;
   }catch(e){
     logAppWarn('[trait preset default boot failed]',e);
@@ -5150,11 +5236,17 @@ function applyZeroScoreState(zeroScore){
   });
   updateZeroScoreCalculator();
 }
+function commitZeroScoreChange(){
+  updateZeroScoreCalculator();
+  if(!isStorageLocked()){
+    saveState({silent:true});
+    scheduleAutoSaveToast();
+  }
+}
 function toggleZeroScoreStar(trigger){
   if(!trigger) return;
   setZeroScoreStarButton(trigger,!trigger.classList.contains('active'));
-  updateZeroScoreCalculator();
-  if(!isStorageLocked()) saveState({silent:true});
+  commitZeroScoreChange();
 }
 function normalizeZeroHonorInputElement(el){
   if(!el || !el.classList?.contains('zero-honor-input')) return;
@@ -5167,8 +5259,7 @@ function bindZeroScoreCalculator(){
   const updateAndSave=(target)=>{
     if(!(target && target.closest && target.closest('.zero-score-calc'))) return;
     normalizeZeroHonorInputElement(target);
-    updateZeroScoreCalculator();
-    if(!isStorageLocked()) saveState({silent:true});
+    commitZeroScoreChange();
   };
   document.addEventListener('input', e=>updateAndSave(e.target), true);
   document.addEventListener('change', e=>updateAndSave(e.target), true);
@@ -5281,7 +5372,10 @@ function bindReactiveInputs(){
     if(target.matches('select')) syncSelectButtons();
     if(target.matches('.buff-choice-input')) syncBuffChoiceButtons();
     cancelAnimationFrame(raf);
-    raf=requestAnimationFrame(()=>requestAppUpdate());
+    raf=requestAnimationFrame(()=>{
+      requestAppUpdate();
+      scheduleAutoSaveToast();
+    });
   };
   document.addEventListener('input', e=>schedule(e.target), true);
   document.addEventListener('change', e=>schedule(e.target), true);
@@ -5326,6 +5420,7 @@ function initApp(){
   loadState();
   applyDefaultTraitPresetOnBoot();
   refreshTraitPresetControls();
+  restoreTraitPresetStatus();
   renderMobileReferencePanels();
 }
 function markAppReady(){

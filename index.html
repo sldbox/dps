@@ -3,14 +3,14 @@
 <head>
 <meta name="google-site-verification" content="RTuDWbMdnKgbpRpl05eXh9epFwWRSxju4NOl8OtjMsI" />
 <script>
-window.APP_VERSION = "dps-2606242230";
-window.DPS_BUILD_VERSION = "dps-2606242230";
+window.APP_VERSION = "dps-2606250900";
+window.DPS_BUILD_VERSION = "dps-2606250900";
 window.DPS_ASSET_VERSIONS = {
-  "app.js": "dps-2606242230",
-  "responsive-layout.js": "dps-2606242230",
-  "style.css": "dps-2606242230",
-  "data.js": "dps-2606242230",
-  "icon.png": "dps-2606242230"
+  "app.js": "dps-2606250900",
+  "responsive-layout.js": "dps-2606250900",
+  "style.css": "dps-2606250900",
+  "data.js": "dps-2606250900",
+  "icon.png": "dps-2606250900"
 };
 window.dpsAssetVersion = function(key){
   var versions = window.DPS_ASSET_VERSIONS || {};
@@ -179,14 +179,14 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 <meta content="https://sldbox.github.io/dps/" property="og:url"/>
 <meta content="개복디 특성 계산기" property="og:title"/>
 <meta content="특성 투자, 재화 사용량, 표기 스탯, 총데미지, DPS를 한 번에 계산할 수 있는 개복디 전용 계산기입니다." property="og:description"/>
-<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2606242230" property="og:image"/>
-<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2606242230" property="og:image:secure_url"/>
+<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2606250900" property="og:image"/>
+<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2606250900" property="og:image:secure_url"/>
 <meta content="image/png" property="og:image:type"/>
 <meta content="개복디 특성 계산기 로고" property="og:image:alt"/>
 <meta content="summary_large_image" name="twitter:card"/>
 <meta content="개복디 특성 계산기" name="twitter:title"/>
 <meta content="특성 투자, 재화 사용량, 표기 스탯, 총데미지, DPS를 한 번에 계산할 수 있는 개복디 전용 계산기입니다." name="twitter:description"/>
-<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2606242230" name="twitter:image"/>
+<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2606250900" name="twitter:image"/>
 <meta content="개복디 특성 계산기 로고" name="twitter:image:alt"/>
 <link href="https://cdn.jsdelivr.net" rel="preconnect"/>
 <link crossorigin="" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" rel="stylesheet"/>
@@ -321,7 +321,6 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 <div class="basic-info-row" data-basic-row="power-bless"><label for="pbless">파워 블레스</label><select id="pbless" disabled><option selected="" value="">강화의달인 활성화 필요</option></select></div>
 <div class="basic-info-row" data-basic-row="sp-bank"><label for="spBankApply">SP 은행</label><select id="spBankApply"><option selected="" value="미반영">OFF</option><option value="반영">ON</option></select></div>
 <div class="basic-info-row readonly-resource" data-basic-row="sp-bank-status"><label>SP 은행 상태</label><b id="spBankStatusView">미적용</b></div>
-<input id="enemyArmor" type="hidden" value="0"/>
 <input id="dt" type="hidden" value="ON"/>
 <div class="basic-info-row" data-basic-row="erosion-stack"><label for="erosionStack">침식 스텍</label><input id="erosionStack" data-erosion-value="500" type="text" value="어비스 활성화 필요" disabled/></div>
 <div class="basic-info-row" data-basic-row="erosion-resist"><label for="jewelErosionRes">침식 내성</label><input id="jewelErosionRes" data-erosion-value="30" type="text" value="어비스 활성화 필요" disabled/></div>
@@ -409,16 +408,6 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 </div>
 <input id="unitGrade" type="hidden" value=""/>
 <input id="unitLevel" type="hidden" value="0"/>
-<input id="currentUnit" type="hidden" value=""/>
-<input id="personalUnit" type="hidden" value=""/>
-<input id="personalASBuff" type="hidden" value="OFF"/>
-<input id="personalLimitBreak" type="hidden" value="0"/>
-<input id="personalJewel" type="hidden" value="0"/>
-<input id="powerBunkerAD" type="hidden" value="0"/>
-<input id="postMasterAD" type="hidden" value="0"/>
-<input id="additionalADBuff" type="hidden" value="OFF"/>
-<input id="additionalADValue" type="hidden" value="0"/>
-<input id="rushADBuff" type="hidden" value="OFF"/>
 </div>
 </div>
 </div>
@@ -488,9 +477,6 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 <div class="additional-row"><label>총 데미지</label><input id="addTD" type="text" value="0" inputmode="decimal"/></div>
 <div class="additional-row"><label>유닛 가속</label><input id="addUA" type="text" value="0" inputmode="decimal"/></div>
 </div>
-<input id="addDR" type="hidden" value="0"/>
-<input id="addSR" type="hidden" value="0"/>
-<input id="addHR" type="hidden" value="0"/>
 </div>
 <div class="enchant-combined">
 <div class="rune-panel-title">인챈트 레벨 / 결과</div>
@@ -527,7 +513,6 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 <input id="rTD" type="hidden" value="0"/>
 <input id="rUA" type="hidden" value="0"/>
 <input id="rHarmony" type="hidden" value="0"/>
-<input id="sysAD" type="hidden" value="0"/>
 </div>
 
 <div class="data-card zero-rank-card">
@@ -769,7 +754,7 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 <div class="col-right">
 <div class="trait-board-panel">
 <div class="trait-standalone-panel" aria-label="특성 프리셋">
-<div class="trait-preset-title trait-subgroup-title"><span class="trait-preset-heading">특성 프리셋</span><span class="trait-preset-default-badge" id="traitPresetDefaultView">기본: 없음</span><button class="btn subtle ui-action-btn trait-preset-reset-btn" data-action="resetAllTraitPresetState" id="traitPresetResetAllBtn" type="button">전체 초기화</button></div>
+<div class="trait-preset-title trait-subgroup-title"><span class="trait-preset-heading">특성 프리셋</span><span class="trait-preset-default-badge" id="traitPresetDefaultView">기본: 없음</span><div class="trait-preset-status" id="traitPresetStatusView" aria-live="polite">최근 상태 없음</div></div>
 <div class="trait-preset-body trait-subgroup-body">
 <div class="trait-preset-name-row">
 <label class="trait-preset-label" for="traitPresetName">프리셋 이름</label>
@@ -789,6 +774,7 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 <button class="btn subtle ui-action-btn" data-action="compareTraitPreset" type="button">프리셋 분석</button>
 <button class="btn subtle ui-action-btn" data-action="exportTraitPresets" type="button">내보내기</button>
 </div>
+<button class="btn subtle ui-action-btn trait-preset-reset-btn" data-action="resetAllTraitPresetState" id="traitPresetResetAllBtn" type="button">전체 초기화</button>
 <input id="traitPresetImportFile" class="hidden-field" type="file" accept=".txt,.json,.xlsx,.xlsm,application/json,text/plain,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel.sheet.macroEnabled.12"/>
 </div>
 </div>
