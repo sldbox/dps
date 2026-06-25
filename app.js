@@ -2588,7 +2588,7 @@ function restoreComparisonCurrentState(){
     else if(compareState.sourceType==='traitPreset'){ hydrateCompareControls(); compareSelectedTraitPreset({preserveRestore:true}); }
     else if(compareState.sourceType==='excel'){ hydrateCompareControls(); compareSelectedExcelSheet({preserveRestore:true}); }
     updateCompareActionButtons();
-    showToast('현재값 복원 완료','ok');
+    notifyStorageAction('현재값 복원 완료','ok',{statusAction:'load'});
   }catch(e){
     logAppError('[compare restore failed]',e);
     showToast(e?.message||String(e),'err');
@@ -2836,7 +2836,7 @@ function applySelectedJsonBackup(){
     compareState.applied=true;
     renderJsonComparison(compareState.backupState);
     updateCompareActionButtons();
-    showToast('현재 입력값에 적용 완료','ok');
+    notifyStorageAction('현재 입력값에 적용 완료','ok',{statusAction:'load'});
   }catch(e){
     try{ applyStateObject(previousState); }catch(rollbackError){ logAppError('[backup apply rollback failed]', rollbackError); }
     compareState.restoreState=null;
@@ -2869,7 +2869,7 @@ function applySelectedExcelSheet(){
     hydrateCompareControls();
     compareSelectedExcelSheet({preserveRestore:true});
     updateCompareActionButtons();
-    showToast(`변경값 ${imported.applied}개 적용 완료`,'ok');
+    notifyStorageAction(`변경값 ${imported.applied}개 적용 완료`,'ok',{statusAction:'import'});
   }catch(e){
     try{ applyStateObject(previousState); }catch(rollbackError){ logAppError('[Excel apply rollback failed]', rollbackError); }
     compareState.restoreState=null;
@@ -3447,7 +3447,7 @@ function traitOptimizationMultiTargetBundleCandidate(base, rem, options={}){
     for(const [row,add] of changes) INV[row]=(INV[row]||0)-add;
     const gain=ns.M19-base.M19;
     if(!limitsOk || gain<=0 || (options.visibleGain!==false && !traitRecommendationGainIsVisible(gain))) return null;
-    return {changes,score:gain/cost,gain,cost,label:'멀티 타겟 분기점'};
+    return {changes,kind:'SP',score:gain/cost,gain,cost,label:'멀티 타겟 분기점'};
   }
   return evaluateTraitOptimizationCandidate(base, 'SP', rem, changes, '멀티 타겟 분기점', options);
 }
@@ -3498,8 +3498,14 @@ function traitRecommendationInvestText(cand){
   if(cand.changes.length===1) return `+${cand.changes[0][1]}`;
   return cand.changes.map(([row,add])=>`${traitName(row)} +${add}`).join(' / ');
 }
+function traitRecommendationResourceLabel(kind){
+  if(kind==='SOUL') return '심연';
+  return kind || '';
+}
 function traitRecommendationCostText(cand){
-  return fullNumber(cand?.cost||0);
+  const label=traitRecommendationResourceLabel(cand?.kind);
+  const cost=cand?.kind==='SP' ? big(cand?.cost||0) : fullNumber(cand?.cost||0);
+  return label ? `${label} ${cost}` : cost;
 }
 function traitRecommendationRoundedGainValue(gain){
   const n=Number(gain);
@@ -3958,20 +3964,46 @@ function padStatusPart(value){return String(value).padStart(2,'0');}
 function formatTraitPresetStatus(action, date=new Date()){
   const label=TRAIT_PRESET_STATUS_LABELS[action];
   if(!label) return '';
-  return `${padStatusPart(date.getFullYear()%100)}-${padStatusPart(date.getMonth()+1)}-${padStatusPart(date.getDate())}-${padStatusPart(date.getHours())}:${padStatusPart(date.getMinutes())} ${label}`;
+  return `${date.getMonth()+1}/${date.getDate()} ${padStatusPart(date.getHours())}:${padStatusPart(date.getMinutes())} ${label}`;
+}
+function normalizeTraitPresetStatusText(message){
+  const text=String(message || '').replace(/^최근 상태\s+/, '').trim();
+  if(!text) return '';
+  const actionMatch=text.match(/\s+(저장됨|불러옴|삭제됨|가져옴|내보냄)$/);
+  if(!actionMatch) return text;
+  const action=actionMatch[1];
+  const timeText=text.slice(0, actionMatch.index).trim();
+  let match=timeText.match(/^(\d{1,2})\/(\d{1,2})\s+(\d{1,2}):(\d{2})$/);
+  if(match) return `${Number(match[1])}/${Number(match[2])} ${padStatusPart(match[3])}:${match[4]} ${action}`;
+  match=timeText.match(/^(?:\d{2}|\d{4})[-년\s]+(\d{1,2})[-월\s]+(\d{1,2})(?:일)?[-\s]+(\d{1,2}):(\d{2})$/);
+  if(match) return `${Number(match[1])}/${Number(match[2])} ${padStatusPart(match[3])}:${match[4]} ${action}`;
+  return text;
+}
+function renderTraitPresetStatusText(message){
+  const text=normalizeTraitPresetStatusText(message);
+  if(!text) return '상태 없음';
+  const lastSpace=text.lastIndexOf(' ');
+  if(lastSpace<=0) return escapeCompareHtml(text);
+  const datePart=text.slice(0,lastSpace);
+  const actionPart=text.slice(lastSpace+1);
+  return `<span class="trait-preset-status-date">${escapeCompareHtml(datePart)}</span><span class="trait-preset-status-action">${escapeCompareHtml(actionPart)}</span>`;
 }
 function updateTraitPresetStatus(message, options={}){
-  const text=message || '최근 상태 없음';
+  const text=normalizeTraitPresetStatusText(message);
   const view=$('traitPresetStatusView');
-  if(view) view.textContent=text;
+  if(view) view.innerHTML=renderTraitPresetStatusText(text);
   if(options.persist){
-    try{ localStorage.setItem(TRAIT_PRESET_STATUS_STORAGE_KEY, String(message || '')); }catch(e){}
+    try{ localStorage.setItem(TRAIT_PRESET_STATUS_STORAGE_KEY, text); }catch(e){}
   }
 }
 function restoreTraitPresetStatus(){
   let message='';
   try{ message=localStorage.getItem(TRAIT_PRESET_STATUS_STORAGE_KEY) || ''; }catch(e){}
-  updateTraitPresetStatus(message);
+  const normalized=normalizeTraitPresetStatusText(message);
+  updateTraitPresetStatus(normalized);
+  if(normalized && normalized!==message){
+    try{ localStorage.setItem(TRAIT_PRESET_STATUS_STORAGE_KEY, normalized); }catch(e){}
+  }
 }
 function notifyStorageAction(message, type='ok', options={}){
   const statusAction=options.statusAction || '';
@@ -4146,7 +4178,10 @@ function refreshTraitPresetControls(selectedId){
   const currentId=select?.value || '';
   const current=store.presets.find(preset=>preset.id===currentId);
   const defaultPreset=store.presets.find(preset=>preset.id===store.defaultPresetId);
-  if(defaultView) defaultView.textContent=defaultPreset ? `기본: ${defaultPreset.name}` : '기본: 없음';
+  if(defaultView){
+    const presetName=defaultPreset ? defaultPreset.name : '없음';
+    defaultView.innerHTML=`<span class="trait-preset-default-label">기본 프리셋</span><span class="trait-preset-default-name">${escapeCompareHtml(presetName)}</span>`;
+  }
   if(defaultBtn) defaultBtn.textContent=current && current.id===store.defaultPresetId ? '기본 해제' : '기본 지정';
   qsa('[data-action="loadTraitPreset"],[data-action="renameTraitPreset"],[data-action="deleteTraitPreset"],[data-action="setDefaultTraitPreset"]').forEach(btn=>{
     btn.disabled=!current;
@@ -4622,7 +4657,7 @@ function applySelectedTraitPreset(){
     hydrateCompareControls();
     renderTraitPresetComparison(preset);
     updateCompareActionButtons();
-    showToast(`프리셋 적용 완료: ${preset.name}`,'ok');
+    notifyStorageAction(`프리셋 적용 완료: ${preset.name}`,'ok',{statusAction:'load'});
   }catch(e){
     try{ applyStateObject(previousState); }catch(rollbackError){ logAppError('[trait preset compare rollback failed]', rollbackError); }
     compareState.restoreState=null;
