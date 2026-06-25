@@ -1,0 +1,319 @@
+/* ===== 01. 반응형 / 모바일 레이아웃 부트스트랩 ===== */
+(() => {
+  'use strict';
+
+  /* DOM / 페이지 정의 */
+  const qs = (selector) => document.querySelector(selector);
+  const qsa = (selector) => Array.from(document.querySelectorAll(selector));
+  const MODES = ['is-pc-landscape', 'is-pc-portrait', 'is-tablet', 'is-mobile', 'is-portrait-view', 'is-mobile-device', 'is-tablet-device', 'is-narrow-mobile', 'is-tabbed'];
+  const MOBILE_PAGES = [
+    { key: 'spec', label: '기본정보', selectors: ['.xp-sp-card'] },
+    { key: 'rune-spec', label: '룬정보', selectors: ['.clean-rune-card'] },
+    { key: 'rune-effect', label: '룬효과/버프', selectors: ['.unit-enhance-card'] },
+    { key: 'trait', label: '특성보드', selectors: ['.col-right'] },
+    { key: 'result', label: 'DPS보드', selectors: ['.stat-dps-card', '.bus-cut-card', '.final-damage-card'] },
+    { key: 'zero-rank', label: '승단', selectors: ['.zero-rank-card'] },
+    { key: 'dps-table', label: 'DPS표', selectors: ['.mobile-reference-dps'] },
+    { key: 'month-rune', label: '이달의룬', selectors: ['.mobile-reference-runes'] },
+    { key: 'jewel', label: '쥬얼', selectors: ['.mobile-reference-jewels'] }
+  ];
+
+  const state = {
+    tabs: null,
+    pages: [],
+    restore: new Map(),
+    raf: 0,
+    arrangedMobile: false,
+    layoutWidth: 0,
+    layoutPortrait: null,
+    activeIndex: 0,
+    activeKey: null,
+    resumeTimers: []
+  };
+
+  /* 뷰포트 판정 / 모드 적용 */
+  function getViewportSize() {
+    const root = document.documentElement;
+    return {
+      w: root.clientWidth || window.innerWidth || 0,
+      h: root.clientHeight || window.innerHeight || 0
+    };
+  }
+
+  function getMode() {
+    const { w, h } = getViewportSize();
+    const shortSide = Math.min(w, h);
+    const longSide = Math.max(w, h);
+    const portrait = h > w;
+
+    if (shortSide <= 600) return 'is-mobile';
+    if (shortSide <= 1024 && longSide <= 1366) return 'is-tablet';
+    if (portrait) return 'is-pc-portrait';
+    return 'is-pc-landscape';
+  }
+
+  function updateMobileOffsets() {
+    const header = qs('.hdr');
+    const tabs = qs('.mobile-swipe-tabs');
+    const headerHeight = header ? Math.ceil(header.getBoundingClientRect().height) : 0;
+    const tabsHeight = tabs ? Math.ceil(tabs.getBoundingClientRect().height) : 0;
+    const { w, h } = getViewportSize();
+    document.documentElement.style.setProperty('--mobile-vw', `${w}px`);
+    document.documentElement.style.setProperty('--mobile-header-h', `${headerHeight}px`);
+    document.documentElement.style.setProperty('--mobile-tabs-h', `${tabsHeight}px`);
+    document.documentElement.style.setProperty('--mobile-vh', `${h}px`);
+  }
+
+  function applyMode() {
+    const mode = getMode();
+    const { w, h } = getViewportSize();
+    const shortSide = Math.min(w, h);
+    const direction = h > w ? 'is-portrait-view' : '';
+    const deviceClass = mode === 'is-mobile' ? 'is-mobile-device' : (mode === 'is-tablet' ? 'is-tablet-device' : '');
+    const widthClass = mode === 'is-mobile' && shortSide <= 430 ? 'is-narrow-mobile' : '';
+
+    document.body.classList.remove(...MODES);
+    document.documentElement.classList.remove(...MODES);
+    document.body.classList.add(mode);
+    document.documentElement.classList.add(mode);
+    if (mode === 'is-mobile' || mode === 'is-tablet') {
+      document.body.classList.add('is-tabbed');
+      document.documentElement.classList.add('is-tabbed');
+    }
+    if (direction) {
+      document.body.classList.add(direction);
+      document.documentElement.classList.add(direction);
+    }
+    if (deviceClass) {
+      document.body.classList.add(deviceClass);
+      document.documentElement.classList.add(deviceClass);
+    }
+    if (widthClass) {
+      document.body.classList.add(widthClass);
+      document.documentElement.classList.add(widthClass);
+    }
+
+    state.layoutWidth = w;
+    state.layoutPortrait = h > w;
+    syncMobileLayout();
+    updateMobileOffsets();
+  }
+
+  /* 모바일 탭 페이지 생성 / 복구 */
+  function rememberPosition(el) {
+    if (!el || state.restore.has(el)) return;
+    const marker = document.createComment(`mobile-restore:${el.className || el.tagName}`);
+    el.parentNode.insertBefore(marker, el);
+    state.restore.set(el, marker);
+  }
+
+  function getOrCreatePage(key) {
+    let page = qs(`.mobile-page[data-mobile-page="${key}"]`);
+    if (!page) {
+      page = document.createElement('div');
+      page.className = `mobile-page mobile-page-${key}`;
+      page.dataset.mobilePage = key;
+    }
+    return page;
+  }
+
+  function getPageIndexByKey(key) {
+    if (!key) return -1;
+    return state.pages.findIndex(page => page.key === key);
+  }
+
+  function buildTabs(colWork, pages) {
+    if (!state.tabs) {
+      state.tabs = document.createElement('div');
+      state.tabs.className = 'mobile-swipe-tabs';
+      state.tabs.setAttribute('aria-label', '모바일 섹션 이동');
+      colWork.parentNode.insertBefore(state.tabs, colWork);
+    }
+
+    state.tabs.textContent = '';
+    pages.forEach((page, idx) => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'mobile-swipe-tab';
+      btn.textContent = page.label;
+      btn.setAttribute('aria-pressed', 'false');
+      btn.addEventListener('click', () => showMobilePage(idx, true, true));
+      state.tabs.appendChild(btn);
+    });
+  }
+
+  function centerActiveMobileTab(index) {
+    const tabs = state.tabs;
+    if (!tabs) return;
+    const activeBtn = tabs.querySelectorAll('.mobile-swipe-tab')[index];
+    if (!activeBtn || tabs.scrollWidth <= tabs.clientWidth + 1) return;
+    const left = activeBtn.offsetLeft - ((tabs.clientWidth - activeBtn.offsetWidth) / 2);
+    tabs.scrollTo({ left: Math.max(0, left), behavior: 'smooth' });
+  }
+
+  function setActiveTab(activeIndex) {
+    const nextIndex = Math.max(0, Math.min(state.pages.length - 1, activeIndex));
+    state.activeIndex = nextIndex;
+    state.activeKey = state.pages[nextIndex]?.key || state.activeKey;
+
+    if (state.tabs) {
+      state.tabs.querySelectorAll('.mobile-swipe-tab').forEach((btn, idx) => {
+        const active = idx === nextIndex;
+        btn.classList.toggle('active', active);
+        btn.setAttribute('aria-pressed', active ? 'true' : 'false');
+      });
+    }
+
+    state.pages.forEach((page, idx) => {
+      const active = idx === nextIndex;
+      page.el.classList.toggle('active', active);
+      page.el.hidden = !active;
+      page.el.setAttribute('aria-hidden', active ? 'false' : 'true');
+    });
+  }
+
+  function showMobilePage(index, resetPageScroll = false, centerTab = false) {
+    if (!state.pages.length) return;
+    const nextIndex = Math.max(0, Math.min(state.pages.length - 1, index));
+    setActiveTab(nextIndex);
+    if (resetPageScroll) state.pages[nextIndex].el.scrollTop = 0;
+    if (centerTab) centerActiveMobileTab(nextIndex);
+    updateMobileOffsets();
+  }
+
+  function arrangeMobile(colWork) {
+    const pages = [];
+    const keepKey = state.activeKey || state.pages[state.activeIndex]?.key || 'spec';
+
+    MOBILE_PAGES.forEach((config) => {
+      const elements = config.selectors.map(selector => qs(selector)).filter(Boolean);
+      if (!elements.length) return;
+
+      const page = getOrCreatePage(config.key);
+      page.textContent = '';
+      page.dataset.mobileLabel = config.label;
+
+      elements.forEach((el) => {
+        rememberPosition(el);
+        page.appendChild(el);
+      });
+
+      colWork.appendChild(page);
+      pages.push({ ...config, el: page });
+    });
+
+    state.pages = pages;
+    buildTabs(colWork, pages);
+    state.arrangedMobile = true;
+    const keepIndex = getPageIndexByKey(keepKey);
+    showMobilePage(keepIndex >= 0 ? keepIndex : state.activeIndex, false, false);
+  }
+
+  function restoreDesktop() {
+    if (!state.arrangedMobile) return;
+
+    state.restore.forEach((marker, el) => {
+      if (marker.parentNode) marker.parentNode.insertBefore(el, marker.nextSibling);
+    });
+
+    qsa('.mobile-page').forEach(page => page.remove());
+    if (state.tabs) state.tabs.remove();
+    state.tabs = null;
+    state.pages = [];
+    state.arrangedMobile = false;
+  }
+
+  function syncMobileLayout() {
+    const colWork = qs('.col-work');
+    if (!colWork) return;
+
+    if (document.body.classList.contains('is-tabbed')) {
+      if (!state.arrangedMobile) arrangeMobile(colWork);
+      else showMobilePage(getPageIndexByKey(state.activeKey), false, false);
+    } else {
+      restoreDesktop();
+    }
+  }
+
+  /* 입력 보조 / 레이아웃 갱신 이벤트 */
+  function isTextInput(el) {
+    if (!el || el.disabled || el.readOnly) return false;
+    if (el.tagName === 'TEXTAREA') return true;
+    if (el.tagName !== 'INPUT') return false;
+    return !['button', 'checkbox', 'color', 'file', 'hidden', 'image', 'radio', 'range', 'reset', 'submit'].includes((el.type || '').toLowerCase());
+  }
+
+  function bindInputAutoSelect() {
+    if (document.documentElement.dataset.inputAutoSelectBound === '1') return;
+    document.documentElement.dataset.inputAutoSelectBound = '1';
+
+    document.addEventListener('focusin', (event) => {
+      const el = event.target;
+      if (!isTextInput(el)) return;
+      requestAnimationFrame(() => {
+        try { el.select(); } catch (e) {}
+      });
+    });
+  }
+
+  function scheduleApply() {
+    if (state.raf) cancelAnimationFrame(state.raf);
+    state.raf = requestAnimationFrame(() => {
+      state.raf = 0;
+      const { w, h } = getViewportSize();
+      const portrait = h > w;
+      const widthChanged = Math.abs(w - state.layoutWidth) > 1;
+      const orientationChanged = state.layoutPortrait !== portrait;
+      if (widthChanged || orientationChanged) applyMode();
+      else updateMobileOffsets();
+    });
+  }
+
+  function runResponsiveRefresh() {
+    applyMode();
+  }
+
+  function scheduleResumeApply() {
+    state.resumeTimers.forEach(timer => clearTimeout(timer));
+    state.resumeTimers = [];
+    requestAnimationFrame(runResponsiveRefresh);
+    state.resumeTimers.push(setTimeout(runResponsiveRefresh, 80));
+    state.resumeTimers.push(setTimeout(runResponsiveRefresh, 320));
+  }
+
+  function markResponsiveReady() {
+    window.__dpsResponsiveLayoutReady = true;
+    if (typeof window.dpsMarkResponsiveLayoutReady === 'function') {
+      window.dpsMarkResponsiveLayoutReady();
+    }
+  }
+
+  /* 초기화 / 외부 동기화 API */
+  function init() {
+    runResponsiveRefresh();
+    bindInputAutoSelect();
+    markResponsiveReady();
+  }
+
+  window.dpsSyncResponsiveLayout = function(){
+    runResponsiveRefresh();
+    requestAnimationFrame(updateMobileOffsets);
+    markResponsiveReady();
+  };
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init, { once: true });
+  } else {
+    init();
+  }
+
+  window.addEventListener('resize', scheduleApply, { passive: true });
+  window.addEventListener('orientationchange', scheduleApply, { passive: true });
+  if (window.visualViewport) window.visualViewport.addEventListener('resize', scheduleApply, { passive: true });
+  window.addEventListener('pageshow', scheduleResumeApply, { passive: true });
+  window.addEventListener('focus', scheduleResumeApply, { passive: true });
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) scheduleResumeApply();
+  }, { passive: true });
+  window.addEventListener('load', updateMobileOffsets, { once: true });
+})();
