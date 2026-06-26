@@ -1,7 +1,8 @@
-/* ===== Notice / Announcement ===== */
+/* ===== 01. 공지 모달 / 안내 탭 ===== */
 (() => {
   'use strict';
 
+  /* 데이터 / 탭 정의 */
   const $ = (id) => document.getElementById(id);
   const NOTICE_SESSION_DISMISS_KEY = 'gbd_dps_calculator:notice_legacy_preset_dismissed';
   const NOTICE_TABS = [
@@ -102,6 +103,7 @@
 
   let activeTab = 'legacy-preset-update';
 
+  /* 프리셋 최신화 상태 */
   function readPresetVersionStatus() {
     const statusSource = window.DpsTraitPresetVersion?.status;
     if (typeof statusSource !== 'function') return null;
@@ -117,6 +119,7 @@
     return readPresetVersionStatus()?.state === 'legacy';
   }
 
+  /* 모달 콘텐츠 렌더링 */
   function tabHtml(target) {
     return NOTICE_TABS.map((tab) => {
       const active = tab.id === target;
@@ -255,6 +258,7 @@
   }
 
 
+  /* 자동 표시 / 사용자 이벤트 */
   function isAutoDismissed() {
     try { return sessionStorage.getItem(NOTICE_SESSION_DISMISS_KEY) === '1'; } catch (e) { return false; }
   }

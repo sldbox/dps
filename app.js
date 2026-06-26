@@ -5326,6 +5326,36 @@ const ZERO_EXCEL_SHEET_NAME='더제로 승단';
 const ZERO_EXCEL_PENANCE_ROWS=[
   'Practice','Very Easy','Easy','Normal','Hard','Very Hard','Hell','Inferno','Lunatic','Holic','Epic','Ultimate','Impossible','The Final'
 ].map((name,index)=>({name,row:13+index}));
+function buildZeroPenanceCalcRow(name){
+  return `
+          <tr class="zero-calc-row" data-row-type="penance">
+            <td class="zero-calc-name">${name}</td>
+            <td><input class="zero-calc-current" inputmode="numeric" type="text" value="0"/></td>
+            <td><input class="zero-calc-target" inputmode="numeric" type="text" value="0"/></td>
+            <td><button class="ui-toggle-btn zero-star-toggle" data-action="zeroScoreStar" type="button" aria-pressed="false">+2</button></td>
+            <td><input class="zero-current-honor zero-honor-input" inputmode="latin" maxlength="1" placeholder="B" type="text" value=""/></td>
+            <td><input class="zero-target-honor zero-honor-input" inputmode="latin" maxlength="1" placeholder="X" type="text" value=""/></td>
+            <td><b class="zero-row-score">0</b></td>
+          </tr>`;
+}
+function buildZeroTowerCalcRow(){
+  return `
+          <tr class="zero-calc-row" data-row-type="towerCombo">
+            <td class="zero-calc-name">도전의탑</td>
+            <td><input class="zero-calc-current" inputmode="numeric" type="text" value="0"/></td>
+            <td><input class="zero-calc-target" inputmode="numeric" type="text" value="0"/></td>
+            <td><button class="ui-toggle-btn zero-star-toggle zero-star-disabled" type="button" disabled aria-disabled="true" aria-pressed="false">비활성화</button></td>
+            <td><input class="zero-tower-honor-current" inputmode="numeric" type="text" value="0"/></td>
+            <td><input class="zero-tower-honor-target" inputmode="numeric" type="text" value="0"/></td>
+            <td><b class="zero-row-score">0</b></td>
+          </tr>`;
+}
+function renderZeroScoreCalculatorRows(){
+  const rows=$('zeroScoreRows');
+  if(!rows || rows.dataset.rendered==='1') return;
+  rows.innerHTML=ZERO_EXCEL_PENANCE_ROWS.map(({name})=>buildZeroPenanceCalcRow(name)).join('') + buildZeroTowerCalcRow();
+  rows.dataset.rendered='1';
+}
 /* 더제로 승단: 점수 계산 공통 */
 function zeroScoreNumber(value, min, max){
   const n=Number(value);
@@ -5916,6 +5946,7 @@ function bindAppEvents(){
 }
 function initApp(){
   loadFontScale();
+  renderZeroScoreCalculatorRows();
   bindAppEvents();
   syncEnchantCodeFromInputs(true);
   syncSelectButtons();
