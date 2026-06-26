@@ -4,7 +4,6 @@
 
   /* 데이터 / 탭 정의 */
   const $ = (id) => document.getElementById(id);
-  const NOTICE_SESSION_DISMISS_KEY = 'gbd_dps_calculator:notice_legacy_preset_dismissed';
   const NOTICE_TABS = [
     { id: 'legacy-preset-update', label: '프리셋', meta: '저장 파일 안내' },
     { id: 'notes', label: '참고사항', meta: '계산 기준' },
@@ -102,6 +101,7 @@
   };
 
   let activeTab = 'legacy-preset-update';
+  let noticeAutoDismissed = false;
 
   /* 프리셋 최신화 상태 */
   function readPresetVersionStatus() {
@@ -255,13 +255,13 @@
     }
     document.documentElement.classList.remove('notice-modal-open');
     document.body.classList.remove('notice-modal-open');
-    try { sessionStorage.setItem(NOTICE_SESSION_DISMISS_KEY, '1'); } catch (e) {}
+    noticeAutoDismissed = true;
   }
 
 
   /* 자동 표시 / 사용자 이벤트 */
   function isAutoDismissed() {
-    try { return sessionStorage.getItem(NOTICE_SESSION_DISMISS_KEY) === '1'; } catch (e) { return false; }
+    return noticeAutoDismissed;
   }
 
   function checkLegacyPresetNotice(options = {}) {
