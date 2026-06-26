@@ -1338,17 +1338,17 @@ body .trait-optimizer-panel .trait-optimizer-row{display:grid;grid-template-colu
 body .trait-optimizer-panel .trait-dashboard-tools .btn, body .trait-optimizer-panel .trait-dashboard-tools select{width:100%;min-width:0;height:38px;min-height:38px;margin:0;border-radius:var(--ui-control-radius);display:flex;align-items:center;justify-content:center;text-align:center;text-align-last:center;font-size:calc(11px * var(--app-font-scale));font-weight:900;line-height:1;white-space:nowrap}
 body .trait-optimizer-panel .trait-dashboard-tools .btn{padding:0 10px}
 body .trait-optimizer-panel .trait-dashboard-tools select{padding:0 22px 0 8px;border:1px solid var(--role-interactive-bd);border-radius:var(--ui-control-radius);background:var(--role-interactive-bg,#10233d);background-image:none;color:var(--color-text-main);font-weight:900;box-shadow:inset 0 1px 2px rgba(32,57,91,.035);text-shadow:none}
-body .trait-preset-title{--trait-preset-state-color:#aebdd1;display:grid;grid-template-columns:minmax(0,1fr) max-content minmax(0,1fr);align-items:center;gap:8px}
+body .trait-preset-title, body.is-tabbed .mobile-page .trait-preset-title{--trait-preset-state-color:#aebdd1;display:grid;grid-template-columns:minmax(0,1fr) max-content minmax(0,1fr);align-items:center;gap:8px}
 body .trait-preset-title.preset-version-current{--trait-preset-state-color:#93c5fd}
 body .trait-preset-title.preset-version-legacy{--trait-preset-state-color:#f6c77a}
 body .trait-preset-title.preset-version-unknown, body .trait-preset-title.preset-version-empty{--trait-preset-state-color:#aebdd1}
-body .trait-preset-heading{min-width:0;justify-self:start;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:left}
-body .trait-preset-version-badge{min-width:0;justify-self:center;padding:0;border:0;border-radius:0;background:transparent;color:var(--section-head-text,#f8fbff);font-size:calc(10px * var(--app-font-scale));font-weight:900;line-height:1;display:inline-flex;align-items:center;justify-content:center;gap:4px;overflow:hidden;text-align:center;white-space:nowrap}
+body .trait-preset-heading, body.is-tabbed .mobile-page .trait-preset-heading{grid-column:1;min-width:0;justify-self:start;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:left}
+body .trait-preset-version-badge, body.is-tabbed .mobile-page .trait-preset-version-badge{grid-column:2;min-width:0;justify-self:center;padding:0;border:0;border-radius:0;background:transparent;color:var(--section-head-text,#f8fbff);font-size:calc(10px * var(--app-font-scale));font-weight:900;line-height:1;display:inline-flex;align-items:center;justify-content:center;gap:4px;overflow:hidden;text-align:center;white-space:nowrap}
 body .trait-preset-version-badge span{display:inline-block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 body .trait-preset-version-label{opacity:.9}
 body .trait-preset-version-separator{opacity:.72}
 body .trait-preset-version-value{font-size:calc(10.2px * var(--app-font-scale));font-weight:1000;color:var(--trait-preset-state-color,#aebdd1)}
-body .trait-preset-reset-btn{box-sizing:border-box;justify-self:end;width:auto;min-width:0;height:28px;min-height:28px;margin:0;padding:0 10px;font-size:calc(10.5px * var(--app-font-scale));line-height:1;white-space:nowrap;display:inline-flex;align-items:center;justify-content:center}
+body .trait-preset-reset-btn, body.is-tabbed .mobile-page .trait-preset-reset-btn{box-sizing:border-box;grid-column:3;justify-self:end;flex:0 0 auto;width:max-content;max-width:max-content;min-width:0;height:28px;min-height:28px;margin:0;padding:0 10px;font-size:calc(10.5px * var(--app-font-scale));line-height:1;white-space:nowrap;display:inline-flex;align-items:center;justify-content:center}
 body .trait-preset-body{display:grid;grid-template-columns:1fr;gap:8px;padding:10px}
 body .trait-preset-name-row, body .trait-preset-load-row{display:grid;grid-template-columns:minmax(88px,.55fr) minmax(0,1.45fr) minmax(84px,.65fr);gap:8px;align-items:center}
 body .trait-preset-actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
@@ -1379,6 +1379,8 @@ body .trait-preset-body .btn.danger:not(.pri):active, body .trait-preset-body .b
 .trait-preset-excel-field span{height:36px;display:flex;align-items:center;justify-content:center;padding:0 8px;border:1px solid var(--field-label-bd,#30435f);border-left-color:var(--field-label-accent,#425b7e);border-radius:8px;background:var(--field-label-bg,#172235);color:var(--field-label-text,#d7e4f3);font-size:calc(10.5px * var(--app-font-scale));font-weight:900;line-height:1}
 .trait-preset-excel-field input,.trait-preset-excel-field select{width:100%;min-width:0;height:36px;margin:0;padding:0 8px;border:1px solid var(--role-interactive-bd,#3c6fb6);border-radius:var(--ui-control-radius);background:var(--role-interactive-bg,#10233d);color:var(--color-slate-900);font-size:calc(11px * var(--app-font-scale));font-weight:900;text-align:center;text-align-last:center;box-shadow:inset 0 1px 2px rgba(32,57,91,.035)}
 .trait-preset-excel-save{width:100%;height:36px;margin:0}
+body.is-tablet .trait-preset-title, body.is-tablet.is-tabbed .mobile-page .trait-preset-title{grid-template-columns:minmax(0,1fr) max-content minmax(0,1fr);gap:6px}
+body.is-tablet .trait-preset-reset-btn, body.is-tablet.is-tabbed .mobile-page .trait-preset-reset-btn{width:max-content;max-width:max-content;height:26px;min-height:26px;padding:0 9px;font-size:calc(10px * var(--app-font-scale))}
 body.is-tablet .trait-preset-actions{grid-template-columns:repeat(3,minmax(0,1fr))}
 body .trait-subgroup-body{padding:10px}
 body .trait-limit-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
@@ -1403,13 +1405,13 @@ body .trait-board-panel > .tp-body{width:100%;margin:0;padding:0;overflow:visibl
   body.is-mobile .trait-preset-excel-field{grid-template-columns:76px minmax(0,1fr);gap:6px}
   body.is-mobile .trait-preset-excel-field span, body.is-mobile .trait-preset-excel-field input, body.is-mobile .trait-preset-excel-field select, body.is-mobile .trait-preset-excel-save{height:32px;min-height:32px;font-size:calc(10.2px * var(--app-font-scale))}
   body.is-mobile .trait-preset-body{grid-template-columns:1fr;gap:6px;padding:8px}
-  body.is-mobile .trait-preset-title{grid-template-columns:minmax(0,1fr) max-content minmax(0,1fr);gap:5px}
-  body.is-mobile .trait-preset-version-badge{font-size:calc(8.4px * var(--app-font-scale));padding:0;gap:3px}
+  body.is-mobile .trait-preset-title, body.is-mobile.is-tabbed .mobile-page .trait-preset-title{grid-template-columns:minmax(0,1fr) max-content minmax(0,1fr);gap:4px;padding-left:8px;padding-right:8px}
+  body.is-mobile .trait-preset-version-badge, body.is-mobile.is-tabbed .mobile-page .trait-preset-version-badge{font-size:calc(8.4px * var(--app-font-scale));padding:0;gap:3px}
   body.is-mobile .trait-preset-version-value{font-size:calc(8.7px * var(--app-font-scale))}
   body.is-mobile .trait-preset-name-row, body.is-mobile .trait-preset-load-row{display:grid;grid-template-columns:minmax(76px,.55fr) minmax(0,1.45fr) minmax(74px,.65fr);gap:6px;align-items:center}
   body.is-mobile .trait-preset-actions{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
   body.is-mobile .trait-preset-label, body.is-mobile .trait-preset-body input:not([type="file"]), body.is-mobile .trait-preset-body select, body.is-mobile .trait-preset-body .btn{height:32px;min-height:32px;font-size:calc(10.2px * var(--app-font-scale))}
-  body.is-mobile .trait-preset-reset-btn{box-sizing:border-box;width:auto;min-width:0;height:28px;min-height:28px;padding:0 8px;font-size:calc(10.2px * var(--app-font-scale));line-height:1;display:inline-flex;align-items:center;justify-content:center}
+  body.is-mobile .trait-preset-reset-btn, body.is-mobile.is-tabbed .mobile-page .trait-preset-reset-btn{box-sizing:border-box;width:max-content;max-width:max-content;min-width:0;height:26px;min-height:26px;padding:0 7px;font-size:calc(9.5px * var(--app-font-scale));line-height:1;display:inline-flex;align-items:center;justify-content:center}
   body.is-mobile .trait-subgroup-title{height:40px;min-height:40px;font-size:calc(13px * var(--app-font-scale))}
   body.is-mobile .trait-subgroup-body{padding:8px}
   body.is-mobile .trait-limit-grid label{height:32px;gap:4px;font-size:calc(9.3px * var(--app-font-scale))}
