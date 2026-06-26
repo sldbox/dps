@@ -119,14 +119,16 @@ function showToast(message, type='ok'){
       document.body.appendChild(root);
     }
     const el=document.createElement('div');
+    const text=String(message ?? '');
     el.className='toast '+type;
-    el.textContent=message;
+    el.textContent=text;
     root.appendChild(el);
     requestAnimationFrame(()=>el.classList.add('show'));
+    const visibleMs=text.includes('\n') ? 5200 : 2200;
     setTimeout(()=>{
       el.classList.remove('show');
       setTimeout(()=>el.remove(), 220);
-    }, 2200);
+    }, visibleMs);
   }catch(e){}
 }
 const ROUND_INPUT_MIN=1;
@@ -4140,6 +4142,7 @@ function safeJsonParse(raw){
   return null;
 }
 const TRAIT_PRESET_STATUS_STORAGE_KEY=DPS_CONFIG.storage.traitPresetStatusKey || 'gbd_dps_calculator:trait_preset_status';
+const TRAIT_PRESET_EXPORT_CURRENT_APPLIED_MESSAGE='최신 통합 프리셋으로 적용되었습니다.\n가져온 프리셋 정보가 최신 구조로 갱신되어 저장되었습니다.\n전체 초기화나 다시 가져오기 없이 바로 사용하시면 됩니다.';
 const TRAIT_PRESET_STATUS_LABELS={save:'저장됨',load:'불러옴',delete:'삭제됨',import:'가져옴',export:'내보냄'};
 function padStatusPart(value){return String(value).padStart(2,'0');}
 function formatTraitPresetStatusDate(year, month, day, hour, minute, action){
@@ -4193,6 +4196,11 @@ function notifyStorageAction(message, type='ok', options={}){
   const displayMessage=statusMessage || message;
   if(statusMessage) updateTraitPresetStatus(statusMessage, {persist:true});
   try{ showToast(displayMessage, type); }catch(e){}
+}
+function notifyTraitPresetExportComplete(wasLegacyPreset){
+  const statusMessage=formatTraitPresetStatus('export');
+  updateTraitPresetStatus(statusMessage, {persist:true});
+  try{ showToast(wasLegacyPreset ? TRAIT_PRESET_EXPORT_CURRENT_APPLIED_MESSAGE : '특성 프리셋 내보내기 완료', 'ok'); }catch(e){}
 }
 function saveState(options={}){
   const silent=!!options.silent;
@@ -4815,6 +4823,7 @@ function downloadTraitPresetExport(customName=''){
     if(!isStorageLocked()) saveState({silent:true});
     const store=loadTraitPresetStore();
     if(!store.presets.length){ notifyStorageAction('내보낼 프리셋이 없습니다.','err'); return false; }
+    const wasLegacyPreset=store.presets.some(preset=>shouldTreatTraitPresetAsLegacy(preset));
     const exportStore=finalizeTraitPresetStoreForExport(store);
     saveTraitPresetStore(exportStore,{source:'export'});
     const defaultPreset=exportStore.presets.find(item=>item.id===exportStore.defaultPresetId);
@@ -4831,7 +4840,7 @@ function downloadTraitPresetExport(customName=''){
     URL.revokeObjectURL(url);
     closeTraitPresetExportModal();
     refreshTraitPresetControls(selectedTraitPresetId());
-    notifyStorageAction('특성 프리셋 내보내기 완료','ok',{statusAction:'export'});
+    notifyTraitPresetExportComplete(wasLegacyPreset);
     return true;
   }catch(e){
     logAppError('[trait preset export failed]',e);

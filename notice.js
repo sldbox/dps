@@ -140,17 +140,18 @@
         html: `
           <div class="notice-hero-card notice-hero-important">
             <span class="notice-hero-label">업데이트 필요</span>
-            <strong>이전 버전에서 만든 프리셋을 사용 중입니다.</strong>
-            <p>현재 화면에서는 사용할 수 있게 맞춰 보여주고 있지만, 새 파일로 다시 저장해 두는 것이 좋습니다.</p>
+            <strong>이전 버전에서 만든 통합 프리셋을 사용 중입니다.</strong>
+            <p>가져온 프리셋 정보는 화면에 즉시 적용되어 사용할 수 있습니다. 다만 최신 구조로 저장하려면 내보내기를 완료해 주세요.</p>
           </div>
           <div class="notice-step-card" data-notice-accent="amber">
             <h3>권장 작업</h3>
             <ul>
-              <li>아래 <b>[프리셋 내보내기]</b> 버튼을 눌러 최신 프리셋 파일로 보관해 주세요.</li>
-              <li>새 파일을 기준으로 이후 비교와 백업을 진행해 주세요.</li>
+              <li>아래 <b>[프리셋 내보내기]</b> 버튼을 눌러 최신 통합 프리셋 파일로 보관해 주세요.</li>
+              <li>내보내기를 완료하면 가져온 프리셋 정보가 최신 구조로 갱신되어 저장됩니다.</li>
+              <li>전체 초기화나 다시 가져오기 없이 바로 사용하시면 됩니다.</li>
             </ul>
           </div>
-          <p class="notice-warning-text">예전 파일만 계속 사용하면 일부 값 표시나 프리셋 비교 결과가 다르게 보일 수 있습니다.</p>
+          <p class="notice-warning-text">내보내기 완료 후에는 "최신 통합 프리셋으로 적용되었습니다." 안내가 표시됩니다.</p>
         `,
         actions: ['export', 'later']
       };
@@ -162,8 +163,8 @@
         html: `
           <div class="notice-hero-card notice-hero-note">
             <span class="notice-hero-label">최신 상태</span>
-            <strong>현재 프리셋은 최신버전입니다.</strong>
-            <p>추가 조치 없이 그대로 사용하면 됩니다.</p>
+            <strong>현재 프리셋은 최신 통합 프리셋입니다.</strong>
+            <p>전체 초기화나 다시 가져오기 없이 바로 사용하시면 됩니다.</p>
           </div>
         `,
         actions: []
