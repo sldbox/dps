@@ -5,9 +5,9 @@
   const $ = (id) => document.getElementById(id);
   const NOTICE_SESSION_DISMISS_KEY = 'gbd_dps_calculator:notice_legacy_preset_dismissed';
   const NOTICE_TABS = [
-    { id: 'legacy-preset-update', label: '프리셋 최신화 안내' },
-    { id: 'notes', label: '참고사항' },
-    { id: 'creator', label: '문의' }
+    { id: 'legacy-preset-update', label: '프리셋', meta: '저장 파일 안내' },
+    { id: 'notes', label: '참고사항', meta: '계산 기준' },
+    { id: 'creator', label: '문의', meta: '제보 채널' }
   ];
 
   const NOTICE_TAB_IDS = new Set(NOTICE_TABS.map((tab) => tab.id));
@@ -17,7 +17,12 @@
       title: '참고사항',
       level: 'note',
       html: `
-        <div class="notice-step-card">
+        <div class="notice-hero-card notice-hero-note">
+          <span class="notice-hero-label">계산 기준</span>
+          <strong>모드마다 적용되는 값이 다릅니다.</strong>
+          <p>저장된 프리셋 값은 그대로 보관하되, 실제 DPS 계산은 현재 선택한 모드 기준으로 처리됩니다.</p>
+        </div>
+        <div class="notice-step-card" data-notice-accent="blue">
           <h3>먼저 알아둘 점</h3>
           <ul>
             <li>입력한 값과 선택한 값은 프리셋에 저장됩니다.</li>
@@ -25,14 +30,14 @@
             <li>프리셋 불러오기와 비교 분석에서는 저장된 값을 그대로 보여주고, 실제 DPS는 현재 모드에 맞는 항목만 사용합니다.</li>
           </ul>
         </div>
-        <div class="notice-step-card">
+        <div class="notice-step-card" data-notice-accent="green">
           <h3>개인전</h3>
           <ul>
             <li>내가 입력한 스펙, 특성, 룬, 인첸트 값을 기준으로 계산합니다.</li>
             <li>적 물량은 1배 기준으로 계산합니다.</li>
           </ul>
         </div>
-        <div class="notice-step-card">
+        <div class="notice-step-card" data-notice-accent="violet">
           <h3>협동전</h3>
           <ul>
             <li>협동 가능한 난이도에서만 협동 DPS로 계산합니다.</li>
@@ -41,7 +46,7 @@
             <li>도전의 탑, Abyss road, Deep Abyss에서는 협동 DPS가 적용되지 않습니다.</li>
           </ul>
         </div>
-        <div class="notice-step-card">
+        <div class="notice-step-card" data-notice-accent="amber">
           <h3>도전의 탑</h3>
           <ul>
             <li>도전의 탑은 목표 라운드가 아니라 도전의탑 층수로 계산합니다.</li>
@@ -51,7 +56,7 @@
             <li>층별 적 체력, 실드, 물량 기준을 반영합니다.</li>
           </ul>
         </div>
-        <div class="notice-step-card">
+        <div class="notice-step-card" data-notice-accent="red">
           <h3>Abyss road / Deep Abyss</h3>
           <ul>
             <li>침식 스텍과 침식 내성은 Abyss road, Deep Abyss에서 적용됩니다.</li>
@@ -68,12 +73,16 @@
       title: '문의',
       level: 'info',
       html: `
+        <div class="notice-hero-card notice-hero-info">
+          <span class="notice-hero-label">문의 / 제보</span>
+          <strong>오류 화면과 기대값을 함께 보내주면 확인이 빨라집니다.</strong>
+          <p>프리셋, 화면 위치, 실제 표시값을 같이 알려주세요.</p>
+        </div>
         <div class="notice-creator-card">
           <div><span>문의</span><b>회장</b></div>
           <div><span>귓말 코드</span><b>3-S2-1-2461127</b></div>
         </div>
-        <p>오류 제보나 사용 문의는 귓말 또는 디스코드로 보내주세요.</p>
-        <div class="notice-step-card">
+        <div class="notice-step-card" data-notice-accent="blue">
           <h3>문의할 때 알려주면 좋은 내용</h3>
           <ul>
             <li>어떤 프리셋을 사용했는지</li>
@@ -111,7 +120,7 @@
   function tabHtml(target) {
     return NOTICE_TABS.map((tab) => {
       const active = tab.id === target;
-      return `<button type="button" class="notice-tab${active ? ' active' : ''}" data-notice-tab="${tab.id}" aria-selected="${active ? 'true' : 'false'}">${tab.label}</button>`;
+      return `<button type="button" class="notice-tab${active ? ' active' : ''}" data-notice-tab="${tab.id}" aria-selected="${active ? 'true' : 'false'}"><span>${tab.label}</span><small>${tab.meta}</small></button>`;
     }).join('');
   }
 
@@ -126,9 +135,18 @@
         title: '프리셋 최신화 안내',
         level: 'important',
         html: `
-          <p>이전 버전에서 만든 프리셋을 사용 중입니다.</p>
-          <p>현재 화면에서는 사용할 수 있게 맞춰 보여주고 있지만, 새 파일로 다시 저장해 두는 것이 좋습니다.</p>
-          <p>아래 <b>[프리셋 내보내기]</b> 버튼을 눌러 최신 프리셋 파일로 보관해 주세요.</p>
+          <div class="notice-hero-card notice-hero-important">
+            <span class="notice-hero-label">업데이트 필요</span>
+            <strong>이전 버전에서 만든 프리셋을 사용 중입니다.</strong>
+            <p>현재 화면에서는 사용할 수 있게 맞춰 보여주고 있지만, 새 파일로 다시 저장해 두는 것이 좋습니다.</p>
+          </div>
+          <div class="notice-step-card" data-notice-accent="amber">
+            <h3>권장 작업</h3>
+            <ul>
+              <li>아래 <b>[프리셋 내보내기]</b> 버튼을 눌러 최신 프리셋 파일로 보관해 주세요.</li>
+              <li>새 파일을 기준으로 이후 비교와 백업을 진행해 주세요.</li>
+            </ul>
+          </div>
           <p class="notice-warning-text">예전 파일만 계속 사용하면 일부 값 표시나 프리셋 비교 결과가 다르게 보일 수 있습니다.</p>
         `,
         actions: ['export', 'later']
@@ -139,7 +157,11 @@
         title: '프리셋 최신화 안내',
         level: 'note',
         html: `
-          <p>현재 프리셋은 최신버전입니다.</p>
+          <div class="notice-hero-card notice-hero-note">
+            <span class="notice-hero-label">최신 상태</span>
+            <strong>현재 프리셋은 최신버전입니다.</strong>
+            <p>추가 조치 없이 그대로 사용하면 됩니다.</p>
+          </div>
         `,
         actions: []
       };
@@ -148,8 +170,11 @@
       title: '프리셋 최신화 안내',
       level: 'note',
       html: `
-        <p>현재 불러온 프리셋이 없습니다.</p>
-        <p><b>프리셋을 불러와 주세요.</b></p>
+        <div class="notice-hero-card notice-hero-note">
+          <span class="notice-hero-label">대기 중</span>
+          <strong>현재 불러온 프리셋이 없습니다.</strong>
+          <p>프리셋을 불러오면 최신화 상태를 확인할 수 있습니다.</p>
+        </div>
       `,
       actions: []
     };
@@ -167,7 +192,7 @@
   function contentHtml(target) {
     const item = target === 'legacy-preset-update' ? legacyNoticeContent() : NOTICE_CONTENT[target];
     return `<section class="notice-content notice-level-${item.level || 'note'}" data-notice-content="${target}">
-      <h2>${item.title}</h2>
+      <h2><span>${item.title}</span><em>${item.level === 'important' ? '확인 필요' : '안내'}</em></h2>
       <div class="notice-content-body">${item.html}</div>
       ${actionHtml(item)}
     </section>`;
@@ -194,8 +219,11 @@
       <section class="notice-modal" role="dialog" aria-modal="true" aria-labelledby="noticeModalTitle">
         <header class="notice-modal-head">
           <div class="notice-modal-title-wrap">
-            <span class="notice-modal-icon" aria-hidden="true">!</span>
-            <h2 id="noticeModalTitle">공지사항</h2>
+            <span class="notice-modal-icon" aria-hidden="true">i</span>
+            <div>
+              <span class="notice-modal-kicker">DPS CALCULATOR</span>
+              <h2 id="noticeModalTitle">공지사항</h2>
+            </div>
           </div>
           <button type="button" class="notice-modal-close" data-notice-close="1" aria-label="공지사항 닫기">×</button>
         </header>

@@ -11,7 +11,7 @@
     { key: 'rune-spec', label: '룬정보', selectors: ['.clean-rune-card'] },
     { key: 'rune-effect', label: '룬효과/버프', selectors: ['.unit-enhance-card'] },
     { key: 'trait', label: '특성보드', selectors: ['.col-right'] },
-    { key: 'result', label: '데미지보드', selectors: ['.stat-dps-card', '.bus-cut-card', '.final-damage-card'] },
+    { key: 'result', label: '데미지 보드', selectors: ['.stat-dps-card', '.bus-cut-card', '.final-damage-card'] },
     { key: 'zero-rank', label: '승단', selectors: ['.zero-rank-card'] },
     { key: 'dps-table', label: 'DPS표', selectors: ['.mobile-reference-dps'], toneClass: 'tone-reference' },
     { key: 'month-rune', label: '이달의룬', selectors: ['.mobile-reference-runes'], toneClass: 'tone-reference' },
