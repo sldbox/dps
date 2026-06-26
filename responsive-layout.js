@@ -11,11 +11,11 @@
     { key: 'rune-spec', label: '룬정보', selectors: ['.clean-rune-card'] },
     { key: 'rune-effect', label: '룬효과/버프', selectors: ['.unit-enhance-card'] },
     { key: 'trait', label: '특성보드', selectors: ['.col-right'] },
-    { key: 'result', label: 'DPS보드', selectors: ['.stat-dps-card', '.bus-cut-card', '.final-damage-card'] },
+    { key: 'result', label: '데미지보드', selectors: ['.stat-dps-card', '.bus-cut-card', '.final-damage-card'] },
     { key: 'zero-rank', label: '승단', selectors: ['.zero-rank-card'] },
-    { key: 'dps-table', label: 'DPS표', selectors: ['.mobile-reference-dps'] },
-    { key: 'month-rune', label: '이달의룬', selectors: ['.mobile-reference-runes'] },
-    { key: 'jewel', label: '쥬얼', selectors: ['.mobile-reference-jewels'] }
+    { key: 'dps-table', label: 'DPS표', selectors: ['.mobile-reference-dps'], toneClass: 'tone-reference' },
+    { key: 'month-rune', label: '이달의룬', selectors: ['.mobile-reference-runes'], toneClass: 'tone-reference' },
+    { key: 'jewel', label: '쥬얼', selectors: ['.mobile-reference-jewels'], toneClass: 'tone-reference' }
   ];
 
   const state = {
@@ -134,7 +134,7 @@
     pages.forEach((page, idx) => {
       const btn = document.createElement('button');
       btn.type = 'button';
-      btn.className = 'mobile-swipe-tab';
+      btn.className = ['mobile-swipe-tab', page.toneClass].filter(Boolean).join(' ');
       btn.textContent = page.label;
       btn.setAttribute('aria-pressed', 'false');
       btn.addEventListener('click', () => showMobilePage(idx, true, true));

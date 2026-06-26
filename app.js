@@ -439,7 +439,6 @@ function setSelectButton(id,value){
   const el=$(id);
   if(!el) return;
   el.value=value;
-  if(id==='enhanceMaster') syncPowerBlessOptions();
   syncSelectButtons();
   requestAppUpdate();
   scheduleAutoSaveToast();
@@ -461,15 +460,12 @@ function syncBuffChoiceButtons(){
     item.setAttribute('aria-pressed', active ? 'true' : 'false');
   });
 }
-const POWER_BLESS_OPTIONS_BY_MASTER={OFF:[0],ON:[20,40,60],'ON+':[30,60,90]};
-const POWER_BLESS_AUTO_VALUES={ON:{1:20,2:40,3:60},'ON+':{1:30,2:60,3:90}};
-const POWER_BLESS_ALL_OPTIONS=Array.from(new Set(Object.values(POWER_BLESS_OPTIONS_BY_MASTER).flat())).sort((a,b)=>a-b);
+const POWER_BLESS_ALL_OPTIONS=[0,20,30,40,60,90];
 const COOP_PLAYERS_DEFAULT='3';
 const EROSION_CONTROL_DEFAULTS={erosionStack:'500',jewelErosionRes:'30'};
 const EROSION_CONTROL_IDS=new Set(Object.keys(EROSION_CONTROL_DEFAULTS));
 const SOLO_PENANCE_MAX=20;
 const COOP_PENANCE_MAX=13;
-function powerBlessAllowedOptions(master){return POWER_BLESS_OPTIONS_BY_MASTER[master] || POWER_BLESS_OPTIONS_BY_MASTER.OFF;}
 function normalizeOnOffValue(value, fallback='OFF'){
   const text=String(value??'').trim().toUpperCase();
   return text==='ON' ? 'ON' : text==='OFF' ? 'OFF' : fallback;
@@ -515,43 +511,29 @@ function syncPenanceOptions(){
   el.value=current;
   el.dataset.penanceValue=current;
 }
-function currentPowerBlessPlayerCount(){
-  return isCoopActive() ? coopPlayerCount() : Number(normalizeTeamCountValue(v('team')));
-}
-function autoPowerBlessValue(master=vs('enhanceMaster')){
-  const byCount=POWER_BLESS_AUTO_VALUES[master];
-  return byCount ? String(byCount[currentPowerBlessPlayerCount()] || 0) : '0';
-}
 function powerBlessOptionLabel(value){return Number(value)>0 ? String(value) : '없음';}
 function normalizePowerBlessRawValue(value){
   const raw=String(value ?? '').replace(/,/g,'').trim();
-  if(raw==='') return '0';
+  if(raw==='' || raw==='없음') return '0';
   const n=Math.max(0, Math.round(excelNumber(value) ?? (+raw || 0)));
   return POWER_BLESS_ALL_OPTIONS.includes(n) ? String(n) : '0';
 }
-function normalizePowerBlessValueForMaster(value, master=vs('enhanceMaster')){
-  const raw=Number(normalizePowerBlessRawValue(value));
-  const allowed=powerBlessAllowedOptions(master);
-  return String(allowed.includes(raw) ? raw : (allowed[0] ?? 0));
+function powerBlessDisplayText(value){
+  return powerBlessOptionLabel(normalizePowerBlessRawValue(value));
 }
-function effectivePowerBlessValue(master=vs('enhanceMaster'), value=vs('pbless')){
-  return Number(normalizePowerBlessValueForMaster(value, master));
+function effectivePowerBlessValue(value=vs('pbless')){
+  return Number(normalizePowerBlessRawValue(value));
 }
 function syncPowerBlessOptions(){
   const el=$('pbless');
   if(!el) return;
-  const master=vs('enhanceMaster') || 'OFF';
-  const allowed=powerBlessAllowedOptions(master);
-  const current=normalizePowerBlessValueForMaster(el.value, master);
-  const signature=`master:${master}:${allowed.join(',')}`;
+  const current=normalizePowerBlessRawValue(el.value);
+  const signature=`pbless:${POWER_BLESS_ALL_OPTIONS.join(',')}`;
   if(el.dataset.optionSignature!==signature){
-    setSelectOptions(el, allowed.map(value=>({value,label:powerBlessOptionLabel(value)})));
+    setSelectOptions(el, POWER_BLESS_ALL_OPTIONS.map(value=>({value,label:powerBlessOptionLabel(value)})));
     el.dataset.optionSignature=signature;
   }
   el.value=current;
-}
-function excelEnhanceMasterValue(value){
-  return excelStateValue('enhanceMaster', value) || 'OFF';
 }
 function setCoopModeOptions(value='OFF'){
   const coop=$('coopMode');
@@ -1478,7 +1460,6 @@ function computeDpsPreview(diffName, penanceLevel, round, options={}){
     const coopEl=$('coopMode');
     const coopPlayersEl=$('coopPlayers');
     const teamEl=$('team');
-    const pblessEl=$('pbless');
     const battleMode=options.battleMode==='coop' ? 'coop' : 'solo';
     if(diffEl) diffEl.value=diffName;
     if(penEl){
@@ -1534,14 +1515,6 @@ function computeDpsPreview(diffName, penanceLevel, round, options={}){
         coopPlayersEl.value=players;
       }
       if(teamEl) teamEl.value=players;
-      if(pblessEl){
-        const master=vs('enhanceMaster') || 'OFF';
-        const allowed=powerBlessAllowedOptions(master);
-        const next=normalizePowerBlessValueForMaster(autoPowerBlessValue(master), master);
-        setSelectOptions(pblessEl, allowed.map(value=>({value,label:powerBlessOptionLabel(value),selected:String(value)===next})));
-        pblessEl.dataset.optionSignature=`preview:pbless:${master}:${allowed.join(',')}`;
-        pblessEl.value=next;
-      }
     }
     const s=computeStatsRaw();
     return Number.isFinite(s.M19) ? s.M19 : 0;
@@ -2187,6 +2160,7 @@ function compareSelectDisplayText(value,id){
   return text || '—';
 }
 function compareDisplayText(value,id){
+  if(id==='pbless') return powerBlessDisplayText(value);
   if(typeof value==='boolean') return value?'ON':'OFF';
   if(id) return compareSelectDisplayText(value,id);
   const text=String(value??'').trim();
@@ -2250,7 +2224,7 @@ const FIELD_REGISTRY={
   coopMode:{kind:'기본정보',name:'협동',compare:true,save:true,excel:'select'},
   coopPlayers:{kind:'기본정보',name:'협동 인원수',compare:true,save:true,excel:'select'},
   team:{kind:'기본정보',name:'출발 지원 인원수',compare:true,save:true,excel:'number'},
-  pbless:{kind:'기본정보',name:'파워 블레스',compare:true,save:true,excel:'number'},
+  pbless:{kind:'기본정보',name:'파워 블레스',compare:true,save:true,excel:'select'},
   spBankApply:{kind:'기본정보',name:'SP 은행',compare:true,save:true},
   penance:{kind:'기본정보',name:'고행 단계',compare:true,save:true,excel:'number'},
   titleTdBonus:{kind:'기본정보',name:'타이틀 총 데미지',compare:true,save:true,excel:'number'},
@@ -2832,7 +2806,6 @@ function buildExcelState(cells, specCells, zeroCells, sheetName=''){
     ['addUA',getSpecAdditionalValue(specCells,'addUA')]
   ].forEach(([id,value])=>{ applied+=assign(id,value); });
   if(cells.D4!==undefined && cells.D4!==null && cells.D4!==''){
-    const masterValue=values.enhanceMaster || excelEnhanceMasterValue(cells.H16);
     values.pbless=normalizePowerBlessRawValue(cells.D4);
     applied++;
   }
@@ -3211,7 +3184,7 @@ function updateTraits(){
         </div>
       </div>`;
     }).join('');
-    return `<div class="trait-group"><h4><span class="trait-title">${tier}</span><span class="trait-tools"><button type="button" class="ui-action-btn mini-btn master" data-action="masterTier" data-tier="${tier}">구간 마스터</button><button type="button" class="ui-action-btn mini-btn reset" data-action="resetTier" data-tier="${tier}">초기화</button></span></h4>${rows}</div>`;
+    return `<div class="trait-group"><h4><span class="trait-title">${tier}</span><span class="trait-tools"><button type="button" class="ui-action-btn mini-btn master" data-action="masterTier" data-tier="${tier}">구간 마스터</button><button type="button" class="ui-action-btn mini-btn reset danger" data-action="resetTier" data-tier="${tier}">초기화</button></span></h4>${rows}</div>`;
   }).join('');
 }
 let traitKeyNavGuardUntil=0;
@@ -3899,7 +3872,10 @@ function writeElementValue(el, value){
     el.dataset.erosionValue=stored;
     value=stored;
   }
-  if(el.id==='pbless') value=normalizePowerBlessRawValue(value);
+  if(el.id==='pbless'){
+    value=normalizePowerBlessRawValue(value);
+    syncPowerBlessOptions();
+  }
   if(el.type==='checkbox') el.checked=!!value;
   else el.value=value;
   if(TRAIT_LIMIT_INPUT_IDS.has(el.id)) syncTraitLimitInputDisplay(el);
@@ -4121,10 +4097,7 @@ function applyStateObject(data){
     const sanitizedValues=sanitizeSavedValues(data.values || {});
     if(Object.prototype.hasOwnProperty.call(sanitizedValues,'enhanceMaster')){
       const masterEl=$('enhanceMaster');
-      if(masterEl){
-        writeElementValue(masterEl, sanitizedValues.enhanceMaster);
-        syncPowerBlessOptions();
-      }
+      if(masterEl) writeElementValue(masterEl, sanitizedValues.enhanceMaster);
     }
     Object.entries(sanitizedValues).forEach(([id,val])=>{
       if(id==='dpsTableMinDps') return;
@@ -4169,32 +4142,33 @@ function safeJsonParse(raw){
 const TRAIT_PRESET_STATUS_STORAGE_KEY=DPS_CONFIG.storage.traitPresetStatusKey || 'gbd_dps_calculator:trait_preset_status';
 const TRAIT_PRESET_STATUS_LABELS={save:'저장됨',load:'불러옴',delete:'삭제됨',import:'가져옴',export:'내보냄'};
 function padStatusPart(value){return String(value).padStart(2,'0');}
+function formatTraitPresetStatusDate(year, month, day, hour, minute, action){
+  return `${padStatusPart(Number(year)%100)}년 ${padStatusPart(month)}월 ${padStatusPart(day)}일 ${padStatusPart(hour)}:${padStatusPart(minute)} - ${action}`;
+}
 function formatTraitPresetStatus(action, date=new Date()){
   const label=TRAIT_PRESET_STATUS_LABELS[action];
   if(!label) return '';
-  return `${date.getMonth()+1}/${date.getDate()} ${padStatusPart(date.getHours())}:${padStatusPart(date.getMinutes())} ${label}`;
+  return formatTraitPresetStatusDate(date.getFullYear(), date.getMonth()+1, date.getDate(), date.getHours(), date.getMinutes(), label);
 }
 function normalizeTraitPresetStatusText(message){
   const text=String(message || '').replace(/^최근 상태\s+/, '').trim();
   if(!text) return '';
-  const actionMatch=text.match(/\s+(저장됨|불러옴|삭제됨|가져옴|내보냄)$/);
+  const actionMatch=text.match(/\s*-\s*(저장됨|불러옴|삭제됨|가져옴|내보냄)$/) || text.match(/\s+(저장됨|불러옴|삭제됨|가져옴|내보냄)$/);
   if(!actionMatch) return text;
   const action=actionMatch[1];
   const timeText=text.slice(0, actionMatch.index).trim();
+  const currentYear=new Date().getFullYear();
   let match=timeText.match(/^(\d{1,2})\/(\d{1,2})\s+(\d{1,2}):(\d{2})$/);
-  if(match) return `${Number(match[1])}/${Number(match[2])} ${padStatusPart(match[3])}:${match[4]} ${action}`;
-  match=timeText.match(/^(?:\d{2}|\d{4})[-년\s]+(\d{1,2})[-월\s]+(\d{1,2})(?:일)?[-\s]+(\d{1,2}):(\d{2})$/);
-  if(match) return `${Number(match[1])}/${Number(match[2])} ${padStatusPart(match[3])}:${match[4]} ${action}`;
+  if(match) return formatTraitPresetStatusDate(currentYear, match[1], match[2], match[3], match[4], action);
+  match=timeText.match(/^(?:(\d{2}|\d{4})년\s*)?(\d{1,2})월\s*(\d{1,2})일\s+(\d{1,2}):(\d{2})$/);
+  if(match) return formatTraitPresetStatusDate(match[1] || currentYear, match[2], match[3], match[4], match[5], action);
+  match=timeText.match(/^(?:(\d{2}|\d{4})[-년\s]+)?(\d{1,2})[-월\s]+(\d{1,2})(?:일)?[-\s]+(\d{1,2}):(\d{2})$/);
+  if(match) return formatTraitPresetStatusDate(match[1] || currentYear, match[2], match[3], match[4], match[5], action);
   return text;
 }
 function renderTraitPresetStatusText(message){
   const text=normalizeTraitPresetStatusText(message);
-  if(!text) return '상태 없음';
-  const lastSpace=text.lastIndexOf(' ');
-  if(lastSpace<=0) return escapeCompareHtml(text);
-  const datePart=text.slice(0,lastSpace);
-  const actionPart=text.slice(lastSpace+1);
-  return `<span class="trait-preset-status-date">${escapeCompareHtml(datePart)}</span><span class="trait-preset-status-action">${escapeCompareHtml(actionPart)}</span>`;
+  return text ? escapeCompareHtml(text) : '';
 }
 function updateTraitPresetStatus(message, options={}){
   const text=normalizeTraitPresetStatusText(message);
@@ -4554,13 +4528,18 @@ function currentTraitPresetNoticeStatus(){
     presetCount:store.presets.length
   };
 }
+function traitPresetVersionHeaderLabel(info){
+  if(info?.state==='current') return '최신버전';
+  if(info?.state==='legacy') return '구버전';
+  return '확인 필요';
+}
 window.DpsTraitPresetVersion={info:traitPresetVersionInfo,status:currentTraitPresetNoticeStatus};
 function updateTraitPresetVersionView(preset){
   const view=$('traitPresetVersionView');
   const info=traitPresetVersionInfo(preset);
   if(view){
     view.className=`trait-preset-version-badge ${info.className}`;
-    view.innerHTML=`<span class="trait-preset-version-label">프리셋 버전</span><span class="trait-preset-version-value">${escapeCompareHtml(info.label)}</span>`;
+    view.innerHTML=`<span class="trait-preset-version-label">프리셋 버전</span><span class="trait-preset-version-separator">-</span><span class="trait-preset-version-value">${escapeCompareHtml(traitPresetVersionHeaderLabel(info))}</span>`;
   }
   const title=$('.trait-preset-title');
   if(title){
@@ -4572,7 +4551,6 @@ function refreshTraitPresetControls(selectedId){
   const store=loadTraitPresetStore();
   const select=$('traitPresetSelect');
   const nameInput=$('traitPresetName');
-  const defaultView=$('traitPresetDefaultView');
   const defaultBtn=$('traitPresetDefaultBtn');
   const selected=resolveTraitPresetSelection(store,selectedId || selectedTraitPresetId());
   if(select){
@@ -4595,11 +4573,6 @@ function refreshTraitPresetControls(selectedId){
   }
   const currentId=select?.value || '';
   const current=store.presets.find(preset=>preset.id===currentId);
-  const defaultPreset=store.presets.find(preset=>preset.id===store.defaultPresetId);
-  if(defaultView){
-    const presetName=defaultPreset ? defaultPreset.name : '없음';
-    defaultView.innerHTML=`<span class="trait-preset-default-label">기본 프리셋</span><span class="trait-preset-default-name">${escapeCompareHtml(presetName)}</span>`;
-  }
   updateTraitPresetVersionView(current);
   dispatchTraitPresetStoreChanged({source:'selection', selectedTraitPresetId:current?.id || '', versionState:traitPresetVersionInfo(current).state});
   if(defaultBtn) defaultBtn.textContent=current && current.id===store.defaultPresetId ? '기본 해제' : '기본 지정';
@@ -5889,23 +5862,18 @@ function bindReactiveInputs(){
       resetTeamOnDifficultyChange();
       syncDifficultyTargetControls();
       syncErosionControls();
-      syncPowerBlessOptions();
     }
     if(RUNE_CHOICE_SYNC_IDS.has(target.id)) syncRuneChoice();
     if(ENCHANT_INPUT_ID_SET.has(target.id)) syncEnchantInputs();
     if(RUNE_OPTION_SELECT_ID_SET.has(target.id)) syncExclusiveRuneOptions();
     if(target.id==='soloMode' || target.id==='coopMode'){
       syncBattleMode(target.id);
-      syncPowerBlessOptions();
     }
     if(target.id==='coopPlayers'){
       syncBattleMode('coopPlayers');
-      syncPowerBlessOptions();
     }
-    if(target.id==='enhanceMaster') syncPowerBlessOptions();
     if(target.id==='team'){
       syncTeamSelect();
-      syncPowerBlessOptions();
     }
     if(TRAIT_LIMIT_INPUT_IDS.has(target.id) && String(target.value).replace(/,/g,'').trim()==='0') syncTraitLimitInputDisplay(target);
     if(target.matches('select')) syncSelectButtons();
