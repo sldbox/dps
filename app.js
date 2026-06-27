@@ -1367,7 +1367,8 @@ function isDpsTableOpen(){
   return !!(modal?.classList.contains('is-open') && panel && !panel.hidden);
 }
 function getDpsTableTowerGroupSize(){
-  return 90;
+  if(document.body?.classList.contains('is-mobile')) return 90;
+  return 30;
 }
 function chunkDpsTowerFloors(minFloor, maxFloor, groupSize){
   const chunks=[];
@@ -1822,7 +1823,12 @@ function handleJewelImageError(img){
   if(visual) visual.classList.add('is-missing');
   img.remove();
 }
-window.dpsHandleJewelImageError=handleJewelImageError;
+function bindJewelImageEvents(){
+  document.addEventListener('error', e=>{
+    const img=e.target?.closest?.('.jewel-card-visual img[data-jewel-image]');
+    if(img) handleJewelImageError(img);
+  }, true);
+}
 function renderJewelAbility(label, text){
   const value=String(text||'').trim();
   const isUnreleased=value==='미발견';
@@ -1844,7 +1850,7 @@ function renderJewelCard(row){
     <article class="jewel-card">
       <header class="jewel-card-head">
         <div class="jewel-card-visual" aria-hidden="true">
-          <img src="${escapeCompareHtml(imageSources.src)}"${fallbackAttr} alt="" loading="lazy" onerror="window.dpsHandleJewelImageError(this)">
+          <img src="${escapeCompareHtml(imageSources.src)}"${fallbackAttr} data-jewel-image="1" alt="" loading="lazy">
           <span>${escapeCompareHtml(initial)}</span>
         </div>
         <b>${escapeCompareHtml(name)}</b>
@@ -2849,8 +2855,8 @@ function buildExcelState(cells, specCells, zeroCells, sheetName=''){
 function readFileAsText(file){
   return new Promise((resolve,reject)=>{
     const reader=new FileReader();
-    reader.onload=()=>resolve(String(reader.result||''));
-    reader.onerror=()=>reject(new Error('파일을 읽지 못했습니다.'));
+    reader.addEventListener('load',()=>resolve(String(reader.result||'')),{once:true});
+    reader.addEventListener('error',()=>reject(new Error('파일을 읽지 못했습니다.')),{once:true});
     reader.readAsText(file,'utf-8');
   });
 }
@@ -5947,6 +5953,7 @@ function bindAppEvents(){
   bindExcelCompareEvents();
   bindTraitPresetEvents();
   bindMonthRuneEvents();
+  bindJewelImageEvents();
   bindZeroScoreCalculator();
   bindTraitLimitDisplayEvents();
   bindReactiveInputs();
