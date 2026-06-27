@@ -994,9 +994,9 @@ button:disabled, .ui-action-btn:disabled, .ui-choice-btn:disabled, .ui-tab-btn:d
 .tone-notice, .tone-import{--tone-bg:var(--tone-warn-bg);--tone-bg-hover:var(--tone-warn-bg-hover);--tone-border:var(--tone-warn-border);--tone-border-hover:var(--tone-warn-border-hover);--tone-text:var(--tone-warn-text);--tone-text-hover:var(--tone-warn-text-hover)}
 .tone-export{--tone-bg:var(--tone-success-bg);--tone-bg-hover:var(--tone-success-bg-hover);--tone-border:var(--tone-success-border);--tone-border-hover:var(--tone-success-border-hover);--tone-text:var(--tone-success-text);--tone-text-hover:var(--tone-success-text-hover)}
 .btn.subtle:is(.tone-reference,.tone-compare,.tone-notice,.tone-import,.tone-export),
-.mobile-swipe-tab.tone-reference{background:var(--tone-bg);border-color:var(--tone-border);color:var(--tone-text)}
+.mobile-section-tab.tone-reference{background:var(--tone-bg);border-color:var(--tone-border);color:var(--tone-text)}
 .btn.subtle:is(.tone-reference,.tone-compare,.tone-notice,.tone-import,.tone-export):hover:not(:disabled),
-.mobile-swipe-tab.tone-reference:hover:not(.active){background:var(--tone-bg-hover);border-color:var(--tone-border-hover);color:var(--tone-text-hover)}
+.mobile-section-tab.tone-reference:hover:not(.active){background:var(--tone-bg-hover);border-color:var(--tone-border-hover);color:var(--tone-text-hover)}
 button, select{touch-action:manipulation}
 body.is-pc-landscape .wrap, body:not(.is-mobile):not(.is-tablet):not(.is-pc-portrait) .wrap{grid-template-columns:minmax(470px,1.28fr) minmax(400px,1.02fr) minmax(300px,.78fr);min-width:0;background:var(--ui-bg)}
 body.is-pc-landscape .col-left, body.is-pc-landscape .col-right, body.is-pc-landscape .col-mid, body:not(.is-mobile):not(.is-tablet):not(.is-pc-portrait) .col-left, body:not(.is-mobile):not(.is-tablet):not(.is-pc-portrait) .col-right, body:not(.is-mobile):not(.is-tablet):not(.is-pc-portrait) .col-mid{min-width:0;width:auto}
@@ -1124,14 +1124,13 @@ body.is-mobile .clean-rune-card .rune-stat-row{display:grid;grid-template-column
 body.is-mobile .clean-rune-card .rune-option-grid, body.is-mobile .clean-rune-card .additional-row{display:grid;grid-template-columns:96px minmax(0,1fr);gap:7px;align-items:center}
 body.is-mobile .clean-rune-card .enchant-combined-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(52px,.45fr) minmax(0,1fr);gap:6px;align-items:center}
 body.is-mobile .clean-rune-card label, body.is-mobile .clean-rune-card select, body.is-mobile .clean-rune-card input, body.is-mobile .clean-rune-card b{min-width:0;white-space:nowrap;word-break:keep-all;writing-mode:horizontal-tb;text-orientation:mixed;overflow:hidden;text-overflow:ellipsis}
-body:not(.is-tabbed) .mobile-swipe-tabs, body:not(.is-tabbed) .mobile-page{display:none}
+body:not(.is-tabbed) .mobile-section-tabs, body:not(.is-tabbed) .mobile-page{display:none}
 html.is-tabbed, body.is-tabbed{height:var(--mobile-vh, 100dvh);min-height:0;overflow-x:hidden;overflow-y:auto;overscroll-behavior-x:none;overscroll-behavior-y:auto}
 body.is-tabbed .wrap{height:var(--mobile-vh, 100dvh);min-height:0;max-height:var(--mobile-vh, 100dvh);overflow:hidden;grid-template-rows:auto auto minmax(0,1fr)}
 body.is-tabbed .hdr{flex:0 0 auto;position:sticky;top:0;z-index:50}
-body.is-tabbed .mobile-swipe-tabs{grid-column:1/-1;grid-row:2;position:sticky;top:var(--mobile-header-h, 56px);z-index:45;display:flex;flex-wrap:nowrap;align-items:center;flex:0 0 auto;width:100%;gap:7px;padding:7px 10px;overflow-x:auto;overflow-y:hidden;border-bottom:1px solid var(--ui-line,#26364d);background:rgba(12,18,29,.96);box-shadow:0 3px 10px rgba(0,0,0,.26);scrollbar-width:none;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain;scroll-snap-type:x proximity}
-body.is-tabbed .mobile-swipe-tabs::-webkit-scrollbar{display:none}
-body.is-tabbed .mobile-swipe-tab{flex:0 0 auto;width:auto;min-width:82px;height:32px;padding:0 12px;font-size:calc(11px * var(--app-font-scale));font-weight:900;letter-spacing:-.35px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;scroll-snap-align:start}
-body.is-tabbed .col-work{grid-column:1/-1;grid-row:3;display:block;flex:1 1 auto;width:var(--mobile-vw, 100vw);max-width:var(--mobile-vw, 100vw);min-width:0;height:calc(var(--mobile-vh, 100dvh) - var(--mobile-header-h, 56px) - var(--mobile-tabs-h, 47px));min-height:0;max-height:calc(var(--mobile-vh, 100dvh) - var(--mobile-header-h, 56px) - var(--mobile-tabs-h, 47px));padding:8px;overflow:hidden;overscroll-behavior-x:none;touch-action:pan-y;}
+body.is-tabbed .mobile-section-tabs{grid-column:1/-1;grid-row:2;position:sticky;top:var(--mobile-header-h, 56px);z-index:45;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));align-items:center;flex:0 0 auto;width:100%;gap:6px;padding:7px 10px;border-bottom:1px solid var(--ui-line,#26364d);background:rgba(12,18,29,.96);box-shadow:0 3px 10px rgba(0,0,0,.26)}
+body.is-tabbed .mobile-section-tab{width:100%;min-width:0;height:31px;padding:0 6px;font-size:calc(10.5px * var(--app-font-scale));font-weight:900;letter-spacing:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer}
+body.is-tabbed .col-work{grid-column:1/-1;grid-row:3;display:block;flex:1 1 auto;width:var(--mobile-vw, 100vw);max-width:var(--mobile-vw, 100vw);min-width:0;height:calc(var(--mobile-vh, 100dvh) - var(--mobile-header-h, 56px) - var(--mobile-tabs-h, 82px));min-height:0;max-height:calc(var(--mobile-vh, 100dvh) - var(--mobile-header-h, 56px) - var(--mobile-tabs-h, 82px));padding:8px;overflow:hidden;overscroll-behavior-x:none;touch-action:pan-y;}
 body.is-tabbed .col-left, body.is-tabbed .col-mid{display:none}
 body.is-tabbed .mobile-page{display:none;width:100%;max-width:100%;min-width:0;height:100%;min-height:0;max-height:100%;overflow-x:hidden;overflow-y:auto;overscroll-behavior-y:auto;-webkit-overflow-scrolling:touch;margin:0;padding:0;touch-action:pan-y}
 body.is-tabbed .mobile-page.active{display:block}
@@ -1247,14 +1246,14 @@ body .trait-board-panel::before, body .trait-board-panel::after{content:none;dis
 
 body:not(.is-mobile) .clean-rune-card .enchant-combined .enchant-result-label > span{display:flex;align-items:center;justify-content:center;height:31px;min-width:0;padding:0 7px;border-radius:8px;font-size:calc(11.5px * var(--app-font-scale));font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 body .unit-enhance-card .mini-ir > label, body .sg.unit-enhance-card.spec-unit-enhance .unit-enhance-left .mini-ir > label, body .clean-rune-card .rune-stat-row > label, body .clean-rune-card .rune-option-grid > label, body .clean-rune-card .additional-row > label, body:not(.is-mobile) .clean-rune-card .enchant-result-label > span, body .bus-cut-card .mini-table tbody td:first-child, body .final-damage-card .skill-ir > label{border-color:var(--field-label-bd, #30435f);border-left-width:1px;border-left-color:var(--field-label-accent, #425b7e);background:var(--field-label-bg, var(--color-slate-50));background-image:none;color:var(--field-label-text, #24344d);font-weight:800;box-shadow:none;text-shadow:none}
-.mobile-swipe-tab, .zero-rank-tab, .unit-enhance-card .seg-btns button, .unit-enhance-card .buff-choice-item, .trait-efficiency-row .trait-eff-apply{border:1px solid var(--ui-button-border);border-radius:var(--ui-control-radius);background:var(--ui-button-bg);color:var(--ui-button-text);box-shadow:var(--ui-button-shadow);text-shadow:none;transform:none;transition:background .15s ease,border-color .15s ease,color .15s ease,box-shadow .15s ease,transform .1s ease}
-.mobile-swipe-tab:hover:not(.active), .zero-rank-tab:hover:not(.active):not(.is-active):not([aria-selected="true"]), .unit-enhance-card .seg-btns button:hover:not(:disabled), .unit-enhance-card .buff-choice-item:hover{border-color:var(--ui-button-hover-border);background:var(--ui-button-hover-bg);color:var(--ui-button-hover-text);box-shadow:var(--ui-button-shadow);filter:none}
-.mobile-swipe-tab:active, .zero-rank-tab:active, .unit-enhance-card .seg-btns button:active:not(:disabled), .unit-enhance-card .buff-choice-item:active, .trait-efficiency-row .trait-eff-apply:active{transform:translateY(1px);box-shadow:inset 0 2px 5px rgba(0,0,0,.32)}
-.mobile-swipe-tab:focus-visible, .zero-rank-tab:focus-visible, .unit-enhance-card .seg-btns button:focus-visible, .unit-enhance-card .buff-choice-item:focus-visible, .trait-efficiency-row .trait-eff-apply:focus-visible{outline:none;border-color:var(--ui-button-hover-border);box-shadow:var(--ui-focus),var(--ui-button-shadow)}
-.mobile-swipe-tab.active, .zero-rank-tab.active, .zero-rank-tab.is-active, .zero-rank-tab[aria-selected="true"], .unit-enhance-card .seg-btns button.active, .unit-enhance-card .seg-btns button.is-active, .unit-enhance-card .buff-choice-item.is-active, .trait-efficiency-row .trait-eff-apply{background:var(--ui-button-active-bg);border-color:var(--ui-button-active-border);color:var(--ui-button-active-text);box-shadow:var(--ui-button-active-shadow);transform:none}
-.mobile-swipe-tab.tone-reference.active{background:var(--tone-bg-hover);border-color:var(--tone-border-hover);color:var(--tone-text-hover);box-shadow:var(--ui-button-active-shadow),inset 0 0 0 1px rgba(255,255,255,.12)}
-.mobile-swipe-tab.active:hover, .zero-rank-tab.active:hover, .zero-rank-tab.is-active:hover, .zero-rank-tab[aria-selected="true"]:hover, .unit-enhance-card .seg-btns button.active:hover, .unit-enhance-card .seg-btns button.is-active:hover, .unit-enhance-card .buff-choice-item.is-active:hover, .trait-efficiency-row .trait-eff-apply:hover{background:var(--ui-button-active-bg);border-color:var(--ui-button-active-border);color:var(--ui-button-active-text);box-shadow:var(--ui-button-active-shadow);filter:none}
-.mobile-swipe-tab.tone-reference.active:hover{background:var(--tone-bg-hover);border-color:var(--tone-border-hover);color:var(--tone-text-hover);box-shadow:var(--ui-button-active-shadow),inset 0 0 0 1px rgba(255,255,255,.12);filter:none}
+.mobile-section-tab, .zero-rank-tab, .unit-enhance-card .seg-btns button, .unit-enhance-card .buff-choice-item, .trait-efficiency-row .trait-eff-apply{border:1px solid var(--ui-button-border);border-radius:var(--ui-control-radius);background:var(--ui-button-bg);color:var(--ui-button-text);box-shadow:var(--ui-button-shadow);text-shadow:none;transform:none;transition:background .15s ease,border-color .15s ease,color .15s ease,box-shadow .15s ease,transform .1s ease}
+.mobile-section-tab:hover:not(.active), .zero-rank-tab:hover:not(.active):not(.is-active):not([aria-selected="true"]), .unit-enhance-card .seg-btns button:hover:not(:disabled), .unit-enhance-card .buff-choice-item:hover{border-color:var(--ui-button-hover-border);background:var(--ui-button-hover-bg);color:var(--ui-button-hover-text);box-shadow:var(--ui-button-shadow);filter:none}
+.mobile-section-tab:active, .zero-rank-tab:active, .unit-enhance-card .seg-btns button:active:not(:disabled), .unit-enhance-card .buff-choice-item:active, .trait-efficiency-row .trait-eff-apply:active{transform:translateY(1px);box-shadow:inset 0 2px 5px rgba(0,0,0,.32)}
+.mobile-section-tab:focus-visible, .zero-rank-tab:focus-visible, .unit-enhance-card .seg-btns button:focus-visible, .unit-enhance-card .buff-choice-item:focus-visible, .trait-efficiency-row .trait-eff-apply:focus-visible{outline:none;border-color:var(--ui-button-hover-border);box-shadow:var(--ui-focus),var(--ui-button-shadow)}
+.mobile-section-tab.active, .zero-rank-tab.active, .zero-rank-tab.is-active, .zero-rank-tab[aria-selected="true"], .unit-enhance-card .seg-btns button.active, .unit-enhance-card .seg-btns button.is-active, .unit-enhance-card .buff-choice-item.is-active, .trait-efficiency-row .trait-eff-apply{background:var(--ui-button-active-bg);border-color:var(--ui-button-active-border);color:var(--ui-button-active-text);box-shadow:var(--ui-button-active-shadow);transform:none}
+.mobile-section-tab.tone-reference.active{background:var(--tone-bg-hover);border-color:var(--tone-border-hover);color:var(--tone-text-hover);box-shadow:var(--ui-button-active-shadow),inset 0 0 0 1px rgba(255,255,255,.12)}
+.mobile-section-tab.active:hover, .zero-rank-tab.active:hover, .zero-rank-tab.is-active:hover, .zero-rank-tab[aria-selected="true"]:hover, .unit-enhance-card .seg-btns button.active:hover, .unit-enhance-card .seg-btns button.is-active:hover, .unit-enhance-card .buff-choice-item.is-active:hover, .trait-efficiency-row .trait-eff-apply:hover{background:var(--ui-button-active-bg);border-color:var(--ui-button-active-border);color:var(--ui-button-active-text);box-shadow:var(--ui-button-active-shadow);filter:none}
+.mobile-section-tab.tone-reference.active:hover{background:var(--tone-bg-hover);border-color:var(--tone-border-hover);color:var(--tone-text-hover);box-shadow:var(--ui-button-active-shadow),inset 0 0 0 1px rgba(255,255,255,.12);filter:none}
 body.is-pc-portrait .clean-rune-card .rune-panel.tidy-rune-panel{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;align-items:start}
 body.is-pc-portrait .clean-rune-card .rune-basic-card{grid-column:1;grid-row:1}
 body.is-pc-portrait .clean-rune-card .rune-option-card{grid-column:2;grid-row:1}
@@ -1709,20 +1708,22 @@ body .trait-board-panel .trait-group .tr > div:first-child{
 body .trait-board-panel .trait-group .tr-name{color:var(--color-slate-900)}
 body .trait-board-panel .trait-group .tr-type{color:var(--color-slate-500)}
 /* 헤더 참고 링크 / 모바일 참고 패널 */
-.header-reference-actions{display:flex;align-items:center;justify-content:flex-end;gap:6px;min-width:0}
-.btn.subtle.header-reference-btn,
-.btn.subtle.header-nexus-link{height:32px;min-height:32px;min-width:74px;padding:0 10px;font-size:calc(11.5px * var(--app-font-scale));text-decoration:none}
-.btn.subtle.header-reference-btn:hover:not(:disabled),
-.btn.subtle.header-nexus-link:hover{text-decoration:none}
-.btn.subtle.header-reference-btn:active:not(:disabled),
-.btn.subtle.header-nexus-link:active{transform:translateY(1px);box-shadow:inset 0 2px 5px rgba(0,0,0,.32)}
-.btn.subtle.header-nexus-link span{display:inline-flex;align-items:center;justify-content:center;margin-left:4px;font-size:.9em;line-height:1}
-body.is-tabbed .header-reference-actions{display:none}
+.btn.subtle.header-reference-btn{height:32px;min-height:32px;min-width:74px;padding:0 10px;font-size:calc(11.5px * var(--app-font-scale));text-decoration:none}
+.btn.subtle.header-reference-btn:hover:not(:disabled){text-decoration:none}
+.btn.subtle.header-reference-btn:active:not(:disabled){transform:translateY(1px);box-shadow:inset 0 2px 5px rgba(0,0,0,.32)}
+.header-convenience{display:block;position:relative;min-width:0}
+.header-convenience-toggle[aria-expanded="true"]{background:var(--tone-bg-hover);border-color:var(--tone-border-hover);color:var(--tone-text-hover);box-shadow:var(--ui-button-active-shadow)}
+.header-convenience-menu{position:absolute;top:calc(100% + 9px);right:0;z-index:70;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;width:min(360px,calc(var(--mobile-vw, 100vw) - 14px));padding:8px;border:1px solid rgba(125,151,185,.58);border-radius:12px;background:linear-gradient(180deg,rgba(24,35,52,.98),rgba(9,15,26,.98));box-shadow:0 12px 28px rgba(0,0,0,.38),inset 0 1px 0 rgba(255,255,255,.09)}
+.header-convenience-menu[hidden]{display:none}
+.header-convenience-menu::before{content:"";position:absolute;top:-5px;right:22px;width:9px;height:9px;border-left:1px solid rgba(125,151,185,.55);border-top:1px solid rgba(125,151,185,.55);background:rgba(22,31,45,.98);transform:rotate(45deg)}
+.header-convenience-menu .header-reference-btn{position:relative;z-index:1;width:100%;min-width:0;height:33px;min-height:33px;padding:0 5px;font-size:calc(10px * var(--app-font-scale));border-radius:9px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.header-convenience-menu .header-reference-btn:hover{box-shadow:0 3px 9px rgba(0,0,0,.25),inset 0 1px 0 rgba(255,255,255,.18)}
+.header-convenience-menu .header-convenience-link{grid-column:1/-1}
+.header-convenience-link span{display:inline-flex;align-items:center;justify-content:center;margin-left:3px;font-size:.9em;line-height:1}
 body.is-tabbed .notice-entry-btn{display:inline-flex;min-width:58px;height:30px;min-height:30px;padding:0 8px;border-radius:9px;font-size:calc(10px * var(--app-font-scale))}
 body.is-tabbed .notice-entry-icon{width:15px;height:15px}
 body.is-tabbed .notice-entry-icon svg{width:15px;height:15px}
-body:not(.is-tabbed) .mobile-reference-panel{display:none}
-body.is-tabbed .mobile-page > .mobile-reference-panel{display:block;width:100%;min-width:0;max-width:100%;margin:0;padding:0 0 10px;border:0;border-radius:0;background:transparent;box-shadow:none;overflow:visible;box-sizing:border-box}
+body .mobile-reference-panel{display:none}
 .mobile-reference-body{min-width:0;overflow:auto}
 .mobile-dps-table-tabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin:0 0 8px}
 .mobile-dps-table-tabs .dps-table-tab{height:30px;min-height:30px;padding:0 6px;font-size:calc(10.5px * var(--app-font-scale))}
@@ -1732,8 +1733,8 @@ body.is-tabbed .mobile-page > .mobile-reference-panel{display:block;width:100%;m
 .basic-info-head .basic-info-preset-status{flex:0 1 auto}
 body.is-mobile .basic-info-preset-status{font-size:calc(8.6px * var(--app-font-scale));gap:3px}
 body.is-mobile .hdr-meta{display:flex;flex:0 0 auto;width:auto;justify-content:flex-end;gap:6px}
-body.is-mobile .header-nexus-link{height:30px;min-width:64px;padding:0 8px;font-size:calc(10px * var(--app-font-scale));border-radius:9px}
-body.is-mobile .header-nexus-link span{display:none}
+body.is-mobile .header-convenience-menu{grid-template-columns:repeat(3,minmax(0,1fr));width:min(330px,calc(var(--mobile-vw, 100vw) - 14px));gap:5px;padding:7px}
+body.is-mobile .header-convenience-menu .header-reference-btn{height:31px;min-height:31px;padding:0 3px;font-size:calc(9px * var(--app-font-scale));border-radius:8px}
 
 /* ── 15. 더제로 정보 패널 / 공지 모달 ── */
 

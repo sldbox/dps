@@ -1751,6 +1751,7 @@ function openDpsTable(mode='auto'){
   const fallbackMode=isTowerDifficulty() ? 'tower' : (isCoopActive() ? 'coop' : 'solo');
   const normalizedMode=mode==='round' ? 'solo' : (mode==='auto' ? fallbackMode : mode);
   activeDpsTableMode=['solo','coop','tower'].includes(normalizedMode) ? normalizedMode : fallbackMode;
+  closeConvenienceMenu();
   openMonthRune('dps');
 }
 function expandMonthRuneCodeGroup(code, desc){
@@ -1951,6 +1952,7 @@ function openMonthRune(tabName='compare', options={}){
     options={};
     tabName='compare';
   }
+  closeConvenienceMenu();
   createMonthRuneModal();
   selectMonthRuneModalTab(tabName);
   setModalOpen('monthRuneModal','month-rune-modal-open',true);
@@ -5834,6 +5836,43 @@ function setZeroRankTab(trigger){
 }
 /* ===== 13. 공통 이벤트 바인딩 / 앱 초기화 ===== */
 let appEventsBound=false;
+function getConvenienceMenuParts(){
+  const wrap=document.querySelector('.header-convenience');
+  if(!wrap) return {};
+  return {
+    wrap,
+    toggle:wrap.querySelector('.header-convenience-toggle'),
+    menu:wrap.querySelector('.header-convenience-menu')
+  };
+}
+function setConvenienceMenuOpen(open){
+  const { toggle, menu }=getConvenienceMenuParts();
+  if(!toggle || !menu) return false;
+  toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+  menu.hidden=!open;
+  return true;
+}
+function closeConvenienceMenu(){
+  setConvenienceMenuOpen(false);
+}
+function toggleConvenienceMenu(){
+  const { toggle }=getConvenienceMenuParts();
+  const open=toggle?.getAttribute('aria-expanded')==='true';
+  return setConvenienceMenuOpen(!open);
+}
+function bindConvenienceMenuEvents(){
+  document.addEventListener('click', e=>{
+    const { wrap }=getConvenienceMenuParts();
+    if(!wrap || wrap.contains(e.target)) return;
+    closeConvenienceMenu();
+  });
+  document.addEventListener('keydown', e=>{
+    if(e.key==='Escape') closeConvenienceMenu();
+  });
+  document.addEventListener('click', e=>{
+    if(e.target.closest('.header-convenience-menu a')) closeConvenienceMenu();
+  });
+}
 const ACTION_HANDLERS={
   optimizeSP,
   optimizeUtility,
@@ -5851,6 +5890,7 @@ const ACTION_HANDLERS={
   compareTraitPreset,
   openDpsTable,
   openMonthRuneTab:(trigger)=>openMonthRune(trigger?.dataset?.monthRuneOpenTab || 'compare'),
+  toggleConvenienceMenu,
   zeroRankTab:(trigger)=>setZeroRankTab(trigger),
   zeroScoreStar:(trigger)=>toggleZeroScoreStar(trigger),
   decreaseFont:()=>changeFontScale(-DPS_CONFIG.ui.fontScaleStep),
@@ -5954,6 +5994,7 @@ function bindAppEvents(){
   bindTraitPresetEvents();
   bindMonthRuneEvents();
   bindJewelImageEvents();
+  bindConvenienceMenuEvents();
   bindZeroScoreCalculator();
   bindTraitLimitDisplayEvents();
   bindReactiveInputs();

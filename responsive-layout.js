@@ -12,10 +12,7 @@
     { key: 'rune-effect', label: '룬효과/버프', selectors: ['.unit-enhance-card'] },
     { key: 'trait', label: '특성보드', selectors: ['.col-right'] },
     { key: 'result', label: '데미지 보드', selectors: ['.stat-dps-card', '.bus-cut-card', '.final-damage-card'] },
-    { key: 'zero-rank', label: '승단', selectors: ['.zero-rank-card'] },
-    { key: 'dps-table', label: 'DPS표', selectors: ['.mobile-reference-dps'], toneClass: 'tone-reference' },
-    { key: 'month-rune', label: '이달의룬', selectors: ['.mobile-reference-runes'], toneClass: 'tone-reference' },
-    { key: 'jewel', label: '쥬얼', selectors: ['.mobile-reference-jewels'], toneClass: 'tone-reference' }
+    { key: 'zero-rank', label: '승단', selectors: ['.zero-rank-card'] }
   ];
 
   const state = {
@@ -54,7 +51,7 @@
 
   function updateMobileOffsets() {
     const header = qs('.hdr');
-    const tabs = qs('.mobile-swipe-tabs');
+    const tabs = qs('.mobile-section-tabs');
     const headerHeight = header ? Math.ceil(header.getBoundingClientRect().height) : 0;
     const tabsHeight = tabs ? Math.ceil(tabs.getBoundingClientRect().height) : 0;
     const { w, h } = getViewportSize();
@@ -125,7 +122,7 @@
   function buildTabs(colWork, pages) {
     if (!state.tabs) {
       state.tabs = document.createElement('div');
-      state.tabs.className = 'mobile-swipe-tabs';
+      state.tabs.className = 'mobile-section-tabs';
       state.tabs.setAttribute('aria-label', '모바일 섹션 이동');
       colWork.parentNode.insertBefore(state.tabs, colWork);
     }
@@ -134,21 +131,12 @@
     pages.forEach((page, idx) => {
       const btn = document.createElement('button');
       btn.type = 'button';
-      btn.className = ['mobile-swipe-tab', page.toneClass].filter(Boolean).join(' ');
+      btn.className = ['mobile-section-tab', page.toneClass].filter(Boolean).join(' ');
       btn.textContent = page.label;
       btn.setAttribute('aria-pressed', 'false');
-      btn.addEventListener('click', () => showMobilePage(idx, true, true));
+      btn.addEventListener('click', () => showMobilePage(idx, true));
       state.tabs.appendChild(btn);
     });
-  }
-
-  function centerActiveMobileTab(index) {
-    const tabs = state.tabs;
-    if (!tabs) return;
-    const activeBtn = tabs.querySelectorAll('.mobile-swipe-tab')[index];
-    if (!activeBtn || tabs.scrollWidth <= tabs.clientWidth + 1) return;
-    const left = activeBtn.offsetLeft - ((tabs.clientWidth - activeBtn.offsetWidth) / 2);
-    tabs.scrollTo({ left: Math.max(0, left), behavior: 'smooth' });
   }
 
   function setActiveTab(activeIndex) {
@@ -157,7 +145,7 @@
     state.activeKey = state.pages[nextIndex]?.key || state.activeKey;
 
     if (state.tabs) {
-      state.tabs.querySelectorAll('.mobile-swipe-tab').forEach((btn, idx) => {
+      state.tabs.querySelectorAll('.mobile-section-tab').forEach((btn, idx) => {
         const active = idx === nextIndex;
         btn.classList.toggle('active', active);
         btn.setAttribute('aria-pressed', active ? 'true' : 'false');
@@ -172,12 +160,11 @@
     });
   }
 
-  function showMobilePage(index, resetPageScroll = false, centerTab = false) {
+  function showMobilePage(index, resetPageScroll = false) {
     if (!state.pages.length) return;
     const nextIndex = Math.max(0, Math.min(state.pages.length - 1, index));
     setActiveTab(nextIndex);
     if (resetPageScroll) state.pages[nextIndex].el.scrollTop = 0;
-    if (centerTab) centerActiveMobileTab(nextIndex);
     updateMobileOffsets();
   }
 
