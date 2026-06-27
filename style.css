@@ -373,76 +373,76 @@ select.choice-input, .rune-stat-row select, .ir select{border-color:#344966;}
 .hdr-logo{display:flex;align-items:center;justify-content:center;padding:0;font-family:Consolas,monospace;font-size:calc(12px * var(--app-font-scale));font-weight:900;overflow:hidden}
 /* 참고/비교 모달: 월룬·쥬얼·DPS·엑셀 비교 공통 */
 .month-rune-modal-open{overflow:hidden}
-.month-rune-modal-shell{position:fixed;inset:0;z-index:10020;display:none}
-.month-rune-modal-shell.is-open{display:block}
-.month-rune-backdrop{position:absolute;inset:0;background:rgba(15,23,42,.44)}
-.month-rune-modal{position:relative;width:min(980px,calc(100vw - 24px));height:auto;max-height:calc(100vh - 24px);margin:12px auto;overflow:hidden;display:flex;flex-direction:column;border:0;border-radius:0;background:var(--ui-bg,#080d15);box-shadow:none}
-.month-rune-modal.is-modal-compare{width:min(1180px,calc(100vw - 64px));height:min(760px,calc(100vh - 72px));max-height:calc(100vh - 72px);margin:36px auto}
-.month-rune-modal.is-modal-dps{width:min(1440px,calc(100vw - 12px));height:auto;max-height:calc(100vh - 20px);margin:10px auto}
-.month-rune-modal.is-modal-jewels{width:min(900px,calc(100vw - 24px))}
-.month-rune-modal.is-modal-runes{width:min(980px,calc(100vw - 24px))}
-.month-rune-head{position:relative;display:flex;align-items:center;gap:12px;min-height:54px;padding:10px 54px 10px 16px;border-bottom:1px solid var(--ui-line,#26364d);background:var(--ui-bg,#080d15)}
-.month-rune-title{flex:0 0 auto;margin:0;color:var(--on-dark);font-size:calc(15px * var(--app-font-scale));font-weight:900;line-height:1;white-space:nowrap}
+.month-rune-modal-shell{position:fixed;inset:0;z-index:10020;display:none;align-items:center;justify-content:center;padding:18px}
+.month-rune-modal-shell.is-open{display:flex}
+.month-rune-backdrop{position:absolute;inset:0;background:rgba(3,7,14,.72);backdrop-filter:blur(7px)}
+.month-rune-modal{position:relative;width:min(980px,calc(100vw - 36px));height:auto;max-height:calc(100vh - 36px);overflow:hidden;display:flex;flex-direction:column;border:1px solid #2a3b56;border-radius:16px;background:linear-gradient(180deg,#0b111c 0%,#101827 100%);box-shadow:0 22px 70px rgba(0,0,0,.48),inset 0 1px 0 rgba(255,255,255,.06)}
+.month-rune-modal.is-modal-compare{width:min(1180px,calc(100vw - 64px));height:min(760px,calc(100vh - 72px));max-height:calc(100vh - 72px)}
+.month-rune-modal.is-modal-dps{width:min(1440px,calc(100vw - 24px));height:auto;max-height:calc(100vh - 28px)}
+.month-rune-modal.is-modal-jewels{width:min(1040px,calc(100vw - 36px))}
+.month-rune-modal.is-modal-runes{width:min(1080px,calc(100vw - 36px))}
+.month-rune-head{position:relative;display:flex;align-items:center;gap:12px;min-height:60px;padding:12px 58px 12px 16px;border-bottom:1px solid #2a3b56;background:linear-gradient(135deg,#121d2e 0%,#0b111c 62%,#10233d 100%)}
+.month-rune-title{flex:0 0 auto;margin:0;color:#f8fbff;font-size:calc(15px * var(--app-font-scale));font-weight:1000;line-height:1;white-space:nowrap;text-shadow:0 1px 0 rgba(0,0,0,.24)}
 .month-rune-header-actions{display:flex;align-items:center;justify-content:center;flex:1;min-width:0}
 .month-rune-header-actions:empty{display:none}
 .month-rune-modal.is-modal-compare .month-rune-header-actions{justify-content:center;overflow:hidden}
 .month-rune-header-tabs.dps-table-tabs{width:min(100%,520px);gap:8px}
 .month-rune-header-tabs .dps-table-tab{height:40px;min-height:40px;padding:3px 14px}
-.month-rune-close{position:absolute;top:8px;right:10px;z-index:2;display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border:1px solid var(--color-slate-300);border-radius:10px;background:var(--color-white);color:var(--color-slate-900);font-size:calc(22px * var(--app-font-scale));font-weight:900;line-height:1;cursor:pointer}
-.month-rune-close:hover{background:var(--color-slate-100);border-color:var(--color-slate-400)}
-.month-rune-body{flex:1;min-height:0;max-height:calc(100vh - 82px);padding:8px;overflow:auto;background:var(--ui-bg,#080d15)}
+.month-rune-close{position:absolute;top:12px;right:14px;z-index:2;display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border:1px solid #3a4d67;border-radius:10px;background:#111a28;color:#d7e4f3;font-size:calc(20px * var(--app-font-scale));font-weight:900;line-height:1;cursor:pointer;box-shadow:inset 0 1px 0 rgba(255,255,255,.06)}
+.month-rune-close:hover{background:#172438;border-color:#7aa7ff;color:#f8fbff}
+.month-rune-body{flex:1;min-height:0;max-height:calc(100vh - 96px);padding:12px;overflow:auto;background:linear-gradient(180deg,#0b111c 0%,#0f1724 100%)}
 .month-rune-modal.is-modal-compare .month-rune-body{max-height:none;overflow:hidden}
 .month-rune-modal.is-modal-dps .month-rune-body{flex:0 1 auto;max-height:calc(100vh - 86px);overflow:hidden}
 .month-rune-panel{display:block}
 .month-rune-modal.is-modal-compare .month-rune-panel[data-month-rune-panel="compare"]{height:100%;min-height:0}
 .month-rune-panel[hidden]{display:none}
-.month-rune-note, .month-rune-empty{margin:0 0 10px;padding:9px 11px;border:0;border-bottom:1px solid var(--ui-line,#26364d);border-radius:0;background:var(--ui-panel,#111a28);color:#cfe0ff;font-size:calc(12px * var(--app-font-scale));font-weight:900;line-height:1.35}
-.month-rune-empty{text-align:center;color:var(--color-slate-500);background:var(--ui-panel,#111a28);border-style:solid}
+.month-rune-note, .month-rune-empty{margin:0 0 12px;padding:11px 13px;border:1px solid #26364d;border-radius:12px;background:#121d2e;color:#cfe0ff;font-size:calc(12px * var(--app-font-scale));font-weight:900;line-height:1.4;box-shadow:inset 0 1px 0 rgba(255,255,255,.05)}
+.month-rune-empty{text-align:center;color:#93a4b9;background:#111a28;border-style:dashed}
 
 /* ── 4. 이달의룬 / 쥬얼 / DPS표 / 비교 패널 ── */
-.jewel-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
-.jewel-card{min-width:0;overflow:hidden;border:0;border-radius:0;background:var(--ui-panel,#111a28);box-shadow:none}
-.jewel-card-head{display:flex;align-items:center;gap:10px;padding:10px;border-bottom:1px solid var(--ui-line,#26364d);background:var(--ui-panel,#111a28)}
-.jewel-card-head > b{min-width:0;color:var(--color-slate-900);font-size:calc(13.5px * var(--app-font-scale));font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.jewel-card-visual{position:relative;display:inline-flex;align-items:center;justify-content:center;flex:0 0 56px;width:56px;height:56px;border:1px solid #cad7e6;border-radius:12px;background:#020617;color:#facc15;font-size:calc(16px * var(--app-font-scale));font-weight:900;overflow:hidden}
+.jewel-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.jewel-card{min-width:0;overflow:hidden;border:1px solid #26364d;border-radius:14px;background:#111a28;box-shadow:0 12px 30px rgba(0,0,0,.18),inset 0 1px 0 rgba(255,255,255,.05)}
+.jewel-card-head{display:flex;align-items:center;gap:12px;padding:12px;border-bottom:1px solid #26364d;background:linear-gradient(135deg,#121d2e 0%,#111a28 100%)}
+.jewel-card-head > b{min-width:0;color:#f8fbff;font-size:calc(13.5px * var(--app-font-scale));font-weight:1000;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.jewel-card-visual{position:relative;display:inline-flex;align-items:center;justify-content:center;flex:0 0 58px;width:58px;height:58px;border:1px solid #3a4d67;border-radius:14px;background:radial-gradient(circle at 50% 35%,#172438 0%,#020617 72%);color:#f6c77a;font-size:calc(16px * var(--app-font-scale));font-weight:1000;overflow:hidden;box-shadow:inset 0 1px 0 rgba(255,255,255,.08)}
 .jewel-card-visual img{display:block;position:relative;width:auto;height:auto;max-width:88%;max-height:88%;object-fit:contain;background:transparent}
 .jewel-card-visual span{display:none}
 .jewel-card-visual.is-missing span{display:inline}
-.jewel-ability-list{display:grid;gap:7px;padding:9px}
-.jewel-ability{display:grid;grid-template-columns:42px minmax(0,1fr);gap:7px;align-items:start;min-height:32px;padding:7px;border:1px solid #172235;border-radius:10px;background:var(--color-white);color:var(--color-slate-700);font-size:calc(11.2px * var(--app-font-scale));line-height:1.34}
-.jewel-ability > b{display:inline-flex;align-items:center;justify-content:center;min-height:22px;border-radius:999px;background:var(--color-slate-100);color:var(--color-slate-700);font-size:calc(10.5px * var(--app-font-scale));font-weight:900}
+.jewel-ability-list{display:grid;gap:8px;padding:10px}
+.jewel-ability{display:grid;grid-template-columns:44px minmax(0,1fr);gap:8px;align-items:start;min-height:34px;padding:8px;border:1px solid #26364d;border-radius:11px;background:#0f1724;color:#c6d4e6;font-size:calc(11.2px * var(--app-font-scale));line-height:1.36}
+.jewel-ability > b{display:inline-flex;align-items:center;justify-content:center;min-height:22px;border-radius:999px;background:#172438;color:#d7e4f3;font-size:calc(10.5px * var(--app-font-scale));font-weight:900}
 .jewel-ability span{min-width:0;word-break:keep-all;overflow-wrap:anywhere}
-.jewel-ability:first-child > b{background:var(--color-orange-50);color:#f0b66b}
+.jewel-ability:first-child > b{background:#241b0a;color:#f6c77a}
 .jewel-ability:nth-child(2) > b{background:#1a1c33;color:#c4b5fd}
-.jewel-ability.is-unreleased{border-color:var(--color-slate-200);background:var(--color-slate-50);color:var(--color-slate-500)}
-.month-rune-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
-.month-rune-card{min-width:0;overflow:hidden;border:0;border-radius:0;background:var(--ui-panel,#111a28);box-shadow:none}
-.month-rune-card-head{display:flex;align-items:center;gap:8px;padding:9px 10px;border-bottom:1px solid var(--ui-line,#26364d);background:var(--ui-panel,#111a28)}
-.month-rune-card-head b{display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;min-width:62px;height:28px;padding:0 10px;border:1px solid var(--field-label-bd,#30435f);border-radius:999px;background:var(--field-label-bg,#172235);color:var(--field-label-text,#d7e4f3);font-size:calc(12px * var(--app-font-scale));font-weight:900}
+.jewel-ability.is-unreleased{border-color:#2a3b56;background:#0b111c;color:#93a4b9}
+.month-rune-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.month-rune-card{min-width:0;overflow:hidden;border:1px solid #26364d;border-radius:14px;background:#111a28;box-shadow:0 12px 30px rgba(0,0,0,.18),inset 0 1px 0 rgba(255,255,255,.05)}
+.month-rune-card-head{display:flex;align-items:center;gap:8px;padding:11px 12px;border-bottom:1px solid #26364d;background:linear-gradient(135deg,#121d2e 0%,#111a28 100%)}
+.month-rune-card-head b{display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;min-width:64px;height:28px;padding:0 10px;border:1px solid #3a4d67;border-radius:999px;background:#172438;color:#f8fbff;font-size:calc(12px * var(--app-font-scale));font-weight:1000}
 .month-rune-compare{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0}
-.month-rune-side{min-width:0;padding:9px 10px;background:var(--ui-panel,#111a28)}
-.month-rune-side + .month-rune-side{border-left:1px solid var(--ui-line,#26364d);background:var(--ui-panel,#111a28)}
-.month-rune-side h3{display:flex;align-items:center;justify-content:space-between;gap:6px;margin:0 0 7px;color:var(--color-slate-900);font-size:calc(12.5px * var(--app-font-scale));font-weight:900;line-height:1.1}
-.month-rune-side h3 em{font-style:normal;padding:3px 7px;border-radius:999px;background:var(--color-orange-50);color:#f0b66b;font-size:calc(10.5px * var(--app-font-scale));font-weight:900}
-.month-rune-side.plus h3 em{background:var(--color-blue-50);color:var(--color-blue-700)}
-.month-rune-effects{display:grid;gap:5px}
-.month-rune-effect-row{display:grid;grid-template-columns:52px minmax(0,1fr);gap:8px;align-items:center;min-height:32px;padding:6px 8px;border:1px solid #172235;border-radius:9px;background:var(--color-white);color:var(--color-slate-700);font-size:calc(11px * var(--app-font-scale));line-height:1.32}
-.month-rune-effect-row b{display:flex;align-items:center;justify-content:flex-start;color:#cfe0ff;font-family:Consolas,var(--font-main);font-size:calc(10.5px * var(--app-font-scale));font-weight:900;word-break:keep-all;white-space:nowrap}
+.month-rune-side{min-width:0;padding:10px 11px;background:#111a28}
+.month-rune-side + .month-rune-side{border-left:1px solid #26364d;background:#101827}
+.month-rune-side h3{display:flex;align-items:center;justify-content:space-between;gap:6px;margin:0 0 8px;color:#f8fbff;font-size:calc(12.5px * var(--app-font-scale));font-weight:1000;line-height:1.1}
+.month-rune-side h3 em{font-style:normal;padding:4px 8px;border-radius:999px;background:#241b0a;color:#f6c77a;font-size:calc(10.5px * var(--app-font-scale));font-weight:1000}
+.month-rune-side.plus h3 em{background:#10233d;color:#93c5fd}
+.month-rune-effects{display:grid;gap:6px}
+.month-rune-effect-row{display:grid;grid-template-columns:52px minmax(0,1fr);gap:8px;align-items:center;min-height:34px;padding:7px 8px;border:1px solid #26364d;border-radius:10px;background:#0f1724;color:#c6d4e6;font-size:calc(11px * var(--app-font-scale));line-height:1.34}
+.month-rune-effect-row b{display:flex;align-items:center;justify-content:flex-start;color:#cfe0ff;font-family:Consolas,var(--font-main);font-size:calc(10.5px * var(--app-font-scale));font-weight:1000;word-break:keep-all;white-space:nowrap}
 .month-rune-effect-row span{min-width:0;word-break:keep-all;overflow-wrap:anywhere}
-.dps-table-inline-panel{display:flex;flex-direction:column;min-height:0;height:100%;max-height:none;overflow:hidden;border:0;border-radius:0;background:var(--ui-panel,#111a28)}
+.dps-table-inline-panel{display:flex;flex-direction:column;min-height:0;height:100%;max-height:none;overflow:hidden;border:1px solid #26364d;border-radius:14px;background:#111a28;box-shadow:inset 0 1px 0 rgba(255,255,255,.05)}
 .dps-table-tabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));justify-content:center;align-items:stretch;gap:8px;width:min(100%,520px);margin:0;padding:0;background:transparent;min-width:0;overflow:visible}
-.dps-table-tab{width:100%;min-width:0;max-width:none;border:1px solid var(--color-slate-300);border-radius:999px;background:var(--color-white);color:var(--color-slate-700);padding:8px 18px;cursor:pointer;font-size:calc(13px * var(--app-font-scale));font-weight:900;text-align:center;line-height:1.1;box-shadow:0 1px 4px rgba(0,0,0,.16);white-space:nowrap;transition:background .18s ease,border-color .18s ease,color .18s ease,transform .18s ease,box-shadow .18s ease}
+.dps-table-tab{width:100%;min-width:0;max-width:none;border:1px solid #3a4d67;border-radius:999px;background:#111a28;color:#d7e4f3;padding:8px 18px;cursor:pointer;font-size:calc(13px * var(--app-font-scale));font-weight:900;text-align:center;line-height:1.1;box-shadow:inset 0 1px 0 rgba(255,255,255,.05);white-space:nowrap;transition:background .18s ease,border-color .18s ease,color .18s ease,transform .18s ease,box-shadow .18s ease}
 .dps-table-tab b{display:block;font-size:calc(13px * var(--app-font-scale));font-weight:900}
 .dps-table-tab span{display:block;margin-top:3px;font-size:calc(10.5px * var(--app-font-scale));font-weight:800;opacity:.82}
-.dps-table-tab:hover:not(.is-active){transform:translateY(-1px);box-shadow:0 5px 14px rgba(0,0,0,.24)}
-.dps-table-body{display:flex;flex-direction:column;flex:1;min-height:0;overflow:hidden;padding:8px}
+.dps-table-tab:hover:not(.is-active){transform:translateY(-1px);border-color:#7aa7ff;background:#172438;color:#f8fbff;box-shadow:0 8px 18px rgba(0,0,0,.22)}
+.dps-table-body{display:flex;flex-direction:column;flex:1;min-height:0;overflow:hidden;padding:10px}
 .month-rune-modal.is-modal-dps .dps-table-inline-panel{height:auto;max-height:calc(100vh - 102px)}
 .month-rune-modal.is-modal-dps .dps-table-body{flex:0 1 auto;max-height:calc(100vh - 118px)}
 .month-rune-modal.is-modal-dps .dps-table-mode-panel{flex:0 1 auto;max-height:calc(100vh - 134px)}
 .month-rune-modal.is-modal-dps .dps-table-scroll{flex:0 1 auto;max-height:calc(100vh - 134px);overflow:auto}
 .month-rune-modal.is-modal-dps .dps-coop-stack{flex:0 1 auto;max-height:calc(100vh - 210px);overflow:auto}
 /* DPS표 모달: 탭 / 표 / 협동·도전의탑 표시 */
-.dps-table-panel{display:flex;flex-direction:column;min-height:0;height:100%;background:var(--ui-panel,#111a28);border:0;border-radius:0;margin:0;overflow:hidden}
+.dps-table-panel{display:flex;flex-direction:column;min-height:0;height:100%;background:#111a28;border:0;border-radius:12px;margin:0;overflow:hidden}
 .dps-table-panel:not(.dps-table-mode-panel){border-color:transparent;box-shadow:none}
 .dps-table-mode-panel{flex:1 1 auto;background:transparent;border:0;border-radius:0;box-shadow:none;gap:8px}
 .dps-table-scroll{position:relative;isolation:isolate;flex:1;min-height:0;height:auto;max-height:none;overflow:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;-ms-overflow-style:none}
