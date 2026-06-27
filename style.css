@@ -375,6 +375,7 @@ select.choice-input, .rune-stat-row select, .ir select{border-color:#344966;}
 .month-rune-modal-open{overflow:hidden}
 .month-rune-modal-shell{position:fixed;inset:0;z-index:10020;display:none;align-items:center;justify-content:center;padding:18px}
 .month-rune-modal-shell.is-open{display:flex}
+body.month-rune-modal-open:is(.is-dps-mode-solo,.is-dps-mode-coop,.is-dps-mode-tower) .month-rune-modal-shell{align-items:flex-start}
 .month-rune-backdrop{position:absolute;inset:0;background:rgba(3,7,14,.72);backdrop-filter:blur(7px)}
 .month-rune-modal{position:relative;width:min(980px,calc(100vw - 36px));height:auto;max-height:calc(100vh - 36px);overflow:hidden;display:flex;flex-direction:column;border:1px solid #2a3b56;border-radius:16px;background:linear-gradient(180deg,#0b111c 0%,#101827 100%);box-shadow:0 22px 70px rgba(0,0,0,.48),inset 0 1px 0 rgba(255,255,255,.06)}
 .month-rune-modal.is-modal-compare{width:min(1180px,calc(100vw - 64px));height:min(760px,calc(100vh - 72px));max-height:calc(100vh - 72px)}
@@ -392,7 +393,7 @@ select.choice-input, .rune-stat-row select, .ir select{border-color:#344966;}
 .month-rune-close:hover{background:#172438;border-color:#7aa7ff;color:#f8fbff}
 .month-rune-body{flex:1;min-height:0;max-height:calc(100vh - 96px);padding:12px;overflow:auto;background:linear-gradient(180deg,#0b111c 0%,#0f1724 100%)}
 .month-rune-modal.is-modal-compare .month-rune-body{max-height:none;overflow:hidden}
-.month-rune-modal.is-modal-dps .month-rune-body{flex:0 1 auto;max-height:calc(100vh - 86px);overflow:hidden}
+.month-rune-modal.is-modal-dps .month-rune-body{flex:0 1 auto;max-height:calc(100vh - 86px);overflow:hidden;padding:0;background:transparent}
 .month-rune-panel{display:block}
 .month-rune-modal.is-modal-compare .month-rune-panel[data-month-rune-panel="compare"]{height:100%;min-height:0}
 .month-rune-panel[hidden]{display:none}
@@ -429,20 +430,20 @@ select.choice-input, .rune-stat-row select, .ir select{border-color:#344966;}
 .month-rune-effect-row{display:grid;grid-template-columns:52px minmax(0,1fr);gap:8px;align-items:center;min-height:34px;padding:7px 8px;border:1px solid #26364d;border-radius:10px;background:#0f1724;color:#c6d4e6;font-size:calc(11px * var(--app-font-scale));line-height:1.34}
 .month-rune-effect-row b{display:flex;align-items:center;justify-content:flex-start;color:#cfe0ff;font-family:Consolas,var(--font-main);font-size:calc(10.5px * var(--app-font-scale));font-weight:1000;word-break:keep-all;white-space:nowrap}
 .month-rune-effect-row span{min-width:0;word-break:keep-all;overflow-wrap:anywhere}
-.dps-table-inline-panel{display:flex;flex-direction:column;min-height:0;height:100%;max-height:none;overflow:hidden;border:1px solid #26364d;border-radius:14px;background:#111a28;box-shadow:inset 0 1px 0 rgba(255,255,255,.05)}
+.dps-table-inline-panel{display:flex;flex-direction:column;min-height:0;height:100%;max-height:none;overflow:hidden;border:0;border-radius:0;background:transparent;box-shadow:none}
 .dps-table-tabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));justify-content:center;align-items:stretch;gap:8px;width:min(100%,520px);margin:0;padding:0;background:transparent;min-width:0;overflow:visible}
 .dps-table-tab{width:100%;min-width:0;max-width:none;border:1px solid #3a4d67;border-radius:999px;background:#111a28;color:#d7e4f3;padding:8px 18px;cursor:pointer;font-size:calc(13px * var(--app-font-scale));font-weight:900;text-align:center;line-height:1.1;box-shadow:inset 0 1px 0 rgba(255,255,255,.05);white-space:nowrap;transition:background .18s ease,border-color .18s ease,color .18s ease,transform .18s ease,box-shadow .18s ease}
 .dps-table-tab b{display:block;font-size:calc(13px * var(--app-font-scale));font-weight:900}
 .dps-table-tab span{display:block;margin-top:3px;font-size:calc(10.5px * var(--app-font-scale));font-weight:800;opacity:.82}
 .dps-table-tab:hover:not(.is-active){transform:translateY(-1px);border-color:#7aa7ff;background:#172438;color:#f8fbff;box-shadow:0 8px 18px rgba(0,0,0,.22)}
-.dps-table-body{display:flex;flex-direction:column;flex:1;min-height:0;overflow:hidden;padding:10px}
+.dps-table-body{display:flex;flex-direction:column;flex:1;min-height:0;overflow:hidden;padding:0}
 .month-rune-modal.is-modal-dps .dps-table-inline-panel{height:auto;max-height:calc(100vh - 102px)}
 .month-rune-modal.is-modal-dps .dps-table-body{flex:0 1 auto;max-height:calc(100vh - 118px)}
 .month-rune-modal.is-modal-dps .dps-table-mode-panel{flex:0 1 auto;max-height:calc(100vh - 134px)}
 .month-rune-modal.is-modal-dps .dps-table-scroll{flex:0 1 auto;max-height:calc(100vh - 134px);overflow:auto}
 .month-rune-modal.is-modal-dps .dps-coop-stack{flex:0 1 auto;max-height:calc(100vh - 210px);overflow:auto}
 /* DPS표 모달: 탭 / 표 / 협동·도전의탑 표시 */
-.dps-table-panel{display:flex;flex-direction:column;min-height:0;height:100%;background:#111a28;border:0;border-radius:12px;margin:0;overflow:hidden}
+.dps-table-panel{display:flex;flex-direction:column;min-height:0;height:100%;background:transparent;border:0;border-radius:0;margin:0;overflow:hidden}
 .dps-table-panel:not(.dps-table-mode-panel){border-color:transparent;box-shadow:none}
 .dps-table-mode-panel{flex:1 1 auto;background:transparent;border:0;border-radius:0;box-shadow:none;gap:8px}
 .dps-table-scroll{position:relative;isolation:isolate;flex:1;min-height:0;height:auto;max-height:none;overflow:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;-ms-overflow-style:none}
@@ -455,7 +456,7 @@ select.choice-input, .rune-stat-row select, .ir select{border-color:#344966;}
 .dps-matrix tbody tr:nth-child(even) td{background:#111a28}
 .dps-matrix tbody tr:hover td{background:#172438}
 .dps-matrix tbody tr:hover th{background:#26364d;color:#cfe0ff}
-.dps-tower-grid{display:grid;grid-template-columns:1fr;gap:0;padding:4px;align-items:start}
+.dps-tower-grid{display:grid;grid-template-columns:1fr;gap:0;padding:0;align-items:start}
 .dps-tower-block{min-width:0}
 .dps-tower-matrix{width:100%;min-width:0;max-width:none;margin:0}
 .dps-tower-matrix thead th:first-child, .dps-tower-matrix tbody th{width:64px}
@@ -466,36 +467,19 @@ select.choice-input, .rune-stat-row select, .ir select{border-color:#344966;}
 .dps-tower-enemy-item em{font-style:normal;font-weight:900;color:var(--color-slate-600)}
 .dps-tower-enemy-item b{font-weight:900;color:var(--color-slate-700)}
 .month-rune-modal.is-modal-dps.is-dps-mode-tower{
-  --tower-modal-w:1180px;
   --tower-floor-w:42px;
   --tower-row-h:44px;
   --tower-value-font:12.8px;
   --tower-enemy-font:10px;
   --tower-enemy-gap:8px;
-  width:min(var(--tower-modal-w),calc(100vw - 36px));
-  max-width:min(var(--tower-modal-w),calc(100vw - 36px));
+  --tower-visible-rows:15;
 }
-body.is-tablet .month-rune-modal.is-modal-dps.is-dps-mode-tower,
-body.is-pc-portrait .month-rune-modal.is-modal-dps.is-dps-mode-tower{max-width:min(var(--tower-modal-w),calc(100vw - 32px))}
-.month-rune-modal.is-modal-dps.is-dps-mode-tower .month-rune-head{
-  display:grid;
-  grid-template-columns:auto minmax(0,1fr) 32px;
-  align-items:center;
-  gap:8px;
-  min-height:0;
-  padding:8px 8px 8px 10px;
-}
-.month-rune-modal.is-modal-dps.is-dps-mode-tower .month-rune-title{grid-column:1;min-width:54px;white-space:nowrap}
-.month-rune-modal.is-modal-dps.is-dps-mode-tower .month-rune-header-actions{grid-column:2;min-width:0;width:100%;overflow:visible;justify-self:center}
-.month-rune-modal.is-modal-dps.is-dps-mode-tower .month-rune-header-tabs.dps-table-tabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;width:100%;max-width:390px;margin:0 auto}
-.month-rune-modal.is-modal-dps.is-dps-mode-tower .dps-table-tab{height:38px;min-height:38px;padding:2px 8px;border-radius:9px;font-size:calc(12px * var(--app-font-scale));font-weight:1000;white-space:nowrap}
-.month-rune-modal.is-modal-dps.is-dps-mode-tower .month-rune-close{position:static;grid-column:3;justify-self:end;align-self:center;width:30px;height:30px;min-width:30px;min-height:30px}
 .month-rune-modal.is-modal-dps.is-dps-mode-tower .month-rune-body,
-.month-rune-modal.is-modal-dps.is-dps-mode-tower .dps-table-inline-panel{padding:8px}
+.month-rune-modal.is-modal-dps.is-dps-mode-tower .dps-table-inline-panel{padding:0}
 .month-rune-modal.is-modal-dps.is-dps-mode-tower .dps-table-body,
 .month-rune-modal.is-modal-dps .dps-tower-panel .dps-table-body{padding:0;overflow:hidden}
 .month-rune-modal.is-modal-dps .dps-tower-panel :is(.dps-table-scroll,.dps-tower-grid,.dps-tower-block,.dps-tower-matrix){width:100%;max-width:100%;margin:0;padding:0}
-.month-rune-modal.is-modal-dps .dps-tower-panel .dps-table-scroll{overflow-y:auto;overflow-x:hidden}
+.month-rune-modal.is-modal-dps .dps-tower-panel .dps-table-scroll{max-height:calc(27px + (var(--tower-row-h) * var(--tower-visible-rows)));overflow-y:auto;overflow-x:hidden}
 .month-rune-modal.is-modal-dps .dps-tower-panel .dps-tower-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
 .month-rune-modal.is-modal-dps .dps-tower-panel .dps-tower-matrix{table-layout:fixed}
 .month-rune-modal.is-modal-dps .dps-tower-panel .dps-tower-matrix :is(thead th:first-child,tbody th){width:var(--tower-floor-w);min-width:var(--tower-floor-w);max-width:var(--tower-floor-w);padding-left:2px;padding-right:2px;border-left:1px solid #344966}
@@ -511,9 +495,9 @@ body.is-pc-portrait .month-rune-modal.is-modal-dps.is-dps-mode-tower{max-width:m
 .dps-round-matrix thead th{white-space:nowrap;word-break:keep-all;overflow:visible;text-overflow:clip;line-height:1.05}
 .dps-round-matrix thead th:first-child, .dps-round-matrix tbody th{width:42px;min-width:42px;max-width:42px}
 .dps-coop-panel{display:flex;flex:1 1 auto;flex-direction:column;min-height:0;overflow:hidden}
-.dps-coop-stack{display:flex;flex:1 1 auto;flex-direction:column;gap:0;min-height:0;height:100%;max-height:100%;padding:0;overflow-x:hidden;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior-y:contain;touch-action:pan-x pan-y;scrollbar-width:none;-ms-overflow-style:none}
-.dps-coop-block{flex:0 0 auto;min-width:0;border:0;border-radius:0;overflow:visible;background:transparent;box-shadow:none}
-.dps-coop-block + .dps-coop-block{border-top:1px solid var(--color-slate-200)}
+.dps-coop-stack{display:flex;flex:1 1 auto;flex-direction:column;gap:10px;min-height:0;height:100%;max-height:100%;padding:0;overflow-x:hidden;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior-y:contain;touch-action:pan-x pan-y;scrollbar-width:none;-ms-overflow-style:none}
+.dps-coop-block{flex:0 0 auto;min-width:0;border:0;border-radius:0;overflow:hidden;background:transparent;box-shadow:none}
+.dps-coop-block + .dps-coop-block{margin-top:0}
 .dps-coop-head{position:sticky;top:0;z-index:55;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 10px;border-bottom:1px solid var(--color-slate-200);background:var(--color-white);color:var(--color-slate-700)}
 .dps-coop-head b{font-size:calc(13px * var(--app-font-scale));font-weight:1000}
 .dps-coop-head span{font-size:calc(11px * var(--app-font-scale));font-weight:800;opacity:.88}
@@ -786,23 +770,20 @@ body.is-mobile .month-rune-modal.is-modal-dps .dps-table-inline-panel{max-height
 body.is-mobile .month-rune-modal.is-modal-dps .dps-table-body{max-height:calc(var(--mobile-vh, 100vh) - 104px)}
 body.is-mobile .month-rune-modal.is-modal-dps .dps-table-mode-panel, body.is-mobile .month-rune-modal.is-modal-dps .dps-table-scroll, body.is-mobile .month-rune-modal.is-modal-dps .dps-coop-stack{max-height:calc(var(--mobile-vh, 100vh) - 120px)}
 body.is-mobile .month-rune-modal.is-modal-dps.is-dps-mode-tower{
-  --tower-modal-w:calc(100vw - 20px);
   --tower-floor-w:40px;
-  --tower-row-h:45px;
+  --tower-row-h:58px;
   --tower-value-font:11.2px;
-  --tower-enemy-font:8.7px;
-  --tower-enemy-gap:5px;
-  max-width:var(--tower-modal-w);
+  --tower-enemy-font:8.4px;
+  --tower-enemy-gap:3px;
+  --tower-visible-rows:9;
 }
-body.is-mobile .month-rune-modal.is-modal-dps.is-dps-mode-tower .month-rune-head{gap:6px;padding:7px 6px 7px 9px}
-body.is-mobile .month-rune-modal.is-modal-dps.is-dps-mode-tower .month-rune-header-tabs.dps-table-tabs{max-width:270px;gap:5px}
-body.is-mobile .month-rune-modal.is-modal-dps.is-dps-mode-tower .dps-table-tab{height:34px;min-height:34px;padding:2px 5px;font-size:calc(10.5px * var(--app-font-scale))}
+body.is-mobile .month-rune-modal.is-modal-dps .dps-tower-panel .dps-table-scroll{max-height:calc(27px + (var(--tower-row-h) * var(--tower-visible-rows)))}
 body.is-mobile .month-rune-modal.is-modal-dps .dps-tower-panel .dps-tower-matrix td{padding:4px 5px}
 body.is-mobile .month-rune-head{gap:6px;min-height:48px;padding:8px 46px 8px 10px}
 body.is-mobile .month-rune-title{font-size:calc(13px * var(--app-font-scale))}
-body.is-mobile .month-rune-header-tabs.dps-table-tabs{width:min(100%,248px);gap:5px}
-body.is-mobile .month-rune-header-tabs .dps-table-tab{height:36px;min-height:36px;padding:2px 5px;font-size:calc(10px * var(--app-font-scale))}
-body.is-mobile .month-rune-close{top:7px;right:8px;width:32px;height:32px}
+body.is-mobile .month-rune-header-tabs.dps-table-tabs{width:min(100%,220px);gap:4px}
+body.is-mobile .month-rune-header-tabs .dps-table-tab{height:32px;min-height:32px;padding:2px 4px;font-size:calc(9.5px * var(--app-font-scale))}
+body.is-mobile .month-rune-close{top:8px;right:9px;width:30px;height:30px}
 body.is-mobile .month-rune-body{max-height:calc(var(--mobile-vh, 100vh) - 74px);padding:8px}
 body.is-mobile .month-rune-grid{grid-template-columns:1fr;gap:8px}
 body.is-mobile .month-rune-note, body.is-mobile .month-rune-empty{margin-bottom:8px;padding:8px;font-size:calc(11px * var(--app-font-scale))}
@@ -845,10 +826,12 @@ body.is-mobile .dps-table-tab{padding:7px 6px}
 body.is-mobile .dps-table-body{min-height:0}
 body.is-mobile .dps-matrix th, body.is-mobile .dps-matrix td{height:28px;padding:4px 5px;font-size:calc(9.5px * var(--app-font-scale))}
 body.is-mobile .dps-matrix thead th:first-child, body.is-mobile .dps-matrix tbody th{width:42px}
-body.is-mobile .dps-tower-grid{grid-template-columns:1fr;padding:6px;gap:8px}
-body.is-mobile .dps-tower-enemy{grid-template-columns:repeat(4,max-content);gap:2px 5px;font-size:calc(8px * var(--app-font-scale));line-height:1.12;white-space:nowrap}
-body.is-mobile .dps-tower-enemy-item{gap:1px}
-body.is-mobile .dps-coop-stack{height:100%;max-height:100%;padding:0;gap:0;overflow-y:auto}
+body.is-mobile .month-rune-modal.is-modal-dps .dps-tower-panel .dps-tower-grid{grid-template-columns:minmax(0,1fr);align-items:stretch;padding:0;gap:0}
+body.is-mobile .month-rune-modal.is-modal-dps .dps-tower-panel .dps-tower-block{width:100%;min-width:0;justify-self:stretch}
+body.is-mobile .month-rune-modal.is-modal-dps .dps-tower-panel .dps-tower-matrix{width:100%;min-width:100%;table-layout:fixed}
+body.is-mobile .month-rune-modal.is-modal-dps .dps-tower-panel .dps-tower-enemy{display:flex;align-items:center;justify-content:center;gap:var(--tower-enemy-gap);font-size:calc(var(--tower-enemy-font) * var(--app-font-scale));line-height:1.1;white-space:nowrap}
+body.is-mobile .month-rune-modal.is-modal-dps .dps-tower-panel .dps-tower-enemy-item{gap:2px;justify-content:center;white-space:nowrap}
+body.is-mobile .dps-coop-stack{height:100%;max-height:100%;padding:0;gap:10px;overflow-y:auto}
 body.is-mobile .dps-coop-scroll{width:100%;max-width:100%;overflow-x:auto;overflow-y:hidden}
 body.is-tablet .month-rune-modal{width:min(980px,calc(100vw - 16px));height:auto;max-height:calc(100vh - 16px);margin:8px auto}
 body.is-tablet .month-rune-modal.is-modal-compare{width:min(980px,calc(100vw - 20px));height:calc(100vh - 20px);max-height:calc(100vh - 20px);margin:10px auto}
@@ -857,7 +840,6 @@ body.is-tablet .month-rune-modal.is-modal-dps .month-rune-body{max-height:calc(1
 body.is-tablet .month-rune-modal.is-modal-dps .dps-table-inline-panel{max-height:calc(100vh - 94px)}
 body.is-tablet .month-rune-modal.is-modal-dps .dps-table-body{max-height:calc(100vh - 110px)}
 body.is-tablet .month-rune-modal.is-modal-dps .dps-table-mode-panel, body.is-tablet .month-rune-modal.is-modal-dps .dps-table-scroll, body.is-tablet .month-rune-modal.is-modal-dps .dps-coop-stack{max-height:calc(100vh - 126px)}
-body.is-pc-portrait .month-rune-modal.is-modal-dps.is-dps-mode-tower, body.is-tablet .month-rune-modal.is-modal-dps.is-dps-mode-tower{--tower-modal-w:1180px}
 body.is-pc-portrait .dps-tower-grid, body.is-tablet .dps-tower-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
 body.is-tablet .month-rune-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
 body.is-tablet .jewel-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
@@ -1792,6 +1774,7 @@ body.is-mobile .zero-info-box .zero-info-group h5{height:26px;min-height:26px;ma
 .notice-modal-open{overflow:hidden}
 .notice-modal-shell{position:fixed;inset:0;z-index:13050;display:none;align-items:center;justify-content:center;padding:16px}
 .notice-modal-shell.is-open{display:flex}
+body.notice-modal-open .notice-modal-shell{align-items:flex-start}
 .notice-modal-backdrop{position:absolute;inset:0;background:rgba(3,7,14,.78);backdrop-filter:blur(5px)}
 .notice-modal{
   position:relative;
