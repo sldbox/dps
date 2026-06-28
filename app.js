@@ -1361,7 +1361,6 @@ const DPS_TABLE_DECIMALS=DPS_CONFIG.dpsTable.decimals ?? 1;
 let activeDpsTableMode='solo';
 let dpsTableMinDps='1.0';
 function isDpsTableOpen(){
-  if(document.body?.classList.contains('is-tabbed') && $('mobileDpsTableMount')) return true;
   const modal=$('monthRuneModal');
   const panel=modal?.querySelector('[data-month-rune-panel="dps"]');
   return !!(modal?.classList.contains('is-open') && panel && !panel.hidden);
@@ -1888,17 +1887,6 @@ function renderJewelPanel(items){
       ${renderJewelPanelContent(items)}
     </section>
   `;
-}
-function renderMobileReferencePanels(){
-  const runeMount=$('mobileMonthRuneMount');
-  if(runeMount) runeMount.innerHTML=renderMonthRunePanelContent(MONTHLY_RUNE_INFO || {months:[]});
-  const jewelMount=$('mobileJewelMount');
-  if(jewelMount) jewelMount.innerHTML=renderJewelPanelContent(RAW_JEWEL_DATA || []);
-  const dpsMount=$('mobileDpsTableMount');
-  if(dpsMount){
-    dpsMount.innerHTML=`<div class="dps-table-tabs mobile-dps-table-tabs" data-dps-table-tabs-mount role="tablist" aria-label="DPS 기준 선택"></div><div class="dps-table-body" data-dps-table-mount></div>`;
-    renderDpsTablePanelContent();
-  }
 }
 function syncComparePanelAfterRender(){
   hydrateCompareControls();
@@ -6016,7 +6004,6 @@ function initApp(){
   applyDefaultTraitPresetOnBoot();
   refreshTraitPresetControls();
   restoreTraitPresetStatus();
-  renderMobileReferencePanels();
 }
 function markAppReady(){
   try{

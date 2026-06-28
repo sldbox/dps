@@ -1689,7 +1689,7 @@ body .trait-board-panel .trait-group .tr > div:first-child{
 }
 body .trait-board-panel .trait-group .tr-name{color:var(--color-slate-900)}
 body .trait-board-panel .trait-group .tr-type{color:var(--color-slate-500)}
-/* 헤더 참고 링크 / 모바일 참고 패널 */
+/* 헤더 참고 링크 / 편의 메뉴 */
 .btn.subtle.header-reference-btn{height:32px;min-height:32px;min-width:74px;padding:0 10px;font-size:calc(11.5px * var(--app-font-scale));text-decoration:none}
 .btn.subtle.header-reference-btn:hover:not(:disabled){text-decoration:none}
 .btn.subtle.header-reference-btn:active:not(:disabled){transform:translateY(1px);box-shadow:inset 0 2px 5px rgba(0,0,0,.32)}
@@ -1705,11 +1705,6 @@ body .trait-board-panel .trait-group .tr-type{color:var(--color-slate-500)}
 body.is-tabbed .notice-entry-btn{display:inline-flex;min-width:58px;height:30px;min-height:30px;padding:0 8px;border-radius:9px;font-size:calc(10px * var(--app-font-scale))}
 body.is-tabbed .notice-entry-icon{width:15px;height:15px}
 body.is-tabbed .notice-entry-icon svg{width:15px;height:15px}
-body .mobile-reference-panel{display:none}
-.mobile-reference-body{min-width:0;overflow:auto}
-.mobile-dps-table-tabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin:0 0 8px}
-.mobile-dps-table-tabs .dps-table-tab{height:30px;min-height:30px;padding:0 6px;font-size:calc(10.5px * var(--app-font-scale))}
-
  .basic-info-head{gap:8px;justify-content:space-between;overflow:hidden}
 .basic-info-head > span:first-child{min-width:0;flex:0 0 auto}
 .basic-info-head .basic-info-preset-status{flex:0 1 auto}
