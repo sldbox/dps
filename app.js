@@ -200,6 +200,15 @@ function setClassState(el, classNames, active){
   const names=Array.isArray(classNames) ? classNames : [classNames];
   names.forEach(name=>el.classList.toggle(name, !!active));
 }
+function hasOwn(obj,key){
+  return !!obj && Object.prototype.hasOwnProperty.call(obj,key);
+}
+function setTextMap(map){
+  Object.entries(map).forEach(([id,value])=>setText(id,value));
+}
+function setElementText(el,value){
+  if(el) el.textContent=value;
+}
 const RUNE_CHOICE_TARGETS=[['ap','rAP'],['ua','rUA'],['td','rTD'],['harmony','rHarmony']];
 const RUNE_CHOICE_TYPE_LABELS={
   ap:'마법공격력',
@@ -1147,10 +1156,12 @@ function getDpsContextValues(){
 }
 function updateDpsContextSummary(){
   const ctx=getDpsContextValues();
-  setText('dpsContextMode', ctx.mode);
-  setText('dpsContextDiff', ctx.diff);
-  setText('dpsContextPenance', ctx.penanceShort);
-  setText('dpsContextRound', ctx.roundShort);
+  setTextMap({
+    dpsContextMode:ctx.mode,
+    dpsContextDiff:ctx.diff,
+    dpsContextPenance:ctx.penanceShort,
+    dpsContextRound:ctx.roundShort
+  });
 }
 
 /* ===== 06. 메인 화면 렌더링 / 재계산 ===== */
@@ -1200,25 +1211,16 @@ function renderResourceSummary(s){
   const epRemain=epOwned-s.epU;
   const rpRemain=v('rp')-s.rpU;
   const soulRemain=v('soul')-s.soulU;
-  setText('spAttackView', fullNumber(s.spO));
-  setText('spUtilityView', fullNumber(s.spU));
-  setText('spRemainBasicView', fullNumber(spRemain));
-  setText('epUsedBasicView', fullNumber(s.epU));
-  setText('epRemainBasicView', fullNumber(epRemain));
-  setText('rpUsedBasicView', fullNumber(s.rpU));
-  setText('rpRemainBasicView', fullNumber(rpRemain));
-  setText('soulUsedBasicView', fullNumber(s.soulU));
-  setText('soulRemainBasicView', fullNumber(soulRemain));
+  setTextMap({
+    spAttackView:fullNumber(s.spO), spUtilityView:fullNumber(s.spU), spRemainBasicView:fullNumber(spRemain),
+    epUsedBasicView:fullNumber(s.epU), epRemainBasicView:fullNumber(epRemain),
+    rpUsedBasicView:fullNumber(s.rpU), rpRemainBasicView:fullNumber(rpRemain),
+    soulUsedBasicView:fullNumber(s.soulU), soulRemainBasicView:fullNumber(soulRemain)
+  });
   syncSpBankDisplay(bankSP);
 }
 function syncControlDisplays(){
-  syncSelectButtons();
-  syncBuffChoiceButtons();
-  syncBattleMode();
-  syncDifficultyTargetControls();
-  syncErosionControls();
-  syncPowerBlessOptions();
-  formatAllMoneyInputs();
+  [syncSelectButtons,syncBuffChoiceButtons,syncBattleMode,syncDifficultyTargetControls,syncErosionControls,syncPowerBlessOptions,formatAllMoneyInputs].forEach(fn=>fn());
 }
 function recalc(){
   try{
@@ -1242,12 +1244,11 @@ function recalc(){
 }
 function renderEnhanceSummary(){
   const e=unitEnhanceStats();
-  const chance=$('enhanceChanceView');
-  const count=$('enhanceCountView');
-  const value=$('enhanceValueView');
-  if(chance) chance.textContent=(e.chance*100).toFixed(2)+'%';
-  if(count) count.textContent=`${fmt(e.count,0)}회`;
-  if(value) value.textContent=fmt(e.value,0);
+  setTextMap({
+    enhanceChanceView:(e.chance*100).toFixed(2)+'%',
+    enhanceCountView:`${fmt(e.count,0)}회`,
+    enhanceValueView:fmt(e.value,0)
+  });
 }
 function renderEnchantPreview(){
   const keys=['ad','cri','ua','td','sr','hr'];
@@ -1358,6 +1359,7 @@ const COOP_DPS_TABLE_PENANCE_MAX=COOP_PENANCE_MAX;
 const DPS_TABLE_PENANCE_MIN=DPS_CONFIG.dpsTable.penanceMin ?? 0;
 const DPS_TABLE_PENANCE_MAX=DPS_CONFIG.dpsTable.penanceMax ?? 20;
 const DPS_TABLE_DECIMALS=DPS_CONFIG.dpsTable.decimals ?? 1;
+const DPS_MODAL_MODES=['solo','coop','tower'];
 let activeDpsTableMode='solo';
 let dpsTableMinDps='1.0';
 function isDpsTableOpen(){
@@ -1749,7 +1751,7 @@ function setModalOpen(id, bodyClass, open){
 function openDpsTable(mode='auto'){
   const fallbackMode=isTowerDifficulty() ? 'tower' : (isCoopActive() ? 'coop' : 'solo');
   const normalizedMode=mode==='round' ? 'solo' : (mode==='auto' ? fallbackMode : mode);
-  activeDpsTableMode=['solo','coop','tower'].includes(normalizedMode) ? normalizedMode : fallbackMode;
+  activeDpsTableMode=DPS_MODAL_MODES.includes(normalizedMode) ? normalizedMode : fallbackMode;
   closeConvenienceMenu();
   openMonthRune('dps');
 }
@@ -1908,7 +1910,7 @@ function selectMonthRuneModalTab(tabName){
   renderMonthRuneModalHeader(next);
   if(next!=='dps'){
     const dialog=modal.querySelector('.month-rune-modal');
-    ['solo','coop','tower'].forEach(mode=>{
+    DPS_MODAL_MODES.forEach(mode=>{
       dialog?.classList.remove(`is-dps-mode-${mode}`);
       document.body?.classList.remove(`is-dps-mode-${mode}`);
     });
@@ -1948,7 +1950,7 @@ function openMonthRune(tabName='compare', options={}){
 }
 function closeMonthRune(){
   setModalOpen('monthRuneModal','month-rune-modal-open',false);
-  ['solo','coop','tower'].forEach(mode=>document.body?.classList.remove(`is-dps-mode-${mode}`));
+  DPS_MODAL_MODES.forEach(mode=>document.body?.classList.remove(`is-dps-mode-${mode}`));
 }
 function bindMonthRuneEvents(){
   document.addEventListener('click',e=>{
@@ -3460,7 +3462,7 @@ function prepareTraitLimitInputForEdit(el){
 }
 function traitLimitSwitchOn(id){
   const el=$(id);
-  const fallback=Object.prototype.hasOwnProperty.call(TRAIT_LIMIT_DEFAULTS,id) ? TRAIT_LIMIT_DEFAULTS[id] : 'ON';
+  const fallback=hasOwn(TRAIT_LIMIT_DEFAULTS,id) ? TRAIT_LIMIT_DEFAULTS[id] : 'ON';
   const value=String((el ? el.value : fallback) ?? fallback).trim().toUpperCase();
   return value!=='OFF' && value!=='0' && value!=='FALSE' && value!=='비활성화';
 }
@@ -3894,9 +3896,8 @@ function makePublicDefaultState(){
     const el=$(id);
     if(el) values[id]=elementDefaultValue(el);
   });
-  if(!Object.prototype.hasOwnProperty.call(values,'optTier')) values.optTier='루키';
-  if(!Object.prototype.hasOwnProperty.call(values,'utilOptTier')) values.utilOptTier='루키';
-  Object.entries(TRAIT_LIMIT_DEFAULTS).forEach(([id,value])=>{ if(!Object.prototype.hasOwnProperty.call(values,id)) values[id]=value; });
+  Object.assign(values,{optTier:values.optTier ?? '루키', utilOptTier:values.utilOptTier ?? '루키'});
+  Object.entries(TRAIT_LIMIT_DEFAULTS).forEach(([id,value])=>{ if(!hasOwn(values,id)) values[id]=value; });
   values.dpsTableMinDps='1.0';
   const inv={};
   TRAITS.forEach(t=>{ inv[t[0]]=0; });
@@ -3941,7 +3942,7 @@ function makeStateObject(){
   values.optTier=vs('optTier') || values.optTier || '루키';
   values.utilOptTier=vs('utilOptTier') || values.utilOptTier || '루키';
   Object.entries(TRAIT_LIMIT_DEFAULTS).forEach(([id,value])=>{ values[id]=vs(id) || values[id] || value; });
-  if(Object.prototype.hasOwnProperty.call(values,'spBankApply')) values.spBankApply=normalizeSpBankApplyValue(values.spBankApply);
+  if(hasOwn(values,'spBankApply')) values.spBankApply=normalizeSpBankApplyValue(values.spBankApply);
   TRAIT_LIMIT_INPUT_IDS.forEach(id=>{ values[id]=normalizeTraitLimitStorageValue(values[id] ?? TRAIT_LIMIT_DEFAULTS[id] ?? '0'); });
   const normalizedRune=normalizeRuneChoiceValues(values);
   values.runeChoiceType=normalizedRune.runeChoiceType;
@@ -3977,30 +3978,30 @@ function sanitizeSavedValues(values, context={}){
   IGNORED_SAVED_VALUE_IDS.forEach(id=>delete out[id]);
   Object.keys(out).forEach(id=>{ if(!isUserStateValueId(id)) delete out[id]; });
   out.challengeTowerFloor=migratedTowerFloorValue(out, context);
-  if(Object.prototype.hasOwnProperty.call(out,'overEnhance')) out.overEnhance=String(normalizeOverEnhanceValue(out.overEnhance));
+  if(hasOwn(out,'overEnhance')) out.overEnhance=String(normalizeOverEnhanceValue(out.overEnhance));
   if(out.raceOpt==='해당 없음') out.raceOpt='없음';
   const coopMode=normalizeOnOffValue(out.coopMode,'OFF')==='ON';
   out.soloMode=coopMode ? 'OFF' : 'ON';
   out.coopMode=coopMode ? 'ON' : 'OFF';
-  if(Object.prototype.hasOwnProperty.call(out,'coopPlayers')) out.coopPlayers=normalizeCoopPlayersValue(out.coopPlayers || out.team);
-  if(Object.prototype.hasOwnProperty.call(out,'team')) out.team=normalizeTeamCountValue(out.team);
-  if(Object.prototype.hasOwnProperty.call(out,'penance')) out.penance=normalizePenanceValue(out.penance, SOLO_PENANCE_MAX);
+  if(hasOwn(out,'coopPlayers')) out.coopPlayers=normalizeCoopPlayersValue(out.coopPlayers || out.team);
+  if(hasOwn(out,'team')) out.team=normalizeTeamCountValue(out.team);
+  if(hasOwn(out,'penance')) out.penance=normalizePenanceValue(out.penance, SOLO_PENANCE_MAX);
   ['round','skillRound'].forEach(id=>{
-    if(Object.prototype.hasOwnProperty.call(out,id)) out[id]=normalizedRoundString(out[id]);
+    if(hasOwn(out,id)) out[id]=normalizedRoundString(out[id]);
   });
-  if(Object.prototype.hasOwnProperty.call(out,'challengeTowerFloor')) out.challengeTowerFloor=normalizedTowerFloorString(out.challengeTowerFloor);
-  if(Object.prototype.hasOwnProperty.call(out,'pbless')) out.pbless=normalizePowerBlessRawValue(out.pbless);
+  if(hasOwn(out,'challengeTowerFloor')) out.challengeTowerFloor=normalizedTowerFloorString(out.challengeTowerFloor);
+  if(hasOwn(out,'pbless')) out.pbless=normalizePowerBlessRawValue(out.pbless);
   DECIMAL_DISPLAY_INPUT_IDS.forEach(id=>{
-    if(Object.prototype.hasOwnProperty.call(out,id)) out[id]=normalizeDecimalDisplayValue(out[id]);
+    if(hasOwn(out,id)) out[id]=normalizeDecimalDisplayValue(out[id]);
   });
-  if(Object.prototype.hasOwnProperty.call(out,'spBankApply')) out.spBankApply=normalizeSpBankApplyValue(out.spBankApply);
-  if(Object.prototype.hasOwnProperty.call(out,'runeChoiceType') || Object.prototype.hasOwnProperty.call(out,'runeChoiceValue')){
+  if(hasOwn(out,'spBankApply')) out.spBankApply=normalizeSpBankApplyValue(out.spBankApply);
+  if(hasOwn(out,'runeChoiceType') || hasOwn(out,'runeChoiceValue')){
     const normalizedRune=normalizeRuneChoiceValues(out);
     out.runeChoiceType=normalizedRune.runeChoiceType;
     out.runeChoiceValue=normalizedRune.runeChoiceValue;
   }
   TRAIT_LIMIT_INPUT_IDS.forEach(id=>{
-    if(!Object.prototype.hasOwnProperty.call(out,id)) return;
+    if(!hasOwn(out,id)) return;
     out[id]=normalizeTraitLimitStorageValue(out[id]);
   });
   return out;
@@ -4093,7 +4094,7 @@ function applyStateObject(data){
     dpsTableMinDps=normalizeDpsTableMinDpsValue(data.values?.dpsTableMinDps ?? data.dpsTableMinDps ?? '1.0') || '1.0';
     syncDpsMinDpsInputs();
     const sanitizedValues=sanitizeSavedValues(data.values || {});
-    if(Object.prototype.hasOwnProperty.call(sanitizedValues,'enhanceMaster')){
+    if(hasOwn(sanitizedValues,'enhanceMaster')){
       const masterEl=$('enhanceMaster');
       if(masterEl) writeElementValue(masterEl, sanitizedValues.enhanceMaster);
     }
@@ -4115,7 +4116,7 @@ function applyStateObject(data){
     });
     INV[116]=1;
     enforceBudgets();
-    if(Object.prototype.hasOwnProperty.call(sanitizedValues,'runeChoiceType') || Object.prototype.hasOwnProperty.call(sanitizedValues,'runeChoiceValue')) syncRuneChoice();
+    if(hasOwn(sanitizedValues,'runeChoiceType') || hasOwn(sanitizedValues,'runeChoiceValue')) syncRuneChoice();
     else hydrateRuneChoiceFromHidden();
     applyZeroScoreState(data.zeroScore ? normalizeZeroScoreState(data.zeroScore) : data.zeroScore);
     syncEnchantCodeFromInputs(true);
@@ -4249,9 +4250,6 @@ function makeTraitPresetId(){
 }
 function emptyTraitPresetStore(){
   return {type:TRAIT_PRESET_FILE_TYPE,fileVersion:TRAIT_PRESET_FILE_VERSION,schemaVersion:TRAIT_PRESET_SCHEMA_VERSION,storageVersion:STORAGE_VERSION,updatedAt:Date.now(),defaultPresetId:'',presets:[]};
-}
-function hasOwn(obj,key){
-  return !!obj && Object.prototype.hasOwnProperty.call(obj,key);
 }
 function hasTraitPresetTowerFloorField(state){
   const values=(state && typeof state==='object' && state.values && typeof state.values==='object') ? state.values : {};
@@ -5407,35 +5405,22 @@ function normalizeZeroHonorValue(value){
 function zeroHonorDisplay(value){
   return value ? String(value).toUpperCase() : '없음';
 }
-function zeroScoreFieldValue(row, kind){
-  if(!row || typeof row!=='object') return undefined;
-  const keys=kind==='current'
-    ? ['current','현재 일반']
-    : ['target','목표 일반'];
+function firstOwnedValue(row, keys, fallback, mapper=value=>value){
+  if(!row || typeof row!=='object') return fallback;
   for(const key of keys){
-    if(Object.prototype.hasOwnProperty.call(row,key)) return row[key];
+    if(hasOwn(row,key)) return mapper(row[key]);
   }
-  return undefined;
+  return fallback;
+}
+function zeroScoreFieldValue(row, kind){
+  return firstOwnedValue(row, kind==='current' ? ['current','현재 일반'] : ['target','목표 일반'], undefined);
 }
 function zeroScoreHonorValue(row, kind){
-  if(!row || typeof row!=='object') return '';
-  const keys=kind==='current'
-    ? ['currentHonor','현재 명예']
-    : ['targetHonor','목표 명예'];
-  for(const key of keys){
-    if(Object.prototype.hasOwnProperty.call(row,key)) return normalizeZeroHonorValue(row[key]);
-  }
-  return '';
+  return firstOwnedValue(row, kind==='current' ? ['currentHonor','현재 명예'] : ['targetHonor','목표 명예'], '', normalizeZeroHonorValue);
 }
 function zeroScoreTowerHonorValue(row, kind){
-  if(!row || typeof row!=='object') return undefined;
-  const keys=kind==='current'
-    ? ['honorCurrent','현재 명예탑']
-    : ['honorTarget','목표 명예탑'];
-  for(const key of keys){
-    if(Object.prototype.hasOwnProperty.call(row,key)) return row[key];
-  }
-  return row.type==='honorTower' ? zeroScoreFieldValue(row,kind) : undefined;
+  return firstOwnedValue(row, kind==='current' ? ['honorCurrent','현재 명예탑'] : ['honorTarget','목표 명예탑'],
+    row?.type==='honorTower' ? zeroScoreFieldValue(row,kind) : undefined);
 }
 function zeroScoreStateFromExcel(zeroCells){
   if(!zeroCells) return null;
@@ -5972,22 +5957,12 @@ function bindButtonPressFeedback(){
 function bindAppEvents(){
   if(appEventsBound) return;
   appEventsBound=true;
-  bindFontScaleViewportGuard();
-  bindActionEvents();
-  bindBusCutEvents();
-  bindTraitHoldEvents();
-  bindTraitInputEvents();
-  bindDpsTableEvents();
-  bindExcelCompareEvents();
-  bindTraitPresetEvents();
-  bindMonthRuneEvents();
-  bindJewelImageEvents();
-  bindConvenienceMenuEvents();
-  bindZeroScoreCalculator();
-  bindTraitLimitDisplayEvents();
-  bindReactiveInputs();
-  bindButtonPressFeedback();
-  bindAppTitleVersion();
+  [
+    bindFontScaleViewportGuard, bindActionEvents, bindBusCutEvents, bindTraitHoldEvents, bindTraitInputEvents,
+    bindDpsTableEvents, bindExcelCompareEvents, bindTraitPresetEvents, bindMonthRuneEvents, bindJewelImageEvents,
+    bindConvenienceMenuEvents, bindZeroScoreCalculator, bindTraitLimitDisplayEvents, bindReactiveInputs,
+    bindButtonPressFeedback, bindAppTitleVersion
+  ].forEach(fn=>fn());
 }
 function initApp(){
   loadFontScale();

@@ -1,8 +1,5 @@
-/* ===== 01. 반응형 / 모바일 레이아웃 부트스트랩 ===== */
 (() => {
   'use strict';
-
-  /* DOM / 페이지 정의 */
   const qs = (selector) => document.querySelector(selector);
   const qsa = (selector) => Array.from(document.querySelectorAll(selector));
   const MODES = ['is-pc-landscape', 'is-pc-portrait', 'is-tablet', 'is-mobile', 'is-portrait-view', 'is-mobile-device', 'is-tablet-device', 'is-narrow-mobile', 'is-tabbed'];
@@ -14,7 +11,6 @@
     { key: 'result', label: '데미지 보드', selectors: ['.stat-dps-card', '.bus-cut-card', '.final-damage-card'] },
     { key: 'zero-rank', label: '승단', selectors: ['.zero-rank-card'] }
   ];
-
   const state = {
     tabs: null,
     pages: [],
@@ -27,8 +23,6 @@
     activeKey: null,
     resumeTimers: []
   };
-
-  /* 뷰포트 판정 / 모드 적용 */
   function getViewportSize() {
     const root = document.documentElement;
     return {
@@ -36,19 +30,16 @@
       h: root.clientHeight || window.innerHeight || 0
     };
   }
-
   function getMode() {
     const { w, h } = getViewportSize();
     const shortSide = Math.min(w, h);
     const longSide = Math.max(w, h);
     const portrait = h > w;
-
     if (shortSide <= 600) return 'is-mobile';
     if (shortSide <= 1024 && longSide <= 1366) return 'is-tablet';
     if (portrait) return 'is-pc-portrait';
     return 'is-pc-landscape';
   }
-
   function updateMobileOffsets() {
     const header = qs('.hdr');
     const tabs = qs('.mobile-section-tabs');
@@ -60,7 +51,6 @@
     document.documentElement.style.setProperty('--mobile-tabs-h', `${tabsHeight}px`);
     document.documentElement.style.setProperty('--mobile-vh', `${h}px`);
   }
-
   function applyMode() {
     const mode = getMode();
     const { w, h } = getViewportSize();
@@ -68,7 +58,6 @@
     const direction = h > w ? 'is-portrait-view' : '';
     const deviceClass = mode === 'is-mobile' ? 'is-mobile-device' : (mode === 'is-tablet' ? 'is-tablet-device' : '');
     const widthClass = mode === 'is-mobile' && shortSide <= 430 ? 'is-narrow-mobile' : '';
-
     document.body.classList.remove(...MODES);
     document.documentElement.classList.remove(...MODES);
     document.body.classList.add(mode);
@@ -89,21 +78,17 @@
       document.body.classList.add(widthClass);
       document.documentElement.classList.add(widthClass);
     }
-
     state.layoutWidth = w;
     state.layoutPortrait = h > w;
     syncMobileLayout();
     updateMobileOffsets();
   }
-
-  /* 모바일 탭 페이지 생성 / 복구 */
   function rememberPosition(el) {
     if (!el || state.restore.has(el)) return;
     const marker = document.createComment(`mobile-restore:${el.className || el.tagName}`);
     el.parentNode.insertBefore(marker, el);
     state.restore.set(el, marker);
   }
-
   function getOrCreatePage(key) {
     let page = qs(`.mobile-page[data-mobile-page="${key}"]`);
     if (!page) {
@@ -113,12 +98,10 @@
     }
     return page;
   }
-
   function getPageIndexByKey(key) {
     if (!key) return -1;
     return state.pages.findIndex(page => page.key === key);
   }
-
   function buildTabs(colWork, pages) {
     if (!state.tabs) {
       state.tabs = document.createElement('div');
@@ -126,7 +109,6 @@
       state.tabs.setAttribute('aria-label', '모바일 섹션 이동');
       colWork.parentNode.insertBefore(state.tabs, colWork);
     }
-
     state.tabs.textContent = '';
     pages.forEach((page, idx) => {
       const btn = document.createElement('button');
@@ -138,12 +120,10 @@
       state.tabs.appendChild(btn);
     });
   }
-
   function setActiveTab(activeIndex) {
     const nextIndex = Math.max(0, Math.min(state.pages.length - 1, activeIndex));
     state.activeIndex = nextIndex;
     state.activeKey = state.pages[nextIndex]?.key || state.activeKey;
-
     if (state.tabs) {
       state.tabs.querySelectorAll('.mobile-section-tab').forEach((btn, idx) => {
         const active = idx === nextIndex;
@@ -151,7 +131,6 @@
         btn.setAttribute('aria-pressed', active ? 'true' : 'false');
       });
     }
-
     state.pages.forEach((page, idx) => {
       const active = idx === nextIndex;
       page.el.classList.toggle('active', active);
@@ -159,7 +138,6 @@
       page.el.setAttribute('aria-hidden', active ? 'false' : 'true');
     });
   }
-
   function showMobilePage(index, resetPageScroll = false) {
     if (!state.pages.length) return;
     const nextIndex = Math.max(0, Math.min(state.pages.length - 1, index));
@@ -167,53 +145,42 @@
     if (resetPageScroll) state.pages[nextIndex].el.scrollTop = 0;
     updateMobileOffsets();
   }
-
   function arrangeMobile(colWork) {
     const pages = [];
     const keepKey = state.activeKey || state.pages[state.activeIndex]?.key || 'spec';
-
     MOBILE_PAGES.forEach((config) => {
       const elements = config.selectors.map(selector => qs(selector)).filter(Boolean);
       if (!elements.length) return;
-
       const page = getOrCreatePage(config.key);
       page.textContent = '';
       page.dataset.mobileLabel = config.label;
-
       elements.forEach((el) => {
         rememberPosition(el);
         page.appendChild(el);
       });
-
       colWork.appendChild(page);
       pages.push({ ...config, el: page });
     });
-
     state.pages = pages;
     buildTabs(colWork, pages);
     state.arrangedMobile = true;
     const keepIndex = getPageIndexByKey(keepKey);
     showMobilePage(keepIndex >= 0 ? keepIndex : state.activeIndex, false, false);
   }
-
   function restoreDesktop() {
     if (!state.arrangedMobile) return;
-
     state.restore.forEach((marker, el) => {
       if (marker.parentNode) marker.parentNode.insertBefore(el, marker.nextSibling);
     });
-
     qsa('.mobile-page').forEach(page => page.remove());
     if (state.tabs) state.tabs.remove();
     state.tabs = null;
     state.pages = [];
     state.arrangedMobile = false;
   }
-
   function syncMobileLayout() {
     const colWork = qs('.col-work');
     if (!colWork) return;
-
     if (document.body.classList.contains('is-tabbed')) {
       if (!state.arrangedMobile) arrangeMobile(colWork);
       else showMobilePage(getPageIndexByKey(state.activeKey), false, false);
@@ -221,19 +188,15 @@
       restoreDesktop();
     }
   }
-
-  /* 입력 보조 / 레이아웃 갱신 이벤트 */
   function isTextInput(el) {
     if (!el || el.disabled || el.readOnly) return false;
     if (el.tagName === 'TEXTAREA') return true;
     if (el.tagName !== 'INPUT') return false;
     return !['button', 'checkbox', 'color', 'file', 'hidden', 'image', 'radio', 'range', 'reset', 'submit'].includes((el.type || '').toLowerCase());
   }
-
   function bindInputAutoSelect() {
     if (document.documentElement.dataset.inputAutoSelectBound === '1') return;
     document.documentElement.dataset.inputAutoSelectBound = '1';
-
     document.addEventListener('focusin', (event) => {
       const el = event.target;
       if (!isTextInput(el)) return;
@@ -242,7 +205,6 @@
       });
     });
   }
-
   function scheduleApply() {
     if (state.raf) cancelAnimationFrame(state.raf);
     state.raf = requestAnimationFrame(() => {
@@ -255,11 +217,9 @@
       else updateMobileOffsets();
     });
   }
-
   function runResponsiveRefresh() {
     applyMode();
   }
-
   function scheduleResumeApply() {
     state.resumeTimers.forEach(timer => clearTimeout(timer));
     state.resumeTimers = [];
@@ -267,33 +227,27 @@
     state.resumeTimers.push(setTimeout(runResponsiveRefresh, 80));
     state.resumeTimers.push(setTimeout(runResponsiveRefresh, 320));
   }
-
   function markResponsiveReady() {
     window.__dpsResponsiveLayoutReady = true;
     if (typeof window.dpsMarkResponsiveLayoutReady === 'function') {
       window.dpsMarkResponsiveLayoutReady();
     }
   }
-
-  /* 초기화 / 외부 동기화 API */
   function init() {
     runResponsiveRefresh();
     bindInputAutoSelect();
     markResponsiveReady();
   }
-
   window.dpsSyncResponsiveLayout = function(){
     runResponsiveRefresh();
     requestAnimationFrame(updateMobileOffsets);
     markResponsiveReady();
   };
-
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init, { once: true });
   } else {
     init();
   }
-
   window.addEventListener('resize', scheduleApply, { passive: true });
   window.addEventListener('orientationchange', scheduleApply, { passive: true });
   if (window.visualViewport) window.visualViewport.addEventListener('resize', scheduleApply, { passive: true });
