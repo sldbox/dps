@@ -1,8 +1,11 @@
-/* ===== 01. 공지 모달 / 안내 탭 ===== */
+/* ===== notice.js | 공지 모달 / 안내 탭 ===== */
+/* 앱 공지, 가이드, 프리셋 최신화 안내를 렌더링한다. */
+
+/* ===== 00. 모달 데이터 / 탭 정의 ===== */
 (() => {
   'use strict';
 
-  /* 데이터 / 탭 정의 */
+  /* 안내 탭 콘텐츠 */
   const $ = (id) => document.getElementById(id);
   const NOTICE_TABS = [
     { id: 'legacy-preset-update', label: '프리셋', meta: '저장 파일 안내' },
@@ -104,7 +107,7 @@
   let activeTab = 'legacy-preset-update';
   let noticeAutoDismissed = false;
 
-  /* 프리셋 최신화 상태 */
+  /* ===== 01. 프리셋 최신화 상태 안내 ===== */
   function readPresetVersionStatus() {
     const statusSource = window.DpsTraitPresetVersion?.status;
     if (typeof statusSource !== 'function') return null;
@@ -120,7 +123,7 @@
     return readPresetVersionStatus()?.state === 'legacy';
   }
 
-  /* 모달 콘텐츠 렌더링 */
+  /* ===== 02. 공지 모달 콘텐츠 렌더링 ===== */
   function tabHtml(target) {
     return NOTICE_TABS.map((tab) => {
       const active = tab.id === target;
@@ -260,7 +263,7 @@
   }
 
 
-  /* 자동 표시 / 사용자 이벤트 */
+  /* ===== 03. 자동 표시 / 사용자 이벤트 ===== */
   function isAutoDismissed() {
     return noticeAutoDismissed;
   }

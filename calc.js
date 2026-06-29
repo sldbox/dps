@@ -1,8 +1,8 @@
 /* ===== calc.js | DPS 계산 엔진 ===== */
-/* app.js는 입력/렌더링/이벤트를 담당하고, 이 파일은 계산·비용·효율·점수 산식을 담당한다. */
+/* DOM 의존이 일부 남아 있지만, 이 파일의 책임은 계산식·비용·효율·점수 산식 유지다. */
 
 
-/* ===== 00. 계산 입력 정규화 ===== */
+/* ===== 00. 계산 입력 정규화 / 난이도별 저장값 보정 ===== */
 const ROUND_INPUT_MIN=1;
 const ROUND_INPUT_MAX=300;
 const TOWER_FLOOR_INPUT_MIN=1;
@@ -92,7 +92,7 @@ function normalizeDecimalDisplayValue(value, digits=6){
 }
 
 
-/* ===== 00-2. 계산 입력 상태 어댑터 ===== */
+/* ===== 01. 계산 입력 상태 어댑터 ===== */
 function targetRoundStoredValue(){
   const el=$('round');
   if(!el) return String(ROUND_INPUT_MIN);
@@ -159,7 +159,7 @@ function calculateSkillDamageRows({ap=535,doubleSpace=1,round=1,mode='normal'}={
   };
 }
 
-/* ===== 00-1. DPS표 계산 보조 ===== */
+/* ===== 02. DPS표 계산 보조 / 도전의탑 표시값 ===== */
 function chunkDpsTowerFloors(minFloor, maxFloor, groupSize){
   const chunks=[];
   for(let start=minFloor; start<=maxFloor; start+=groupSize){
@@ -201,7 +201,7 @@ function towerEnemySummaryItems(floor){
   ];
 }
 
-/* ===== 01. 인첸트 조회 ===== */
+/* ===== 03. 인첸트 조회 ===== */
 function enchantAt(pos){
   syncEnchantCodeFromInputs(false);
   const code=($('enchantCode')?.value||'999999').padEnd(6,'0');
@@ -209,7 +209,7 @@ function enchantAt(pos){
   return ENCHANT_TABLE[lv];
 }
 
-/* ===== 02. 특성 비용 ===== */
+/* ===== 04. 특성 비용 ===== */
 const FIXED_STEP_AFTER_150={93:76000,94:76000,95:114000};
 function fixedStepAfter150(row){return FIXED_STEP_AFTER_150[row] || 0;}
 function nextCost(row){
@@ -248,7 +248,7 @@ function cumCost(row){
   return s;
 }
 
-/* ===== 03. 난이도 / 적 데이터 / DPS 보조 ===== */
+/* ===== 05. 난이도 / 적 데이터 / 콘텐츠 DPS 배율 ===== */
 const TOWER_DIFFICULTY_NAME='도전의 탑';
 const ABYSS_DIFFICULTIES=new Set(['Abyss road','Deep Abyss']);
 const COOP_DISABLED_DIFFICULTIES=new Set([TOWER_DIFFICULTY_NAME,...ABYSS_DIFFICULTIES]);
@@ -439,7 +439,7 @@ function contentDpsDisplayMultiplier(diffName, round, displayHR, displaySR){
   return difficultyName(diffName)===TOWER_DIFFICULTY_NAME ? towerDpsDisplayMultiplier(round, displayHR, displaySR) : 1;
 }
 
-/* ===== 04. 룬 / 강화 / 상단 옵션 계산 ===== */
+/* ===== 06. 룬 / 강화 / 상단 옵션 계산 ===== */
 function on(id){const el=$(id); return !!(el && el.checked);}
 function clampInt(n,min,max){return Math.max(min,Math.min(max,Math.round(+n||0)));}
 const OVER_ENHANCE_ALLOWED=new Set([0,3,5,6]);
@@ -594,7 +594,7 @@ function growthGraduationAttackBonus(){
 }
 
 
-/* ===== 05. 스탯 / 버프 / DPS 계산 ===== */
+/* ===== 07. 메인 스탯 / 버프 / DPS 계산 ===== */
 function computeStatsRaw(){
   const autoEP=syncAutoEP();
   const diff=DIFF[vs('diff')]||DIFF['The Final'];
@@ -699,7 +699,7 @@ function computeStatsRaw(){
           spTotal:spU+spO,spU,spO,epU,rpU,soulU,spBank:spBankRawBonus(),spBankApplied:isSpBankApplied(),effectiveSP:effectiveSP(),excelPierce,enemyData};
 }
 
-/* ===== 05-1. 유물 DPS 계산 ===== */
+/* ===== 08. 유물 DPS 계산 / preview 상태 보존 ===== */
 function currentPenaltyContext(){
   const diff=DIFF[vs('diff')]||DIFF['The Final'];
   const targetRound=effectiveTargetRound();
@@ -744,9 +744,9 @@ function calculateArtifactDpsRaw(stats=computeStatsRaw()){
     round:ctx.targetRound
   };
 }
-function calculateArtifactDpsPreview(diffName, penanceLevel, round, options={}){
-  const ids=['diff','penance','round','challengeTowerFloor','soloMode','coopMode','coopPlayers','team','prodArtifact','pbless',...EROSION_CONTROL_IDS];
-  const saved=ids.map(id=>{
+const ARTIFACT_DPS_PREVIEW_IDS=['diff','penance','round','challengeTowerFloor','soloMode','coopMode','coopPlayers','team','prodArtifact','pbless',...EROSION_CONTROL_IDS];
+function capturePreviewElementStates(ids){
+  return ids.map(id=>{
     const el=$(id);
     return {
       el,
@@ -756,6 +756,20 @@ function calculateArtifactDpsPreview(diffName, penanceLevel, round, options={}){
       dataset:el ? {...el.dataset} : null
     };
   });
+}
+function restorePreviewElementStates(saved){
+  saved.forEach(state=>{
+    const el=state.el;
+    if(!el) return;
+    if(state.innerHTML!==null) el.innerHTML=state.innerHTML;
+    if(state.checked!==null) el.checked=state.checked;
+    else el.value=state.value;
+    Object.keys(el.dataset).forEach(key=>{ delete el.dataset[key]; });
+    Object.entries(state.dataset || {}).forEach(([key,value])=>{ el.dataset[key]=value; });
+  });
+}
+function calculateArtifactDpsPreview(diffName, penanceLevel, round, options={}){
+  const saved=capturePreviewElementStates(ARTIFACT_DPS_PREVIEW_IDS);
   try{
     const diffEl=$('diff');
     const penEl=$('penance');
@@ -829,15 +843,7 @@ function calculateArtifactDpsPreview(diffName, penanceLevel, round, options={}){
     logAppError('[artifact DPS preview failed]', e);
     return {dps:0,baseDps:0,error:e};
   }finally{
-    saved.forEach(state=>{
-      const el=state.el;
-      if(!el) return;
-      if(state.innerHTML!==null) el.innerHTML=state.innerHTML;
-      if(state.checked!==null) el.checked=state.checked;
-      else el.value=state.value;
-      Object.keys(el.dataset).forEach(key=>{ delete el.dataset[key]; });
-      Object.entries(state.dataset || {}).forEach(([key,value])=>{ el.dataset[key]=value; });
-    });
+    restorePreviewElementStates(saved);
   }
 }
 function hasRuneOption(code){
@@ -1082,7 +1088,7 @@ function updateDpsContextSummary(){
 }
 
 
-/* ===== 06. DPS표 미리보기 계산 ===== */
+/* ===== 09. DPS표 미리보기 계산 ===== */
 function computeDpsPreview(diffName, penanceLevel, round, options={}){
   const ids=['diff','penance','round','challengeTowerFloor','soloMode','coopMode','coopPlayers','team','pbless',...EROSION_CONTROL_IDS];
   const saved=ids.map(id=>{
@@ -1176,7 +1182,7 @@ function computeDpsPreview(diffName, penanceLevel, round, options={}){
   }
 }
 
-/* ===== 06. 특성 효율 계산 ===== */
+/* ===== 10. 특성 효율 계산 ===== */
 const TRAIT_OPT_NORMAL_ROWS={
   SP:new Set([42,43,46,52,53,58,60,61,68,70,71,77,84,85,86,92,93,94,95,96,99,100,101,102,103,104,108,109,110,111,115,116,44,54,62,79]),
   EP:new Set([117,118,119,120,121,122]),
@@ -1458,7 +1464,7 @@ function traitRecommendationGainText(gain){
   return `+${n.toLocaleString('ko-KR')}`;
 }
 
-/* ===== 07. 특성 자동 최적화 ===== */
+/* ===== 11. 특성 자동 최적화 ===== */
 function optimizeSP(){
   function normalAddCount(row, kind, rem){
     if(kind!=='SP') return 1;
@@ -1520,7 +1526,7 @@ function optimizeSP(){
   try{showToast('특성 최적화 완료', 'ok');}catch(e){}
 }
 
-/* ===== 08. 더제로 승단 점수 계산 ===== */
+/* ===== 12. 더제로 승단 점수 계산 ===== */
 function zeroScoreNumber(value, min, max){
   const n=Number(value);
   if(!Number.isFinite(n)) return min;
@@ -1697,7 +1703,7 @@ function normalizeZeroScoreState(zeroScore){
   return {rows};
 }
 
-/* ===== 10. 계산 엔진 공개 API ===== */
+/* ===== 13. 계산 엔진 공개 API ===== */
 window.DPS_CALC=Object.freeze({
   normalizedIntegerRange,
   normalizedRoundNumber,

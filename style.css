@@ -1,9 +1,12 @@
-/* ── 1. 변수 및 기본 설정 ── */
+/* ===== style.css | DPS 웹앱 전체 스타일 ===== */
+/* 기능별 UI 섹션과 반응형 보정을 한 파일에서 관리한다. */
+
+/* ===== 00. 변수 및 기본 설정 ===== */
 :root{--app-font-scale:1;--font-main:"Pretendard","Malgun Gothic","Apple SD Gothic Neo",sans-serif;--bg:#0b111b;--bd:#26364d;--panel-shadow:0 12px 30px rgba(0,0,0,.26);--ui-sub:#a7b6c8;--ui-line2:#344966;--state-danger-bg:#2a0f18;--state-danger-line:#7f1d2d;--state-danger-text:#ff9aaa;--ui-line-soft:#223148;--ui-shadow-soft:0 10px 28px rgba(0,0,0,.22);--ui-unified-card:#111a28;--ui-unified-head:#172438;--ui-unified-line:#2d3f59;--ui-unified-line-strong:#425775;--ui-unified-input:#0d1522;--ui-unified-blue:var(--btn-action-bg);--ui-unified-text:#e6edf7;--ui-unified-muted:#94a3b8;--ui-unified-shadow:0 12px 28px rgba(0,0,0,.22);--subhead-text:#cfe0ff;--btn-action-bg:#2563eb;--btn-action-border:#60a5fa;--btn-action-border-hover:#93c5fd;--btn-action-text:#f8fbff;--btn-action-shadow:0 2px 0 rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.12);--ui-button-bg:linear-gradient(180deg,#10233d 0%,#111a28 100%);--ui-button-hover-bg:linear-gradient(180deg,#132f54 0%,#172438 100%);--ui-button-border:#60a5fa;--ui-button-hover-border:#93c5fd;--ui-button-text:#d7e6ff;--ui-button-hover-text:#f8fbff;--ui-button-shadow:0 2px 0 rgba(0,0,0,.28),0 4px 8px rgba(0,0,0,.20),inset 0 1px 0 rgba(255,255,255,.08);--ui-button-active-bg:var(--btn-action-bg);--ui-button-active-border:var(--btn-action-border-hover);--ui-button-active-text:var(--btn-action-text);--ui-button-active-shadow:var(--btn-action-shadow);--tone-info-bg:#0c203a;--tone-info-bg-hover:#102b4c;--tone-info-border:#4f8bd6;--tone-info-border-hover:#7aa7ff;--tone-info-text:#b8d7ff;--tone-info-text-hover:#e8f2ff;--tone-warn-bg:#241b0a;--tone-warn-bg-hover:#33260e;--tone-warn-border:#d99030;--tone-warn-border-hover:#f6c77a;--tone-warn-text:#f6c77a;--tone-warn-text-hover:#fff1c2;--tone-success-bg:#0d2a24;--tone-success-bg-hover:#11382f;--tone-success-border:#34a07a;--tone-success-border-hover:#5ee0ad;--tone-success-text:#9de6cb;--tone-success-text-hover:#d8fff0;--ui-button-common-pad-x:10px;--ui-button-common-font:calc(11.5px * var(--app-font-scale));--ui-button-gap:4px;--ui-action-button-h:36px;--ui-choice-button-h:31px;--ui-tab-button-h:32px;--ui-toggle-button-h:28px;--ui-step-button-h:30px;--ui-toolbar-button-h:30px;--ui-icon-button-size:30px;--ui-field-border:var(--ui-button-border);--ui-field-hover-border:var(--ui-button-hover-border);--ui-field-focus-border:var(--ui-button-hover-border);--ui-field-focus-shadow:var(--ui-focus);--ui-input:#0d1522;--ui-label:#172235;--field-label-bg:#172235;--field-label-bd:#30435f;--field-label-accent:#425b7e;--field-label-text:#d7e4f3;--result-table-label-bg:#172438;--result-table-value-bg:#101927;--result-table-line:#2b3b55;--result-table-text:#d7e6ff;--section-head-text:#f8fbff;--role-label-bg:#172235;--role-interactive-bg:#10233d;--role-interactive-bd:var(--ui-field-current-border,var(--ui-field-border));--role-readonly-bg:transparent;--role-readonly-bd:#3a4c66;--ui-focus:0 0 0 3px rgba(122,167,255,.22);--dps-card-head-h:40px;--dps-card-head-text:var(--section-head-text, #f8fbff);--ui-bg:#080d15;--ui-panel:#111a28;--ui-panel-soft:#151f2f;--ui-line:#26364d;--ui-line-strong:#3a4d67;--ui-navy:#435c82;--ui-accent:#7aa7ff;--ui-text:#e6edf7;--ui-radius:15px;--ui-control-radius:9px;--ui-shadow:0 14px 34px rgba(0,0,0,.25),0 1px 0 rgba(255,255,255,.03);--ui-shadow-hover:0 18px 40px rgba(0,0,0,.32),0 1px 0 rgba(255,255,255,.04);--section-head-h:40px;--section-head-bg:linear-gradient(135deg,#162235 0%,#1d2c44 58%,#263b5a 100%);--section-head-bd:#344967;--dps-card-head-bg:var(--section-head-bg);--dps-card-head-bd:var(--section-head-bd);--color-white:#111a28;--color-slate-50:#0d1522;--color-slate-100:#172235;--color-slate-200:#26364d;--color-slate-300:#3a4d67;--color-slate-400:#8394aa;--color-slate-500:#95a6bd;--color-slate-600:#aebdd1;--color-slate-700:#cad7e6;--color-slate-900:#eef4fb;--color-gray-900:#050915;--color-text-main:#e6edf7;--color-blue-50:#10233d;--color-blue-100:#1a3560;--color-blue-200:#2d5a9d;--color-blue-300:#4f83d8;--color-blue-600:#7aa7ff;--color-blue-700:#a9c8ff;--color-accent:#7aa7ff;--color-amber-line:#a9742b;--color-orange-50:#24190c;--color-orange-200:#8a5f25;--color-orange-800:#f0b66b;--on-dark:#f8fbff;}
 *{box-sizing:border-box;margin:0;padding:0;scrollbar-width:none;-ms-overflow-style:none;}
 *::-webkit-scrollbar{width:0;height:0;display:none;}
 body{font-family:var(--font-main);font-size:calc(13px * var(--app-font-scale));line-height:1.55;min-height:100vh;overflow:hidden;letter-spacing:-.01em;}
-/* ── 2. 앱 프레임 / 3열 레이아웃 / 기본 카드 ── */
+/* ===== 01. 앱 프레임 / 3열 레이아웃 / 기본 카드 ===== */
 .wrap{grid-template-columns:minmax(680px,4fr) minmax(500px,3fr) minmax(500px,3fr);max-width:none;margin:0;display:grid;height:100vh;width:100vw;overflow:hidden;gap:0;}
 .hdr{display:flex;align-items:center;gap:12px;grid-column:1/-1;grid-row:1;height:52px;z-index:5;}
 .hdr h1{font-size:calc(15px * var(--app-font-scale));font-weight:900;letter-spacing:-.2px;color:#e6edf7;}
@@ -57,7 +60,7 @@ body{font-family:var(--font-main);font-size:calc(13px * var(--app-font-scale));l
 .trait-tools .mini-btn{cursor:pointer;min-width:max-content;}
 .trait-title{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .trait-tools{display:flex;gap:4px;flex:0 0 auto;}
-/* ── 3. 좌측 입력 패널 / 룬·인첸트·강화 / 비교 모달 기반 ── */
+/* ===== 02. 좌측 입력 패널 / 룬·인첸트·강화 / 비교 모달 기반 ===== */
 .col-left .sg-title, .month-rune-selects{grid-template-columns:repeat(3,minmax(0,1fr));display:grid;gap:8px;}
 .mini-ir{display:grid;grid-template-columns:1fr;}
 .mini-ir label{color:var(--color-slate-600);}
@@ -263,7 +266,7 @@ body.month-rune-modal-open:is(.is-dps-mode-solo,.is-dps-mode-coop,.is-dps-mode-t
 .month-rune-panel[hidden]{display:none;}
 .month-rune-note, .month-rune-empty{margin:0 0 12px;padding:11px 13px;border:1px solid #26364d;border-radius:12px;background:#121d2e;color:#cfe0ff;font-size:calc(12px * var(--app-font-scale));font-weight:900;line-height:1.4;box-shadow:inset 0 1px 0 rgba(255,255,255,.05);}
 .month-rune-empty{text-align:center;color:#93a4b9;background:#111a28;border-style:dashed;}
-/* ── 4. 이달의룬 / 쥬얼 / DPS표 / 비교 패널 ── */
+/* ===== 03. 이달룬 / 쥬얼 / DPS표 / 비교 패널 ===== */
 .jewel-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;}
 .jewel-card{min-width:0;overflow:hidden;border:1px solid #26364d;border-radius:14px;background:#111a28;box-shadow:0 12px 30px rgba(0,0,0,.18),inset 0 1px 0 rgba(255,255,255,.05);}
 .jewel-card-head{display:flex;align-items:center;gap:12px;padding:12px;border-bottom:1px solid #26364d;background:linear-gradient(135deg,#121d2e 0%,#111a28 100%);}
@@ -646,7 +649,7 @@ body.is-pc-portrait .dps-tower-grid, body.is-tablet .dps-tower-grid{grid-templat
 body.is-tablet .month-rune-grid{grid-template-columns:repeat(2,minmax(0,1fr));}
 body.is-tablet .jewel-grid{grid-template-columns:repeat(3,minmax(0,1fr));}
 body.is-tablet .month-rune-head{gap:8px;padding:10px 54px 10px 10px;}
-/* ── 5. 버스보드 / 성소스킬보드 ── */
+/* ===== 04. 버스보드 / 데미지보드 ===== */
 .bus-cut-card .mini-table{border-collapse:separate;border-spacing:0;}
 .bus-cut-card .mini-table thead{display:none;}
 .bus-cut-card .mini-table, .bus-cut-card .mini-table tbody, .bus-cut-card .mini-table tr{display:block;width:100%;}
@@ -737,7 +740,7 @@ body.is-tablet .clean-rune-card .enchant-result-value, body.is-pc-portrait .clea
 .title-td-row label, .dps-min-main-row label{height:32px;min-height:32px;line-height:1.05;}
 .title-td-row select, .dps-min-main-row input{height:32px;min-height:32px;align-self:center;}
 .title-td-row label{white-space:nowrap;font-size:calc(11px * var(--app-font-scale));}
-/* ── 6. 중앙 스탯 비교 / 우측 특성 컨트롤 ── */
+/* ===== 05. 중앙 스탯 비교 / 우측 특성 컨트롤 ===== */
 .stat-compare-grid{border:0;background:transparent;}
 .stat-compare-grid .stat-row{align-items:stretch;border:0;border-bottom:0;background:transparent;}
 .stat-compare-grid .stat-row:last-child{border-bottom:0;}
@@ -751,7 +754,7 @@ body.is-tablet .clean-rune-card .enchant-result-value, body.is-pc-portrait .clea
 body:not(.is-mobile) .trait-board-panel .trait-dashboard-tools{margin:10px 0 12px;}
 body:not(.is-mobile) .trait-board-panel .tp-body{padding-top:10px;}
 body:not(.is-mobile) .trait-board-panel .trait-group{margin-bottom:10px;}
-/* ── 7. 공통 시각 토큰 적용 / 전역 상호작용 ── */
+/* ===== 06. 공통 시각 토큰 / 전역 상호작용 ===== */
 .ui-action-btn, .ui-choice-btn, .ui-tab-btn, .ui-toggle-btn, .ui-step-btn, .ui-toolbar-btn, .ui-icon-btn, .ui-choice-card, .btn, .seg-btns button, .trait-tools .mini-btn, .trait-group .tr-ctrl button, .trait-master-btn, .font-scale-btn, .font-scale-value{box-sizing:border-box;appearance:none;border-radius:var(--ui-control-radius);border:1px solid var(--ui-button-border);background:var(--ui-button-bg);color:var(--ui-button-text);font-size:var(--ui-button-common-font);font-weight:900;line-height:1;white-space:nowrap;word-break:keep-all;text-align:center;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;gap:var(--ui-button-gap);box-shadow:var(--ui-button-shadow);text-shadow:none;transform:none;cursor:pointer;transition:background .15s ease,border-color .15s ease,color .15s ease,box-shadow .15s ease,transform .1s ease;}
 .ui-action-btn, .btn{min-height:var(--ui-action-button-h);padding:0 var(--ui-button-common-pad-x);}
 .ui-choice-btn, .seg-btns button{min-height:var(--ui-choice-button-h);height:var(--ui-choice-button-h);padding:0 8px;}
@@ -799,7 +802,7 @@ body.is-mobile .hdr-logo{width:36px;height:32px;}
 body.is-tabbed .col-work{background:var(--ui-bg);}
 body.is-mobile input:not([type="hidden"]), body.is-mobile select, body.is-mobile .btn, body.is-mobile .seg-btns button{min-height:34px;}
 }
-/* ── 8. 반응형 프레임 / 카드·헤더 공통 정렬 ── */
+/* ===== 07. 반응형 프레임 / 카드·헤더 공통 정렬 ===== */
 .col-left > .sg{margin-bottom:12px;}
 .col-left > .sg:last-child{margin-bottom:0;}
 .col-left > .xp-sp-card, .col-left > .unit-enhance-card{display:block;width:100%;border:0;border-radius:0;background:transparent;box-shadow:none;overflow:visible;}
@@ -922,7 +925,7 @@ body.is-tabbed .mobile-page input[type="hidden"]{display:none;}
 .trait-dashboard-tools{width:100%;margin:10px 0 0;box-shadow:none;}
 body.is-mobile #optTier, body.is-mobile #utilOptTier{text-align:center;text-align-last:center;justify-content:center;}
 body.is-tabbed .trait-dashboard-tools{margin-top:8px;}
-/* ── 9. 좌측 입력·버프 반응형 세부 ── */
+/* ===== 08. 좌측 입력·버프 반응형 세부 ===== */
 body.is-tablet .stat-dps-card .stat-compare-grid{display:block;width:100%;max-width:100%;border:0;border-radius:0;background:transparent;overflow:visible;}
 body.is-tablet .stat-dps-card .stat-compare-grid .stat-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));align-items:stretch;width:100%;height:28px;min-height:28px;margin:0;padding:0;border:0;border-bottom:0;background:transparent;overflow:hidden;}
 body.is-tablet .stat-dps-card .stat-compare-grid .stat-row:last-child{border-bottom:0;}
@@ -967,7 +970,7 @@ body.is-tablet label, body.is-tablet .rune-stat-row label, body.is-tablet .rune-
 body.is-tablet input:not([type="hidden"]), body.is-tablet select, body.is-tablet textarea, body.is-tablet .enchant-combined-row b, body.is-tablet .additional-row b{min-height:31px;border-width:1px;border-style:solid;border-radius:8px;font-weight:900;box-shadow:none;}
 body.is-tablet .ui-action-btn, body.is-tablet .ui-choice-btn, body.is-tablet .ui-tab-btn, body.is-tablet .ui-toggle-btn, body.is-tablet .ui-step-btn, body.is-tablet .ui-toolbar-btn, body.is-tablet .ui-icon-btn, body.is-tablet .btn, body.is-tablet .seg-btns button, body.is-tablet .mini-btn, body.is-tablet .trait-group .tr-ctrl button{font-weight:900;border-width:1px;}
 body.is-tablet .unit-enhance-card .buff-choice-item{font-weight:900;border-width:1px;}
-/* ── 10. 공통 카드·헤더 최종 보정 ── */
+/* ===== 09. 공통 카드·헤더 정렬 통합 ===== */
 body .col-left > .sg.unit-enhance-card.spec-unit-enhance{display:block;width:100%;padding:0 0 12px;overflow:visible;background:transparent;border:0;border-radius:0;box-shadow:none;}
 body .col-left > .sg.unit-enhance-card.spec-unit-enhance > .sg-title{width:auto;margin:0 0 10px;background:var(--section-head-bg, #b8d2ff);border:0;border-radius:var(--ui-radius, 14px) var(--ui-radius, 14px) 0 0;color:var(--on-dark);}
 body .col-left .sg > .sg-title, body .col-left .sg.xp-sp-card > .sg-title, body .col-mid .stat-dps-card > .section-title, body .col-mid .bus-cut-card > h3, body .col-mid .final-damage-card > h3, body .trait-group > h4, body.is-tabbed .mobile-page > .sg > .sg-title, body.is-tabbed .mobile-page > .data-card > .section-title, body.is-tabbed .mobile-page > .data-card > h3:not(.zero-rank-title), body.is-tabbed .mobile-page .zero-rank-title, body.is-tabbed .mobile-page .optimizer-head, body.is-tabbed .mobile-page .trait-subgroup-title, body.is-mobile .mobile-page > .sg.rune-spec.clean-rune-card > .sg-title{height:40px;min-height:40px;max-height:40px;padding-top:0;padding-bottom:0;box-sizing:border-box;font-weight:900;line-height:1;}
@@ -1015,7 +1018,7 @@ body.is-tabbed .mobile-page > .sg, body.is-tabbed .mobile-page > .data-card{bord
 body.is-tabbed .col-work{padding:9px;gap:9px;}
 body.is-tabbed .mobile-page > .sg, body.is-tabbed .mobile-page > .data-card{border-radius:0;}
 }
-/* ── 12. 우측 특성보드 / 자원·강화 세부 ── */
+/* ===== 10. 우측 특성보드 / 자원·강화 세부 ===== */
 body .trait-board-panel, body:not(.is-mobile) .trait-board-panel, body.is-tabbed .mobile-page > .col-right .trait-board-panel{display:grid;grid-template-columns:1fr;gap:10px;width:100%;margin:0;padding:0;overflow:visible;}
 body .trait-board-panel::before, body .trait-board-panel::after{content:none;display:none;}
 body:not(.is-mobile) .clean-rune-card .enchant-combined .enchant-result-label > span{display:flex;align-items:center;justify-content:center;height:31px;min-width:0;padding:0 7px;border-radius:8px;font-size:calc(11.5px * var(--app-font-scale));font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
@@ -1186,7 +1189,7 @@ body.is-mobile .trait-limit-grid label, body.is-narrow-mobile .trait-limit-grid 
 body.is-mobile .trait-limit-grid label span, body.is-mobile .trait-limit-grid input, body.is-mobile .trait-limit-grid select, body.is-narrow-mobile .trait-limit-grid label span, body.is-narrow-mobile .trait-limit-grid input, body.is-narrow-mobile .trait-limit-grid select{height:32px;min-height:32px;font-size:calc(9.8px * var(--app-font-scale));}
 body .stat-dps-summary, body .col-mid .stat-dps-card .stat-dps-summary, body.is-tablet .stat-dps-summary, body.is-mobile .stat-dps-summary, body.is-narrow-mobile .stat-dps-summary{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;overflow:visible;border:0;background:transparent;box-shadow:none;}
 body .stat-dps-summary .dps-risk-badge, body .col-mid .stat-dps-card .stat-dps-summary .dps-risk-badge, body.is-mobile .stat-dps-summary .dps-risk-badge, body.is-narrow-mobile .stat-dps-summary .dps-risk-badge{align-self:center;justify-self:center;margin:8px auto 0;text-align:center;transform:none;position:static;}
-/* ── 13. 더제로 승단 / 특성 확장 패널 ── */
+/* ===== 11. 더제로 승단 / 특성 확장 패널 ===== */
 .zero-rank-card, .col-left .zero-rank-card{padding:0 0 12px;margin-bottom:10px;background:transparent;border:0;border-radius:0;box-shadow:none;overflow:visible;}
 .col-left .zero-rank-card > h3{height:var(--section-head-h);min-height:var(--section-head-h);}
 .zero-rank-title{display:flex;width:100%;max-width:100%;height:var(--dps-card-head-h);min-height:var(--dps-card-head-h);margin:0 0 10px;padding:0 14px;align-items:center;justify-content:flex-start;gap:8px;background:var(--section-head-bg, #cfe0ff);border:0;border-radius:calc(var(--ui-radius, 15px) - 1px) calc(var(--ui-radius, 15px) - 1px) 0 0;box-shadow:none;color:var(--on-dark);font-size:calc(13px * var(--app-font-scale));font-weight:900;line-height:1;letter-spacing:0;text-transform:none;box-sizing:border-box;}
@@ -1334,7 +1337,7 @@ body.is-mobile .zero-calc-table .zero-star-toggle:disabled{border-color:var(--ro
 .zero-calc-table .zero-honor-input{width:100%;max-width:none;height:28px;min-height:28px;box-sizing:border-box;border:1px solid var(--role-interactive-bd);border-radius:var(--ui-control-radius);background:var(--role-interactive-bg,#10233d);background-image:none;color:#cfe0ff;font-family:Consolas,monospace;font-weight:1000;text-align:center;text-transform:uppercase;padding:0 6px;margin:0;font-size:calc(10.5px * var(--app-font-scale));line-height:28px;box-shadow:inset 0 1px 2px rgba(32,57,91,.035);text-shadow:none;}
 .zero-calc-table .zero-honor-input::placeholder{color:#5b6b82;font-size:calc(9px * var(--app-font-scale));text-transform:none;}
 .zero-calc-table .zero-honor-input:focus{--ui-field-current-border:var(--ui-field-focus-border);outline:none;background:var(--color-white);box-shadow:var(--ui-field-focus-shadow);}
-/* ── 14. 공통 입력·라벨 보정 / 모바일 참고 패널 ── */
+/* ===== 12. 공통 입력·라벨 정렬 / 모바일 참고 패널 ===== */
 body .xp-sp-card .basic-info-row > label,
 body .trait-limit-grid label span,
 body .clean-rune-card .rune-stat-row > label,
@@ -1429,7 +1432,7 @@ body.is-mobile .basic-info-preset-status{font-size:calc(8.6px * var(--app-font-s
 body.is-mobile .hdr-meta{display:flex;flex:0 0 auto;width:auto;justify-content:flex-end;gap:6px;}
 body.is-mobile .header-convenience-menu{grid-template-columns:repeat(3,minmax(0,1fr));width:min(330px,calc(var(--mobile-vw, 100vw) - 14px));gap:5px;padding:7px;}
 body.is-mobile .header-convenience-menu .header-reference-btn{height:31px;min-height:31px;padding:0 3px;font-size:calc(9px * var(--app-font-scale));border-radius:8px;}
-/* ── 15. 더제로 정보 패널 / 공지 모달 ── */
+/* ===== 13. 더제로 정보 패널 / 공지 모달 ===== */
 .zero-rank-panel[data-zero-rank-panel="score"]{display:grid;gap:10px;}
 .zero-rank-panel[data-zero-rank-panel="score"]:not(.active){display:none;}
 .zero-info-box{min-width:0;padding:0;border:1px solid var(--ui-line,#26364d);border-radius:calc(var(--ui-radius, 15px) - 1px) calc(var(--ui-radius, 15px) - 1px) 0 0;background:var(--ui-panel,#111a28);box-shadow:var(--ui-shadow,0 10px 26px rgba(0,0,0,.22));overflow:hidden;}

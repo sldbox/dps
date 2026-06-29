@@ -3,18 +3,25 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="google-site-verification" content="RTuDWbMdnKgbpRpl05eXh9epFwWRSxju4NOl8OtjMsI" />
+<!-- 00. 빌드 버전 / 캐시 무효화 / 원격 이미지 경로 -->
 <script>
-window.APP_VERSION = "dps-2606292300";
-window.DPS_BUILD_VERSION = "dps-2606292300";
+window.APP_VERSION = "dps-2606300000";
+window.DPS_BUILD_VERSION = "dps-2606300000";
 window.DPS_PREVIEW_FRESH = new URLSearchParams(window.location.search).get('fresh') || '';
 window.DPS_ASSET_VERSIONS = {
-  "app.js": "dps-2606292300",
-  "responsive-layout.js": "dps-2606292300",
-  "style.css": "dps-2606292300",
-  "data.js": "dps-2606292300",
-  "calc.js": "dps-2606292300",
-  "notice.js": "dps-2606292300",
-  "icon.png": "dps-2606292300"
+  "data.js": "dps-2606300000",
+  "calc.js": "dps-2606300000",
+  "app.js": "dps-2606300000",
+  "state-storage.js": "dps-2606300000",
+  "trait-presets.js": "dps-2606300000",
+  "compare-import.js": "dps-2606300000",
+  "dps-panels.js": "dps-2606300000",
+  "trait-board.js": "dps-2606300000",
+  "zero-score.js": "dps-2606300000",
+  "notice.js": "dps-2606300000",
+  "responsive-layout.js": "dps-2606300000",
+  "style.css": "dps-2606300000",
+  "icon.png": "dps-2606300000"
 };
 window.dpsAssetVersion = function(key){
   var versions = window.DPS_ASSET_VERSIONS || {};
@@ -85,6 +92,7 @@ setInterval(window.dpsCheckIndexUpdate, 180000);
 <meta content="no-cache" http-equiv="Pragma"/>
 <meta content="0" http-equiv="Expires"/>
 <title>개복디 특성 계산기</title>
+<!-- 01. 초기 로딩 화면: JS 로드 전 화면 깜빡임 방지 -->
 <style>
 html.dps-booting body{margin:0;background:#080d15;color:#e6edf7;overflow:hidden}
 html.dps-booting .wrap{visibility:hidden}
@@ -100,6 +108,7 @@ html.dps-boot-error #dpsBootScreen .boot-card{border-color:#7f1d2d;background:#2
 html.dps-boot-error #dpsBootScreen .boot-title{color:#ff9aaa}
 html:not(.dps-booting) #dpsBootScreen{display:none}
 </style>
+<!-- 02. 부팅 오류 화면 / 클립보드 보조 -->
 <script>
 (function(){
   function copyTextFallback(text){
@@ -187,14 +196,14 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 <meta content="https://sldbox.github.io/dps/" property="og:url"/>
 <meta content="개복디 특성 계산기" property="og:title"/>
 <meta content="특성 투자, 재화 사용량, 표기 스탯, 총데미지, DPS를 한 번에 계산할 수 있는 개복디 전용 계산기입니다." property="og:description"/>
-<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2606292300" property="og:image"/>
-<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2606292300" property="og:image:secure_url"/>
+<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2606300000" property="og:image"/>
+<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2606300000" property="og:image:secure_url"/>
 <meta content="image/png" property="og:image:type"/>
 <meta content="개복디 특성 계산기 로고" property="og:image:alt"/>
 <meta content="summary_large_image" name="twitter:card"/>
 <meta content="개복디 특성 계산기" name="twitter:title"/>
 <meta content="특성 투자, 재화 사용량, 표기 스탯, 총데미지, DPS를 한 번에 계산할 수 있는 개복디 전용 계산기입니다." name="twitter:description"/>
-<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2606292300" name="twitter:image"/>
+<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2606300000" name="twitter:image"/>
 <meta content="개복디 특성 계산기 로고" name="twitter:image:alt"/>
 <link href="https://cdn.jsdelivr.net" rel="preconnect"/>
 <link crossorigin="" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" rel="stylesheet"/>
@@ -256,7 +265,7 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 </script>
 <div id="dpsBootScreen" aria-live="polite"><div class="boot-card"><div class="boot-title">특성 계산기 적용 중</div><div class="boot-desc">최신 빌드와 스타일을 불러오는 중입니다.</div></div></div>
 <div class="wrap">
-<!-- 앱 헤더 / 자료 바로가기 / 글씨 크기 -->
+<!-- 03. 앱 헤더: 자료 바로가기 / 공지 / 글씨 크기 / 편의 메뉴 -->
 <div class="hdr app-header">
 <div class="hdr-brand">
 <div aria-label="DPS 로고" class="hdr-logo">DPS</div>
@@ -288,9 +297,9 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 </div>
 </div>
 </div>
-<!-- 앱 본문: 좌측 입력 / 우측 특성 / 중앙 결과 -->
+<!-- 04. 앱 본문: 좌측 입력 / 우측 특성 / 중앙 결과 -->
 <div class="col-work">
-<!-- 좌측 입력 패널: 기본정보 / 룬효과 / 룬정보 -->
+<!-- 04-1. 좌측 입력 패널: 기본정보 / 룬정보 / 룬효과·버프 -->
 <div class="col-left">
 <div class="sg xp-sp-card">
 <div class="sg-title basic-info-head"><span>기본정보</span><div class="basic-info-preset-status" id="traitPresetStatusView" aria-live="polite"></div></div>
@@ -622,7 +631,7 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 </div>
 </div>
 
-<!-- 우측 특성 패널: 프리셋 / 최적화 / 제한 / TOP5 / 투자 목록 -->
+<!-- 04-2. 우측 특성 패널: 프리셋 / 최적화 / 제한 / TOP5 / 투자 목록 -->
 <div class="col-right">
 <div class="trait-board-panel">
 <div class="trait-standalone-panel" aria-label="특성 프리셋">
@@ -691,7 +700,7 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 <div class="tp-body" id="traitBody"></div>
 </div>
 </div>
-<!-- 중앙 결과 패널: 데미지 / 스탯 / 버스보드 / 성소스킬보드 -->
+<!-- 04-3. 중앙 결과 패널: DPS / 스탯 / 버스보드 / 데미지보드 -->
 <div class="col-mid">
 <div class="data-card stat-dps-card">
 <div class="section-title damage-board-title"><span>데미지 보드</span><div class="artifact-dps-switch-wrap" aria-label="유물 DPS 표시 전환"><span class="artifact-dps-switch-label">유물 DPS</span><button class="artifact-dps-switch" id="artifactDpsViewToggle" type="button" role="switch" aria-checked="false"><span class="artifact-dps-switch-text artifact-dps-switch-off">OFF</span><span class="artifact-dps-switch-text artifact-dps-switch-on">ON</span><i aria-hidden="true"></i></button></div></div>
@@ -749,13 +758,16 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 </div>
 </div></div>
 </div>
-<!-- 공통 토스트 / 스크립트 로더 -->
+<!-- 05. 공통 토스트 / 모듈 스크립트 로더 -->
 <div aria-live="polite" class="toast-root" id="toastRoot"></div>
 <script>
-function loadScriptSequence(files){
+function loadScriptSequence(files, done){
   var index=0;
   function next(){
-    if(index>=files.length) return;
+    if(index>=files.length){
+      if(typeof done === 'function') done();
+      return;
+    }
     var fileName=files[index++] + '.js';
     var script=document.createElement('script');
     script.src=window.dpsAssetUrl('./' + fileName, fileName);
@@ -769,7 +781,9 @@ function loadScriptSequence(files){
   }
   next();
 }
-loadScriptSequence(['data','calc','app','notice','responsive-layout']);
+loadScriptSequence(['data','calc','app','state-storage','trait-presets','compare-import','dps-panels','trait-board','zero-score','notice','responsive-layout'], function(){
+  if(typeof window.startDpsApp === 'function') window.startDpsApp();
+});
 </script>
 
 </body>
