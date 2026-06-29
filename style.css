@@ -686,6 +686,14 @@ body.is-mobile .bus-cut-card .mini-table .bus-cut-value{display:grid;grid-templa
 .skill-damage-list td:nth-child(2){font-family:Consolas,monospace;}
 .skill-damage-list td:nth-child(3){display:none;}
 .skill-damage-title{overflow:visible;}
+.damage-board-title{overflow:visible;}
+.artifact-dps-switch-wrap{display:inline-flex;align-items:center;gap:7px;margin-left:auto;white-space:nowrap;}
+.artifact-dps-switch-label{color:#d7e6ff;font-size:calc(11px * var(--app-font-scale));font-weight:900;line-height:1;}
+.artifact-dps-switch{position:relative;display:inline-grid;grid-template-columns:1fr 1fr;align-items:center;width:72px;height:26px;padding:2px;border:1px solid #3f5574;border-radius:999px;background:#0e1725;color:#94a3b8;font-size:calc(9.5px * var(--app-font-scale));font-weight:900;line-height:1;box-sizing:border-box;cursor:pointer;box-shadow:inset 0 1px 3px rgba(0,0,0,.28);}
+.artifact-dps-switch i{position:absolute;left:3px;top:3px;width:32px;height:18px;border-radius:999px;background:#34465f;box-shadow:0 1px 4px rgba(0,0,0,.26);transition:left .16s ease,background .16s ease;}
+.artifact-dps-switch-text{position:relative;z-index:1;display:flex;align-items:center;justify-content:center;height:100%;}
+.artifact-dps-switch.is-active{border-color:#7aa7ff;background:#10233d;color:#e8f2ff;}
+.artifact-dps-switch.is-active i{left:35px;background:#2563eb;}
 body .skill-damage-title,
 body .skill-list-head,
 body .skill-damage-list th,
@@ -704,6 +712,11 @@ body.is-tablet.is-portrait-view .skill-damage-list td, body.is-tablet.is-portrai
 body.is-mobile .skill-damage-layout{display:grid;grid-template-columns:1fr;gap:8px;}
 body.is-mobile .skill-setting-panel .skill-ir{grid-template-columns:92px minmax(0,1fr);gap:6px;}
 body.is-mobile .skill-damage-list tr, body.is-mobile .skill-list-head{display:grid;grid-template-columns:minmax(0,1fr) 88px;gap:6px;}
+body.is-mobile .skill-damage-title{gap:6px;padding-right:10px;}
+body.is-mobile .artifact-dps-switch-label{font-size:calc(10px * var(--app-font-scale));}
+body.is-mobile .artifact-dps-switch{width:66px;height:24px;font-size:calc(9px * var(--app-font-scale));}
+body.is-mobile .artifact-dps-switch i{width:29px;height:16px;}
+body.is-mobile .artifact-dps-switch.is-active i{left:32px;}
 body.is-pc-landscape .clean-rune-card .rune-panel.tidy-rune-panel, body:not(.is-mobile):not(.is-tablet):not(.is-pc-portrait) .clean-rune-card .rune-panel.tidy-rune-panel{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;align-items:start;}
 body.is-pc-landscape .clean-rune-card .rune-basic-card, body:not(.is-mobile):not(.is-tablet):not(.is-pc-portrait) .clean-rune-card .rune-basic-card{grid-column:1;grid-row:1;width:100%;min-width:0;max-width:none;}
 body.is-pc-landscape .clean-rune-card .rune-option-card, body:not(.is-mobile):not(.is-tablet):not(.is-pc-portrait) .clean-rune-card .rune-option-card{grid-column:2;grid-row:1;width:100%;min-width:0;max-width:none;}

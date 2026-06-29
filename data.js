@@ -236,3 +236,37 @@ const RAW_JEWEL_DATA=[
 window.RAW_JEWEL_DATA=RAW_JEWEL_DATA;
 
 window.MONTHLY_RUNE_INFO=MONTHLY_RUNE_INFO;
+
+/* ── 7. 유물 DPS 계산 고정 데이터 ── */
+const ARTIFACT_DPS_CONFIG=Object.freeze({
+  energyRegenTraitRow:79,
+  energyRegenRate:2.5
+});
+
+/* ── 8. 고정 데이터 공개 API ── */
+window.DPS_DATA=Object.freeze({
+  DIFF,
+  PEN_TD,
+  PEN_CD,
+  PEN_DMG,
+  PEN_UA,
+  ENEMY_ARMOR_TABLE,
+  ENEMY_UNIT_TABLE,
+  TOWER_ARMOR_TABLE,
+  TOWER_UNIT_TABLE,
+  TOWER_TIME_TABLE,
+  ENCHANT_TABLE,
+  ASC,
+  TRAITS,
+  T_UA,
+  TMAX,
+  COST,
+  STEP_COST,
+  SP_ROWS,
+  EP_ROWS,
+  RP_ROWS,
+  SOUL_ROWS,
+  MONTHLY_RUNE_INFO,
+  RAW_JEWEL_DATA,
+  ARTIFACT_DPS_CONFIG
+});
