@@ -173,10 +173,15 @@ function syncSelectButtons(){
     });
   });
 }
+function isEffectiveBuffChoiceActive(input){
+  if(!input) return false;
+  if(input.id==='prodArtifact' && isArtifactDpsViewEnabled()) return true;
+  return !!input.checked;
+}
 function syncBuffChoiceButtons(){
   qsa('.buff-choice-item').forEach(item=>{
     const input=item.querySelector('input[type="checkbox"]');
-    const active=!!(input && input.checked);
+    const active=isEffectiveBuffChoiceActive(input);
     setClassState(item, 'is-active', active);
     item.setAttribute('aria-pressed', active ? 'true' : 'false');
   });
@@ -387,15 +392,17 @@ function recalc(){
     syncControlDisplays();
     syncTraitLimitInputs();
     renderEnchantPreview(); renderXpCut(); renderEnhanceSummary();
-    const s=computeStatsRaw();
-    renderEnemyData(s.enemyData);
-    renderSkillDamage(s);
-    renderDpsSummary(s);
-    renderStatSummary(s);
-    renderDamageBoardView();
-    renderResourceSummary(s);
-    updateTraits();
-    renderTraitEfficiencyTop5();
+    withArtifactDpsViewBuffApplied(()=>{
+      const s=computeStatsRaw();
+      renderEnemyData(s.enemyData);
+      renderSkillDamage(s);
+      renderDpsSummary(s);
+      renderStatSummary(s);
+      renderDamageBoardView();
+      renderResourceSummary(s);
+      updateTraits();
+      renderTraitEfficiencyTop5();
+    });
     saveState({silent:true});
   }catch(e){logAppError(e);}
 }
@@ -481,6 +488,17 @@ function bindBusCutEvents(){
 function isArtifactDpsViewEnabled(){
   const toggle=$('artifactDpsViewToggle');
   return toggle?.getAttribute('aria-checked')==='true';
+}
+function withArtifactDpsViewBuffApplied(callback){
+  const artifactEl=$('prodArtifact');
+  if(!artifactEl || !isArtifactDpsViewEnabled()) return callback();
+  const checked=artifactEl.checked;
+  artifactEl.checked=true;
+  try{
+    return callback();
+  }finally{
+    artifactEl.checked=checked;
+  }
 }
 function syncArtifactDpsViewSwitch(){
   const toggle=$('artifactDpsViewToggle');
