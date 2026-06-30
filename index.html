@@ -5,17 +5,17 @@
 <meta name="google-site-verification" content="RTuDWbMdnKgbpRpl05eXh9epFwWRSxju4NOl8OtjMsI" />
 <!-- 00. 빌드 버전 / 캐시 무효화 / 원격 이미지 경로 -->
 <script>
-window.APP_VERSION = "dps-2606301330";
-window.DPS_BUILD_VERSION = "dps-2606301330";
+window.APP_VERSION = "dps-2606302100";
+window.DPS_BUILD_VERSION = "dps-2606302100";
 window.DPS_PREVIEW_FRESH = new URLSearchParams(window.location.search).get('fresh') || '';
 window.DPS_ASSET_VERSIONS = {
-  "data.js": "dps-2606301330",
-  "calc.js": "dps-2606301330",
-  "app.js": "dps-2606301330",
-  "notice.js": "dps-2606301330",
-  "responsive-layout.js": "dps-2606301330",
-  "style.css": "dps-2606301330",
-  "icon.png": "dps-2606301330"
+  "data.js": "dps-2606302100",
+  "calc.js": "dps-2606302100",
+  "app.js": "dps-2606302100",
+  "modal.js": "dps-2606302100",
+  "responsive.js": "dps-2606302100",
+  "style.css": "dps-2606302100",
+  "icon.png": "dps-2606302100"
 };
 window.dpsAssetVersion = function(key){
   var versions = window.DPS_ASSET_VERSIONS || {};
@@ -190,14 +190,14 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 <meta content="https://sldbox.github.io/dps/" property="og:url"/>
 <meta content="개복디 특성 계산기" property="og:title"/>
 <meta content="특성 투자, 재화 사용량, 표기 스탯, 총데미지, DPS를 한 번에 계산할 수 있는 개복디 전용 계산기입니다." property="og:description"/>
-<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2606301330" property="og:image"/>
-<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2606301330" property="og:image:secure_url"/>
+<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2606302100" property="og:image"/>
+<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2606302100" property="og:image:secure_url"/>
 <meta content="image/png" property="og:image:type"/>
 <meta content="개복디 특성 계산기 로고" property="og:image:alt"/>
 <meta content="summary_large_image" name="twitter:card"/>
 <meta content="개복디 특성 계산기" name="twitter:title"/>
 <meta content="특성 투자, 재화 사용량, 표기 스탯, 총데미지, DPS를 한 번에 계산할 수 있는 개복디 전용 계산기입니다." name="twitter:description"/>
-<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2606301330" name="twitter:image"/>
+<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2606302100" name="twitter:image"/>
 <meta content="개복디 특성 계산기 로고" name="twitter:image:alt"/>
 <link href="https://cdn.jsdelivr.net" rel="preconnect"/>
 <link crossorigin="" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" rel="stylesheet"/>
@@ -261,7 +261,7 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 </script>
 <div id="dpsBootScreen" aria-live="polite"><div class="boot-card"><div class="boot-title">특성 계산기 적용 중</div><div class="boot-desc">최신 빌드와 스타일을 불러오는 중입니다.</div></div></div>
 <div class="wrap">
-<!-- 03. 앱 헤더: 자료 바로가기 / 공지 / 글씨 크기 / 편의 메뉴 -->
+<!-- 03. 앱 헤더: 자료 바로가기 / 정보 / 글씨 크기 / 편의 메뉴 -->
 <div class="hdr app-header">
 <div class="hdr-brand">
 <div aria-label="DPS 로고" class="hdr-logo">DPS</div>
@@ -276,7 +276,7 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 </div>
 </div>
 <div class="hdr-meta">
-<button class="btn subtle ui-action-btn header-reference-btn notice-entry-btn tone-notice" data-action="openNoticeModal" type="button" aria-label="공지사항 열기"><span class="notice-entry-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><circle cx="12" cy="12" r="9"></circle><path d="M12 7.2v6.2"></path><path d="M12 17h.01"></path></svg></span><span class="notice-entry-text">공지</span></button>
+<button class="btn subtle ui-action-btn header-reference-btn notice-entry-btn tone-notice" data-action="openNoticeModal" type="button" aria-label="정보 열기"><span class="notice-entry-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><circle cx="12" cy="12" r="9"></circle><path d="M12 7.2v6.2"></path><path d="M12 17h.01"></path></svg></span><span class="notice-entry-text">정보</span></button>
 <div class="header-convenience">
 <button class="btn subtle ui-action-btn header-reference-btn header-convenience-toggle tone-reference" data-action="toggleConvenienceMenu" type="button" aria-expanded="false" aria-controls="headerConvenienceMenu">편의</button>
 <div class="header-convenience-menu" id="headerConvenienceMenu" aria-label="편의 메뉴" hidden>
@@ -774,7 +774,7 @@ function loadScriptSequence(files){
   }
   next();
 }
-loadScriptSequence(['data','calc','app','notice','responsive-layout']);
+loadScriptSequence(['data','calc','modal','app','responsive']);
 </script>
 
 </body>

@@ -528,7 +528,7 @@ function requestAppUpdate(){
   if(appUpdateTimer) clearTimeout(appUpdateTimer);
   appUpdateTimer=setTimeout(()=>{appUpdateTimer=0; recalc();}, DPS_CONFIG.ui.updateDelay);
 }
-/* ===== 05. 공통 모달 / 비교·DPS표·이달룬·쥬얼 패널 ===== */
+/* ===== 05. 모달 패널 콘텐츠 / 비교·DPS표·이달룬·쥬얼 ===== */
 const DPS_TABLE_DIFFICULTIES=DPS_CONFIG.dpsTable.difficulties;
 const COOP_DPS_TABLE_DIFFICULTIES=DPS_TABLE_DIFFICULTIES.slice(0, DPS_TABLE_DIFFICULTIES.indexOf('Hall Of Fame') + 1);
 const COOP_DPS_TABLE_PENANCE_MIN=0;
@@ -692,59 +692,8 @@ function renderDpsTableTabs(round, options={}){
     `;
   }).join('');
 }
-const MONTH_RUNE_MODAL_TITLES={
-  compare:'프리셋 분석',
-  runes:'이달의 룬',
-  jewels:'쥬얼',
-  dps:'DPS표'
-};
-const MONTH_RUNE_MODAL_CLASS_NAMES=['is-modal-compare','is-modal-runes','is-modal-jewels','is-modal-dps'];
-function buildCompareHeaderControls(){
-  return `<div class="excel-compare-controls excel-compare-header-controls">
-    <label class="ui-action-btn excel-compare-file-btn excel-compare-base-file-btn">기준 파일<input id="excelCompareBaseFile" type="file" accept=".json,.txt,application/json,text/plain"></label>
-    <select id="excelCompareBasePreset" aria-label="기준 프리셋 목록" disabled><option value="">기준 프리셋 목록</option></select>
-    <label class="ui-action-btn excel-compare-file-btn excel-compare-target-file-btn">비교 파일<input id="excelCompareFile" type="file" accept=".xlsm,.xlsx,.json,.txt,application/json,text/plain,application/vnd.ms-excel.sheet.macroEnabled.12"></label>
-    <select id="excelCompareSheet" aria-label="비교 프리셋 목록" disabled><option value="">비교파일을 불러오세요</option></select>
-    <button id="excelCompareApplyBtn" class="ui-action-btn excel-compare-apply-btn" type="button" data-excel-compare-apply="1" disabled>비교 프리셋값 적용</button>
-    <button id="excelCompareRestoreBtn" class="ui-action-btn excel-compare-restore-btn" type="button" data-excel-compare-restore="1" disabled>기준 프리셋 복원</button>
-    <button id="excelCompareResetBtn" class="ui-action-btn excel-compare-reset-btn" type="button" data-excel-compare-reset="1" disabled>초기화</button>
-  </div>`;
-}
-function renderMonthRuneModalHeader(tabName){
-  const modal=$('monthRuneModal');
-  if(!modal) return;
-  const next=MONTH_RUNE_MODAL_TITLES[tabName] ? tabName : 'compare';
-  const title=next==='dps' ? dpsTableDisplayTitle() : MONTH_RUNE_MODAL_TITLES[next];
-  const dialog=modal.querySelector('.month-rune-modal');
-  const titleEl=$('monthRuneTitle');
-  const actions=$('monthRuneHeaderActions');
-  const closeBtn=modal.querySelector('.month-rune-close');
-  if(dialog){
-    dialog.classList.remove(...MONTH_RUNE_MODAL_CLASS_NAMES);
-    dialog.classList.add(`is-modal-${next}`);
-  }
-  if(titleEl) titleEl.textContent=title;
-  if(closeBtn) closeBtn.setAttribute('aria-label', `${title} 닫기`);
-  if(actions){
-    actions.innerHTML=next==='compare'
-      ? buildCompareHeaderControls()
-      : next==='dps'
-        ? `<div class="dps-table-tabs month-rune-header-tabs" id="dpsTableTabsMount" data-dps-table-tabs-mount role="tablist" aria-label="DPS 기준 선택">${renderDpsTableTabs(dpsTableRound(), {compact:true})}</div>`
-        : '';
-  }
-}
-function buildCompareApplyPanel(){
-  return `<section class="dps-table-panel excel-compare-panel">
-    <div class="excel-compare-body" id="excelCompareBody">${EXCEL_COMPARE_EMPTY_HTML}</div>
-  </section>`;
-}
 function dpsTableRound(){
   return normalizedRoundNumber(targetRoundStoredValue());
-}
-function renderDpsTablePanel(){
-  return `<section class="month-rune-panel dps-table-inline-panel" data-month-rune-panel="dps" role="tabpanel" aria-labelledby="monthRuneTitle" hidden>
-    <div class="dps-table-body" id="dpsTableMount" data-dps-table-mount></div>
-  </section>`;
 }
 function dpsTablePanelInnerHtml(){
   const round=dpsTableRound();
@@ -793,23 +742,6 @@ window.addEventListener('resize', ()=>{
   clearTimeout(dpsTowerResizeTimer);
   dpsTowerResizeTimer=setTimeout(renderDpsTablePanelContent, 120);
 }, {passive:true});
-function createModalShell(id, className, innerHtml){
-  if($(id)) return;
-  const modal=document.createElement('div');
-  modal.id=id;
-  modal.className=className;
-  modal.setAttribute('aria-hidden','true');
-  modal.innerHTML=innerHtml;
-  document.body.appendChild(modal);
-}
-function setModalOpen(id, bodyClass, open){
-  const modal=$(id);
-  if(!modal) return null;
-  modal.classList.toggle('is-open', open);
-  modal.setAttribute('aria-hidden', open ? 'false' : 'true');
-  document.body.classList.toggle(bodyClass, open);
-  return modal;
-}
 function openDpsTable(mode='auto'){
   const fallbackMode=isTowerDifficulty() ? 'tower' : (isCoopActive() ? 'coop' : 'solo');
   const normalizedMode=mode==='round' ? 'solo' : (mode==='auto' ? fallbackMode : mode);
@@ -959,103 +891,6 @@ function syncComparePanelAfterRender(){
   else if(compareState.sourceType==='traitPreset' && compareState.traitPresetBundle) compareSelectedTraitPreset({preserveRestore:true});
   else if(compareState.workbook && compareState.sourceType==='excel') compareSelectedExcelSheet({preserveRestore:true});
   else updateCompareActionButtons();
-}
-function selectMonthRuneModalTab(tabName){
-  const modal=$('monthRuneModal');
-  if(!modal) return;
-  const next=['compare','runes','jewels','dps'].includes(tabName) ? tabName : 'compare';
-  modal.querySelectorAll('[data-month-rune-panel]').forEach(panel=>{
-    const active=panel.dataset.monthRunePanel===next;
-    setClassState(panel, 'is-active', active);
-    panel.hidden=!active;
-  });
-  renderMonthRuneModalHeader(next);
-  if(next!=='dps'){
-    const dialog=modal.querySelector('.month-rune-modal');
-    DPS_MODAL_MODES.forEach(mode=>{
-      dialog?.classList.remove(`is-dps-mode-${mode}`);
-      document.body?.classList.remove(`is-dps-mode-${mode}`);
-    });
-  }
-  if(next==='compare') syncComparePanelAfterRender();
-  if(next==='dps') renderDpsTablePanelContent();
-}
-function createMonthRuneModal(){
-  const info=MONTHLY_RUNE_INFO || {months:[]};
-  const jewels=RAW_JEWEL_DATA || [];
-  createModalShell('monthRuneModal','month-rune-modal-shell',`
-    <div class="month-rune-backdrop" data-month-rune-close="1"></div>
-    <section class="month-rune-modal is-modal-compare" role="dialog" aria-modal="true" aria-labelledby="monthRuneTitle">
-      <header class="month-rune-head">
-        <h2 id="monthRuneTitle" class="month-rune-title">프리셋 분석</h2>
-        <div class="month-rune-header-actions" id="monthRuneHeaderActions"></div>
-        <button type="button" class="ui-icon-btn month-rune-close" data-month-rune-close="1" aria-label="프리셋 분석 닫기">×</button>
-      </header>
-      <div class="month-rune-body">
-        <section class="month-rune-panel is-active" data-month-rune-panel="compare" role="tabpanel" aria-labelledby="monthRuneTitle">${buildCompareApplyPanel()}</section>
-        ${renderMonthRunePanel(info)}
-        ${renderJewelPanel(jewels)}
-        ${renderDpsTablePanel()}
-      </div>
-    </section>`);
-}
-function openMonthRune(tabName='compare', options={}){
-  if(typeof tabName!=='string'){
-    options={};
-    tabName='compare';
-  }
-  closeConvenienceMenu();
-  createMonthRuneModal();
-  selectMonthRuneModalTab(tabName);
-  setModalOpen('monthRuneModal','month-rune-modal-open',true);
-  if(options.openFilePicker && tabName==='compare') requestCompareFileSelect();
-}
-function closeMonthRune(){
-  setModalOpen('monthRuneModal','month-rune-modal-open',false);
-  DPS_MODAL_MODES.forEach(mode=>document.body?.classList.remove(`is-dps-mode-${mode}`));
-}
-function bindMonthRuneEvents(){
-  document.addEventListener('click',e=>{
-    if(e.target.closest('[data-month-rune-close]')) closeMonthRune();
-  });
-  document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeMonthRune(); });
-}
-function bindDpsTableEvents(){
-  document.addEventListener('click', function(e){
-    const modeTarget=e.target.closest('[data-dps-table-mode]');
-    if(!modeTarget) return;
-    switchDpsTableMode(modeTarget.getAttribute('data-dps-table-mode'));
-  });
-  document.addEventListener('keydown', function(e){
-    const minInput=e.target.closest('#dpsTableMinDps,#dpsTableMinDpsMain');
-    if(!minInput) return;
-    if(e.key==='.' || e.key===',' || e.key==='Decimal'){
-      e.preventDefault();
-      return;
-    }
-    if(e.key==='Enter'){
-      e.preventDefault();
-      setDpsTableMinDps(minInput.value,{format:true});
-      minInput.blur();
-    }
-  }, true);
-  document.addEventListener('input', function(e){
-    const minInput=e.target.closest('#dpsTableMinDps,#dpsTableMinDpsMain');
-    if(!minInput) return;
-    const before=minInput.value;
-    setDpsTableMinDps(before);
-    const fresh=$(minInput.id);
-    if(fresh){
-      fresh.focus({preventScroll:true});
-      const pos=fresh.value.length;
-      try{ fresh.setSelectionRange(pos,pos); }catch(_e){}
-    }
-  });
-  document.addEventListener('focusout', function(e){
-    const minInput=e.target.closest('#dpsTableMinDps,#dpsTableMinDpsMain');
-    if(!minInput) return;
-    setDpsTableMinDps(minInput.value,{format:true});
-  }, true);
 }
 /* ===== 06. 엑셀 워크북·저장파일 비교 / 현재 입력값 적용 ===== */
 const compareState={workbook:null,backupState:null,traitPresetBundle:null,baseTraitPresetBundle:null,sourceType:null,lastResult:null,activeFilter:'all',restoreState:null,applied:false,selectedSheetName:'',baseTraitPresetId:''};
@@ -3562,6 +3397,7 @@ function downloadTraitPresetExport(customName=''){
 function exportTraitPresets(){
   return openTraitPresetExportModal();
 }
+window.exportTraitPresets=exportTraitPresets;
 function openTraitPresetImportPicker(){
   setTimeout(()=>{
     const input=$('traitPresetImportFile');
