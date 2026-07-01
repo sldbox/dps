@@ -68,7 +68,7 @@ function alertApp(message){
 function alertAppError(prefix, error){
   alertApp(prefix+(error?.message || error));
 }
-function showToast(message, type='ok'){
+function showToast(message, type='ok', durationMs){
   try{
     let root=$('toastRoot');
     if(!root){
@@ -84,7 +84,8 @@ function showToast(message, type='ok'){
     el.textContent=text;
     root.appendChild(el);
     requestAnimationFrame(()=>el.classList.add('show'));
-    const visibleMs=text.includes('\n') ? 5200 : 2200;
+    const requestedMs=Number(durationMs);
+    const visibleMs=Number.isFinite(requestedMs) && requestedMs>0 ? requestedMs : (text.includes('\n') ? 5200 : 2200);
     setTimeout(()=>{
       el.classList.remove('show');
       setTimeout(()=>el.remove(), 220);
@@ -893,8 +894,8 @@ function syncComparePanelAfterRender(){
   else updateCompareActionButtons();
 }
 /* ===== 06. 엑셀 워크북·저장파일 비교 / 현재 입력값 적용 ===== */
-const compareState={workbook:null,backupState:null,traitPresetBundle:null,baseTraitPresetBundle:null,sourceType:null,lastResult:null,activeFilter:'all',restoreState:null,applied:false,selectedSheetName:'',baseTraitPresetId:''};
-function resetCompareState(){Object.assign(compareState,{workbook:null,backupState:null,traitPresetBundle:null,baseTraitPresetBundle:null,sourceType:null,lastResult:null,activeFilter:'all',restoreState:null,applied:false,selectedSheetName:'',baseTraitPresetId:''});}
+const compareState={workbook:null,backupState:null,traitPresetBundle:null,baseTraitPresetBundle:null,baseFileRejected:false,sourceType:null,lastResult:null,activeFilter:'all',restoreState:null,applied:false,selectedSheetName:'',baseTraitPresetId:''};
+function resetCompareState(){Object.assign(compareState,{workbook:null,backupState:null,traitPresetBundle:null,baseTraitPresetBundle:null,baseFileRejected:false,sourceType:null,lastResult:null,activeFilter:'all',restoreState:null,applied:false,selectedSheetName:'',baseTraitPresetId:''});}
 const EXCEL_COMPARE_STATS=[
   ['AD','공격력','L4','M4',s=>s.displayAD,s=>s.M4],
   ['APS','AP(성소)','L5','M5',s=>s.displayAPS,s=>s.displayAPS],
@@ -1431,9 +1432,10 @@ const EXCEL_COMPARE_EMPTY_HTML='<div class="excel-compare-empty">기준 프리�
 function hydrateCompareControls(){
   const select=$('excelCompareSheet');
   const baseSelect=$('excelCompareBasePreset');
+  const baseRejected=!!compareState.baseFileRejected;
   if(baseSelect){
     const bundle=compareState.baseTraitPresetBundle;
-    const store=bundle || loadTraitPresetStore();
+    const store=baseRejected ? {presets:[]} : (bundle || loadTraitPresetStore());
     const presets=Array.isArray(store.presets) ? store.presets : [];
     const ids=presets.map(preset=>preset.id);
     const defaultId=String(store.defaultPresetId || '');
@@ -1444,7 +1446,7 @@ function hydrateCompareControls(){
     baseSelect.value=fallback;
     compareState.baseTraitPresetId=fallback;
   }
-  if(!select) return;
+  if(!select){ updateCompareTargetFileAccess(); return; }
   if(compareState.sourceType==='excel' && compareState.workbook){
     const sheets=compareState.workbook.sheets || [];
     const names=sheets.map(sheet=>sheet.name);
@@ -1477,6 +1479,49 @@ function hydrateCompareControls(){
     select.disabled=true;
     compareState.selectedSheetName='';
   }
+  updateCompareTargetFileAccess();
+}
+function compareHasValidBase(){
+  return !!selectedBaseTraitPreset();
+}
+function updateCompareTargetFileAccess(){
+  const input=$('excelCompareFile');
+  const label=document.querySelector('.excel-compare-target-file-btn');
+  const enabled=compareHasValidBase();
+  if(input) input.disabled=!enabled;
+  if(label){
+    label.classList.toggle('is-disabled',!enabled);
+    label.setAttribute('aria-disabled',enabled?'false':'true');
+  }
+}
+function clearCompareTargetSelection(){
+  compareState.workbook=null;
+  compareState.backupState=null;
+  compareState.traitPresetBundle=null;
+  compareState.sourceType=null;
+  compareState.lastResult=null;
+  compareState.activeFilter='all';
+  compareState.restoreState=null;
+  compareState.applied=false;
+  compareState.selectedSheetName='';
+  const targetFile=$('excelCompareFile');
+  const targetSelect=$('excelCompareSheet');
+  if(targetFile) targetFile.value='';
+  if(targetSelect){
+    targetSelect.innerHTML='<option value="">비교파일을 불러오세요</option>';
+    targetSelect.disabled=true;
+    targetSelect.value='';
+  }
+}
+function rejectCompareBaseFile(message){
+  compareState.baseTraitPresetBundle=null;
+  compareState.baseTraitPresetId='';
+  compareState.baseFileRejected=true;
+  clearCompareTargetSelection();
+  hydrateCompareControls();
+  const body=$('excelCompareBody');
+  if(body) body.innerHTML=`<div class="excel-compare-error">${escapeCompareHtml(message || '분석 기준 파일을 불러올 수 없습니다.')}</div>`;
+  updateCompareActionButtons();
 }
 function selectedExcelSheetName(){
   if(compareState.sourceType!=='excel' || !compareState.workbook) return '';
@@ -1553,7 +1598,7 @@ function closeCompareInfo(){
 function requestCompareFileSelect(){
   setTimeout(()=>{
     const input=$('excelCompareFile');
-    if(input) input.click();
+    if(input && !input.disabled) input.click();
   },60);
 }
 function compareCanApply(){
@@ -1572,6 +1617,7 @@ function updateCompareActionButtons(){
   if(apply) apply.disabled=!compareCanApply();
   if(reset) reset.disabled=!(compareState.sourceType || compareState.lastResult || compareState.workbook || compareState.backupState || compareState.traitPresetBundle);
   if(restore) restore.disabled=!compareState.restoreState;
+  updateCompareTargetFileAccess();
 }
 function clearCompareRestoreState(){
   compareState.restoreState=null;
@@ -1923,55 +1969,132 @@ function compareSelectedExcelSheet(options={}){
 function isTraitPresetCompareBundle(parsed){
   return !!(parsed && typeof parsed==='object' && isTraitPresetFileType(parsed.type) && Array.isArray(parsed.presets));
 }
+function isCurrentTraitPresetBundlePayload(parsed){
+  if(!isTraitPresetCompareBundle(parsed)) return false;
+  if(+parsed.fileVersion!==TRAIT_PRESET_FILE_VERSION || +parsed.schemaVersion!==TRAIT_PRESET_SCHEMA_VERSION) return false;
+  return parsed.presets.every(item=>{
+    if(!item || typeof item!=='object' || hasOwn(item,'savedState') || hasOwn(item,'data')) return false;
+    if(!item.state || typeof item.state!=='object') return false;
+    if((+item.schemaVersion || 0)<TRAIT_PRESET_SCHEMA_VERSION || (+item.state.schemaVersion || 0)<TRAIT_PRESET_SCHEMA_VERSION) return false;
+    return hasTraitPresetTowerFloorField(item.state);
+  });
+}
+function isUnsupportedOldSavedStatePayload(parsed){
+  if(!parsed || typeof parsed!=='object' || Array.isArray(parsed)) return false;
+  if(isTraitPresetCompareBundle(parsed)) return false;
+  const hasSavedShape=hasOwn(parsed,'values') || hasOwn(parsed,'inv') || hasOwn(parsed,'zeroScore') || hasOwn(parsed,'computed') || hasOwn(parsed,'storageVersion') || hasOwn(parsed,'savedAt');
+  if(!hasSavedShape) return false;
+  if(hasOwn(parsed,'computed')) return true;
+  const version=String(parsed.storageVersion || '').trim();
+  if(!version && (hasOwn(parsed,'values') || hasOwn(parsed,'inv'))) return true;
+  if(version && version!==STORAGE_VERSION) return true;
+  const schema=+parsed.schemaVersion || 0;
+  if(schema && schema<TRAIT_PRESET_SCHEMA_VERSION) return true;
+  return false;
+}
+function isUnsupportedOldTraitPresetPayload(parsed){
+  if(!parsed || typeof parsed!=='object') return false;
+  if(Array.isArray(parsed)) return true;
+  if(parsed.type && !isTraitPresetFileType(parsed.type)) return true;
+  if(hasOwn(parsed,'presets') && (!isCurrentTraitPresetBundlePayload(parsed))) return true;
+  if(isUnsupportedOldSavedStatePayload(parsed)) return true;
+  if(hasOwn(parsed,'savedState') || hasOwn(parsed,'data')) return true;
+  if(hasOwn(parsed,'state') && (hasOwn(parsed,'id') || hasOwn(parsed,'name') || hasOwn(parsed,'schemaVersion'))) return true;
+  return false;
+}
 async function readCompareJsonSource(file){
   const raw=await readFileAsText(file);
   const parsed=safeJsonParse(raw);
   if(!parsed) throw new Error('저장파일 형식이 아닙니다.');
+  if(isUnsupportedOldTraitPresetPayload(parsed)) throw new Error(TRAIT_PRESET_UNSUPPORTED_OLD_MESSAGE);
   if(isTraitPresetCompareBundle(parsed)){
     const store=normalizeTraitPresetStore(parsed);
-    if(!store.presets.length) throw new Error('비교할 특성 프리셋이 없습니다.');
+    if(!store.presets.length) throw new Error(parsed.presets.length ? TRAIT_PRESET_UNSUPPORTED_OLD_MESSAGE : '비교할 특성 프리셋이 없습니다.');
     return {sourceType:'traitPreset',traitPresetBundle:{fileName:file.name,defaultPresetId:store.defaultPresetId,presets:store.presets}};
   }
   const state=normalizeSavedState(parsed);
   if(!state) throw new Error('계산기 저장값 형식이 아닙니다.');
   return {sourceType:'json',backupState:{...state,fileName:file.name}};
 }
+function buildBaseTraitPresetBundleFromExcelWorkbook(workbook,fileName=''){
+  const specCells=workbook.getCells('스펙');
+  const additionalInfo=inspectSpecAdditionalStructure(specCells);
+  if(!additionalInfo.valid) throw new Error(additionalInfo.message);
+  const zeroCells=getZeroScoreSheetCells(workbook);
+  const now=Date.now();
+  const presets=[];
+  (workbook.sheets || []).forEach((sheet,index)=>{
+    const sheetName=sheet?.name || '';
+    if(!sheetName || sheetName==='스펙') return;
+    try{
+      const cells=workbook.getCells(sheetName);
+      validateExcelCompareSheet(cells,sheetName);
+      const imported=buildExcelState(cells,specCells,zeroCells,sheetName);
+      const state=markPresetStateCurrentVersion({...imported.state,fileName:fileName || workbook.fileName || '엑셀 기준 파일',sheetName,savedAt:now});
+      if(!state) return;
+      const id=`base_excel_${index}_${String(sheetName).replace(/[^0-9A-Za-z가-힣_-]/g,'_')}`;
+      const name=normalizeTraitPresetName(sheetName || `엑셀 기준 ${presets.length+1}`);
+      presets.push({id,name,schemaVersion:TRAIT_PRESET_SCHEMA_VERSION,createdAt:now,updatedAt:now,meta:traitPresetMetaFromSavedState(state),state});
+    }catch(e){
+      logAppWarn('[skip base excel sheet]', sheetName, e);
+    }
+  });
+  if(!presets.length) throw new Error('분석 기준으로 사용할 수 있는 엑셀 시트를 찾을 수 없습니다.');
+  const defaultPreset=presets.find(preset=>preset.name==='고행') || presets[0];
+  return {fileName:fileName || workbook.fileName || '엑셀 기준 파일',defaultPresetId:defaultPreset?.id || '',presets};
+}
 async function handleBaseCompareFile(file){
-  const body=$('excelCompareBody');
   try{
-    const source=await readCompareJsonSource(file);
-    const now=Date.now();
-    if(source.sourceType==='traitPreset'){
-      compareState.baseTraitPresetBundle=source.traitPresetBundle;
-    }else if(source.sourceType==='json' && source.backupState){
-      const id='base_saved_file';
-      const name=normalizeTraitPresetName(stateFileBaseName(file?.name || '') || '기준 저장값');
-      compareState.baseTraitPresetBundle={fileName:file?.name || '기준 파일',defaultPresetId:id,presets:[{id,name,schemaVersion:TRAIT_PRESET_SCHEMA_VERSION,createdAt:now,updatedAt:now,meta:traitPresetMetaFromSavedState(source.backupState),state:source.backupState}]};
+    compareState.baseFileRejected=false;
+    if(isExcelPresetImportFile(file)){
+      const workbook=await readExcelWorkbook(file);
+      if(!workbook.sheets?.length) throw new Error('엑셀 시트를 찾을 수 없습니다.');
+      compareState.baseTraitPresetBundle=buildBaseTraitPresetBundleFromExcelWorkbook(workbook,file?.name || '엑셀 기준 파일');
     }else{
-      throw new Error('기준 파일은 특성 프리셋 또는 저장값 파일만 사용할 수 있습니다.');
+      const source=await readCompareJsonSource(file);
+      const now=Date.now();
+      if(source.sourceType==='traitPreset'){
+        compareState.baseTraitPresetBundle=source.traitPresetBundle;
+      }else if(source.sourceType==='json' && source.backupState){
+        const id='base_saved_file';
+        const name=normalizeTraitPresetName(stateFileBaseName(file?.name || '') || '기준 저장값');
+        compareState.baseTraitPresetBundle={fileName:file?.name || '기준 파일',defaultPresetId:id,presets:[{id,name,schemaVersion:TRAIT_PRESET_SCHEMA_VERSION,createdAt:now,updatedAt:now,meta:traitPresetMetaFromSavedState(source.backupState),state:source.backupState}]};
+      }else{
+        throw new Error('기준 파일은 엑셀, 특성 프리셋 또는 저장값 파일만 사용할 수 있습니다.');
+      }
     }
     const presets=compareState.baseTraitPresetBundle.presets || [];
     const preferred=presets.find(preset=>preset.id===compareState.baseTraitPresetBundle.defaultPresetId) || presets[0];
     compareState.baseTraitPresetId=preferred?.id || '';
+    compareState.baseFileRejected=false;
     compareState.applied=false;
     hydrateCompareControls();
     if(compareState.sourceType==='traitPreset' && compareState.traitPresetBundle) compareSelectedTraitPreset();
     else updateCompareActionButtons();
-    showToast(`기준 파일 로드 완료: ${file?.name || '프리셋 파일'}`,'ok');
+    showToast(`기준 파일 로드 완료: ${file?.name || '기준 파일'}`,'ok');
   }catch(e){
     logAppError('[compare base file failed]',e);
-    if(body) body.innerHTML=`<div class="excel-compare-error">${escapeCompareHtml(e?.message||String(e))}</div>`;
-    updateCompareActionButtons();
+    if(isUnsupportedOldTraitPresetError(e)) showUnsupportedOldTraitPresetToast();
+    rejectCompareBaseFile(e?.message||String(e));
   }
 }
 async function handleExcelCompareFile(file){
+  const basePreset=selectedBaseTraitPreset();
+  const body=$('excelCompareBody');
+  if(!basePreset){
+    clearCompareTargetSelection();
+    hydrateCompareControls();
+    if(body) body.innerHTML='<div class="excel-compare-error">기준 파일을 먼저 불러오세요.</div>';
+    updateCompareActionButtons();
+    return;
+  }
   const preservedBaseBundle=compareState.baseTraitPresetBundle;
   const preservedBaseId=compareState.baseTraitPresetId;
   resetCompareState();
   compareState.baseTraitPresetBundle=preservedBaseBundle;
   compareState.baseTraitPresetId=preservedBaseId;
+  compareState.baseFileRejected=false;
   hydrateCompareControls();
-  const body=$('excelCompareBody');
   if(body) body.innerHTML='<div class="excel-compare-empty">파일을 분석하고 있습니다.</div>';
   try{
     const name=String(file?.name||'').toLowerCase();
@@ -2009,6 +2132,7 @@ async function handleExcelCompareFile(file){
     resetCompareState();
     hydrateCompareControls();
     logAppError('[compare file failed]',e);
+    if(isUnsupportedOldTraitPresetError(e)) showUnsupportedOldTraitPresetToast();
     const apply=$('excelCompareApplyBtn');
     const reset=$('excelCompareResetBtn');
     if(apply) apply.disabled=true;
@@ -2357,12 +2481,19 @@ const STORAGE_KEY=DPS_CONFIG.storage.key;
 const CLIENT_KEY=DPS_CONFIG.storage.clientKey;
 const TRAIT_PRESET_STORAGE_KEY=DPS_CONFIG.storage.traitPresetKey || 'gbd_dps_calculator:trait_presets';
 const TRAIT_PRESET_FILE_TYPE='sld_dps_trait_presets';
-const TRAIT_PRESET_LEGACY_FILE_TYPES=new Set(['gbd_dps_trait_presets']);
 const TRAIT_PRESET_FILE_VERSION=2;
 const TRAIT_PRESET_SCHEMA_VERSION=2;
 const TRAIT_PRESET_NAME_PLACEHOLDER='예시) 더파300라버스';
+const TRAIT_PRESET_UNSUPPORTED_OLD_MESSAGE='구버전 프리셋은 더 이상 지원하지 않습니다.\n호환 엑셀버전: 5.4392\n엑셀 파일을 다시 불러온 뒤, 새 특성 프리셋을 생성해 주세요.';
 function isTraitPresetFileType(type){
-  return type===TRAIT_PRESET_FILE_TYPE || TRAIT_PRESET_LEGACY_FILE_TYPES.has(type);
+  return type===TRAIT_PRESET_FILE_TYPE;
+}
+function isUnsupportedOldTraitPresetError(error){
+  return String(error?.message || error || '')===TRAIT_PRESET_UNSUPPORTED_OLD_MESSAGE;
+}
+function showUnsupportedOldTraitPresetToast(){
+  try{ cancelScheduledAutoSaveToast(); }catch(e){}
+  try{ showToast(TRAIT_PRESET_UNSUPPORTED_OLD_MESSAGE,'err',10000); }catch(e){}
 }
 const INTERNAL_VALUE_IDS=new Set([
   'dt','ep','rAP','rTD','rUA','rHarmony'
@@ -2503,28 +2634,15 @@ function makeStateObject(){
     ui:{fontScale:getFontScale()}
   });
 }
-function legacyTowerFloorFromZeroScore(zeroScore){
-  const rows=Array.isArray(zeroScore?.rows) ? zeroScore.rows : [];
-  const tower=rows.find(row=>row && row.type==='towerCombo');
-  if(!tower) return '';
-  const candidates=[tower.target, tower.honorTarget, tower.current, tower.honorCurrent];
-  for(const value of candidates){
-    const raw=String(value ?? '').replace(/,/g,'').trim();
-    if(raw!=='' && Number.isFinite(Number(raw))) return raw;
-  }
-  return '';
-}
-function migratedTowerFloorValue(values={}, context={}){
-  const direct=values.challengeTowerFloor ?? values.towerFloor ?? values.challengeFloor ?? values.challengeTower;
-  const legacy=legacyTowerFloorFromZeroScore(context.zeroScore) || context.meta?.challengeTowerFloor || context.meta?.towerFloor || '';
-  return normalizedTowerFloorString(direct ?? legacy ?? TOWER_FLOOR_INPUT_MIN);
+function savedTowerFloorValue(values={}){
+  return normalizedTowerFloorString(values.challengeTowerFloor ?? TOWER_FLOOR_INPUT_MIN);
 }
 function sanitizeSavedValues(values, context={}){
   if(!values || typeof values!=='object') values={};
   const out=normalizeRuneChoiceValues(values);
   IGNORED_SAVED_VALUE_IDS.forEach(id=>delete out[id]);
   Object.keys(out).forEach(id=>{ if(!isUserStateValueId(id)) delete out[id]; });
-  out.challengeTowerFloor=migratedTowerFloorValue(out, context);
+  out.challengeTowerFloor=savedTowerFloorValue(out);
   if(hasOwn(out,'overEnhance')) out.overEnhance=String(normalizeOverEnhanceValue(out.overEnhance));
   if(out.raceOpt==='해당 없음') out.raceOpt='없음';
   const coopMode=normalizeOnOffValue(out.coopMode,'OFF')==='ON';
@@ -2624,9 +2742,15 @@ function syncTraitPresetStoreWithCurrentState(currentState, options={}){
   saveTraitPresetStore(store);
 }
 let autoSaveToastTimer=0;
+function cancelScheduledAutoSaveToast(){
+  if(autoSaveToastTimer){
+    clearTimeout(autoSaveToastTimer);
+    autoSaveToastTimer=0;
+  }
+}
 function scheduleAutoSaveToast(){
   if(isStorageLocked()) return;
-  if(autoSaveToastTimer) clearTimeout(autoSaveToastTimer);
+  cancelScheduledAutoSaveToast();
   autoSaveToastTimer=setTimeout(()=>{
     autoSaveToastTimer=0;
     const saved=saveState({silent:true});
@@ -2686,7 +2810,6 @@ function safeJsonParse(raw){
   return null;
 }
 const TRAIT_PRESET_STATUS_STORAGE_KEY=DPS_CONFIG.storage.traitPresetStatusKey || 'gbd_dps_calculator:trait_preset_status';
-const TRAIT_PRESET_EXPORT_CURRENT_APPLIED_MESSAGE='최신 통합 프리셋으로 적용되었습니다.\n가져온 프리셋 정보가 최신 구조로 갱신되어 저장되었습니다.\n전체 초기화나 다시 가져오기 없이 바로 사용하시면 됩니다.';
 const TRAIT_PRESET_STATUS_LABELS={save:'저장됨',load:'불러옴',delete:'삭제됨',import:'가져옴',export:'내보냄'};
 function padStatusPart(value){return String(value).padStart(2,'0');}
 function formatTraitPresetStatusDate(year, month, day, hour, minute, action){
@@ -2741,10 +2864,10 @@ function notifyStorageAction(message, type='ok', options={}){
   if(statusMessage) updateTraitPresetStatus(statusMessage, {persist:true});
   try{ showToast(displayMessage, type); }catch(e){}
 }
-function notifyTraitPresetExportComplete(wasLegacyPreset){
+function notifyTraitPresetExportComplete(){
   const statusMessage=formatTraitPresetStatus('export');
   updateTraitPresetStatus(statusMessage, {persist:true});
-  try{ showToast(wasLegacyPreset ? TRAIT_PRESET_EXPORT_CURRENT_APPLIED_MESSAGE : '특성 프리셋 내보내기 완료', 'ok'); }catch(e){}
+  try{ showToast('특성 프리셋 내보내기 완료', 'ok'); }catch(e){}
 }
 function saveState(options={}){
   const silent=!!options.silent;
@@ -2801,28 +2924,6 @@ function emptyTraitPresetStore(){
 function hasTraitPresetTowerFloorField(state){
   const values=(state && typeof state==='object' && state.values && typeof state.values==='object') ? state.values : {};
   return hasOwn(values,'challengeTowerFloor');
-}
-function isCurrentTraitPresetStructure(preset,stateArg){
-  const state=stateArg || preset?.state || {};
-  return (+preset?.schemaVersion || 0)>=TRAIT_PRESET_SCHEMA_VERSION && (+state.schemaVersion || 0)>=TRAIT_PRESET_SCHEMA_VERSION && hasTraitPresetTowerFloorField(state);
-}
-function hasLegacyTraitPresetSourceMarker(preset){
-  return !!(preset && (preset.migratedFromFileVersion || preset.migratedFromSchemaVersion || preset.migratedFromLegacySchema || preset.missingChallengeTowerFloor===true));
-}
-function normalizeTraitPresetVersionState(value){
-  const text=String(value || '').trim().toLowerCase();
-  if(['legacy','old','outdated','구버전'].includes(text)) return 'legacy';
-  if(['current','latest','new','최신','최신버전'].includes(text)) return 'current';
-  return '';
-}
-function shouldTreatTraitPresetAsLegacy(preset,stateArg){
-  if(!preset) return false;
-  const state=stateArg || preset.state || {};
-  const explicitState=normalizeTraitPresetVersionState(preset.versionState || preset.presetVersionState || preset.versionStatus);
-  if(explicitState==='legacy') return true;
-  if(!isCurrentTraitPresetStructure(preset,state)) return true;
-  if(explicitState==='current') return false;
-  return preset.needsExportRefresh===true && hasLegacyTraitPresetSourceMarker(preset);
 }
 function dispatchTraitPresetStoreChanged(detail={}){
   try{ window.dispatchEvent(new CustomEvent('dps:traitPresetStoreChanged',{detail})); }catch(e){}
@@ -2894,134 +2995,54 @@ function traitPresetMetaFromSavedState(state){
   return traitPresetMetaFromValues(values);
 }
 
-function numberFromPresetName(name, suffixPattern=''){
-  const text=String(name || '');
-  const pattern=suffixPattern ? new RegExp(`(\d{1,3})\s*${suffixPattern}`,'i') : /(\d{1,3})/;
-  const match=text.match(pattern);
-  return match ? match[1] : '';
-}
-function migrateTraitPresetStateByName(state, name=''){
-  const base=normalizeSavedState(state);
-  if(!base) return null;
-  const values={...base.values};
-  const text=String(name || '').replace(/\s+/g,'').toLowerCase();
-  const hasTower=/도전의?탑|challenge(?:tower)?|tower/.test(text);
-  const hasDeep=/deepabyss|딥어비스|깊은어비스/.test(text);
-  const hasAbyss=!hasDeep && (/abyssroad|어비스/.test(text));
-  const hasHof=/halloffame|호프|명예의전당/.test(text);
-  const hasFinal=/thefinal|더파이널|더파/.test(text);
-  if(hasTower){
-    values.diff=TOWER_DIFFICULTY_NAME;
-    values.challengeTowerFloor=normalizedTowerFloorString(
-      legacyTowerFloorFromZeroScore(base.zeroScore) || numberFromPresetName(name, '층') || values.challengeTowerFloor || values.round || TOWER_FLOOR_INPUT_MIN
-    );
-  }else if(hasDeep){
-    values.diff='Deep Abyss';
-  }else if(hasAbyss){
-    values.diff='Abyss road';
-  }else if(hasHof){
-    values.diff='Hall Of Fame';
-  }else if(hasFinal){
-    values.diff='The Final';
-  }
-  const roundFromName=!hasTower ? numberFromPresetName(name, '(?:라운드|라)') : '';
-  if(roundFromName) values.round=normalizedRoundString(roundFromName);
-  if(/개인|solo/.test(text)){
-    values.soloMode='ON';
-    values.coopMode='OFF';
-  }else if(/협동|버스|coop|3인|2인/.test(text)){
-    const players=/2인/.test(text) ? '2' : '3';
-    values.soloMode='OFF';
-    values.coopMode='ON';
-    values.coopPlayers=players;
-    values.team=players;
-  }
-  const sanitized=sanitizeSavedValues(values,{...base,values,zeroScore:base.zeroScore});
-  return makeStorageEnvelope({
-    values:sanitized,
-    inv:base.inv,
-    zeroScore:base.zeroScore,
-    savedAt:base.savedAt,
-    schemaVersion:TRAIT_PRESET_SCHEMA_VERSION,
-    storageVersion:base.storageVersion,
-    scope:base.scope,
-    ui:base.ui,
-    clientId:base.clientId
-  });
-}
 function normalizeTraitPresetItem(item,index=0,context={}){
   if(!item || typeof item!=='object') return null;
-  const stateSource=item.state || item.savedState || item.data || item;
-  const name=normalizeTraitPresetName(item.name || item.title || `가져온 프리셋 ${index+1}`);
+  if(!item.state || typeof item.state!=='object') return null;
+  const name=normalizeTraitPresetName(item.name || `가져온 프리셋 ${index+1}`);
   if(!name) return null;
-  const legacyVersion=+item.schemaVersion || +stateSource.schemaVersion || 0;
-  const sourceFileVersion=+context.fileVersion || +item.fileVersion || 0;
-  const sourceSchemaVersion=+context.schemaVersion || 0;
-  let state=legacyVersion && legacyVersion>=TRAIT_PRESET_SCHEMA_VERSION
-    ? normalizeSavedState(stateSource)
-    : migrateTraitPresetStateByName(stateSource, name);
+  const sourceFileVersion=+context.fileVersion || TRAIT_PRESET_FILE_VERSION;
+  const sourceSchemaVersion=+context.schemaVersion || TRAIT_PRESET_SCHEMA_VERSION;
+  const itemSchemaVersion=+item.schemaVersion || 0;
+  const stateSchemaVersion=+item.state.schemaVersion || 0;
+  if(sourceFileVersion<TRAIT_PRESET_FILE_VERSION || sourceSchemaVersion<TRAIT_PRESET_SCHEMA_VERSION || itemSchemaVersion<TRAIT_PRESET_SCHEMA_VERSION || stateSchemaVersion<TRAIT_PRESET_SCHEMA_VERSION) return null;
+  if(!hasTraitPresetTowerFloorField(item.state)) return null;
+  const state=normalizeSavedState(item.state);
   if(!state) return null;
   const now=Date.now();
-  const sourceStorageVersion=stateSource.storageVersion || item.storageVersion || context.storageVersion || state.storageVersion || '';
-  const legacyFromOldFile=sourceFileVersion>0 && sourceFileVersion<TRAIT_PRESET_FILE_VERSION;
-  const legacyFromOldSchema=sourceSchemaVersion>0 && sourceSchemaVersion<TRAIT_PRESET_SCHEMA_VERSION;
-  const legacyFromItemSchema=!legacyVersion || legacyVersion<TRAIT_PRESET_SCHEMA_VERSION;
-  const legacyFromMissingTowerFloor=!hasTraitPresetTowerFloorField(state);
-  const explicitVersionState=normalizeTraitPresetVersionState(item.versionState || item.presetVersionState || item.versionStatus);
-  const explicitLegacyRefresh=item.needsExportRefresh===true && (!isCurrentTraitPresetStructure(item,state) || hasLegacyTraitPresetSourceMarker(item) || explicitVersionState==='legacy');
-  const needsExportRefresh=context.clearExportRefresh===true ? false : (
-    explicitVersionState==='legacy' ||
-    explicitLegacyRefresh ||
-    legacyFromOldFile ||
-    legacyFromOldSchema ||
-    legacyFromItemSchema ||
-    legacyFromMissingTowerFloor
-  );
-  if(context.forceCurrentVersion===true){
-    state=markPresetStateCurrentVersion(state);
-  }
-  const preset={
+  return {
     id:String(item.id || makeTraitPresetId()),
     name,
     schemaVersion:TRAIT_PRESET_SCHEMA_VERSION,
-    versionState:needsExportRefresh ? 'legacy' : 'current',
     createdAt:+item.createdAt || +item.savedAt || now,
     updatedAt:+item.updatedAt || +state.savedAt || now,
     meta:{...((item.meta && typeof item.meta==='object') ? item.meta : {}), ...traitPresetMetaFromSavedState(state)},
     state
   };
-  if(needsExportRefresh){
-    preset.needsExportRefresh=true;
-    if(legacyFromOldFile) preset.migratedFromFileVersion=String(sourceFileVersion || '0');
-    if(legacyFromOldSchema) preset.migratedFromSchemaVersion=String(sourceSchemaVersion || '0');
-    if(legacyFromItemSchema) preset.migratedFromLegacySchema=String(legacyVersion || '0');
-    if(legacyFromMissingTowerFloor) preset.missingChallengeTowerFloor=true;
-    if((legacyFromOldFile || legacyFromOldSchema || legacyFromItemSchema || legacyFromMissingTowerFloor) && sourceStorageVersion && sourceStorageVersion!==STORAGE_VERSION){
-      preset.migratedFromStorageVersion=String(sourceStorageVersion);
-    }
-  }
-  return preset;
 }
 function normalizeTraitPresetStore(data){
   const empty=emptyTraitPresetStore();
-  const source=(data && typeof data==='object') ? data : {};
-  const rawPresets=Array.isArray(source.presets) ? source.presets : (Array.isArray(data) ? data : []);
+  if(!data || typeof data!=='object' || Array.isArray(data) || !Array.isArray(data.presets)) return empty;
+  if(data.type && !isTraitPresetFileType(data.type)) return empty;
+  const sourceFileVersion=+data.fileVersion || 0;
+  const sourceSchemaVersion=+data.schemaVersion || 0;
+  if(sourceFileVersion && sourceFileVersion<TRAIT_PRESET_FILE_VERSION) return empty;
+  if(sourceSchemaVersion && sourceSchemaVersion<TRAIT_PRESET_SCHEMA_VERSION) return empty;
   const seen=new Set();
   const presets=[];
-  const itemContext={fileVersion:+source.fileVersion || 0,schemaVersion:+source.schemaVersion || 0,storageVersion:source.storageVersion || ''};
-  rawPresets.forEach((item,index)=>{
+  const itemContext={fileVersion:sourceFileVersion || TRAIT_PRESET_FILE_VERSION,schemaVersion:sourceSchemaVersion || TRAIT_PRESET_SCHEMA_VERSION,storageVersion:data.storageVersion || ''};
+  data.presets.forEach((item,index)=>{
     const preset=normalizeTraitPresetItem(item,index,itemContext);
     if(!preset) return;
     if(seen.has(preset.id)) preset.id=makeTraitPresetId();
     seen.add(preset.id);
     presets.push(preset);
   });
-  let defaultPresetId=String(source.defaultPresetId || '');
+  let defaultPresetId=String(data.defaultPresetId || '');
   if(defaultPresetId && !presets.some(item=>item.id===defaultPresetId)){
-    const byName=presets.find(item=>item.name===source.defaultPresetName);
+    const byName=presets.find(item=>item.name===data.defaultPresetName);
     defaultPresetId=byName ? byName.id : '';
   }
-  return {...empty,fileVersion:TRAIT_PRESET_FILE_VERSION,schemaVersion:TRAIT_PRESET_SCHEMA_VERSION,storageVersion:STORAGE_VERSION,updatedAt:+source.updatedAt || Date.now(),defaultPresetId,presets};
+  return {...empty,updatedAt:+data.updatedAt || Date.now(),defaultPresetId,presets};
 }
 function loadTraitPresetStore(){
   try{
@@ -3057,45 +3078,6 @@ function resolveTraitPresetSelection(store,requestedId=''){
   return presets[0].id || '';
 }
 
-function traitPresetVersionInfo(preset){
-  if(!preset) return {state:'empty',label:'프리셋을 불러와 주세요',className:'preset-version-empty'};
-  const state=preset.state || {};
-  const legacy=shouldTreatTraitPresetAsLegacy(preset,state);
-  if(legacy) return {state:'legacy',label:'구버전 · 내보내기 필요',className:'preset-version-legacy'};
-  return {state:'current',label:'최신버전',className:'preset-version-current'};
-}
-function currentTraitPresetNoticeStatus(){
-  const store=loadTraitPresetStore();
-  const id=selectedTraitPresetId();
-  const preset=store.presets.find(item=>item.id===id) || null;
-  const info=traitPresetVersionInfo(preset);
-  return {
-    ...info,
-    hasPreset:!!preset,
-    presetId:preset?.id || '',
-    presetName:preset?.name || '',
-    presetCount:store.presets.length
-  };
-}
-function traitPresetVersionHeaderLabel(info){
-  if(info?.state==='current') return '최신버전';
-  if(info?.state==='legacy') return '구버전';
-  return '확인 필요';
-}
-window.DpsTraitPresetVersion={info:traitPresetVersionInfo,status:currentTraitPresetNoticeStatus};
-function updateTraitPresetVersionView(preset){
-  const view=$('traitPresetVersionView');
-  const info=traitPresetVersionInfo(preset);
-  if(view){
-    view.className=`trait-preset-version-badge ${info.className}`;
-    view.innerHTML=`<span class="trait-preset-version-label">프리셋 버전</span><span class="trait-preset-version-separator">-</span><span class="trait-preset-version-value">${escapeCompareHtml(traitPresetVersionHeaderLabel(info))}</span>`;
-  }
-  const title=qs('.trait-preset-title');
-  if(title){
-    title.classList.remove('preset-version-current','preset-version-legacy','preset-version-unknown','preset-version-empty');
-    title.classList.add(info.className);
-  }
-}
 function refreshTraitPresetControls(selectedId){
   const store=loadTraitPresetStore();
   const select=$('traitPresetSelect');
@@ -3122,8 +3104,7 @@ function refreshTraitPresetControls(selectedId){
   }
   const currentId=select?.value || '';
   const current=store.presets.find(preset=>preset.id===currentId);
-  updateTraitPresetVersionView(current);
-  dispatchTraitPresetStoreChanged({source:'selection', selectedTraitPresetId:current?.id || '', versionState:traitPresetVersionInfo(current).state});
+  dispatchTraitPresetStoreChanged({source:'selection', selectedTraitPresetId:current?.id || ''});
   if(defaultBtn) defaultBtn.textContent=current && current.id===store.defaultPresetId ? '기본 해제' : '기본 지정';
   qsa('[data-action="loadTraitPreset"],[data-action="renameTraitPreset"],[data-action="deleteTraitPreset"],[data-action="setDefaultTraitPreset"]').forEach(btn=>{
     btn.disabled=!current;
@@ -3148,10 +3129,10 @@ function saveTraitPreset(){
     if(index>=0){
       const prev=store.presets[index];
       id=prev.id;
-      store.presets[index]={...prev,name,updatedAt:now,meta:traitPresetMetaFromState(),state};
+      store.presets[index]={...prev,name,schemaVersion:TRAIT_PRESET_SCHEMA_VERSION,updatedAt:now,meta:traitPresetMetaFromState(),state};
     }else{
       id=makeTraitPresetId();
-      store.presets.push({id,name,createdAt:now,updatedAt:now,meta:traitPresetMetaFromState(),state});
+      store.presets.push({id,name,schemaVersion:TRAIT_PRESET_SCHEMA_VERSION,createdAt:now,updatedAt:now,meta:traitPresetMetaFromState(),state});
     }
     store=saveTraitPresetStore(store);
     refreshTraitPresetControls(id);
@@ -3364,7 +3345,6 @@ function downloadTraitPresetExport(customName=''){
     if(!isStorageLocked()) saveState({silent:true});
     const store=loadTraitPresetStore();
     if(!store.presets.length){ notifyStorageAction('내보낼 프리셋이 없습니다.','err'); return false; }
-    const wasLegacyPreset=store.presets.some(preset=>shouldTreatTraitPresetAsLegacy(preset));
     const exportStore=finalizeTraitPresetStoreForExport(store);
     saveTraitPresetStore(exportStore,{source:'export'});
     const defaultPreset=exportStore.presets.find(item=>item.id===exportStore.defaultPresetId);
@@ -3381,7 +3361,7 @@ function downloadTraitPresetExport(customName=''){
     URL.revokeObjectURL(url);
     closeTraitPresetExportModal();
     refreshTraitPresetControls(selectedTraitPresetId());
-    notifyTraitPresetExportComplete(wasLegacyPreset);
+    notifyTraitPresetExportComplete();
     return true;
   }catch(e){
     logAppError('[trait preset export failed]',e);
@@ -3405,32 +3385,15 @@ function openTraitPresetImportPicker(){
   },60);
 }
 function normalizeTraitPresetImportData(parsed,fileName=''){
-  if(!parsed) throw new Error('특성 프리셋 파일 형식이 아닙니다.');
-  const stateOnly=normalizeSavedState(parsed);
-  if(stateOnly && !Array.isArray(parsed.presets)){
-    const name=normalizeTraitPresetName(parsed.name || stateFileBaseName(fileName));
-    const legacyPreset={
-      id:makeTraitPresetId(),
-      name,
-      schemaVersion:TRAIT_PRESET_SCHEMA_VERSION,
-      versionState:'legacy',
-      needsExportRefresh:true,
-      migratedFromLegacySchema:String(+parsed.schemaVersion || 0),
-      createdAt:Date.now(),
-      updatedAt:Date.now(),
-      meta:traitPresetMetaFromSavedState(stateOnly),
-      state:stateOnly
-    };
-    if(!hasTraitPresetTowerFloorField(stateOnly)) legacyPreset.missingChallengeTowerFloor=true;
-    const sourceStorageVersion=parsed.storageVersion || stateOnly.storageVersion || '';
-    if(sourceStorageVersion && sourceStorageVersion!==STORAGE_VERSION) legacyPreset.migratedFromStorageVersion=String(sourceStorageVersion);
-    return {defaultPresetId:'',defaultPresetName:'',presets:[legacyPreset]};
-  }
-  const source=Array.isArray(parsed) ? {presets:parsed} : parsed;
-  const importContext={fileVersion:+source.fileVersion || 0,schemaVersion:+source.schemaVersion || 0,storageVersion:source.storageVersion || ''};
-  const presets=Array.isArray(source.presets) ? source.presets.map((item,index)=>normalizeTraitPresetItem(item,index,importContext)).filter(Boolean) : [];
-  if(!presets.length) throw new Error('가져올 수 있는 프리셋이 없습니다.');
-  return {defaultPresetId:String(source.defaultPresetId || ''),defaultPresetName:normalizeTraitPresetName(source.defaultPresetName || ''),presets};
+  if(!parsed || typeof parsed!=='object' || Array.isArray(parsed)) throw new Error('특성 프리셋 파일 형식이 아닙니다.');
+  if(!isTraitPresetFileType(parsed.type) || !Array.isArray(parsed.presets)) throw new Error(TRAIT_PRESET_UNSUPPORTED_OLD_MESSAGE);
+  const sourceFileVersion=+parsed.fileVersion || 0;
+  const sourceSchemaVersion=+parsed.schemaVersion || 0;
+  if(sourceFileVersion<TRAIT_PRESET_FILE_VERSION || sourceSchemaVersion<TRAIT_PRESET_SCHEMA_VERSION) throw new Error(TRAIT_PRESET_UNSUPPORTED_OLD_MESSAGE);
+  const importContext={fileVersion:sourceFileVersion,schemaVersion:sourceSchemaVersion,storageVersion:parsed.storageVersion || ''};
+  const presets=parsed.presets.map((item,index)=>normalizeTraitPresetItem(item,index,importContext)).filter(Boolean);
+  if(!presets.length) throw new Error(parsed.presets.length ? TRAIT_PRESET_UNSUPPORTED_OLD_MESSAGE : '가져올 수 있는 프리셋이 없습니다.');
+  return {defaultPresetId:String(parsed.defaultPresetId || ''),defaultPresetName:normalizeTraitPresetName(parsed.defaultPresetName || ''),presets};
 }
 function mergeTraitPresetImport(imported){
   let store=loadTraitPresetStore();
@@ -3537,6 +3500,7 @@ function saveSelectedExcelSheetAsTraitPreset(){
     const imported={defaultPresetId:'',defaultPresetName:'',presets:[{
       id:makeTraitPresetId(),
       name,
+      schemaVersion:TRAIT_PRESET_SCHEMA_VERSION,
       createdAt:now,
       updatedAt:now,
       meta:traitPresetMetaFromSavedState(importedState),
@@ -3566,6 +3530,7 @@ async function importTraitPresetFile(file){
     }
     const raw=await readFileAsText(file);
     const parsed=safeJsonParse(raw);
+    if(isUnsupportedOldTraitPresetPayload(parsed)) throw new Error(TRAIT_PRESET_UNSUPPORTED_OLD_MESSAGE);
     const imported=normalizeTraitPresetImportData(parsed,file?.name || '');
     const result=mergeTraitPresetImport(imported);
     const loadId=result.defaultImportedPresetId || result.firstImportedPresetId || '';
@@ -3575,12 +3540,14 @@ async function importTraitPresetFile(file){
     return true;
   }catch(e){
     logAppError('[trait preset import failed]',e);
-    notifyStorageAction(e?.message || '특성 프리셋 가져오기 실패','err');
+    if(isUnsupportedOldTraitPresetError(e)) showUnsupportedOldTraitPresetToast();
+    else notifyStorageAction(e?.message || '특성 프리셋 가져오기 실패','err');
     return false;
   }
 }
 /* 특성 프리셋: 비교 패널 연동 */
 function selectedBaseTraitPreset(){
+  if(compareState.baseFileRejected) return null;
   const store=compareState.baseTraitPresetBundle || loadTraitPresetStore();
   const select=$('excelCompareBasePreset');
   const presets=Array.isArray(store.presets) ? store.presets : [];
@@ -3645,12 +3612,6 @@ function applySelectedTraitPreset(){
     };
     const nextState=markPresetStateCurrentVersion({...state,savedAt:now});
     const nextPreset={...prev,id:prev.id,name:prev.name,createdAt:prev.createdAt,updatedAt:now,schemaVersion:TRAIT_PRESET_SCHEMA_VERSION,meta:traitPresetMetaFromSavedState(nextState),state:nextState};
-    delete nextPreset.needsExportRefresh;
-    delete nextPreset.migratedFromStorageVersion;
-    delete nextPreset.migratedFromFileVersion;
-    delete nextPreset.migratedFromSchemaVersion;
-    delete nextPreset.migratedFromLegacySchema;
-    delete nextPreset.missingChallengeTowerFloor;
     if(index>=0) store.presets[index]=nextPreset;
     else store.presets.push(nextPreset);
     if(compareState.baseTraitPresetBundle && Array.isArray(compareState.baseTraitPresetBundle.presets)){
@@ -3658,12 +3619,6 @@ function applySelectedTraitPreset(){
       if(bundleIndex>=0){
         const bundlePrev=compareState.baseTraitPresetBundle.presets[bundleIndex];
         const nextBundlePreset={...bundlePrev,id:bundlePrev.id,name:bundlePrev.name,createdAt:bundlePrev.createdAt,updatedAt:now,schemaVersion:TRAIT_PRESET_SCHEMA_VERSION,meta:traitPresetMetaFromSavedState(nextState),state:nextState};
-        delete nextBundlePreset.needsExportRefresh;
-        delete nextBundlePreset.migratedFromStorageVersion;
-        delete nextBundlePreset.migratedFromFileVersion;
-        delete nextBundlePreset.migratedFromSchemaVersion;
-        delete nextBundlePreset.migratedFromLegacySchema;
-        delete nextBundlePreset.missingChallengeTowerFloor;
         compareState.baseTraitPresetBundle.presets[bundleIndex]=nextBundlePreset;
       }
     }

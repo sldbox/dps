@@ -52,7 +52,7 @@ const MONTH_RUNE_MODAL_TITLES={
 const MONTH_RUNE_MODAL_CLASS_NAMES=['is-modal-compare','is-modal-runes','is-modal-jewels','is-modal-dps'];
 function buildCompareHeaderControls(){
   return `<div class="excel-compare-controls excel-compare-header-controls">
-    <label class="ui-action-btn excel-compare-file-btn excel-compare-base-file-btn">기준 파일<input id="excelCompareBaseFile" type="file" accept=".json,.txt,application/json,text/plain"></label>
+    <label class="ui-action-btn excel-compare-file-btn excel-compare-base-file-btn">기준 파일<input id="excelCompareBaseFile" type="file" accept=".xlsm,.xlsx,.json,.txt,application/json,text/plain,application/vnd.ms-excel.sheet.macroEnabled.12"></label>
     <select id="excelCompareBasePreset" aria-label="기준 프리셋 목록" disabled><option value="">기준 프리셋 목록</option></select>
     <label class="ui-action-btn excel-compare-file-btn excel-compare-target-file-btn">비교 파일<input id="excelCompareFile" type="file" accept=".xlsm,.xlsx,.json,.txt,application/json,text/plain,application/vnd.ms-excel.sheet.macroEnabled.12"></label>
     <select id="excelCompareSheet" aria-label="비교 프리셋 목록" disabled><option value="">비교파일을 불러오세요</option></select>
@@ -197,17 +197,13 @@ function bindDpsTableEvents(){
 (() => {
   'use strict';
 
-  /* 안내 탭 콘텐츠 */
   const $ = (id) => document.getElementById(id);
   const NOTICE_TABS = [
-    { id: 'legacy-preset-update', label: '프리셋', meta: '저장 파일 안내' },
     { id: 'patch-notes', label: '패치노트', meta: '업데이트 안내' },
     { id: 'notes', label: '참고사항', meta: '계산 기준' },
     { id: 'creator', label: '문의', meta: '제보 채널' }
   ];
-
   const NOTICE_TAB_IDS = new Set(NOTICE_TABS.map((tab) => tab.id));
-
   const NOTICE_CONTENT = {
 
     'patch-notes': {
@@ -215,110 +211,41 @@ function bindDpsTableEvents(){
       level: 'info',
       html: `
         <div class="notice-version-labels" role="tablist" aria-label="패치노트 버전 선택">
-          <button type="button" class="notice-version-label active" data-notice-version-label="v14" aria-selected="true">V 1.4</button>
-          <button type="button" class="notice-version-label" data-notice-version-label="v13" aria-selected="false">V 1.3</button>
-          <button type="button" class="notice-version-label" data-notice-version-label="v11" aria-selected="false">V 1.1</button>
+          <button type="button" class="notice-version-label active" data-notice-version-label="v104" aria-selected="true">V 1.0.4</button>
+          <button type="button" class="notice-version-label" data-notice-version-label="v103" aria-selected="false">V 1.0.3</button>
+          <button type="button" class="notice-version-label" data-notice-version-label="v102" aria-selected="false">V 1.0.2</button>
+          <button type="button" class="notice-version-label" data-notice-version-label="v101" aria-selected="false">V 1.0.1</button>
         </div>
         <div class="notice-version-panels">
-          <section class="notice-version-panel active" data-notice-version-panel="v14">
-            <header class="notice-version-head"><h3>V 1.4</h3><p>2026.06.29</p></header>
-            <div class="notice-step-card">
-              <h3>유물 DPS 추가</h3>
-              <ul>
-                <li>유물 DPS ON을 누르면 유물 대상 DPS가 표시됩니다.</li>
-              </ul>
-            </div>
-            <div class="notice-step-card">
-              <h3>유물 DPS표</h3>
-              <ul>
-                <li>유물 DPS ON 시 편의 - DPS표가 유물 DPS표로 변경됩니다.</li>
-                <li>개인, 협동, 도전의탑 DPS표가 유물 기준으로 표기됩니다.</li>
-              </ul>
-            </div>
-            <div class="notice-step-card">
-              <h3>프리셋 분석 기능 업데이트</h3>
-              <ul>
-                <li>단순 비교뿐만 아니라 타인의 데이터 프리셋과 본인의 데이터 프리셋을 비교할 수 있습니다.</li>
-                <li>웹버전 특성계산기를 쓰는 유저는 프리셋 내보내기 파일을 공유받아 고행 클리어컷 DPS를 비교할 수 있습니다.</li>
-              </ul>
-            </div>
-            <div class="notice-step-card">
-              <h3>기타 개선</h3>
-              <ul>
-                <li>기타 사소한 기능 추가와 사용성 개선을 반영했습니다.</li>
-              </ul>
-            </div>
+          <section class="notice-version-panel active" data-notice-version-panel="v104">
+            <header class="notice-version-head"><h3>V 1.0.4</h3><p>2026.07.01</p></header>
+            <div class="notice-step-card"><h3>구버전 프리셋 지원 종료</h3><ul>
+              <li>v2 통합 프리셋은 그대로 사용할 수 있습니다.</li>
+              <li>v2보다 오래된 구버전 프리셋은 더 이상 지원하지 않습니다.</li>
+              <li>구버전 프리셋을 사용 중이라면 엑셀 파일을 다시 불러온 뒤, 새 특성 프리셋을 생성해 주세요.</li>
+              <li>오래된 프리셋 변환 기능을 정리하여 프리셋 가져오기, 내보내기, 분석 기능이 더 안정적으로 동작하도록 개선했습니다.</li>
+            </ul></div>
           </section>
-          <section class="notice-version-panel" data-notice-version-panel="v13" hidden>
-            <header class="notice-version-head"><h3>V 1.3</h3><p>2026.06.21</p></header>
-            <div class="notice-step-card">
-              <h3>테마 변경</h3>
-              <ul><li>밝은 테마에서 어두운 테마로 변경되었습니다.</li></ul>
-            </div>
-            <div class="notice-step-card">
-              <h3>특성 프리셋 기능 추가</h3>
-              <ul>
-                <li>원하는 특성을 저장하고 언제든 로드 버튼으로 불러올 수 있습니다.</li>
-                <li>여러 프리셋을 등록한 뒤 내보내기를 하면 한 개의 파일로 여러 프리셋을 백업 관리할 수 있습니다.</li>
-              </ul>
-            </div>
-            <div class="notice-step-card">
-              <h3>비교분석 / DPS표 업데이트</h3>
-              <ul>
-                <li>비교분석 기능에서 특성 프리셋 파일을 불러와 프리셋별 특성 분석이 가능합니다.</li>
-                <li>DPS표에 협동이 추가되었습니다. 버스 기사 DPS를 보는 용도가 주 목적입니다.</li>
-              </ul>
-            </div>
+          <section class="notice-version-panel" data-notice-version-panel="v103" hidden>
+            <header class="notice-version-head"><h3>V 1.0.3</h3><p>2026.06.29</p></header>
+            <div class="notice-step-card"><h3>유물 DPS 추가</h3><ul><li>유물 DPS ON을 누르면 유물 대상 DPS가 표시됩니다.</li></ul></div>
+            <div class="notice-step-card"><h3>유물 DPS표</h3><ul><li>유물 DPS ON 시 편의 - DPS표가 유물 DPS표로 변경됩니다.</li><li>개인, 협동, 도전의탑 DPS표가 유물 기준으로 표기됩니다.</li></ul></div>
+            <div class="notice-step-card"><h3>프리셋 분석 기능 업데이트</h3><ul><li>단순 비교뿐만 아니라 타인의 데이터 프리셋과 본인의 데이터 프리셋을 비교할 수 있습니다.</li><li>웹버전 특성계산기를 쓰는 유저는 프리셋 내보내기 파일을 공유받아 고행 클리어컷 DPS를 비교할 수 있습니다.</li></ul></div>
+            <div class="notice-step-card"><h3>기타 개선</h3><ul><li>기타 사소한 기능 추가와 사용성 개선을 반영했습니다.</li></ul></div>
           </section>
-          <section class="notice-version-panel" data-notice-version-panel="v11" hidden>
-            <header class="notice-version-head"><h3>V 1.1</h3><p>2026.06.13</p></header>
-            <div class="notice-step-card">
-              <h3>편의기능</h3>
-              <ul>
-                <li>DPS표: 유저 스펙 기반 난이도별 DPS 정보 표를 추가했습니다.</li>
-                <li>비교하기: 엑셀 데이터를 웹에 적용하거나 상대방의 DPS 웹 파일을 받아 비교할 수 있습니다. 엑셀 5.4392와 웹백업.txt를 지원합니다.</li>
-                <li>웹사이트 기반 데이터 관리: 입력값 저장, 삭제, 백업, 복원을 지원합니다.</li>
-                <li>입력값 저장 후 새로고침해도 값이 유지됩니다. 캐시를 삭제하면 초기화되므로 입력값 백업을 권장합니다.</li>
-                <li>이달의룬/쥬얼 효과 목록을 추가했습니다.</li>
-                <li>넥서스 히든조합&정수 계산 사이트 이동 버튼을 추가했습니다.</li>
-                <li>PC 가로/세로, 모바일, 태블릿을 모두 지원합니다.</li>
-              </ul>
-            </div>
-            <div class="notice-step-card">
-              <h3>DPS표 개선 및 기능추가</h3>
-              <ul>
-                <li>웹에서 라운드 입력에 반응하여 DPS가 표시됩니다.</li>
-                <li>난이도 Hall of fame, Abyss Road, Deep Abyss가 추가되었습니다.</li>
-                <li>도전의탑이 추가되었습니다.</li>
-                <li>도전의탑은 1층~90층으로 표시하고, 층마다 방어력·체력·실드·스폰 마리수를 보여주도록 변경했습니다.</li>
-                <li>도전의탑은 계산기 기능 DPS이므로 DPS가 높게 나와도 클리어 가능을 보장하지 않습니다.</li>
-              </ul>
-            </div>
-            <div class="notice-step-card">
-              <h3>비교하기 업데이트</h3>
-              <ul>
-                <li>Reunite 님의 엑셀 5.4392 버전을 기준으로 웹 데이터를 추출 적용할 수 있습니다.</li>
-                <li>구버전 사용은 가능하지만 데이터 추출 시트·열·행 차이가 발생하면 비교하기 기능이 차단됩니다.</li>
-                <li>데이터 구조가 같은 엑셀을 추가하면 현재값은 웹 데이터, 변경값은 웹 데이터 또는 엑셀 데이터로 표시됩니다.</li>
-                <li>변경값 적용 시 변경값의 모든 데이터가 웹에 적용됩니다.</li>
-                <li>엑셀 파일 비교 시 고행 시트뿐 아니라 모든 엑셀 시트의 DPS를 비교 적용할 수 있습니다.</li>
-                <li>현재값과 변경값의 오차는 -/+로 표시하고, 두 값이 같으면 일치로 표시합니다.</li>
-              </ul>
-            </div>
-            <div class="notice-step-card">
-              <h3>더제로 승단 정보</h3>
-              <ul>
-                <li>더제로 승단 점수, 혜택, 계산방식, 실제 승단점수 계산표를 구현했습니다.</li>
-                <li>엑셀 - 더제로승단 시트 데이터와 연동하여 자동 입력됩니다. 비교하기 기능을 사용하면 됩니다.</li>
-              </ul>
-            </div>
-            <div class="notice-step-card">
-              <h3>이달의룬 / 쥬얼</h3>
-              <ul>
-                <li>개복디 인게임에 있는 이달의룬 효과목록을 추가했습니다.</li>
-                <li>개복디 인게임에 있는 쥬얼 효과목록을 추가했습니다.</li>
-              </ul>
-            </div>
+          <section class="notice-version-panel" data-notice-version-panel="v102" hidden>
+            <header class="notice-version-head"><h3>V 1.0.2</h3><p>2026.06.21</p></header>
+            <div class="notice-step-card"><h3>테마 변경</h3><ul><li>밝은 테마에서 어두운 테마로 변경되었습니다.</li></ul></div>
+            <div class="notice-step-card"><h3>특성 프리셋 기능 추가</h3><ul><li>원하는 특성을 저장하고 언제든 로드 버튼으로 불러올 수 있습니다.</li><li>여러 프리셋을 등록한 뒤 내보내기를 하면 한 개의 파일로 여러 프리셋을 백업 관리할 수 있습니다.</li></ul></div>
+            <div class="notice-step-card"><h3>비교분석 / DPS표 업데이트</h3><ul><li>비교분석 기능에서 특성 프리셋 파일을 불러와 프리셋별 특성 분석이 가능합니다.</li><li>DPS표에 협동이 추가되었습니다. 버스 기사 DPS를 보는 용도가 주 목적입니다.</li></ul></div>
+          </section>
+          <section class="notice-version-panel" data-notice-version-panel="v101" hidden>
+            <header class="notice-version-head"><h3>V 1.0.1</h3><p>2026.06.13</p></header>
+            <div class="notice-step-card"><h3>편의기능</h3><ul><li>DPS표: 유저 스펙 기반 난이도별 DPS 정보 표를 추가했습니다.</li><li>비교하기: 엑셀 데이터를 웹에 적용하거나 상대방의 DPS 웹 파일을 받아 비교할 수 있습니다. 엑셀 5.4392와 웹백업.txt를 지원합니다.</li><li>웹사이트 기반 데이터 관리: 입력값 저장, 삭제, 백업, 복원을 지원합니다.</li><li>입력값 저장 후 새로고침해도 값이 유지됩니다. 캐시를 삭제하면 초기화되므로 입력값 백업을 권장합니다.</li><li>이달의룬/쥬얼 효과 목록을 추가했습니다.</li><li>넥서스 히든조합&정수 계산 사이트 이동 버튼을 추가했습니다.</li><li>PC 가로/세로, 모바일, 태블릿을 모두 지원합니다.</li></ul></div>
+            <div class="notice-step-card"><h3>DPS표 개선 및 기능추가</h3><ul><li>웹에서 라운드 입력에 반응하여 DPS가 표시됩니다.</li><li>난이도 Hall of fame, Abyss Road, Deep Abyss가 추가되었습니다.</li><li>도전의탑이 추가되었습니다.</li><li>도전의탑은 1층~90층으로 표시하고, 층마다 방어력·체력·실드·스폰 마리수를 보여주도록 변경했습니다.</li><li>도전의탑은 계산기 기능 DPS이므로 DPS가 높게 나와도 클리어 가능을 보장하지 않습니다.</li></ul></div>
+            <div class="notice-step-card"><h3>비교하기 업데이트</h3><ul><li>Reunite 님의 엑셀 5.4392 버전을 기준으로 웹 데이터를 추출 적용할 수 있습니다.</li><li>구버전 사용은 가능하지만 데이터 추출 시트·열·행 차이가 발생하면 비교하기 기능이 차단됩니다.</li><li>데이터 구조가 같은 엑셀을 추가하면 현재값은 웹 데이터, 변경값은 웹 데이터 또는 엑셀 데이터로 표시됩니다.</li><li>변경값 적용 시 변경값의 모든 데이터가 웹에 적용됩니다.</li><li>엑셀 파일 비교 시 고행 시트뿐 아니라 모든 엑셀 시트의 DPS를 비교 적용할 수 있습니다.</li><li>현재값과 변경값의 오차는 -/+로 표시하고, 두 값이 같으면 일치로 표시합니다.</li></ul></div>
+            <div class="notice-step-card"><h3>더제로 승단 정보</h3><ul><li>더제로 승단 점수, 혜택, 계산방식, 실제 승단점수 계산표를 구현했습니다.</li><li>엑셀 - 더제로승단 시트 데이터와 연동하여 자동 입력됩니다. 비교하기 기능을 사용하면 됩니다.</li></ul></div>
+            <div class="notice-step-card"><h3>이달의룬 / 쥬얼</h3><ul><li>개복디 인게임에 있는 이달의룬 효과목록을 추가했습니다.</li><li>개복디 인게임에 있는 쥬얼 효과목록을 추가했습니다.</li></ul></div>
           </section>
         </div>
       `,
@@ -416,117 +343,23 @@ function bindDpsTableEvents(){
     }
   };
 
-  let activeTab = 'legacy-preset-update';
-  let noticeAutoDismissed = false;
+  let activeTab = 'patch-notes';
 
-  /* ===== 03. 프리셋 최신화 상태 안내 ===== */
-  function readPresetVersionStatus() {
-    const statusSource = window.DpsTraitPresetVersion?.status;
-    if (typeof statusSource !== 'function') return null;
-    try {
-      const status = statusSource();
-      return status && typeof status === 'object' ? status : null;
-    } catch (e) {
-      return null;
-    }
-  }
-
-  function hasLegacyPresetStore() {
-    return readPresetVersionStatus()?.state === 'legacy';
-  }
-
-  /* ===== 04. 정보&안내 모달 콘텐츠 렌더링 ===== */
   function tabHtml(target) {
     return NOTICE_TABS.map((tab) => {
       const active = tab.id === target;
       return `<button type="button" class="notice-tab${active ? ' active' : ''}" data-notice-tab="${tab.id}" aria-selected="${active ? 'true' : 'false'}"><span>${tab.label}</span><small>${tab.meta}</small></button>`;
     }).join('');
   }
-
-  function currentPresetNoticeStatus() {
-    return readPresetVersionStatus() || { state: 'empty', label: '프리셋을 불러와 주세요', hasPreset: false };
-  }
-
-  function legacyNoticeContent() {
-    const status = currentPresetNoticeStatus();
-    if (status.state === 'legacy') {
-      return {
-        title: '프리셋 최신화 안내',
-        level: 'important',
-        html: `
-          <div class="notice-hero-card notice-hero-important">
-            <span class="notice-hero-label">업데이트 필요</span>
-            <strong>이전 버전에서 만든 통합 프리셋을 사용 중입니다.</strong>
-            <p>가져온 프리셋 정보는 화면에 즉시 적용되어 사용할 수 있습니다. 다만 최신 구조로 저장하려면 내보내기를 완료해 주세요.</p>
-          </div>
-          <div class="notice-step-card">
-            <h3>권장 작업</h3>
-            <ul>
-              <li>아래 <b>[프리셋 내보내기]</b> 버튼을 눌러 최신 통합 프리셋 파일로 보관해 주세요.</li>
-              <li>내보내기를 완료하면 가져온 프리셋 정보가 최신 구조로 갱신되어 저장됩니다.</li>
-              <li>전체 초기화나 다시 가져오기 없이 바로 사용하시면 됩니다.</li>
-            </ul>
-          </div>
-          <p class="notice-warning-text">내보내기 완료 후에는 "최신 통합 프리셋으로 적용되었습니다." 안내가 표시됩니다.</p>
-        `,
-        actions: ['export', 'later']
-      };
-    }
-    if (status.state === 'current') {
-      return {
-        title: '프리셋 최신화 안내',
-        level: 'note',
-        html: `
-          <div class="notice-hero-card notice-hero-note">
-            <span class="notice-hero-label">최신 상태</span>
-            <strong>현재 프리셋은 최신 통합 프리셋입니다.</strong>
-            <p>전체 초기화나 다시 가져오기 없이 바로 사용하시면 됩니다.</p>
-          </div>
-        `,
-        actions: []
-      };
-    }
-    return {
-      title: '프리셋 최신화 안내',
-      level: 'note',
-      html: `
-        <div class="notice-hero-card notice-hero-note">
-          <span class="notice-hero-label">대기 중</span>
-          <strong>현재 불러온 프리셋이 없습니다.</strong>
-          <p>프리셋을 불러오면 최신화 상태를 확인할 수 있습니다.</p>
-        </div>
-      `,
-      actions: []
-    };
-  }
-
-  function actionHtml(item) {
-    const actions = Array.isArray(item.actions) ? item.actions : [];
-    if (!actions.length) return '';
-    return `<div class="notice-action-row">
-      ${actions.includes('later') ? '<button type="button" class="notice-btn notice-btn-subtle" data-notice-close="1">나중에</button>' : ''}
-      ${actions.includes('export') ? '<button type="button" class="notice-btn notice-btn-primary" data-notice-export="1">프리셋 내보내기</button>' : ''}
-    </div>`;
-  }
-
   function contentHtml(target) {
-    const item = target === 'legacy-preset-update' ? legacyNoticeContent() : NOTICE_CONTENT[target];
-    return `<section class="notice-content notice-level-${item.level || 'note'}" data-notice-content="${target}">
-      <h2><span>${item.title}</span></h2>
-      <div class="notice-content-body">${item.html}</div>
-      ${actionHtml(item)}
-    </section>`;
+    const item = NOTICE_CONTENT[target] || NOTICE_CONTENT['patch-notes'];
+    return `<section class="notice-content notice-level-${item.level || 'note'}" data-notice-content="${target}"><h2><span>${item.title}</span></h2><div class="notice-content-body">${item.html}</div></section>`;
   }
-
   function renderNoticeInto(root, target = activeTab) {
     if (!root) return;
-    activeTab = NOTICE_TAB_IDS.has(target) ? target : 'legacy-preset-update';
-    root.innerHTML = `
-      <div class="notice-tabs" role="tablist" aria-label="정보&안내 탭">${tabHtml(activeTab)}</div>
-      <div class="notice-content-mount">${contentHtml(activeTab)}</div>
-    `;
+    activeTab = NOTICE_TAB_IDS.has(target) ? target : 'patch-notes';
+    root.innerHTML = `<div class="notice-tabs" role="tablist" aria-label="정보&안내 탭">${tabHtml(activeTab)}</div><div class="notice-content-mount">${contentHtml(activeTab)}</div>`;
   }
-
   function ensureNoticeModal() {
     let shell = $('noticeModalShell');
     if (shell) return shell;
@@ -534,58 +367,21 @@ function bindDpsTableEvents(){
       <div class="notice-modal-backdrop" data-notice-close="1"></div>
       <section class="notice-modal" role="dialog" aria-modal="true" aria-labelledby="noticeModalTitle">
         <header class="notice-modal-head">
-          <div class="notice-modal-title-wrap">
-            <span class="notice-modal-icon" aria-hidden="true">i</span>
-            <div>
-              <span class="notice-modal-kicker">DPS CALCULATOR</span>
-              <h2 id="noticeModalTitle">정보&안내</h2>
-            </div>
-          </div>
+          <div class="notice-modal-title-wrap"><span class="notice-modal-icon" aria-hidden="true">i</span><div><span class="notice-modal-kicker">DPS CALCULATOR</span><h2 id="noticeModalTitle">정보&안내</h2></div></div>
           <button type="button" class="notice-modal-close" data-notice-close="1" aria-label="정보&안내 닫기">×</button>
         </header>
         <div class="notice-modal-body" id="noticeModalBody"></div>
-      </section>
-    `);
+      </section>`);
     return shell;
   }
-
-  function openNoticeModal(tab = 'legacy-preset-update') {
-    const shell = ensureNoticeModal();
+  function openNoticeModal(tab = 'patch-notes') {
+    ensureNoticeModal();
     renderNoticeInto($('noticeModalBody'), tab);
-    window.DpsModal.setModalOpen('noticeModalShell', 'notice-modal-open', true, { rootClass: true });
+    window.DpsModal.setModalOpen('noticeModalShell','notice-modal-open',true, { rootClass: true });
   }
-
   function closeNoticeModal() {
-    window.DpsModal.setModalOpen('noticeModalShell', 'notice-modal-open', false, { rootClass: true });
-    noticeAutoDismissed = true;
+    window.DpsModal.setModalOpen('noticeModalShell','notice-modal-open',false, { rootClass: true });
   }
-
-
-  /* ===== 05. 자동 표시 / 사용자 이벤트 ===== */
-  function isAutoDismissed() {
-    return noticeAutoDismissed;
-  }
-
-  function checkLegacyPresetNotice(options = {}) {
-    const legacy = currentPresetNoticeStatus().state === 'legacy';
-    document.documentElement.classList.toggle('has-legacy-preset-notice', legacy);
-    if (!legacy) {
-      noticeAutoDismissed = false;
-      return false;
-    }
-    if (options.force) noticeAutoDismissed = false;
-    if (!options.manual && !options.force && isAutoDismissed()) return false;
-    if (options.manual || options.force) {
-      openNoticeModal('legacy-preset-update');
-      return true;
-    }
-    window.setTimeout(() => {
-      if (currentPresetNoticeStatus().state !== 'legacy' || isAutoDismissed()) return;
-      openNoticeModal('legacy-preset-update');
-    }, 350);
-    return true;
-  }
-
   function selectNoticePatchVersion(labelButton) {
     const versionKey = labelButton?.getAttribute('data-notice-version-label');
     const content = labelButton?.closest('[data-notice-content="patch-notes"]');
@@ -601,62 +397,27 @@ function bindDpsTableEvents(){
       panel.hidden = !active;
     });
   }
-
   function handleNoticeClick(event) {
     const openTarget = event.target.closest('[data-action="openNoticeModal"], [data-notice-open]');
-    if (openTarget) {
-      event.preventDefault();
-      openNoticeModal('legacy-preset-update');
-      return;
-    }
+    if (openTarget) { event.preventDefault(); openNoticeModal('patch-notes'); return; }
     const closeTarget = event.target.closest('[data-notice-close]');
-    if (closeTarget) {
-      event.preventDefault();
-      closeNoticeModal();
-      return;
-    }
+    if (closeTarget) { event.preventDefault(); closeNoticeModal(); return; }
     const versionTarget = event.target.closest('[data-notice-version-label]');
-    if (versionTarget) {
-      event.preventDefault();
-      selectNoticePatchVersion(versionTarget);
-      return;
-    }
+    if (versionTarget) { event.preventDefault(); selectNoticePatchVersion(versionTarget); return; }
     const tabTarget = event.target.closest('[data-notice-tab]');
     if (tabTarget) {
       event.preventDefault();
-      activeTab = tabTarget.getAttribute('data-notice-tab') || 'legacy-preset-update';
+      activeTab = tabTarget.getAttribute('data-notice-tab') || 'patch-notes';
       const modalBody = $('noticeModalBody');
       if (modalBody && $('noticeModalShell')?.classList.contains('is-open')) renderNoticeInto(modalBody, activeTab);
-      return;
-    }
-    const exportTarget = event.target.closest('[data-notice-export]');
-    if (exportTarget) {
-      event.preventDefault();
-      closeNoticeModal();
-      if (typeof window.exportTraitPresets === 'function') window.exportTraitPresets();
     }
   }
-
   function initNotice() {
     document.addEventListener('click', handleNoticeClick, true);
-    document.addEventListener('keydown', (event) => {
-      if (event.key === 'Escape' && $('noticeModalShell')?.classList.contains('is-open')) closeNoticeModal();
-    });
-    window.addEventListener('dps:traitPresetStoreChanged', (event) => {
-      const source = String(event?.detail?.source || '');
-      window.setTimeout(() => checkLegacyPresetNotice({ force: source === 'import' }), 80);
-    });
-    checkLegacyPresetNotice();
+    document.addEventListener('keydown', (event) => { if (event.key === 'Escape' && $('noticeModalShell')?.classList.contains('is-open')) closeNoticeModal(); });
   }
-
-  window.DpsNotice = {
-    open: openNoticeModal,
-    close: closeNoticeModal,
-    checkLegacyPresetNotice,
-    hasLegacyPresetStore
-  };
+  window.DpsNotice = { open: openNoticeModal, close: closeNoticeModal };
   window.openNoticeModal = openNoticeModal;
-
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initNotice, { once: true });
   else initNotice();
 })();
