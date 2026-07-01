@@ -913,6 +913,7 @@ html.is-tabbed, body.is-tabbed{height:var(--mobile-vh, 100dvh);min-height:0;over
 body.is-tabbed .wrap{height:var(--mobile-vh, 100dvh);min-height:0;max-height:var(--mobile-vh, 100dvh);overflow:hidden;grid-template-rows:auto auto minmax(0,1fr);}
 body.is-tabbed .hdr{flex:0 0 auto;position:sticky;top:0;z-index:50;}
 body.is-tabbed .mobile-section-tabs{grid-column:1/-1;grid-row:2;position:sticky;top:var(--mobile-header-h, 56px);z-index:45;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));align-items:center;flex:0 0 auto;width:100%;gap:6px;padding:7px 10px;border-bottom:1px solid var(--ui-line,#26364d);background:rgba(12,18,29,.96);box-shadow:0 3px 10px rgba(0,0,0,.26);}
+body.is-tablet.is-tabbed .mobile-section-tabs{grid-template-columns:repeat(6,minmax(0,1fr));}
 body.is-tabbed .mobile-section-tab{width:100%;min-width:0;height:31px;padding:0 6px;font-size:calc(10.5px * var(--app-font-scale));font-weight:900;letter-spacing:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;}
 body.is-tabbed .col-work{grid-column:1/-1;grid-row:3;display:block;flex:1 1 auto;width:var(--mobile-vw, 100vw);max-width:var(--mobile-vw, 100vw);min-width:0;height:calc(var(--mobile-vh, 100dvh) - var(--mobile-header-h, 56px) - var(--mobile-tabs-h, 82px));min-height:0;max-height:calc(var(--mobile-vh, 100dvh) - var(--mobile-header-h, 56px) - var(--mobile-tabs-h, 82px));padding:8px;overflow:hidden;overscroll-behavior-x:none;touch-action:pan-y;}
 body.is-tabbed .col-left, body.is-tabbed .col-mid{display:none;}
@@ -1497,7 +1498,7 @@ body.is-mobile .notice-modal-head{min-height:58px;padding:9px 10px;}
 body.is-mobile .notice-modal-icon{width:30px;height:30px;border-radius:10px;}
 body.is-mobile .notice-modal-body{padding:8px;}
 body.is-tablet .notice-tabs, body.is-pc-portrait .notice-tabs{grid-template-columns:repeat(3,minmax(0,1fr));}
-body.is-mobile .notice-tabs{grid-template-columns:repeat(2,minmax(0,1fr));gap:4px;}
+body.is-mobile .notice-tabs{grid-template-columns:repeat(3,minmax(0,1fr));gap:4px;}
 body.is-mobile .notice-tab{height:40px;padding:0 5px;}
 body.is-mobile .notice-tab span{font-size:calc(10px * var(--app-font-scale));}
 body.is-mobile .notice-tab small{font-size:calc(8px * var(--app-font-scale));}
