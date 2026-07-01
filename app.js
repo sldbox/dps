@@ -1870,7 +1870,19 @@ function buildJsonComparison(changeState,options={}){
     rows:[dpsRow,...inputRows,...enchantRows,...statRows,...zeroRows,...traitRows]
   };
 }
-function renderJsonComparison(changeState){
+function renderJsonComparison(changeState,options={}){
+  if(options.useSelectedBase){
+    const basePreset=selectedBaseTraitPreset();
+    if(!basePreset) throw new Error('기준 프리셋을 선택하세요.');
+    const baseState=normalizeSavedState(basePreset.state);
+    if(!baseState) throw new Error('기준 프리셋 데이터가 올바르지 않습니다.');
+    return renderExcelComparison(buildJsonComparison(changeState,{
+      baseState,
+      sourceType:'json',
+      baseFileName:(compareState.baseTraitPresetBundle || {}).fileName || '기준 프리셋',
+      baseSheetName:basePreset.name
+    }));
+  }
   renderExcelComparison(buildJsonComparison(changeState));
 }
 function applySelectedComparison(){
@@ -1932,6 +1944,19 @@ function applySelectedExcelSheet(){
     updateCompareActionButtons();
   }
 }
+function buildExcelComparisonForSelectedBase(cells,specCells,zeroCells,fileName,sheetName){
+  const basePreset=selectedBaseTraitPreset();
+  if(!basePreset) throw new Error('기준 프리셋을 선택하세요.');
+  const baseState=normalizeSavedState(basePreset.state);
+  if(!baseState) throw new Error('기준 프리셋 데이터가 올바르지 않습니다.');
+  const liveState=makeStateObject();
+  applyStateObject(baseState);
+  try{
+    return buildExcelComparison(cells,specCells,zeroCells,fileName,sheetName);
+  }finally{
+    applyStateObject(liveState);
+  }
+}
 function compareSelectedExcelSheet(options={}){
   if(!compareState.workbook) return;
   hydrateCompareControls();
@@ -1956,7 +1981,7 @@ function compareSelectedExcelSheet(options={}){
     }
     compareState.sourceType='excel';
     compareState.selectedSheetName=sheetName;
-    renderExcelComparison(buildExcelComparison(cells,specCells,zeroCells,compareState.workbook.fileName,sheetName));
+    renderExcelComparison(buildExcelComparisonForSelectedBase(cells,specCells,zeroCells,compareState.workbook.fileName,sheetName));
     updateCompareActionButtons();
   }catch(e){
     logAppError('[Excel compare failed]',e);
@@ -2114,7 +2139,7 @@ async function handleExcelCompareFile(file){
       }else{
         compareState.selectedSheetName='savedFile';
         hydrateCompareControls();
-        renderJsonComparison(compareState.backupState);
+        renderJsonComparison(compareState.backupState,{useSelectedBase:true});
       }
       updateCompareActionButtons();
       return;
@@ -2163,7 +2188,20 @@ function bindExcelCompareEvents(){
       handleExcelCompareFile(selectedFile).finally(()=>{ e.target.value=''; });
     }
     if(e.target.id==='excelCompareSheet' && compareState.sourceType==='excel'){ compareState.selectedSheetName=e.target.value; compareSelectedExcelSheet(); }
-    if(e.target.id==='excelCompareBasePreset'){ compareState.baseTraitPresetId=e.target.value; if(compareState.sourceType==='traitPreset') compareSelectedTraitPreset(); else updateCompareActionButtons(); }
+    if(e.target.id==='excelCompareBasePreset'){
+      compareState.baseTraitPresetId=e.target.value;
+      if(compareState.sourceType==='traitPreset') compareSelectedTraitPreset();
+      else if(compareState.sourceType==='excel') compareSelectedExcelSheet();
+      else if(compareState.sourceType==='json' && compareState.backupState){
+        try{ renderJsonComparison(compareState.backupState,{useSelectedBase:true}); updateCompareActionButtons(); }
+        catch(err){
+          logAppError('[JSON compare base change failed]',err);
+          const body=$('excelCompareBody');
+          if(body) body.innerHTML=`<div class="excel-compare-error">${escapeCompareHtml(err?.message||String(err))}</div>`;
+          updateCompareActionButtons();
+        }
+      }else updateCompareActionButtons();
+    }
     if(e.target.id==='excelCompareSheet' && compareState.sourceType==='traitPreset'){ compareState.selectedSheetName=e.target.value; compareSelectedTraitPreset(); }
   });
   document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeCompareInfo(); });
