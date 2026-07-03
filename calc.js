@@ -954,6 +954,19 @@ function fillRowToBudget(row){
   while(addOneIfAffordable(row)) changed=true;
   return changed;
 }
+let spBankBudgetMode='manual';
+function normalizeSpBankBudgetModeCalc(value){
+  return String(value ?? '').trim()==='included' ? 'included' : 'manual';
+}
+function setSpBankBudgetMode(value){
+  spBankBudgetMode=normalizeSpBankBudgetModeCalc(value);
+}
+function getSpBankBudgetMode(){
+  return spBankBudgetMode;
+}
+function isSpBankBonusAlreadyInTotalSP(){
+  return spBankBudgetMode==='included';
+}
 function normalizeSpBankApplyValue(value){
   if(typeof value==='boolean') return value ? '반영' : '미반영';
   const raw=String(value ?? '').trim();
@@ -961,18 +974,15 @@ function normalizeSpBankApplyValue(value){
   return (raw==='반영' || raw==='적용' || upper==='ON' || upper==='TRUE' || upper==='1' || upper==='YES') ? '반영' : '미반영';
 }
 function isSpBankApplied(){
-  const el=$('spBankApply');
-  if(!el) return false;
-  if(el.type==='checkbox') return !!el.checked;
-  return normalizeSpBankApplyValue(el.value)==='반영';
+  return Math.max(0, Math.round(+(INV[89]||0)))>=1;
 }
 function spBankApplyDisplayValue(value){
   return normalizeSpBankApplyValue(value)==='반영' ? 'ON' : 'OFF';
 }
 function syncSpBankDisplay(bankSP=null){
   const select=$('spBankApply');
-  const state=normalizeSpBankApplyValue(select ? select.value : '미반영');
-  const applied=state==='반영';
+  const applied=isSpBankApplied();
+  const state=applied ? '반영' : '미반영';
   if(select && select.value!==state) select.value=state;
   const n=bankSP==null ? spBankRawBonus() : bankSP;
   setText('spBankStatusView', applied ? fullNumber(n) : '미적용');
@@ -983,7 +993,10 @@ function spBankRawBonus(){
   const ticks=Math.floor(appliedRound/10);
   return bankLevel * 1000 * ticks;
 }
-function effectiveSP(){return v('sp') + (isSpBankApplied() ? spBankRawBonus() : 0);}
+function effectiveSP(){
+  const bonus=(isSpBankApplied() && !isSpBankBonusAlreadyInTotalSP()) ? spBankRawBonus() : 0;
+  return Math.max(0, v('sp') + bonus);
+}
 function rpPierceBonus(){return Math.max(0, Math.min(20, INV[130]||0));}
 function enforceBudgets(){
   const budgets=[['SP',SP_ROWS,effectiveSP()],['EP',EP_ROWS,v('ep')],['RP',RP_ROWS,v('rp')],['SOUL',SOUL_ROWS,v('soul')]];

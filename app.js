@@ -362,7 +362,7 @@ function renderStatSummary(s){
   });
 }
 function renderResourceSummary(s){
-  const bankSP=s.spBankApplied ? (s.spBank||0) : 0;
+  const bankSP=s.spBank||0;
   const spOwn=s.effectiveSP||effectiveSP();
   const spRemain=spOwn-s.spTotal;
   const epOwned=v('ep');
@@ -1771,6 +1771,8 @@ function buildExcelState(cells, specCells, zeroCells, sheetName=''){
     inv[row]=Math.max(0,Math.min(TMAX[row]||999,Math.round(value)));
     applied++;
   });
+  syncSpBankApplyValueFromInvestment(values, inv, {budgetMode:'included'});
+  if(excelNumber(cells.H89)!==null) applied++;
   inv[116]=1;
   const zeroScore=zeroScoreStateFromExcel(zeroCells) || state.zeroScore;
   if(zeroScore?.rows?.length) applied+=zeroScore.rows.reduce((sum,row)=>sum+(row.type==='penance'?5:(row.type==='towerCombo'?4:2)),0);
@@ -2308,6 +2310,7 @@ function adjustTraitBy(row,d,step=1){
     INV[row]=next;
   }
   if(applied>0){
+    if(row===89) applySpBankBudgetMode('manual');
     recalc();
     scheduleAutoSaveToast();
     return true;
@@ -2361,6 +2364,7 @@ function setInv(row,val){
   const wanted=Math.round(val);
   const applied=setRowToAffordableValue(row,wanted);
   if(applied<wanted) try{showToast('보유 재화 한도까지만 입력되었습니다','err');}catch(e){}
+  if(row===89) applySpBankBudgetMode('manual');
   recalc();
   scheduleAutoSaveToast();
 }
@@ -2524,7 +2528,8 @@ const TRAIT_PRESET_SCHEMA_VERSION=2;
 const TRAIT_PRESET_NAME_PLACEHOLDER='예시) 더파300라버스';
 const TRAIT_PRESET_UNSUPPORTED_OLD_MESSAGE='구버전 프리셋은 더 이상 지원하지 않습니다.\n호환 엑셀버전: 5.4392\n엑셀 파일을 다시 불러온 뒤, 새 특성 프리셋을 생성해 주세요.';
 const TRAIT_PRESET_SYNC_EXCLUDED_VALUE_IDS=new Set([
-  'diff','penance','round','challengeTowerFloor','soloMode','coopMode','coopPlayers','team','pbless','spBankApply',
+  'sp',
+  'diff','penance','round','challengeTowerFloor','soloMode','coopMode','coopPlayers','team','pbless','spBankApply','spBankBudgetMode',
   'overEnhance','repairEnhance','enhanceMaster',
   'dailyCouponBuff','shareUserBuff','unitUniqueBuff','basePierceBuff',
   'prodArtifact','prodNova','prodTeratron','prodAmon','prodAdun','prodKerrigan','prodOvermind','prodNarud',
@@ -2547,6 +2552,16 @@ const INTERNAL_VALUE_IDS=new Set([
 ]);
 const IGNORED_SAVED_VALUE_IDS=[...(DPS_CONFIG.state.skipElementIds || []),...INTERNAL_VALUE_IDS];
 const NORMALIZED_MONEY_VALUE_IDS=new Set(['sp','xp','bxp','rp','soul']);
+const SP_BANK_BUDGET_MODE_ID='spBankBudgetMode';
+function normalizeSpBankBudgetMode(value){
+  return String(value ?? '').trim()==='included' ? 'included' : 'manual';
+}
+function currentSpBankBudgetMode(){
+  return typeof getSpBankBudgetMode==='function' ? getSpBankBudgetMode() : 'manual';
+}
+function applySpBankBudgetMode(value){
+  if(typeof setSpBankBudgetMode==='function') setSpBankBudgetMode(normalizeSpBankBudgetMode(value));
+}
 function normalizeMoneyStorageValue(value, id=''){
   const digits=String(value ?? '').replace(/[^0-9]/g,'').replace(/^0+(?=\d)/,'');
   if(id==='xp') return digits && !/^0+$/.test(digits) ? digits : '1';
@@ -2559,7 +2574,22 @@ function normalizeMoneyStorageValues(values){
   });
   return values;
 }
-function isUserStateValueId(id){ return USER_STATE_VALUE_IDS.has(id); }
+function normalizeSpBankPresetState(values, inv){
+  if(!values || typeof values!=='object' || !inv || typeof inv!=='object') return;
+  const bankLevel=Math.max(0, Math.min(TMAX[89]||999, Math.round(+(inv[89]||0))));
+  const stored=hasOwn(values,'spBankApply') ? normalizeSpBankApplyValue(values.spBankApply) : (bankLevel>=1 ? '반영' : '미반영');
+  inv[89]=stored==='반영' ? bankLevel : 0;
+  values.spBankApply=(inv[89]||0)>=1 ? '반영' : '미반영';
+  values[SP_BANK_BUDGET_MODE_ID]=values.spBankApply==='반영' ? normalizeSpBankBudgetMode(values[SP_BANK_BUDGET_MODE_ID]) : 'manual';
+}
+function syncSpBankApplyValueFromInvestment(values, inv, options={}){
+  if(!values || typeof values!=='object' || !inv || typeof inv!=='object') return;
+  const bankLevel=Math.max(0, Math.min(TMAX[89]||999, Math.round(+(inv[89]||0))));
+  inv[89]=bankLevel;
+  values.spBankApply=bankLevel>=1 ? '반영' : '미반영';
+  values[SP_BANK_BUDGET_MODE_ID]=bankLevel>=1 ? normalizeSpBankBudgetMode(options.budgetMode) : 'manual';
+}
+function isUserStateValueId(id){ return USER_STATE_VALUE_IDS.has(id) || id===SP_BANK_BUDGET_MODE_ID; }
 function userStateElementIds(){ return storageElementIds().filter(isUserStateValueId); }
 const storageState={isLoading:false,suppressSave:false,factoryState:null,saveFailCount:0,hasSavedState:false};
 function isStorageLocked(){return storageState.isLoading || storageState.suppressSave;}
@@ -2689,9 +2719,11 @@ function makeStateObject(){
   values.runeChoiceValue=normalizedRune.runeChoiceValue;
   values.dpsTableMinDps=normalizeDpsTableMinDpsValue(dpsTableMinDps);
   normalizeMoneyStorageValues(values);
+  const inv={...INV};
+  syncSpBankApplyValueFromInvestment(values, inv, {budgetMode:currentSpBankBudgetMode()});
   return makeStorageEnvelope({
     values,
-    inv:{...INV},
+    inv,
     zeroScore:collectZeroScoreState(),
     savedAt:Date.now(),
     ui:{fontScale:getFontScale()}
@@ -2723,6 +2755,7 @@ function sanitizeSavedValues(values, context={}){
     if(hasOwn(out,id)) out[id]=normalizeDecimalDisplayValue(out[id]);
   });
   if(hasOwn(out,'spBankApply')) out.spBankApply=normalizeSpBankApplyValue(out.spBankApply);
+  out[SP_BANK_BUDGET_MODE_ID]=normalizeSpBankBudgetMode(out[SP_BANK_BUDGET_MODE_ID]);
   if(hasOwn(out,'runeChoiceType') || hasOwn(out,'runeChoiceValue')){
     const normalizedRune=normalizeRuneChoiceValues(out);
     out.runeChoiceType=normalizedRune.runeChoiceType;
@@ -2742,6 +2775,7 @@ function normalizeSavedState(data){
   const hasRawValues=Object.keys(rawValues).some(id=>isUserStateValueId(id) || id==='dpsTableMinDps');
   const values=sanitizeSavedValues(rawValues, data);
   const inv=(data.inv && typeof data.inv==='object') ? {...data.inv} : {};
+  normalizeSpBankPresetState(values, inv);
   const hasZeroScore=!!(data.zeroScore && Array.isArray(data.zeroScore.rows));
   if(!hasRawValues && !Object.keys(inv).length && !hasZeroScore) return null;
   return makeStorageEnvelope({
@@ -2824,6 +2858,7 @@ function applyStateObject(data){
       INV[r]=Math.max(0, Math.min(TMAX[r]||999, Math.round(+val||0)));
     });
     INV[116]=1;
+    applySpBankBudgetMode(sanitizedValues[SP_BANK_BUDGET_MODE_ID]);
     enforceBudgets();
     if(hasOwn(sanitizedValues,'runeChoiceType') || hasOwn(sanitizedValues,'runeChoiceValue')) syncRuneChoice();
     else hydrateRuneChoiceFromHidden();
@@ -3256,7 +3291,16 @@ function buildSyncedTraitPresetState(baseState, targetState, now){
   });
 }
 function stableTraitPresetValue(value){
-  if(value && typeof value==='object') return JSON.stringify(value, Object.keys(value).sort());
+  if(value && typeof value==='object'){
+    const normalize=input=>{
+      if(Array.isArray(input)) return input.map(normalize);
+      if(input && typeof input==='object'){
+        return Object.keys(input).sort().reduce((out,key)=>{ out[key]=normalize(input[key]); return out; },{});
+      }
+      return input ?? '';
+    };
+    return JSON.stringify(normalize(value));
+  }
   return String(value ?? '');
 }
 function hasSharedTraitPresetValueChanges(previousState, currentState){
@@ -3270,6 +3314,27 @@ function hasSharedTraitPresetValueChanges(previousState, currentState){
   }
   return false;
 }
+function stableTraitPresetInv(inv){
+  const source=(inv && typeof inv==='object') ? inv : {};
+  const out={};
+  Object.keys(source).sort((a,b)=>+a-+b).forEach(row=>{
+    const value=Math.max(0,Math.round(+source[row] || 0));
+    if(value>0) out[row]=value;
+  });
+  return stableTraitPresetValue(out);
+}
+function hasTraitPresetStateChanges(previousState, currentState){
+  const previous=normalizeSavedState(previousState);
+  const current=normalizeSavedState(currentState);
+  if(!previous || !current) return true;
+  const ids=new Set([...Object.keys(previous.values || {}), ...Object.keys(current.values || {})]);
+  for(const id of ids){
+    if(stableTraitPresetValue(previous.values?.[id])!==stableTraitPresetValue(current.values?.[id])) return true;
+  }
+  if(stableTraitPresetInv(previous.inv)!==stableTraitPresetInv(current.inv)) return true;
+  if(stableTraitPresetValue(normalizeZeroScoreState(previous.zeroScore || {rows:[]}))!==stableTraitPresetValue(normalizeZeroScoreState(current.zeroScore || {rows:[]}))) return true;
+  return false;
+}
 function updateTraitPreset(){
   const id=selectedTraitPresetId();
   let store=loadTraitPresetStore();
@@ -3280,6 +3345,10 @@ function updateTraitPreset(){
     const now=Date.now();
     const baseState=markPresetStateCurrentVersion({...makeStateObject(),savedAt:now});
     if(!baseState) throw new Error('현재 화면값을 프리셋 상태로 저장할 수 없습니다.');
+    if(!hasTraitPresetStateChanges(preset.state, baseState)){
+      notifyStorageAction('프리셋 변경사항 없음','warn');
+      return false;
+    }
     const syncSharedValues=hasSharedTraitPresetValueChanges(preset.state, baseState);
     const updatedIds=[];
     store.presets=store.presets.map((item,index)=>{
@@ -4372,6 +4441,8 @@ function bindReactiveInputs(){
   const schedule=(target)=>{
     if(!shouldHandleReactiveInput(target)) return;
     if(target.matches('.money-input')) formatMoneyInput(target);
+    if(target.id==='spBankApply') applySpBankBudgetMode('manual');
+    if(target.id==='spBankApply' && normalizeSpBankApplyValue(target.value)==='미반영' && (INV[89]||0)>0) INV[89]=0;
     if(target.id==='xp') normalizeXpInput();
     if(target.id==='round' || target.id==='skillRound' || target.id==='challengeTowerFloor') normalizeRoundInput(target.id);
     if(target.id==='diff'){
