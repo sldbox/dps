@@ -2528,7 +2528,7 @@ const TRAIT_PRESET_SCHEMA_VERSION=2;
 const TRAIT_PRESET_NAME_PLACEHOLDER='예시) 더파300라버스';
 const TRAIT_PRESET_UNSUPPORTED_OLD_MESSAGE='구버전 프리셋은 더 이상 지원하지 않습니다.\n호환 엑셀버전: 5.4392\n엑셀 파일을 다시 불러온 뒤, 새 특성 프리셋을 생성해 주세요.';
 const TRAIT_PRESET_SYNC_EXCLUDED_VALUE_IDS=new Set([
-  'sp','diff','penance','round','challengeTowerFloor','soloMode','coopMode','coopPlayers','team','pbless','spBankApply','spBankBudgetMode',
+  'diff','penance','round','challengeTowerFloor','soloMode','coopMode','coopPlayers','team','pbless','spBankApply','spBankBudgetMode',
   'overEnhance','repairEnhance','enhanceMaster',
   'dailyCouponBuff','shareUserBuff','unitUniqueBuff','basePierceBuff',
   'prodArtifact','prodNova','prodTeratron','prodAmon','prodAdun','prodKerrigan','prodOvermind','prodNarud',

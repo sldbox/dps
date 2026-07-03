@@ -5,18 +5,18 @@
 <meta name="google-site-verification" content="RTuDWbMdnKgbpRpl05eXh9epFwWRSxju4NOl8OtjMsI" />
 <!-- 00. 빌드 버전 / 캐시 무효화 / 원격 이미지 경로 -->
 <script>
-window.APP_VERSION = "dps-2607031900";
-window.DPS_BUILD_VERSION = "dps-2607031900";
+window.APP_VERSION = "dps-2607032000";
+window.DPS_BUILD_VERSION = "dps-2607032000";
 window.DPS_PREVIEW_FRESH = new URLSearchParams(window.location.search).get('fresh') || '';
 window.DPS_ASSET_VERSIONS = {
-  "data.js": "dps-2607031900",
-  "calc.js": "dps-2607031900",
-  "app.js": "dps-2607031900",
-  "modal.js": "dps-2607031900",
-  "responsive.js": "dps-2607031900",
-  "style.css": "dps-2607031900",
-  "icon.png": "dps-2607031900",
-  "logo.png": "dps-2607031900"
+  "data.js": "dps-2607032000",
+  "calc.js": "dps-2607032000",
+  "app.js": "dps-2607032000",
+  "modal.js": "dps-2607032000",
+  "responsive.js": "dps-2607032000",
+  "style.css": "dps-2607032000",
+  "icon.png": "dps-2607032000",
+  "logo.png": "dps-2607032000"
 };
 window.dpsAssetVersion = function(key){
   var versions = window.DPS_ASSET_VERSIONS || {};
@@ -191,14 +191,14 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 <meta content="https://sldbox.github.io/dps/" property="og:url"/>
 <meta content="개복디 특성 계산기" property="og:title"/>
 <meta content="특성 투자, 재화 사용량, 표기 스탯, 총데미지, DPS를 한 번에 계산할 수 있는 개복디 전용 계산기입니다." property="og:description"/>
-<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2607031900" property="og:image"/>
-<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2607031900" property="og:image:secure_url"/>
+<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2607032000" property="og:image"/>
+<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2607032000" property="og:image:secure_url"/>
 <meta content="image/png" property="og:image:type"/>
 <meta content="개복디 특성 계산기 로고" property="og:image:alt"/>
 <meta content="summary_large_image" name="twitter:card"/>
 <meta content="개복디 특성 계산기" name="twitter:title"/>
 <meta content="특성 투자, 재화 사용량, 표기 스탯, 총데미지, DPS를 한 번에 계산할 수 있는 개복디 전용 계산기입니다." name="twitter:description"/>
-<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2607031900" name="twitter:image"/>
+<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2607032000" name="twitter:image"/>
 <meta content="개복디 특성 계산기 로고" name="twitter:image:alt"/>
 <link href="https://cdn.jsdelivr.net" rel="preconnect"/>
 <link crossorigin="" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" rel="stylesheet"/>
@@ -303,6 +303,7 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 <div class="xp-sp-split basic-info-grid">
 <div class="xp-sp-panel basic-info-panel" data-basic-info-side="left">
 <div class="basic-info-row manual-resource" data-basic-row="total-sp"><label for="sp">총 SP</label><input class="money-input" id="sp" inputmode="numeric" type="text" value="0"/></div>
+<div class="basic-sp-help" data-basic-help="total-sp"><span class="basic-sp-help-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="M12 20V6"></path><path d="M6.5 11.5L12 6l5.5 5.5"></path></svg></span><span class="basic-sp-help-text">난이도 선택 후 왼쪽 상단 본인 SP를 입력해주세요.</span></div>
 <div class="basic-info-row readonly-resource" data-basic-row="used-sp-attack"><label>사용한 SP (공격)</label><b id="spAttackView">0</b></div>
 <div class="basic-info-row readonly-resource" data-basic-row="used-sp-utility"><label>사용한 SP (유틸)</label><b id="spUtilityView">0</b></div>
 <div class="basic-info-row readonly-resource" data-basic-row="remain-sp"><label>남은 SP</label><b id="spRemainBasicView">0</b></div>
@@ -486,7 +487,7 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 </div>
 </div>
 <div class="additional-editor">
-<div class="rune-panel-title additional-title-row"><span>에디셔널</span><span class="additional-help">에디셔널 평균값을 입력하면 표기 스탯에 반영됩니다.</span></div>
+<div class="rune-panel-title additional-title-row"><span>에디셔널</span><span class="additional-help">평균값을 입력하면 표기 스탯에 반영됩니다.</span></div>
 <div class="additional-list">
 <div class="additional-row"><label>공격력</label><input id="addAD" type="text" value="0" inputmode="decimal"/></div>
 <div class="additional-row"><label>공격속도</label><input id="addAS" type="text" value="0" inputmode="decimal"/></div>
