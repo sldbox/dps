@@ -200,7 +200,8 @@ function bindDpsTableEvents(){
   const $ = (id) => document.getElementById(id);
   const NOTICE_TABS = [
     { id: 'patch-notes', label: '패치노트', meta: '업데이트 안내' },
-    { id: 'notes', label: '참고사항', meta: '계산 기준' },
+    { id: 'preset-guide', label: '프리셋 관련', meta: '저장·동기화' },
+    { id: 'notes', label: 'DPS 계산 기준', meta: '참고사항' },
     { id: 'creator', label: '문의', meta: '제보 채널' }
   ];
   const NOTICE_TAB_IDS = new Set(NOTICE_TABS.map((tab) => tab.id));
@@ -211,13 +212,24 @@ function bindDpsTableEvents(){
       level: 'info',
       html: `
         <div class="notice-version-labels" role="tablist" aria-label="패치노트 버전 선택">
-          <button type="button" class="notice-version-label active" data-notice-version-label="v104" aria-selected="true">V 1.0.4</button>
+          <button type="button" class="notice-version-label active" data-notice-version-label="v105" aria-selected="true">V 1.0.5</button>
+          <button type="button" class="notice-version-label" data-notice-version-label="v104" aria-selected="false">V 1.0.4</button>
           <button type="button" class="notice-version-label" data-notice-version-label="v103" aria-selected="false">V 1.0.3</button>
           <button type="button" class="notice-version-label" data-notice-version-label="v102" aria-selected="false">V 1.0.2</button>
           <button type="button" class="notice-version-label" data-notice-version-label="v101" aria-selected="false">V 1.0.1</button>
         </div>
         <div class="notice-version-panels">
-          <section class="notice-version-panel active" data-notice-version-panel="v104">
+          <section class="notice-version-panel active" data-notice-version-panel="v105">
+            <header class="notice-version-head"><h3>V 1.0.5</h3><p>2026.07.03</p></header>
+            <div class="notice-step-card"><h3>특성 프리셋 개선</h3><ul>
+              <li>프리셋 목록에서 항목을 선택하면 바로 불러오도록 변경했습니다.</li>
+              <li>프리셋 업데이트 버튼이 현재 프리셋 저장과 공통 항목 동기화를 함께 처리하도록 개선했습니다.</li>
+              <li>동기화 제외 항목은 각 프리셋별로 따로 저장되도록 정리했습니다.</li>
+              <li>내보내기가 필요한 경우 내보내기 버튼을 강조해 저장 필요 상태를 바로 알 수 있게 했습니다.</li>
+              <li>프리셋 목록에 번호와 업데이트 상태를 표시해 관리하기 쉽게 개선했습니다.</li>
+            </ul></div>
+          </section>
+          <section class="notice-version-panel" data-notice-version-panel="v104" hidden>
             <header class="notice-version-head"><h3>V 1.0.4</h3><p>2026.07.01</p></header>
             <div class="notice-step-card"><h3>구버전 프리셋 지원 종료</h3><ul>
               <li>v2 통합 프리셋은 그대로 사용할 수 있습니다.</li>
@@ -251,21 +263,68 @@ function bindDpsTableEvents(){
       `,
       actions: []
     },
-    notes: {
-      title: '참고사항',
+    'preset-guide': {
+      title: '프리셋 관련',
       level: 'note',
       html: `
         <div class="notice-hero-card notice-hero-note">
-          <span class="notice-hero-label">계산 기준</span>
-          <strong>모드마다 적용되는 값이 다릅니다.</strong>
-          <p>저장된 프리셋 값은 그대로 보관하되, 실제 DPS 계산은 현재 선택한 모드 기준으로 처리됩니다.</p>
+          <span class="notice-hero-label">특성 프리셋</span>
+          <strong>목록 선택은 자동 로드, 업데이트는 저장과 동기화를 함께 처리합니다.</strong>
+          <p>프리셋을 선택하면 바로 불러와집니다. 현재 화면값을 보관하려면 다른 프리셋을 고르기 전에 프리셋 업데이트를 눌러 주세요.</p>
+        </div>
+        <div class="notice-step-card">
+          <h3>프리셋 목록</h3>
+          <ul>
+            <li>프리셋 목록에서 항목을 선택하면 별도 로드 버튼 없이 바로 적용됩니다.</li>
+            <li>목록의 번호, 기본, 업데이트됨 표시는 화면에서 보기 쉽게 보여주는 안내입니다.</li>
+            <li>목록 표시가 바뀌어도 프리셋 파일 안의 실제 프리셋 이름은 바뀌지 않습니다.</li>
+          </ul>
+        </div>
+        <div class="notice-step-card">
+          <h3>프리셋 업데이트</h3>
+          <ul>
+            <li>현재 선택한 프리셋에 지금 화면의 입력값과 선택값을 저장합니다.</li>
+            <li>공통으로 쓰는 항목은 다른 프리셋에도 함께 맞춰집니다.</li>
+            <li>각 프리셋마다 따로 관리해야 하는 항목은 현재 선택한 프리셋에만 저장됩니다.</li>
+            <li>업데이트 후 내보내기 버튼이 밝게 강조되고 이름이 내보내기 필요로 바뀌면, 아직 파일로 저장하지 않은 변경사항이 있다는 뜻입니다.</li>
+            <li>변경한 프리셋을 파일로 보관하거나 다른 곳에서 쓰려면 내보내기 필요 버튼을 눌러 새 프리셋 파일을 저장해 주세요.</li>
+          </ul>
+        </div>
+        <div class="notice-step-card">
+          <h3>전체 동기화에서 제외되는 항목</h3>
+          <p>아래 항목은 프리셋 업데이트를 눌러도 다른 프리셋으로 복사되지 않고, 현재 선택한 프리셋에만 저장됩니다.</p>
+          <ul>
+            <li>기본 정보: 난이도, 고행 단계, 목표 라운드, 도전의탑 층</li>
+            <li>플레이 방식: 개인, 협동, 협동 인원수, 출발 지원 인원수</li>
+            <li>지원 설정: 파워 블레스, SP 은행, SP 은행 상태</li>
+            <li>룬효과/버프: 오버핸스, 리페핸스, 강화의 달인, 선택 버프, 꽃가루 버프</li>
+            <li>특성: 특성 보드 전체, 특성 투자 제한 전체, 루키 특성부터 심연 특성까지</li>
+          </ul>
+        </div>
+        <div class="notice-step-card">
+          <h3>예시</h3>
+          <ul>
+            <li>A 프리셋에서 난이도만 바꾸고 업데이트하면 A 프리셋에만 저장되고, B/C/D/E의 난이도는 그대로 유지됩니다.</li>
+            <li>A 프리셋에서 공통 설정을 바꾸고 업데이트하면 B/C/D/E에도 같은 공통 설정이 반영됩니다.</li>
+            <li>공통 설정을 동기화하더라도 위 제외 항목은 각 프리셋이 가진 값을 유지합니다.</li>
+          </ul>
+        </div>
+      `,
+      actions: []
+    },
+    notes: {
+      title: 'DPS 계산 기준',
+      level: 'note',
+      html: `
+        <div class="notice-hero-card notice-hero-note">
+          <span class="notice-hero-label">참고사항</span>
+          <strong>모드마다 적용되는 DPS 계산 기준이 다릅니다.</strong>
+          <p>실제 DPS 계산은 현재 선택한 모드 기준으로 처리됩니다.</p>
         </div>
         <div class="notice-step-card">
           <h3>먼저 알아둘 점</h3>
           <ul>
-            <li>입력한 값과 선택한 값은 프리셋에 저장됩니다.</li>
-            <li>다만 현재 모드에서 쓰지 않는 항목은 DPS 계산에 반영되지 않습니다.</li>
-            <li>프리셋 불러오기와 비교 분석에서는 저장된 값을 그대로 보여주고, 실제 DPS는 현재 모드에 맞는 항목만 사용합니다.</li>
+            <li>현재 모드에서 쓰지 않는 항목은 DPS 계산에 반영되지 않습니다.</li>
             <li>유물 DPS 스위치는 데미지 보드와 DPS표의 표시 기준만 바꾸며, 실제 유물 체크값·저장값·기본 DPS 계산값은 변경하지 않습니다.</li>
           </ul>
         </div>
