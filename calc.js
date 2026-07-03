@@ -715,7 +715,7 @@ function computeStatsRaw(){
           spTotal:spU+spO,spU,spO,epU,rpU,soulU,spBank:spBankRawBonus(),spBankApplied:isSpBankApplied(),effectiveSP:effectiveSP(),excelPierce,enemyData};
 }
 
-/* ===== 08. 유물 DPS 계산 / DOM preview 상태 보존 ===== */
+/* ===== 08. 유물 DPS 계산 / 미리보기 상태 보존 ===== */
 function currentPenaltyContext(){
   const diff=DIFF[vs('diff')]||DIFF['The Final'];
   const targetRound=effectiveTargetRound();
@@ -976,7 +976,7 @@ function normalizeSpBankApplyValue(value){
 function isSpBankApplied(){
   const select=(typeof $==='function' ? $('spBankApply') : (typeof document!=='undefined' ? document.getElementById('spBankApply') : null));
   if(select) return normalizeSpBankApplyValue(select.value)==='반영';
-  return Math.max(0, Math.round(+(INV[89]||0)))>=1;
+  return Math.max(0, Math.round(+(INV[SP_BANK_TRAIT_ROW]||0)))>=1;
 }
 function spBankApplyDisplayValue(value){
   return normalizeSpBankApplyValue(value)==='반영' ? 'ON' : 'OFF';
@@ -990,7 +990,7 @@ function syncSpBankDisplay(bankSP=null){
   setText('spBankStatusView', applied ? fullNumber(n) : '미적용');
 }
 function spBankRawBonus(){
-  const bankLevel=INV[89]||0;
+  const bankLevel=INV[SP_BANK_TRAIT_ROW]||0;
   const appliedRound=Math.min(Math.max(0, effectiveTargetRound()), 290);
   const ticks=Math.floor(appliedRound/10);
   return bankLevel * 1000 * ticks;
@@ -1120,17 +1120,9 @@ function updateDpsContextSummary(){
 
 
 /* ===== 09. DPS표 미리보기 계산 ===== */
+const DPS_PREVIEW_IDS=['diff','penance','round','challengeTowerFloor','soloMode','coopMode','coopPlayers','team','pbless',...EROSION_CONTROL_IDS];
 function computeDpsPreview(diffName, penanceLevel, round, options={}){
-  const ids=['diff','penance','round','challengeTowerFloor','soloMode','coopMode','coopPlayers','team','pbless',...EROSION_CONTROL_IDS];
-  const saved=ids.map(id=>{
-    const el=$(id);
-    return {
-      el,
-      value:el ? el.value : null,
-      innerHTML:el && el.tagName==='SELECT' ? el.innerHTML : null,
-      dataset:el ? {...el.dataset} : null
-    };
-  });
+  const saved=capturePreviewElementStates(DPS_PREVIEW_IDS);
   try{
     const diffEl=$('diff');
     const penEl=$('penance');
@@ -1202,14 +1194,7 @@ function computeDpsPreview(diffName, penanceLevel, round, options={}){
     logAppError('[DPS table preview failed]', e);
     return 0;
   }finally{
-    saved.forEach(state=>{
-      const el=state.el;
-      if(!el) return;
-      if(state.innerHTML!==null) el.innerHTML=state.innerHTML;
-      el.value=state.value;
-      Object.keys(el.dataset).forEach(key=>{ delete el.dataset[key]; });
-      Object.entries(state.dataset || {}).forEach(([key,value])=>{ el.dataset[key]=value; });
-    });
+    restorePreviewElementStates(saved);
   }
 }
 

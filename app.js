@@ -1771,7 +1771,7 @@ function buildExcelState(cells, specCells, zeroCells, sheetName=''){
     inv[row]=Math.max(0,Math.min(TMAX[row]||999,Math.round(value)));
     applied++;
   });
-  syncSpBankApplyValueFromInvestment(values, inv, {budgetMode:'included', forceFromInvestment:true});
+  syncSpBankPresetState(values, inv, {budgetMode:'included', forceFromInvestment:true});
   if(excelNumber(cells.H89)!==null) applied++;
   inv[116]=1;
   const zeroScore=zeroScoreStateFromExcel(zeroCells) || state.zeroScore;
@@ -2310,7 +2310,7 @@ function adjustTraitBy(row,d,step=1){
     INV[row]=next;
   }
   if(applied>0){
-    if(row===89) applySpBankBudgetMode('manual');
+    if(row===SP_BANK_TRAIT_ROW) applySpBankBudgetMode('manual');
     recalc();
     scheduleAutoSaveToast();
     return true;
@@ -2364,7 +2364,7 @@ function setInv(row,val){
   const wanted=Math.round(val);
   const applied=setRowToAffordableValue(row,wanted);
   if(applied<wanted) try{showToast('보유 재화 한도까지만 입력되었습니다','err');}catch(e){}
-  if(row===89) applySpBankBudgetMode('manual');
+  if(row===SP_BANK_TRAIT_ROW) applySpBankBudgetMode('manual');
   recalc();
   scheduleAutoSaveToast();
 }
@@ -2516,7 +2516,7 @@ function clearAll(){
     return false;
   }
 }
-/* ===== 08. 저장 / 복구 / 저장파일 백업 ===== */
+/* ===== 08. 저장 / 복구 / 특성 프리셋 ===== */
 const STORAGE_VERSION=DPS_CONFIG.storage.version;
 const STORAGE_SCOPE=DPS_CONFIG.storage.scope;
 const STORAGE_KEY=DPS_CONFIG.storage.key;
@@ -2573,23 +2573,21 @@ function normalizeMoneyStorageValues(values){
   });
   return values;
 }
-function normalizeSpBankPresetState(values, inv){
-  if(!values || typeof values!=='object' || !inv || typeof inv!=='object') return;
-  const bankLevel=Math.max(0, Math.min(TMAX[89]||999, Math.round(+(inv[89]||0))));
-  const stored=hasOwn(values,'spBankApply') ? normalizeSpBankApplyValue(values.spBankApply) : (bankLevel>=1 ? '반영' : '미반영');
-  inv[89]=bankLevel;
-  values.spBankApply=stored;
-  values[SP_BANK_BUDGET_MODE_ID]=stored==='반영' ? normalizeSpBankBudgetMode(values[SP_BANK_BUDGET_MODE_ID]) : 'manual';
+function normalizedSpBankInvestmentLevel(inv){
+  if(!inv || typeof inv!=='object') return 0;
+  return Math.max(0, Math.min(TMAX[SP_BANK_TRAIT_ROW]||999, Math.round(+(inv[SP_BANK_TRAIT_ROW]||0))));
 }
-function syncSpBankApplyValueFromInvestment(values, inv, options={}){
+function resolveSpBankApplyFromValues(values, bankLevel, forceFromInvestment=false){
+  if(forceFromInvestment) return bankLevel>=1 ? '반영' : '미반영';
+  return hasOwn(values,'spBankApply') ? normalizeSpBankApplyValue(values.spBankApply) : (bankLevel>=1 ? '반영' : '미반영');
+}
+function syncSpBankPresetState(values, inv, options={}){
   if(!values || typeof values!=='object' || !inv || typeof inv!=='object') return;
-  const bankLevel=Math.max(0, Math.min(TMAX[89]||999, Math.round(+(inv[89]||0))));
-  const stored=options.forceFromInvestment===true
-    ? (bankLevel>=1 ? '반영' : '미반영')
-    : (hasOwn(values,'spBankApply') ? normalizeSpBankApplyValue(values.spBankApply) : (bankLevel>=1 ? '반영' : '미반영'));
-  inv[89]=bankLevel;
-  values.spBankApply=stored;
+  const bankLevel=normalizedSpBankInvestmentLevel(inv);
+  const stored=resolveSpBankApplyFromValues(values, bankLevel, options.forceFromInvestment===true);
   const budgetMode=options.budgetMode===undefined ? values[SP_BANK_BUDGET_MODE_ID] : options.budgetMode;
+  inv[SP_BANK_TRAIT_ROW]=bankLevel;
+  values.spBankApply=stored;
   values[SP_BANK_BUDGET_MODE_ID]=stored==='반영' ? normalizeSpBankBudgetMode(budgetMode) : 'manual';
 }
 function isUserStateValueId(id){ return USER_STATE_VALUE_IDS.has(id) || id===SP_BANK_BUDGET_MODE_ID; }
@@ -2723,7 +2721,7 @@ function makeStateObject(){
   values.dpsTableMinDps=normalizeDpsTableMinDpsValue(dpsTableMinDps);
   normalizeMoneyStorageValues(values);
   const inv={...INV};
-  syncSpBankApplyValueFromInvestment(values, inv, {budgetMode:currentSpBankBudgetMode()});
+  syncSpBankPresetState(values, inv, {budgetMode:currentSpBankBudgetMode()});
   return makeStorageEnvelope({
     values,
     inv,
@@ -2778,7 +2776,7 @@ function normalizeSavedState(data){
   const hasRawValues=Object.keys(rawValues).some(id=>isUserStateValueId(id) || id==='dpsTableMinDps');
   const values=sanitizeSavedValues(rawValues, data);
   const inv=(data.inv && typeof data.inv==='object') ? {...data.inv} : {};
-  normalizeSpBankPresetState(values, inv);
+  syncSpBankPresetState(values, inv);
   const hasZeroScore=!!(data.zeroScore && Array.isArray(data.zeroScore.rows));
   if(!hasRawValues && !Object.keys(inv).length && !hasZeroScore) return null;
   return makeStorageEnvelope({
