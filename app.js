@@ -1771,7 +1771,7 @@ function buildExcelState(cells, specCells, zeroCells, sheetName=''){
     inv[row]=Math.max(0,Math.min(TMAX[row]||999,Math.round(value)));
     applied++;
   });
-  syncSpBankApplyValueFromInvestment(values, inv, {budgetMode:'included'});
+  syncSpBankApplyValueFromInvestment(values, inv, {budgetMode:'included', forceFromInvestment:true});
   if(excelNumber(cells.H89)!==null) applied++;
   inv[116]=1;
   const zeroScore=zeroScoreStateFromExcel(zeroCells) || state.zeroScore;
@@ -2528,8 +2528,7 @@ const TRAIT_PRESET_SCHEMA_VERSION=2;
 const TRAIT_PRESET_NAME_PLACEHOLDER='예시) 더파300라버스';
 const TRAIT_PRESET_UNSUPPORTED_OLD_MESSAGE='구버전 프리셋은 더 이상 지원하지 않습니다.\n호환 엑셀버전: 5.4392\n엑셀 파일을 다시 불러온 뒤, 새 특성 프리셋을 생성해 주세요.';
 const TRAIT_PRESET_SYNC_EXCLUDED_VALUE_IDS=new Set([
-  'sp',
-  'diff','penance','round','challengeTowerFloor','soloMode','coopMode','coopPlayers','team','pbless','spBankApply','spBankBudgetMode',
+  'sp','diff','penance','round','challengeTowerFloor','soloMode','coopMode','coopPlayers','team','pbless','spBankApply','spBankBudgetMode',
   'overEnhance','repairEnhance','enhanceMaster',
   'dailyCouponBuff','shareUserBuff','unitUniqueBuff','basePierceBuff',
   'prodArtifact','prodNova','prodTeratron','prodAmon','prodAdun','prodKerrigan','prodOvermind','prodNarud',
@@ -2578,16 +2577,20 @@ function normalizeSpBankPresetState(values, inv){
   if(!values || typeof values!=='object' || !inv || typeof inv!=='object') return;
   const bankLevel=Math.max(0, Math.min(TMAX[89]||999, Math.round(+(inv[89]||0))));
   const stored=hasOwn(values,'spBankApply') ? normalizeSpBankApplyValue(values.spBankApply) : (bankLevel>=1 ? '반영' : '미반영');
-  inv[89]=stored==='반영' ? bankLevel : 0;
-  values.spBankApply=(inv[89]||0)>=1 ? '반영' : '미반영';
-  values[SP_BANK_BUDGET_MODE_ID]=values.spBankApply==='반영' ? normalizeSpBankBudgetMode(values[SP_BANK_BUDGET_MODE_ID]) : 'manual';
+  inv[89]=bankLevel;
+  values.spBankApply=stored;
+  values[SP_BANK_BUDGET_MODE_ID]=stored==='반영' ? normalizeSpBankBudgetMode(values[SP_BANK_BUDGET_MODE_ID]) : 'manual';
 }
 function syncSpBankApplyValueFromInvestment(values, inv, options={}){
   if(!values || typeof values!=='object' || !inv || typeof inv!=='object') return;
   const bankLevel=Math.max(0, Math.min(TMAX[89]||999, Math.round(+(inv[89]||0))));
+  const stored=options.forceFromInvestment===true
+    ? (bankLevel>=1 ? '반영' : '미반영')
+    : (hasOwn(values,'spBankApply') ? normalizeSpBankApplyValue(values.spBankApply) : (bankLevel>=1 ? '반영' : '미반영'));
   inv[89]=bankLevel;
-  values.spBankApply=bankLevel>=1 ? '반영' : '미반영';
-  values[SP_BANK_BUDGET_MODE_ID]=bankLevel>=1 ? normalizeSpBankBudgetMode(options.budgetMode) : 'manual';
+  values.spBankApply=stored;
+  const budgetMode=options.budgetMode===undefined ? values[SP_BANK_BUDGET_MODE_ID] : options.budgetMode;
+  values[SP_BANK_BUDGET_MODE_ID]=stored==='반영' ? normalizeSpBankBudgetMode(budgetMode) : 'manual';
 }
 function isUserStateValueId(id){ return USER_STATE_VALUE_IDS.has(id) || id===SP_BANK_BUDGET_MODE_ID; }
 function userStateElementIds(){ return storageElementIds().filter(isUserStateValueId); }
@@ -4442,7 +4445,6 @@ function bindReactiveInputs(){
     if(!shouldHandleReactiveInput(target)) return;
     if(target.matches('.money-input')) formatMoneyInput(target);
     if(target.id==='spBankApply') applySpBankBudgetMode('manual');
-    if(target.id==='spBankApply' && normalizeSpBankApplyValue(target.value)==='미반영' && (INV[89]||0)>0) INV[89]=0;
     if(target.id==='xp') normalizeXpInput();
     if(target.id==='round' || target.id==='skillRound' || target.id==='challengeTowerFloor') normalizeRoundInput(target.id);
     if(target.id==='diff'){

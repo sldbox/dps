@@ -974,6 +974,8 @@ function normalizeSpBankApplyValue(value){
   return (raw==='반영' || raw==='적용' || upper==='ON' || upper==='TRUE' || upper==='1' || upper==='YES') ? '반영' : '미반영';
 }
 function isSpBankApplied(){
+  const select=(typeof $==='function' ? $('spBankApply') : (typeof document!=='undefined' ? document.getElementById('spBankApply') : null));
+  if(select) return normalizeSpBankApplyValue(select.value)==='반영';
   return Math.max(0, Math.round(+(INV[89]||0)))>=1;
 }
 function spBankApplyDisplayValue(value){
