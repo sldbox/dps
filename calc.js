@@ -269,6 +269,11 @@ const TOWER_DIFFICULTY_NAME='도전의 탑';
 const ABYSS_DIFFICULTIES=new Set(['Abyss road','Deep Abyss']);
 const COOP_DISABLED_DIFFICULTIES=new Set([TOWER_DIFFICULTY_NAME,...ABYSS_DIFFICULTIES]);
 const SOLO_START_LOCK_DIFFICULTIES=new Set([TOWER_DIFFICULTY_NAME,'Deep Abyss']);
+const ENEMY_TABLE_MODES=Object.freeze({
+  classic:{label:'클래식',unitTable:ENEMY_UNIT_TABLE,armorTable:ENEMY_ARMOR_TABLE,maxRound:300,totalMode:'sum'},
+  eternal:{label:'이터널',unitTable:ETERNAL_ENEMY_UNIT_TABLE,armorTable:ENEMY_ARMOR_TABLE,maxRound:300,totalMode:'sum'},
+  tower:{label:'클래식',unitTable:TOWER_UNIT_TABLE,armorTable:TOWER_ARMOR_TABLE,maxRound:90,totalMode:'current'}
+});
 function difficultyName(value=vs('diff')){return String(value || '').trim();}
 function isDifficultyIn(value, set){return set.has(difficultyName(value));}
 function isAbyssDifficulty(diffName=vs('diff')){return isDifficultyIn(diffName, ABYSS_DIFFICULTIES);}
@@ -384,16 +389,19 @@ function lookupFloor(table, round){
   return last || table[0];
 }
 function isTowerDifficulty(value=vs('diff')){return difficultyName(value)===TOWER_DIFFICULTY_NAME;}
-function enemyUnitTableForDifficulty(){
-  if(isTowerDifficulty()) return TOWER_UNIT_TABLE;
-  return isAbyssDifficulty() ? ETERNAL_ENEMY_UNIT_TABLE : ENEMY_UNIT_TABLE;
+function enemyTableKeyForDifficulty(diffName=vs('diff')){
+  if(isTowerDifficulty(diffName)) return 'tower';
+  return isAbyssDifficulty(diffName) ? 'eternal' : 'classic';
 }
-function enemyArmorTableForDifficulty(){
-  return isTowerDifficulty() ? TOWER_ARMOR_TABLE : ENEMY_ARMOR_TABLE;
+function enemyTableModeForDifficulty(diffName=vs('diff')){
+  return ENEMY_TABLE_MODES[enemyTableKeyForDifficulty(diffName)] || ENEMY_TABLE_MODES.classic;
 }
-function enemyMaxRoundForDifficulty(){
-  return isTowerDifficulty() ? 90 : 300;
-}
+function enemyUnitTableForDifficulty(diffName=vs('diff')){return enemyTableModeForDifficulty(diffName).unitTable;}
+function enemyArmorTableForDifficulty(diffName=vs('diff')){return enemyTableModeForDifficulty(diffName).armorTable;}
+function enemyMaxRoundForDifficulty(diffName=vs('diff')){return enemyTableModeForDifficulty(diffName).maxRound;}
+function enemyDisplayModeLabel(diffName=vs('diff')){return enemyTableModeForDifficulty(diffName).label;}
+function battleModeLabel(){return isCoopMode() ? '협동' : '개인';}
+function dpsContextModeLabel(diffName=vs('diff')){return `${battleModeLabel()}/${enemyDisplayModeLabel(diffName)}`;}
 function enemyRoundData(round){
   const maxRound=enemyMaxRoundForDifficulty();
   const r=Math.max(0,Math.min(maxRound,Math.round(+round||0)));
@@ -410,10 +418,11 @@ function enemyRoundData(round){
   };
 }
 function enemyRoundCountTotal(round){
-  if(isTowerDifficulty()) return enemyRoundData(round).count;
-  const r=Math.max(0,Math.min(300,Math.round(+round||0)));
+  const tableMode=enemyTableModeForDifficulty();
+  if(tableMode.totalMode==='current') return enemyRoundData(round).count;
+  const r=Math.max(0,Math.min(tableMode.maxRound,Math.round(+round||0)));
   if(r<=0) return 0;
-  return enemyUnitTableForDifficulty().reduce((total,row)=>total+(row[0]<=r ? (+row[1]||0) : 0),0);
+  return tableMode.unitTable.reduce((total,row)=>total+(row[0]<=r ? (+row[1]||0) : 0),0);
 }
 function enemyRoundDisplayCount(round){
   return enemyRoundData(round).count * battleEnemyCountMultiplier();
@@ -1100,16 +1109,12 @@ function selectedControlText(el){
 }
 function getDpsContextValues(){
   const diffEl=$('diff');
-  const penEl=$('penance');
-  const roundEl=$('round');
   const penValue=effectivePenanceValue();
   const roundInt=normalizedRoundNumber(targetRoundStoredValue());
   const floorInt=normalizedTowerFloorNumber(challengeTowerFloorStoredValue());
   const towerActive=isTowerDifficulty();
   const diff=selectedControlText(diffEl);
-  const battleMode=isCoopMode() ? '협동' : '개인';
-  const enemyMode=isAbyssDifficulty() ? '이터널' : '클래식';
-  const mode=`${battleMode}/${enemyMode}`;
+  const mode=dpsContextModeLabel();
   const penance=penValue>0 ? `${penValue} 고행` : '고행 없음';
   const roundValue=towerActive ? floorInt : roundInt;
   const round=towerActive ? `${floorInt}층` : `${roundInt} 라운드`;
@@ -1765,6 +1770,11 @@ window.DPS_CALC=Object.freeze({
   battleEnemyCountMultiplier,
   currentPenanceMax,
   shouldIgnorePenanceForDifficulty,
+  enemyTableKeyForDifficulty,
+  enemyTableModeForDifficulty,
+  enemyDisplayModeLabel,
+  battleModeLabel,
+  dpsContextModeLabel,
   penanceStoredValue,
   effectivePenanceValue,
   effectivePowerBlessValue,
