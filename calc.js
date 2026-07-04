@@ -798,7 +798,9 @@ function calculateArtifactDpsRaw(stats=computeStatsRaw()){
     round:ctx.targetRound
   };
 }
-const ARTIFACT_DPS_PREVIEW_IDS=['diff','penance','round','challengeTowerFloor','soloMode','coopMode','coopPlayers','team','prodArtifact','pbless',...EROSION_CONTROL_IDS];
+const PREVIEW_CONTEXT_IDS=['diff','penance','round','challengeTowerFloor','soloMode','coopMode','coopPlayers','team','pbless',...EROSION_CONTROL_IDS];
+const DPS_PREVIEW_IDS=[...PREVIEW_CONTEXT_IDS];
+const ARTIFACT_DPS_PREVIEW_IDS=[...PREVIEW_CONTEXT_IDS,'prodArtifact'];
 function capturePreviewElementStates(ids){
   return ids.map(id=>{
     const el=$(id);
@@ -822,75 +824,88 @@ function restorePreviewElementStates(saved){
     Object.entries(state.dataset || {}).forEach(([key,value])=>{ el.dataset[key]=value; });
   });
 }
+function setPreviewSelectValue(id, value, datasetKey){
+  const el=$(id);
+  if(!el) return;
+  const normalized=String(value);
+  el.value=normalized;
+  if(datasetKey) el.dataset[datasetKey]=normalized;
+}
+function applyPreviewPenance(penanceLevel, battleMode, signaturePrefix){
+  const penEl=$('penance');
+  if(!penEl) return;
+  const maxForPreview=battleMode==='coop' ? COOP_DPS_TABLE_PENANCE_MAX : DPS_TABLE_PENANCE_MAX;
+  const normalizedPenance=normalizePenanceValue(penanceLevel, maxForPreview);
+  setSelectOptions(penEl, Array.from({length:SOLO_PENANCE_MAX+1}, (_,value)=>({
+    value,
+    label:penanceOptionLabel(value),
+    selected:String(value)===normalizedPenance
+  })));
+  penEl.dataset.penanceMax=`${signaturePrefix}:${SOLO_PENANCE_MAX}`;
+  penEl.value=normalizedPenance;
+  penEl.dataset.penanceValue=normalizedPenance;
+}
+function applyPreviewBattleMode(battleMode, options, signaturePrefix){
+  const soloEl=$('soloMode');
+  const coopEl=$('coopMode');
+  const coopPlayersEl=$('coopPlayers');
+  const teamEl=$('team');
+  if(battleMode==='solo'){
+    if(soloEl) soloEl.value='ON';
+    if(coopEl){
+      setSelectOptions(coopEl, [{value:'OFF',label:'OFF',selected:true},{value:'ON',label:'ON'}]);
+      coopEl.dataset.optionSignature=`${signaturePrefix}:coop-mode-toggle`;
+      coopEl.value='OFF';
+    }
+    if(coopPlayersEl){
+      setSelectOptions(coopPlayersEl, ['2','3'].map(playerCount=>({value:playerCount,label:playerCount})));
+      coopPlayersEl.dataset.optionSignature=`${signaturePrefix}:coop-players`;
+      coopPlayersEl.value=normalizeCoopPlayersValue(coopPlayersEl.value);
+    }
+    return;
+  }
+  const players=normalizeCoopPlayersValue(options.coopPlayers);
+  if(soloEl) soloEl.value='OFF';
+  if(coopEl){
+    setSelectOptions(coopEl, [{value:'OFF',label:'OFF'},{value:'ON',label:'ON',selected:true}]);
+    coopEl.dataset.optionSignature=`${signaturePrefix}:coop-mode-toggle`;
+    coopEl.value='ON';
+  }
+  if(coopPlayersEl){
+    setSelectOptions(coopPlayersEl, ['2','3'].map(playerCount=>({value:playerCount,label:playerCount,selected:playerCount===players})));
+    coopPlayersEl.dataset.optionSignature=`${signaturePrefix}:coop-players`;
+    coopPlayersEl.value=players;
+  }
+  if(teamEl) teamEl.value=players;
+}
+function applyPreviewErosionControls(){
+  EROSION_CONTROL_IDS.forEach(id=>{
+    const el=$(id);
+    if(!el) return;
+    const stored=normalizeErosionControlValue(id, el.value || el.dataset.erosionValue || EROSION_CONTROL_DEFAULTS[id]);
+    el.type='text';
+    el.inputMode='numeric';
+    el.value=stored;
+    el.dataset.erosionValue=stored;
+  });
+}
+function applyPreviewContext(diffName, penanceLevel, round, options={}, signaturePrefix='preview'){
+  const battleMode=options.battleMode==='coop' ? 'coop' : 'solo';
+  const normalizedRound=normalizedRoundString(round);
+  const normalizedTowerFloor=normalizedTowerFloorString(round);
+  setPreviewSelectValue('diff', diffName);
+  applyPreviewPenance(penanceLevel, battleMode, signaturePrefix);
+  setPreviewSelectValue('round', normalizedRound, 'roundValue');
+  setPreviewSelectValue('challengeTowerFloor', normalizedTowerFloor, 'challengeTowerFloorValue');
+  applyPreviewBattleMode(battleMode, options, signaturePrefix);
+  applyPreviewErosionControls();
+}
 function calculateArtifactDpsPreview(diffName, penanceLevel, round, options={}){
   const saved=capturePreviewElementStates(ARTIFACT_DPS_PREVIEW_IDS);
   try{
-    const diffEl=$('diff');
-    const penEl=$('penance');
-    const roundEl=$('round');
-    const towerFloorEl=$('challengeTowerFloor');
-    const soloEl=$('soloMode');
-    const coopEl=$('coopMode');
-    const coopPlayersEl=$('coopPlayers');
-    const teamEl=$('team');
+    applyPreviewContext(diffName, penanceLevel, round, options, 'artifact');
     const artifactEl=$('prodArtifact');
-    const battleMode=options.battleMode==='coop' ? 'coop' : 'solo';
-    if(diffEl) diffEl.value=diffName;
-    if(penEl){
-      const maxForPreview=battleMode==='coop' ? COOP_DPS_TABLE_PENANCE_MAX : DPS_TABLE_PENANCE_MAX;
-      const normalizedPenance=normalizePenanceValue(penanceLevel, maxForPreview);
-      setSelectOptions(penEl, Array.from({length:SOLO_PENANCE_MAX+1}, (_,value)=>({value,label:penanceOptionLabel(value),selected:String(value)===normalizedPenance})));
-      penEl.dataset.penanceMax=`artifact:${SOLO_PENANCE_MAX}`;
-      penEl.value=normalizedPenance;
-      penEl.dataset.penanceValue=normalizedPenance;
-    }
-    if(roundEl){
-      const normalizedRound=normalizedRoundString(round);
-      roundEl.value=normalizedRound;
-      roundEl.dataset.roundValue=normalizedRound;
-    }
-    if(towerFloorEl){
-      const normalizedTowerFloor=normalizedTowerFloorString(round);
-      towerFloorEl.value=normalizedTowerFloor;
-      towerFloorEl.dataset.challengeTowerFloorValue=normalizedTowerFloor;
-    }
-    if(battleMode==='solo'){
-      if(soloEl) soloEl.value='ON';
-      if(coopEl){
-        setSelectOptions(coopEl, [{value:'OFF',label:'OFF',selected:true},{value:'ON',label:'ON'}]);
-        coopEl.dataset.optionSignature='artifact:coop-mode-toggle';
-        coopEl.value='OFF';
-      }
-      if(coopPlayersEl){
-        setSelectOptions(coopPlayersEl, ['2','3'].map(playerCount=>({value:playerCount,label:playerCount})));
-        coopPlayersEl.dataset.optionSignature='artifact:coop-players';
-        coopPlayersEl.value=normalizeCoopPlayersValue(coopPlayersEl.value);
-      }
-    }else{
-      const players=normalizeCoopPlayersValue(options.coopPlayers);
-      if(soloEl) soloEl.value='OFF';
-      if(coopEl){
-        setSelectOptions(coopEl, [{value:'OFF',label:'OFF'},{value:'ON',label:'ON',selected:true}]);
-        coopEl.dataset.optionSignature='artifact:coop-mode-toggle';
-        coopEl.value='ON';
-      }
-      if(coopPlayersEl){
-        setSelectOptions(coopPlayersEl, ['2','3'].map(playerCount=>({value:playerCount,label:playerCount,selected:playerCount===players})));
-        coopPlayersEl.dataset.optionSignature='artifact:coop-players';
-        coopPlayersEl.value=players;
-      }
-      if(teamEl) teamEl.value=players;
-    }
     if(artifactEl) artifactEl.checked=true;
-    EROSION_CONTROL_IDS.forEach(id=>{
-      const el=$(id);
-      if(!el) return;
-      const stored=normalizeErosionControlValue(id, el.value || el.dataset.erosionValue || EROSION_CONTROL_DEFAULTS[id]);
-      el.type='text';
-      el.inputMode='numeric';
-      el.value=stored;
-      el.dataset.erosionValue=stored;
-    });
     const stats=computeStatsRaw();
     return {...calculateArtifactDpsRaw(stats), baseDps:Number.isFinite(stats.M19) ? stats.M19 : 0};
   }catch(e){
@@ -1156,74 +1171,10 @@ function updateDpsContextSummary(){
 
 
 /* ===== 09. DPS표 미리보기 계산 ===== */
-const DPS_PREVIEW_IDS=['diff','penance','round','challengeTowerFloor','soloMode','coopMode','coopPlayers','team','pbless',...EROSION_CONTROL_IDS];
 function computeDpsPreview(diffName, penanceLevel, round, options={}){
   const saved=capturePreviewElementStates(DPS_PREVIEW_IDS);
   try{
-    const diffEl=$('diff');
-    const penEl=$('penance');
-    const roundEl=$('round');
-    const towerFloorEl=$('challengeTowerFloor');
-    const soloEl=$('soloMode');
-    const coopEl=$('coopMode');
-    const coopPlayersEl=$('coopPlayers');
-    const teamEl=$('team');
-    const battleMode=options.battleMode==='coop' ? 'coop' : 'solo';
-    if(diffEl) diffEl.value=diffName;
-    if(penEl){
-      const maxForPreview=battleMode==='coop' ? COOP_DPS_TABLE_PENANCE_MAX : DPS_TABLE_PENANCE_MAX;
-      const normalizedPenance=normalizePenanceValue(penanceLevel, maxForPreview);
-      setSelectOptions(penEl, Array.from({length:SOLO_PENANCE_MAX+1}, (_,value)=>({value,label:penanceOptionLabel(value),selected:String(value)===normalizedPenance})));
-      penEl.dataset.penanceMax=`preview:${SOLO_PENANCE_MAX}`;
-      penEl.value=normalizedPenance;
-      penEl.dataset.penanceValue=normalizedPenance;
-    }
-    if(roundEl){
-      const normalizedRound=normalizedRoundString(round);
-      roundEl.value=normalizedRound;
-      roundEl.dataset.roundValue=normalizedRound;
-    }
-    if(towerFloorEl){
-      const normalizedTowerFloor=normalizedTowerFloorString(round);
-      towerFloorEl.value=normalizedTowerFloor;
-      towerFloorEl.dataset.challengeTowerFloorValue=normalizedTowerFloor;
-    }
-    EROSION_CONTROL_IDS.forEach(id=>{
-      const el=$(id);
-      if(!el) return;
-      const stored=normalizeErosionControlValue(id, el.value || el.dataset.erosionValue || EROSION_CONTROL_DEFAULTS[id]);
-      el.type='text';
-      el.inputMode='numeric';
-      el.value=stored;
-      el.dataset.erosionValue=stored;
-    });
-    if(battleMode==='solo'){
-      if(soloEl) soloEl.value='ON';
-      if(coopEl){
-        setSelectOptions(coopEl, [{value:'OFF',label:'OFF',selected:true},{value:'ON',label:'ON'}]);
-        coopEl.dataset.optionSignature='preview:coop-mode-toggle';
-        coopEl.value='OFF';
-      }
-      if(coopPlayersEl){
-        setSelectOptions(coopPlayersEl, ['2','3'].map(playerCount=>({value:playerCount,label:playerCount})));
-        coopPlayersEl.dataset.optionSignature='preview:coop-players';
-        coopPlayersEl.value=normalizeCoopPlayersValue(coopPlayersEl.value);
-      }
-    }else{
-      const players=normalizeCoopPlayersValue(options.coopPlayers);
-      if(soloEl) soloEl.value='OFF';
-      if(coopEl){
-        setSelectOptions(coopEl, [{value:'OFF',label:'OFF'},{value:'ON',label:'ON',selected:true}]);
-        coopEl.dataset.optionSignature='preview:coop-mode-toggle';
-        coopEl.value='ON';
-      }
-      if(coopPlayersEl){
-        setSelectOptions(coopPlayersEl, ['2','3'].map(playerCount=>({value:playerCount,label:playerCount,selected:playerCount===players})));
-        coopPlayersEl.dataset.optionSignature='preview:coop-players';
-        coopPlayersEl.value=players;
-      }
-      if(teamEl) teamEl.value=players;
-    }
+    applyPreviewContext(diffName, penanceLevel, round, options, 'preview');
     const s=computeStatsRaw();
     return Number.isFinite(s.M19) ? s.M19 : 0;
   }catch(e){

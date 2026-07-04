@@ -3,13 +3,13 @@
 
 
 /* ===== 00. 공통 모달 유틸 ===== */
+const modalById=id=>document.getElementById(id);
+
 (function(){
   'use strict';
 
-  function byId(id){ return document.getElementById(id); }
-
   function createModalShell(id, className, innerHtml){
-    if(byId(id)) return byId(id);
+    if(modalById(id)) return modalById(id);
     const modal=document.createElement('div');
     modal.id=id;
     modal.className=className;
@@ -20,7 +20,7 @@
   }
 
   function setModalOpen(id, bodyClass, open, options={}){
-    const modal=byId(id);
+    const modal=modalById(id);
     if(!modal) return null;
     const active=!!open;
     modal.classList.toggle('is-open', active);
@@ -33,7 +33,7 @@
   }
 
   function isModalOpen(id){
-    return !!byId(id)?.classList.contains('is-open');
+    return !!modalById(id)?.classList.contains('is-open');
   }
 
   window.DpsModal={createModalShell,setModalOpen,isModalOpen};
@@ -62,13 +62,13 @@ function buildCompareHeaderControls(){
   </div>`;
 }
 function renderMonthRuneModalHeader(tabName){
-  const modal=$('monthRuneModal');
+  const modal=modalById('monthRuneModal');
   if(!modal) return;
   const next=MONTH_RUNE_MODAL_TITLES[tabName] ? tabName : 'compare';
   const title=next==='dps' ? dpsTableDisplayTitle() : MONTH_RUNE_MODAL_TITLES[next];
   const dialog=modal.querySelector('.month-rune-modal');
-  const titleEl=$('monthRuneTitle');
-  const actions=$('monthRuneHeaderActions');
+  const titleEl=modalById('monthRuneTitle');
+  const actions=modalById('monthRuneHeaderActions');
   const closeBtn=modal.querySelector('.month-rune-close');
   if(dialog){
     dialog.classList.remove(...MONTH_RUNE_MODAL_CLASS_NAMES);
@@ -95,7 +95,7 @@ function renderDpsTablePanel(){
   </section>`;
 }
 function selectMonthRuneModalTab(tabName){
-  const modal=$('monthRuneModal');
+  const modal=modalById('monthRuneModal');
   if(!modal) return;
   const next=['compare','runes','jewels','dps'].includes(tabName) ? tabName : 'compare';
   modal.querySelectorAll('[data-month-rune-panel]').forEach(panel=>{
@@ -178,7 +178,7 @@ function bindDpsTableEvents(){
     if(!minInput) return;
     const before=minInput.value;
     setDpsTableMinDps(before);
-    const fresh=$(minInput.id);
+    const fresh=modalById(minInput.id);
     if(fresh){
       fresh.focus({preventScroll:true});
       const pos=fresh.value.length;
@@ -197,7 +197,6 @@ function bindDpsTableEvents(){
 (() => {
   'use strict';
 
-  const $ = (id) => document.getElementById(id);
   const NOTICE_TABS = [
     { id: 'patch-notes', label: '패치노트', meta: '업데이트 안내' },
     { id: 'preset-guide', label: '프리셋 관련', meta: '저장·동기화' },
@@ -436,7 +435,7 @@ function bindDpsTableEvents(){
     root.innerHTML = `<div class="notice-tabs" role="tablist" aria-label="정보&안내 탭">${tabHtml(activeTab)}</div><div class="notice-content-mount">${contentHtml(activeTab)}</div>`;
   }
   function ensureNoticeModal() {
-    let shell = $('noticeModalShell');
+    let shell = modalById('noticeModalShell');
     if (shell) return shell;
     shell = window.DpsModal.createModalShell('noticeModalShell', 'notice-modal-shell', `
       <div class="notice-modal-backdrop" data-notice-close="1"></div>
@@ -451,7 +450,7 @@ function bindDpsTableEvents(){
   }
   function openNoticeModal(tab = 'patch-notes') {
     ensureNoticeModal();
-    renderNoticeInto($('noticeModalBody'), tab);
+    renderNoticeInto(modalById('noticeModalBody'), tab);
     window.DpsModal.setModalOpen('noticeModalShell','notice-modal-open',true, { rootClass: true });
   }
   function closeNoticeModal() {
@@ -483,13 +482,13 @@ function bindDpsTableEvents(){
     if (tabTarget) {
       event.preventDefault();
       activeTab = tabTarget.getAttribute('data-notice-tab') || 'patch-notes';
-      const modalBody = $('noticeModalBody');
-      if (modalBody && $('noticeModalShell')?.classList.contains('is-open')) renderNoticeInto(modalBody, activeTab);
+      const modalBody = modalById('noticeModalBody');
+      if (modalBody && modalById('noticeModalShell')?.classList.contains('is-open')) renderNoticeInto(modalBody, activeTab);
     }
   }
   function initNotice() {
     document.addEventListener('click', handleNoticeClick, true);
-    document.addEventListener('keydown', (event) => { if (event.key === 'Escape' && $('noticeModalShell')?.classList.contains('is-open')) closeNoticeModal(); });
+    document.addEventListener('keydown', (event) => { if (event.key === 'Escape' && modalById('noticeModalShell')?.classList.contains('is-open')) closeNoticeModal(); });
   }
   window.DpsNotice = { open: openNoticeModal, close: closeNoticeModal };
   window.openNoticeModal = openNoticeModal;

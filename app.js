@@ -621,43 +621,52 @@ function syncDpsTableLabels(){
   if(closeBtn && isDpsTableOpen()) closeBtn.setAttribute('aria-label', `${label} 닫기`);
 }
 
-function buildDpsTable(round){
+function dpsTableColumnHeaderHtml(difficulties, currentDiff){
+  return difficulties.map(diff=>`<th class="${diff===currentDiff?'dps-current-column':''}">${diff}</th>`).join('');
+}
+function dpsTableCellHtml(value, diff, rowCurrent, currentDiff, minDps){
+  const danger=minDps!==null && dpsTableRiskCompareValue(value)<=minDps;
+  const currentCell=rowCurrent && diff===currentDiff;
+  const classes=[danger?'dps-risk-cell':'', currentCell?'dps-current-cell':''].filter(Boolean).join(' ');
+  return `<td class="${classes}">${formatDpsTableValue(value)}</td>`;
+}
+function buildPenanceDpsMatrix({difficulties, minPenance, maxPenance, currentPenance, round, previewOptions, tableClass}){
   const minDps=parseDpsTableMinDps();
   const currentDiff=vs('diff');
-  const currentPen=Math.max(DPS_TABLE_PENANCE_MIN, Math.min(DPS_TABLE_PENANCE_MAX, Math.round(v('penance'))));
-  const head=DPS_TABLE_DIFFICULTIES.map(d=>`<th class="${d===currentDiff?'dps-current-column':''}">${d}</th>`).join('');
+  const currentPen=Math.max(minPenance, Math.min(maxPenance, Math.round(currentPenance)));
+  const head=dpsTableColumnHeaderHtml(difficulties, currentDiff);
   const rows=[];
-  for(let pen=DPS_TABLE_PENANCE_MIN; pen<=DPS_TABLE_PENANCE_MAX; pen++){
+  for(let pen=minPenance; pen<=maxPenance; pen++){
     const rowCurrent=pen===currentPen;
-    const cells=DPS_TABLE_DIFFICULTIES.map(diff=>{
-      const value=dpsTablePreviewValue(diff, pen, round, {battleMode:'solo'});
-      const danger=minDps!==null && dpsTableRiskCompareValue(value)<=minDps;
-      const currentCell=rowCurrent && diff===currentDiff;
-      const classes=[danger?'dps-risk-cell':'', currentCell?'dps-current-cell':''].filter(Boolean).join(' ');
-      return `<td class="${classes}">${formatDpsTableValue(value)}</td>`;
+    const cells=difficulties.map(diff=>{
+      const value=dpsTablePreviewValue(diff, pen, round, previewOptions);
+      return dpsTableCellHtml(value, diff, rowCurrent, currentDiff, minDps);
     }).join('');
     rows.push(`<tr${rowCurrent?' class="dps-current-row"':''}><th>${pen}</th>${cells}</tr>`);
   }
-  return `<table class="dps-matrix dps-round-matrix"><thead><tr><th>고행</th>${head}</tr></thead><tbody>${rows.join('')}</tbody></table>`;
+  return `<table class="dps-matrix dps-round-matrix${tableClass ? ` ${tableClass}` : ''}"><thead><tr><th>고행</th>${head}</tr></thead><tbody>${rows.join('')}</tbody></table>`;
+}
+function buildDpsTable(round){
+  return buildPenanceDpsMatrix({
+    difficulties:DPS_TABLE_DIFFICULTIES,
+    minPenance:DPS_TABLE_PENANCE_MIN,
+    maxPenance:DPS_TABLE_PENANCE_MAX,
+    currentPenance:v('penance'),
+    round,
+    previewOptions:{battleMode:'solo'},
+    tableClass:''
+  });
 }
 function buildCoopDpsMatrix(players, round){
-  const minDps=parseDpsTableMinDps();
-  const currentDiff=vs('diff');
-  const currentPen=Math.max(COOP_DPS_TABLE_PENANCE_MIN, Math.min(COOP_DPS_TABLE_PENANCE_MAX, Math.round(v('penance'))));
-  const head=COOP_DPS_TABLE_DIFFICULTIES.map(diff=>`<th class="${diff===currentDiff?'dps-current-column':''}">${diff}</th>`).join('');
-  const rows=[];
-  for(let pen=COOP_DPS_TABLE_PENANCE_MIN; pen<=COOP_DPS_TABLE_PENANCE_MAX; pen++){
-    const rowCurrent=pen===currentPen;
-    const cells=COOP_DPS_TABLE_DIFFICULTIES.map(diff=>{
-      const value=dpsTablePreviewValue(diff, pen, round, {battleMode:'coop', coopPlayers:String(players)});
-      const danger=minDps!==null && dpsTableRiskCompareValue(value)<=minDps;
-      const currentCell=rowCurrent && diff===currentDiff;
-      const classes=[danger?'dps-risk-cell':'', currentCell?'dps-current-cell':''].filter(Boolean).join(' ');
-      return `<td class="${classes}">${formatDpsTableValue(value)}</td>`;
-    }).join('');
-    rows.push(`<tr${rowCurrent?' class="dps-current-row"':''}><th>${pen}</th>${cells}</tr>`);
-  }
-  return `<table class="dps-matrix dps-round-matrix dps-coop-matrix"><thead><tr><th>고행</th>${head}</tr></thead><tbody>${rows.join('')}</tbody></table>`;
+  return buildPenanceDpsMatrix({
+    difficulties:COOP_DPS_TABLE_DIFFICULTIES,
+    minPenance:COOP_DPS_TABLE_PENANCE_MIN,
+    maxPenance:COOP_DPS_TABLE_PENANCE_MAX,
+    currentPenance:v('penance'),
+    round,
+    previewOptions:{battleMode:'coop', coopPlayers:String(players)},
+    tableClass:'dps-coop-matrix'
+  });
 }
 function buildCoopDpsTable(round){
   return [2,3].map(players=>`
@@ -1978,26 +1987,41 @@ function buildExcelComparisonForSelectedBase(cells,specCells,zeroCells,fileName,
     applyStateObject(liveState);
   }
 }
+function prepareCompareSelectionRender(options={}){
+  compareState.lastResult=null;
+  if(!options.preserveRestore) clearCompareRestoreState();
+  return {
+    body:$('excelCompareBody'),
+    apply:$('excelCompareApplyBtn'),
+    reset:$('excelCompareResetBtn')
+  };
+}
+function renderCompareErrorMessage(message, controls, options={}){
+  if(controls?.apply) controls.apply.disabled=true;
+  if(controls?.reset) controls.reset.disabled=false;
+  if(controls?.body){
+    const html=escapeCompareHtml(message);
+    controls.body.innerHTML=`<div class="excel-compare-error">${options.highlightVersion ? html.replace('5.4392','<span class="excel-compare-version">5.4392</span>') : html}</div>`;
+  }
+  updateCompareActionButtons();
+}
+function renderCompareCaughtError(label, error, controls){
+  logAppError(label,error);
+  renderCompareErrorMessage(error?.message || String(error), controls);
+}
 function compareSelectedExcelSheet(options={}){
   if(!compareState.workbook) return;
   hydrateCompareControls();
   const sheetName=selectedExcelSheetName();
   if(!sheetName) return;
-  compareState.lastResult=null;
-  const body=$('excelCompareBody');
-  const apply=$('excelCompareApplyBtn');
-  const reset=$('excelCompareResetBtn');
-  if(!options.preserveRestore) clearCompareRestoreState();
+  const compareControls=prepareCompareSelectionRender(options);
   try{
     const cells=compareState.workbook.getCells(sheetName);
     const specCells=compareState.workbook.getCells('스펙');
     const zeroCells=getZeroScoreSheetCells(compareState.workbook);
     const additionalInfo=inspectSpecAdditionalStructure(specCells);
     if(!additionalInfo.valid){
-      if(apply) apply.disabled=true;
-      if(reset) reset.disabled=false;
-      if(body) body.innerHTML=`<div class="excel-compare-error">${escapeCompareHtml(additionalInfo.message).replace('5.4392','<span class="excel-compare-version">5.4392</span>')}</div>`;
-      updateCompareActionButtons();
+      renderCompareErrorMessage(additionalInfo.message, compareControls, {highlightVersion:true});
       return;
     }
     compareState.sourceType='excel';
@@ -2005,11 +2029,7 @@ function compareSelectedExcelSheet(options={}){
     renderExcelComparison(buildExcelComparisonForSelectedBase(cells,specCells,zeroCells,compareState.workbook.fileName,sheetName));
     updateCompareActionButtons();
   }catch(e){
-    logAppError('[Excel compare failed]',e);
-    if(apply) apply.disabled=true;
-    if(reset) reset.disabled=false;
-    if(body) body.innerHTML=`<div class="excel-compare-error">${escapeCompareHtml(e?.message||String(e))}</div>`;
-    updateCompareActionButtons();
+    renderCompareCaughtError('[Excel compare failed]',e,compareControls);
   }
 }
 function isTraitPresetCompareBundle(parsed){
@@ -3873,22 +3893,14 @@ function compareSelectedTraitPreset(options={}){
   hydrateCompareControls();
   const preset=selectedCompareTraitPreset();
   if(!preset) return;
-  compareState.lastResult=null;
-  const body=$('excelCompareBody');
-  const apply=$('excelCompareApplyBtn');
-  const reset=$('excelCompareResetBtn');
-  if(!options.preserveRestore) clearCompareRestoreState();
+  const compareControls=prepareCompareSelectionRender(options);
   try{
     compareState.sourceType='traitPreset';
     compareState.selectedSheetName=preset.id;
     renderTraitPresetComparison(preset);
     updateCompareActionButtons();
   }catch(e){
-    logAppError('[trait preset compare failed]',e);
-    if(apply) apply.disabled=true;
-    if(reset) reset.disabled=false;
-    if(body) body.innerHTML=`<div class="excel-compare-error">${escapeCompareHtml(e?.message||String(e))}</div>`;
-    updateCompareActionButtons();
+    renderCompareCaughtError('[trait preset compare failed]',e,compareControls);
   }
 }
 function compareTraitPreset(){
