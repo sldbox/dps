@@ -372,7 +372,7 @@ function bindDpsTableEvents(){
         <div class="notice-step-card">
           <h3>Abyss road / Deep Abyss</h3>
           <ul>
-            <li>침식 스텍과 침식 내성은 Abyss road, Deep Abyss에서 적용됩니다.</li>
+            <li>침식 스텍과 심연 내성은 Abyss road, Deep Abyss에서 적용됩니다.</li>
             <li>Abyss road는 고행 단계가 적용됩니다.</li>
             <li>Deep Abyss는 고행 단계가 적용되지 않습니다.</li>
             <li>Abyss road, Deep Abyss에서는 협동 DPS가 적용되지 않습니다.</li>

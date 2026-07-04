@@ -384,14 +384,22 @@ function lookupFloor(table, round){
   return last || table[0];
 }
 function isTowerDifficulty(value=vs('diff')){return difficultyName(value)===TOWER_DIFFICULTY_NAME;}
+function enemyUnitTableForDifficulty(){
+  if(isTowerDifficulty()) return TOWER_UNIT_TABLE;
+  return isAbyssDifficulty() ? ETERNAL_ENEMY_UNIT_TABLE : ENEMY_UNIT_TABLE;
+}
+function enemyArmorTableForDifficulty(){
+  return isTowerDifficulty() ? TOWER_ARMOR_TABLE : ENEMY_ARMOR_TABLE;
+}
+function enemyMaxRoundForDifficulty(){
+  return isTowerDifficulty() ? 90 : 300;
+}
 function enemyRoundData(round){
-  const maxRound=isTowerDifficulty()?90:300;
+  const maxRound=enemyMaxRoundForDifficulty();
   const r=Math.max(0,Math.min(maxRound,Math.round(+round||0)));
   if(r<=0) return {round:0,armor:0,unitRound:0,count:0,hp:0,shield:0};
-  const armorTable=isTowerDifficulty()?TOWER_ARMOR_TABLE:ENEMY_ARMOR_TABLE;
-  const unitTable=isTowerDifficulty()?TOWER_UNIT_TABLE:ENEMY_UNIT_TABLE;
-  const armorRow=lookupFloor(armorTable, r);
-  const unitRow=lookupFloor(unitTable, r);
+  const armorRow=lookupFloor(enemyArmorTableForDifficulty(), r);
+  const unitRow=lookupFloor(enemyUnitTableForDifficulty(), r);
   return {
     round:r,
     armor: armorRow && armorRow[0] <= r ? armorRow[1] : 0,
@@ -405,7 +413,7 @@ function enemyRoundCountTotal(round){
   if(isTowerDifficulty()) return enemyRoundData(round).count;
   const r=Math.max(0,Math.min(300,Math.round(+round||0)));
   if(r<=0) return 0;
-  return ENEMY_UNIT_TABLE.reduce((total,row)=>total+(row[0]<=r ? (+row[1]||0) : 0),0);
+  return enemyUnitTableForDifficulty().reduce((total,row)=>total+(row[0]<=r ? (+row[1]||0) : 0),0);
 }
 function enemyRoundDisplayCount(round){
   return enemyRoundData(round).count * battleEnemyCountMultiplier();
@@ -1099,7 +1107,9 @@ function getDpsContextValues(){
   const floorInt=normalizedTowerFloorNumber(challengeTowerFloorStoredValue());
   const towerActive=isTowerDifficulty();
   const diff=selectedControlText(diffEl);
-  const mode=isCoopMode() ? '협동' : '개인';
+  const battleMode=isCoopMode() ? '협동' : '개인';
+  const enemyMode=isAbyssDifficulty() ? '이터널' : '클래식';
+  const mode=`${battleMode}/${enemyMode}`;
   const penance=penValue>0 ? `${penValue} 고행` : '고행 없음';
   const roundValue=towerActive ? floorInt : roundInt;
   const round=towerActive ? `${floorInt}층` : `${roundInt} 라운드`;
