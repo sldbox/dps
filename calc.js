@@ -269,10 +269,10 @@ const TOWER_DIFFICULTY_NAME='도전의 탑';
 const ABYSS_DIFFICULTIES=new Set(['Abyss road','Deep Abyss']);
 const COOP_DISABLED_DIFFICULTIES=new Set([TOWER_DIFFICULTY_NAME,...ABYSS_DIFFICULTIES]);
 const SOLO_START_LOCK_DIFFICULTIES=new Set([TOWER_DIFFICULTY_NAME,'Deep Abyss']);
-const ENEMY_TABLE_MODES=Object.freeze({
-  classic:{label:'클래식',unitTable:ENEMY_UNIT_TABLE,armorTable:ENEMY_ARMOR_TABLE,maxRound:300,totalMode:'sum'},
-  eternal:{label:'이터널',unitTable:ETERNAL_ENEMY_UNIT_TABLE,armorTable:ENEMY_ARMOR_TABLE,maxRound:300,totalMode:'sum'},
-  tower:{label:'클래식',unitTable:TOWER_UNIT_TABLE,armorTable:TOWER_ARMOR_TABLE,maxRound:90,totalMode:'current'}
+const BATTLE_DATA_MODES=Object.freeze({
+  classic:{label:'클래식',unitTable:ENEMY_UNIT_TABLE,armorTable:ENEMY_ARMOR_TABLE,roundTimeTable:CLASSIC_ROUND_TIME_TABLE,maxRound:300,totalMode:'sum'},
+  eternal:{label:'이터널',unitTable:ETERNAL_ENEMY_UNIT_TABLE,armorTable:ENEMY_ARMOR_TABLE,roundTimeTable:ETERNAL_ROUND_TIME_TABLE,maxRound:300,totalMode:'sum'},
+  tower:{label:'클래식',unitTable:TOWER_UNIT_TABLE,armorTable:TOWER_ARMOR_TABLE,roundTimeTable:TOWER_TIME_TABLE,maxRound:90,totalMode:'current'}
 });
 function difficultyName(value=vs('diff')){return String(value || '').trim();}
 function isDifficultyIn(value, set){return set.has(difficultyName(value));}
@@ -389,25 +389,53 @@ function lookupFloor(table, round){
   return last || table[0];
 }
 function isTowerDifficulty(value=vs('diff')){return difficultyName(value)===TOWER_DIFFICULTY_NAME;}
-function enemyTableKeyForDifficulty(diffName=vs('diff')){
+function battleDataModeKeyForDifficulty(diffName=vs('diff')){
   if(isTowerDifficulty(diffName)) return 'tower';
   return isAbyssDifficulty(diffName) ? 'eternal' : 'classic';
 }
-function enemyTableModeForDifficulty(diffName=vs('diff')){
-  return ENEMY_TABLE_MODES[enemyTableKeyForDifficulty(diffName)] || ENEMY_TABLE_MODES.classic;
+function battleDataModeForDifficulty(diffName=vs('diff')){
+  return BATTLE_DATA_MODES[battleDataModeKeyForDifficulty(diffName)] || BATTLE_DATA_MODES.classic;
 }
-function enemyUnitTableForDifficulty(diffName=vs('diff')){return enemyTableModeForDifficulty(diffName).unitTable;}
-function enemyArmorTableForDifficulty(diffName=vs('diff')){return enemyTableModeForDifficulty(diffName).armorTable;}
-function enemyMaxRoundForDifficulty(diffName=vs('diff')){return enemyTableModeForDifficulty(diffName).maxRound;}
-function enemyDisplayModeLabel(diffName=vs('diff')){return enemyTableModeForDifficulty(diffName).label;}
+function enemyTableKeyForDifficulty(diffName=vs('diff')){return battleDataModeKeyForDifficulty(diffName);}
+function enemyTableModeForDifficulty(diffName=vs('diff')){return battleDataModeForDifficulty(diffName);}
+function enemyDisplayModeLabel(diffName=vs('diff')){return battleDataModeForDifficulty(diffName).label;}
+function normalizedBattleRound(round, mode, fallback=1, min=1){
+  const max=Number.isFinite(mode?.maxRound) ? mode.maxRound : 300;
+  return Math.max(min, Math.min(max, Math.round(+round || fallback)));
+}
+function tableRoundTime(table, round, fallback=60){
+  const row=lookupFloor(table, round);
+  const value=row ? Number(row[1]) : fallback;
+  return Number.isFinite(value) && value>0 ? value : fallback;
+}
+function towerRoundTimeBonus(){
+  const tdRp=Math.max(0, +INV[129] || 0);
+  const pierceRp=Math.max(0, +INV[130] || 0);
+  return Math.floor((tdRp + pierceRp) * 0.2);
+}
+function enemyRoundTime(round, diffName=vs('diff')){
+  const mode=battleDataModeForDifficulty(diffName);
+  const r=normalizedBattleRound(round, mode);
+  const base=tableRoundTime(mode.roundTimeTable, r);
+  return isTowerDifficulty(diffName) ? base + towerRoundTimeBonus() : base;
+}
+function roundTimeDpsScale(round, diffName=vs('diff')){
+  const time=enemyRoundTime(round, diffName);
+  const count=Math.max(1, enemyRoundDisplayCount(round));
+  return time / count;
+}
+function applyRoundTimeDpsScale(dps, round, diffName=vs('diff')){
+  const value=Number(dps);
+  return Number.isFinite(value) ? value * roundTimeDpsScale(round, diffName) : 0;
+}
 function battleModeLabel(){return isCoopMode() ? '협동' : '개인';}
 function dpsContextModeLabel(diffName=vs('diff')){return `${battleModeLabel()}/${enemyDisplayModeLabel(diffName)}`;}
 function enemyRoundData(round){
-  const maxRound=enemyMaxRoundForDifficulty();
-  const r=Math.max(0,Math.min(maxRound,Math.round(+round||0)));
+  const mode=battleDataModeForDifficulty();
+  const r=normalizedBattleRound(round, mode, 0, 0);
   if(r<=0) return {round:0,armor:0,unitRound:0,count:0,hp:0,shield:0};
-  const armorRow=lookupFloor(enemyArmorTableForDifficulty(), r);
-  const unitRow=lookupFloor(enemyUnitTableForDifficulty(), r);
+  const armorRow=lookupFloor(mode.armorTable, r);
+  const unitRow=lookupFloor(mode.unitTable, r);
   return {
     round:r,
     armor: armorRow && armorRow[0] <= r ? armorRow[1] : 0,
@@ -418,11 +446,11 @@ function enemyRoundData(round){
   };
 }
 function enemyRoundCountTotal(round){
-  const tableMode=enemyTableModeForDifficulty();
-  if(tableMode.totalMode==='current') return enemyRoundData(round).count;
-  const r=Math.max(0,Math.min(tableMode.maxRound,Math.round(+round||0)));
+  const mode=battleDataModeForDifficulty();
+  if(mode.totalMode==='current') return enemyRoundData(round).count;
+  const r=normalizedBattleRound(round, mode, 0, 0);
   if(r<=0) return 0;
-  return tableMode.unitTable.reduce((total,row)=>total+(row[0]<=r ? (+row[1]||0) : 0),0);
+  return mode.unitTable.reduce((total,row)=>total+(row[0]<=r ? (+row[1]||0) : 0),0);
 }
 function enemyRoundDisplayCount(round){
   return enemyRoundData(round).count * battleEnemyCountMultiplier();
@@ -435,10 +463,8 @@ function enemyDisplayCountText(round){
   return `${fullNumber(enemyRoundDisplayCount(round))} / ${fullNumber(enemyTotalDisplayCount(round))}`;
 }
 
-function towerClearTime(floor){
-  const row=lookupFloor(TOWER_TIME_TABLE, Math.max(1, Math.round(+floor||1)));
-  const value=row ? Number(row[1]) : 60;
-  return Number.isFinite(value) && value>0 ? value : 60;
+function towerBaseClearTime(floor){
+  return tableRoundTime(TOWER_TIME_TABLE, normalizedBattleRound(floor, BATTLE_DATA_MODES.tower));
 }
 function towerFloorEnemyData(floor){
   const r=Math.max(1, Math.min(90, Math.round(+floor||1)));
@@ -458,7 +484,7 @@ function towerBurdenScore(floor, displayHR, displaySR){
   const hpRemain=Math.max(0, (enemy.hp||0) * (1 - Math.max(0, displayHR||0)/100));
   const shieldRemain=Math.max(0, (enemy.shield||0) * (1 - Math.max(0, displaySR||0)/100));
   const durability=Math.max(1, hpRemain + shieldRemain);
-  return Math.max(1, enemy.count * durability / towerClearTime(enemy.round));
+  return Math.max(1, enemy.count * durability / towerBaseClearTime(enemy.round));
 }
 function towerDpsDisplayMultiplier(floor, displayHR, displaySR){
   const r=Math.max(1, Math.min(90, Math.round(+floor||1)));
@@ -709,7 +735,10 @@ function computeStatsRaw(){
   const dt=personalUaDtMultiplier();
   const gradeAs=UNIT_GRADE_AS[activeUnitGrade()] ?? 0;
   const AB6=(1+(M7+upperStats.actualAs+gradeAs)/100)*(1-diff.as/100)*M13*dt;
-  const M19=(AB3*AB4*AB5*AB6) * contentDpsDisplayMultiplier(vs('diff'), targetRound, displayHR, displaySR);
+  const rawM19=(AB3*AB4*AB5*AB6) * contentDpsDisplayMultiplier(vs('diff'), targetRound, displayHR, displaySR);
+  const roundTime=enemyRoundTime(targetRound);
+  const roundTimeScale=roundTimeDpsScale(targetRound);
+  const M19=rawM19 * roundTimeScale;
   let spU=0,spO=0,epU=0,rpU=0,soulU=0;
   TRAITS.forEach(t=>{
     const row=t[0];
@@ -727,7 +756,7 @@ function computeStatsRaw(){
                   + (checkboxOn('unitUniqueBuff', true) ? 20 : 0) + (v('unitLevel') || 11) * 5;
   const actualSR = displaySR * shieldRatio;
   const actualHR = displayHR * hpRatio;
-  return {M4,M7,M8,M9,M10,M11,M12,actualM12,M13,M16,M17,M18,M19,rawCD,rawTD,diff,
+  return {M4,M7,M8,M9,M10,M11,M12,actualM12,M13,M16,M17,M18,M19,rawM19,roundTime,roundTimeScale,rawCD,rawTD,diff,
           displayAD,displayAPS,displayAPU,actualAPU,displayUA,displaySR,displayHR,actualSR,actualHR,
           spTotal:spU+spO,spU,spO,epU,rpU,soulU,spBank:spBankRawBonus(),spBankApplied:isSpBankApplied(),effectiveSP:effectiveSP(),excelPierce,enemyData};
 }
@@ -762,9 +791,15 @@ function calculateArtifactDpsRaw(stats=computeStatsRaw()){
   const critMultiplier=dps2(stats.M8||0, stats.M10||0, stats.M9||0, stats.M16||0, stats.M17||0, stats.M18||0, 1);
   const uaMultiplier=(1 - (stats.diff?.as||0) / 100) * (stats.M13||0) * artifactEnergyRegenMultiplier() * personalUaDtMultiplier();
   const displayMultiplier=contentDpsDisplayMultiplier(vs('diff'), ctx.targetRound, stats.displayHR||0, stats.displaySR||0);
-  const artifactDps=dps0Part * flowerMultiplier * adTdMultiplier * critMultiplier * uaMultiplier * displayMultiplier;
+  const rawArtifactDps=dps0Part * flowerMultiplier * adTdMultiplier * critMultiplier * uaMultiplier * displayMultiplier;
+  const roundTime=enemyRoundTime(ctx.targetRound);
+  const roundTimeScale=roundTimeDpsScale(ctx.targetRound);
+  const artifactDps=rawArtifactDps * roundTimeScale;
   return {
     dps:Number.isFinite(artifactDps) ? artifactDps : 0,
+    rawDps:Number.isFinite(rawArtifactDps) ? rawArtifactDps : 0,
+    roundTime,
+    roundTimeScale,
     dps0:dps0Part,
     flowerMultiplier,
     adTdMultiplier,
@@ -1770,9 +1805,14 @@ window.DPS_CALC=Object.freeze({
   battleEnemyCountMultiplier,
   currentPenanceMax,
   shouldIgnorePenanceForDifficulty,
+  battleDataModeKeyForDifficulty,
+  battleDataModeForDifficulty,
   enemyTableKeyForDifficulty,
   enemyTableModeForDifficulty,
   enemyDisplayModeLabel,
+  enemyRoundTime,
+  roundTimeDpsScale,
+  applyRoundTimeDpsScale,
   battleModeLabel,
   dpsContextModeLabel,
   penanceStoredValue,

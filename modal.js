@@ -212,14 +212,28 @@ function bindDpsTableEvents(){
       level: 'info',
       html: `
         <div class="notice-version-labels" role="tablist" aria-label="패치노트 버전 선택">
-          <button type="button" class="notice-version-label active" data-notice-version-label="v105" aria-selected="true">V 1.0.5</button>
+          <button type="button" class="notice-version-label active" data-notice-version-label="v106" aria-selected="true">V 1.0.6</button>
+          <button type="button" class="notice-version-label" data-notice-version-label="v105" aria-selected="false">V 1.0.5</button>
           <button type="button" class="notice-version-label" data-notice-version-label="v104" aria-selected="false">V 1.0.4</button>
           <button type="button" class="notice-version-label" data-notice-version-label="v103" aria-selected="false">V 1.0.3</button>
           <button type="button" class="notice-version-label" data-notice-version-label="v102" aria-selected="false">V 1.0.2</button>
           <button type="button" class="notice-version-label" data-notice-version-label="v101" aria-selected="false">V 1.0.1</button>
         </div>
         <div class="notice-version-panels">
-          <section class="notice-version-panel active" data-notice-version-panel="v105">
+          <section class="notice-version-panel active" data-notice-version-panel="v106">
+            <header class="notice-version-head"><h3>V 1.0.6</h3><p>2026.07.04</p></header>
+            <div class="notice-step-card"><h3>DPS 계산 기준 변경</h3><ul>
+              <li>웹 DPS 계산에 라운드 시간과 현재 라운드 물량을 반영하도록 변경했습니다.</li>
+              <li>일반 난이도는 클래식 라운드 시간, Abyss road / Deep Abyss는 이터널 라운드 시간을 사용합니다.</li>
+              <li>DPS표와 유물 DPS표도 동일한 기준으로 계산됩니다.</li>
+              <li>도전의 탑은 층별 기본 제한 시간에 총 데미지 RP와 방어력 관통 RP로 늘어나는 추가 시간을 함께 반영합니다.</li>
+              <li>웹 DPS는 엑셀의 단순 스탯 기반 DPS와 다를 수 있습니다.</li>
+            </ul></div>
+            <div class="notice-step-card"><h3>안내</h3><ul>
+              <li>DPS는 적정보와 라운드 시간을 반영하지만, 실제 유닛 배치, 스킬 사용, 빌드 구성까지 보장하지는 않습니다.</li>
+            </ul></div>
+          </section>
+          <section class="notice-version-panel" data-notice-version-panel="v105" hidden>
             <header class="notice-version-head"><h3>V 1.0.5</h3><p>2026.07.03</p></header>
             <div class="notice-step-card"><h3>기본정보 안내 개선</h3><ul>
               <li>총 SP 입력 위치를 바로 찾을 수 있도록 총 SP 아래에 안내 문구와 위쪽 화살표를 추가했습니다.</li>
@@ -333,21 +347,24 @@ function bindDpsTableEvents(){
       html: `
         <div class="notice-hero-card notice-hero-note">
           <span class="notice-hero-label">참고사항</span>
-          <strong>모드마다 적용되는 DPS 계산 기준이 다릅니다.</strong>
-          <p>실제 DPS 계산은 현재 선택한 모드 기준으로 처리됩니다.</p>
+          <strong>DPS는 현재 선택한 난이도, 모드, 라운드의 적정보와 라운드 시간을 함께 반영하여 계산합니다.</strong>
+          <p>웹 DPS는 엑셀의 단순 스탯 기반 DPS와 다를 수 있습니다.</p>
         </div>
         <div class="notice-step-card">
           <h3>먼저 알아둘 점</h3>
           <ul>
             <li>현재 모드에서 쓰지 않는 항목은 DPS 계산에 반영되지 않습니다.</li>
-            <li>유물 DPS 스위치는 데미지 보드와 DPS표의 표시 기준만 바꾸며, 실제 유물 체크값·저장값·기본 DPS 계산값은 변경하지 않습니다.</li>
+            <li>웹 DPS는 기존 스탯 기반 DPS에 현재 라운드 시간과 현재 라운드 물량을 반영한 기준입니다.</li>
+            <li>DPS표와 유물 DPS표도 같은 기준으로 계산됩니다.</li>
+            <li>유물 DPS 스위치는 데미지 보드와 DPS표를 유물 기준으로 전환합니다. 기본 DPS와 유물 DPS 모두 현재 라운드의 적정보와 라운드 시간을 반영합니다.</li>
           </ul>
         </div>
         <div class="notice-step-card">
           <h3>개인전</h3>
           <ul>
             <li>내가 입력한 스펙, 특성, 룬, 인첸트 값을 기준으로 계산합니다.</li>
-            <li>적 물량은 1배 기준으로 계산합니다.</li>
+            <li>일반 난이도는 클래식 적정보와 클래식 라운드 시간을 사용합니다.</li>
+            <li>적 물량은 개인 1배 기준으로 계산합니다.</li>
           </ul>
         </div>
         <div class="notice-step-card">
@@ -355,6 +372,7 @@ function bindDpsTableEvents(){
           <ul>
             <li>협동 가능한 난이도에서만 협동 DPS로 계산합니다.</li>
             <li>협동 DPS표는 2인/3인 적 물량을 기준으로 계산합니다.</li>
+            <li>라운드 시간은 해당 난이도와 라운드의 클래식 라운드 시간을 사용합니다.</li>
             <li>2P, 3P의 스펙은 따로 입력받지 않고 모두 0으로 계산합니다.</li>
             <li>도전의 탑, Abyss road, Deep Abyss에서는 협동 DPS가 적용되지 않습니다.</li>
           </ul>
@@ -364,19 +382,28 @@ function bindDpsTableEvents(){
           <ul>
             <li>도전의 탑은 목표 라운드가 아니라 도전의탑 층수로 계산합니다.</li>
             <li>고행 단계와 목표 라운드는 저장되지만, 도전의 탑 DPS에는 적용되지 않습니다.</li>
+            <li>층별 적 체력, 실드, 물량, 제한 시간을 반영합니다.</li>
+            <li>총 데미지 RP와 방어력 관통 RP 투자량 합계에 따라 늘어나는 추가 시간도 함께 반영합니다.</li>
+            <li>예: 총 데미지 RP 20, 방어력 관통 RP 20이면 제한 시간이 총 8초 증가합니다.</li>
             <li>1층~80층은 정해진 기준값으로 계산합니다.</li>
             <li>81층~90층은 별도 기준값으로 계산합니다.</li>
-            <li>층별 적 체력, 실드, 물량 기준을 반영합니다.</li>
           </ul>
         </div>
         <div class="notice-step-card">
           <h3>Abyss road / Deep Abyss</h3>
           <ul>
+            <li>Abyss road와 Deep Abyss는 이터널 적정보와 이터널 라운드 시간을 사용합니다.</li>
             <li>침식 스텍과 심연 내성은 Abyss road, Deep Abyss에서 적용됩니다.</li>
             <li>Abyss road는 고행 단계가 적용됩니다.</li>
             <li>Deep Abyss는 고행 단계가 적용되지 않습니다.</li>
             <li>Abyss road, Deep Abyss에서는 협동 DPS가 적용되지 않습니다.</li>
             <li>Deep Abyss에서는 출발 지원 인원수로 늘어나는 팀 특성 배율이 적용되지 않습니다.</li>
+          </ul>
+        </div>
+        <div class="notice-step-card">
+          <h3>계산값 해석</h3>
+          <ul>
+            <li>DPS는 적정보와 라운드 시간을 반영하지만, 실제 유닛 배치, 스킬 사용, 빌드 구성까지 보장하지는 않습니다.</li>
           </ul>
         </div>
       `,

@@ -1400,7 +1400,7 @@ function buildExcelComparison(cells, specCells, zeroCells, fileName, sheetName){
   const buffRows=buildExcelBuffRows(cells,specCells);
   const traitRows=buildExcelTraitRows(cells);
   const zeroRows=buildZeroScoreCompareRows(zeroCells);
-  const dpsRow=buildCompareNumberRow('DPS','기본 DPS',cells.M19,stats.M19);
+  const dpsRow=buildCompareNumberRow('DPS','웹 기준 DPS',cells.M19,stats.M19);
   return {
     fileName,
     sheetName,
@@ -1849,7 +1849,7 @@ function buildJsonComparison(changeState,options={}){
   const effectiveChangeState={...changeSnapshot.state,fileName:changeState.fileName || changeSnapshot.state.fileName,sheetName:changeState.sheetName || changeSnapshot.state.sheetName};
   const changeStats=changeSnapshot.stats;
   const dpsCompare=compareNumber(changeStats.M19,currentStats.M19);
-  const dpsRow=buildCompareNumberRow('DPS','기본 DPS',changeStats.M19,currentStats.M19);
+  const dpsRow=buildCompareNumberRow('DPS','웹 기준 DPS',changeStats.M19,currentStats.M19);
   const inputRows=buildSavedValueCompareRows(effectiveChangeState,currentState,{onlyDiffs:false});
   const enchantRows=buildEnchantCompareRows(enchantCompareCodeFromValues(effectiveChangeState.values),enchantCompareCodeFromValues(currentState.values));
   const statRows=buildStateStatRows(changeStats,currentStats);
