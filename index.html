@@ -5,18 +5,18 @@
 <meta name="google-site-verification" content="RTuDWbMdnKgbpRpl05eXh9epFwWRSxju4NOl8OtjMsI" />
 <!-- 00. 빌드 버전 / 캐시 무효화 / 원격 이미지 경로 -->
 <script>
-window.APP_VERSION = "dps-2607050300";
-window.DPS_BUILD_VERSION = "dps-2607050300";
+window.APP_VERSION = "dps-2607051500";
+window.DPS_BUILD_VERSION = "dps-2607051500";
 window.DPS_PREVIEW_FRESH = new URLSearchParams(window.location.search).get('fresh') || '';
 window.DPS_ASSET_VERSIONS = {
-  "data.js": "dps-2607050300",
-  "calc.js": "dps-2607050300",
-  "app.js": "dps-2607050300",
-  "modal.js": "dps-2607050300",
-  "responsive.js": "dps-2607050300",
-  "style.css": "dps-2607050300",
-  "icon.png": "dps-2607050300",
-  "logo.png": "dps-2607050300"
+  "data.js": "dps-2607051500",
+  "calc.js": "dps-2607051500",
+  "app.js": "dps-2607051500",
+  "modal.js": "dps-2607051500",
+  "responsive.js": "dps-2607051500",
+  "style.css": "dps-2607051500",
+  "icon.png": "dps-2607051500",
+  "logo.png": "dps-2607051500"
 };
 window.dpsAssetVersion = function(key){
   var versions = window.DPS_ASSET_VERSIONS || {};
@@ -191,14 +191,14 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 <meta content="https://sldbox.github.io/dps/" property="og:url"/>
 <meta content="개복디 특성 계산기" property="og:title"/>
 <meta content="특성 투자, 재화 사용량, 표기 스탯, 총데미지, DPS를 한 번에 계산할 수 있는 개복디 전용 계산기입니다." property="og:description"/>
-<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2607050300" property="og:image"/>
-<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2607050300" property="og:image:secure_url"/>
+<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2607051500" property="og:image"/>
+<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2607051500" property="og:image:secure_url"/>
 <meta content="image/png" property="og:image:type"/>
 <meta content="개복디 특성 계산기 로고" property="og:image:alt"/>
 <meta content="summary_large_image" name="twitter:card"/>
 <meta content="개복디 특성 계산기" name="twitter:title"/>
 <meta content="특성 투자, 재화 사용량, 표기 스탯, 총데미지, DPS를 한 번에 계산할 수 있는 개복디 전용 계산기입니다." name="twitter:description"/>
-<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2607050300" name="twitter:image"/>
+<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2607051500" name="twitter:image"/>
 <meta content="개복디 특성 계산기 로고" name="twitter:image:alt"/>
 <link href="https://cdn.jsdelivr.net" rel="preconnect"/>
 <link crossorigin="" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" rel="stylesheet"/>
@@ -318,9 +318,9 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 <div class="basic-info-row manual-resource" data-basic-row="owned-soul"><label for="soul">본인 심연의혼</label><input class="money-input" id="soul" inputmode="numeric" type="text" value="0"/></div>
 <div class="basic-info-row readonly-resource" data-basic-row="used-soul"><label>사용한 심연의혼</label><b id="soulUsedBasicView">0</b></div>
 <div class="basic-info-row readonly-resource" data-basic-row="remain-soul"><label>남은 심연의혼</label><b id="soulRemainBasicView">0</b></div>
-<div class="basic-info-row manual-resource" data-basic-row="coral-shard"><label for="coralShard">코랄의 파편</label><input class="shard-input" id="coralShard" inputmode="numeric" type="text" value="0" maxlength="4"/></div>
-<div class="basic-info-row manual-resource" data-basic-row="aiur-shard"><label for="aiurShard">아이어의 파편</label><input class="shard-input" id="aiurShard" inputmode="numeric" type="text" value="0" maxlength="4"/></div>
-<div class="basic-info-row manual-resource" data-basic-row="xerus-shard"><label for="xerusShard">제루스의 파편</label><input class="shard-input" id="xerusShard" inputmode="numeric" type="text" value="0" maxlength="4"/></div>
+<div class="basic-info-row manual-resource" data-basic-row="coral-shard"><label for="coralShard">코랄의 파편</label><input class="money-input shard-input" id="coralShard" inputmode="numeric" max="9999" min="0" type="text" value="0"/></div>
+<div class="basic-info-row manual-resource" data-basic-row="aiur-shard"><label for="aiurShard">아이어의 파편</label><input class="money-input shard-input" id="aiurShard" inputmode="numeric" max="9999" min="0" type="text" value="0"/></div>
+<div class="basic-info-row manual-resource" data-basic-row="xerus-shard"><label for="xerusShard">제루스의 파편</label><input class="money-input shard-input" id="xerusShard" inputmode="numeric" max="9999" min="0" type="text" value="0"/></div>
 <input id="ep" type="hidden" value="0"/>
 </div>
 <div class="xp-sp-panel basic-info-panel" data-basic-info-side="right">
@@ -347,6 +347,8 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 <input id="dt" type="hidden" value="ON"/>
 <div class="basic-info-row" data-basic-row="erosion-stack"><label for="erosionStack">침식 스텍</label><input id="erosionStack" data-erosion-value="500" type="text" value="500" inputmode="numeric"/></div>
 <div class="basic-info-row" data-basic-row="erosion-resist"><label for="jewelErosionRes">심연 내성</label><input id="jewelErosionRes" data-erosion-value="30" type="text" value="30" inputmode="numeric"/></div>
+<div class="basic-info-row" data-basic-row="coop-passenger-2-defense-reduce"><label for="coopPassenger2Dr">승객 2P 방어력 감소</label><select id="coopPassenger2Dr"><option selected="" value="0">0</option><option value="15">15</option><option value="25">25</option><option value="50">50</option><option value="60">60</option></select></div>
+<div class="basic-info-row" data-basic-row="coop-passenger-3-defense-reduce"><label for="coopPassenger3Dr">승객 3P 방어력 감소</label><select id="coopPassenger3Dr"><option selected="" value="0">0</option><option value="15">15</option><option value="25">25</option><option value="50">50</option><option value="60">60</option></select></div>
 </div>
 </div>
  </div>

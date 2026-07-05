@@ -1166,13 +1166,12 @@ body.is-mobile .trait-efficiency-head{font-size:calc(9.4px * var(--app-font-scal
 body.is-mobile .trait-efficiency-row{min-height:27px;padding:2px;font-size:calc(9.6px * var(--app-font-scale));}
 body.is-mobile .trait-efficiency-row .mini-btn.master.trait-eff-apply{height:23px;min-height:23px;padding:0 3px;font-size:calc(9.3px * var(--app-font-scale));cursor:pointer;}
 }
-/* 10-1. 기본정보 좌측/우측 패널: 행 높이·입력/읽기전용 역할 통합 */
 body .xp-sp-card .xp-sp-split.basic-info-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px;align-items:start;width:100%;margin:0;padding:0;}
 body .xp-sp-card .basic-info-panel{display:grid;grid-template-columns:1fr;gap:7px;min-width:0;width:100%;margin:0;padding:0;background:transparent;border:0;border-radius:0;box-shadow:none;}
 body .xp-sp-card .basic-info-row{display:grid;grid-template-columns:minmax(96px,.74fr) minmax(0,1.55fr);gap:8px;align-items:center;min-width:0;width:100%;margin:0;padding:0;border:0;border-radius:0;background:transparent;box-shadow:none;}
-body .xp-sp-card .basic-info-row > label{display:flex;align-items:center;justify-content:center;width:100%;min-width:0;min-height:31px;height:31px;padding:0 8px;box-sizing:border-box;border:1px solid var(--ui-line-strong,#3a4d67);border-left-color:var(--ui-line-strong,#3a4d67);border-radius:var(--ui-control-radius);background:var(--role-label-bg,#172235);background-image:none;color:var(--color-text-main);box-shadow:none;text-shadow:none;font-size:calc(11px * var(--app-font-scale));font-weight:900;line-height:1;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-body .xp-sp-card .basic-info-row > input:not([type="hidden"]), body .xp-sp-card .basic-info-row > select, body .xp-sp-card .basic-info-row > button, body .xp-sp-card .basic-info-row > b{display:flex;align-items:center;justify-content:center;width:100%;min-width:0;min-height:31px;height:31px;margin:0;padding:0 10px;box-sizing:border-box;border:1px solid var(--role-interactive-bd,#3c6fb6);border-radius:var(--ui-control-radius);background:var(--role-interactive-bg,#10233d);background-image:none;color:var(--color-slate-900);font-weight:900;box-shadow:inset 0 1px 2px rgba(32,57,91,.035);outline:0;transform:none;filter:none;font-size:calc(11.5px * var(--app-font-scale));line-height:1;text-align:center;text-align-last:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-shadow:none;}
-body .xp-sp-card .basic-info-row > b, body .xp-sp-card .basic-info-row.readonly-resource > b{border-color:var(--role-readonly-bd,#344966);background:var(--role-readonly-bg,transparent);color:var(--color-text-main);box-shadow:none;font-family:Consolas,monospace;}
+body .xp-sp-card .basic-info-row > label{display:flex;align-items:center;justify-content:center;width:100%;min-width:0;min-height:31px;height:31px;padding:0 8px;box-sizing:border-box;border-radius:var(--ui-control-radius);font-size:calc(11px * var(--app-font-scale));font-weight:900;line-height:1;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+body .xp-sp-card .basic-info-row > input:not([type="hidden"]), body .xp-sp-card .basic-info-row > select, body .xp-sp-card .basic-info-row > button, body .xp-sp-card .basic-info-row > b{display:flex;align-items:center;justify-content:center;width:100%;min-width:0;min-height:31px;height:31px;margin:0;padding:0 10px;box-sizing:border-box;border:1px solid var(--role-interactive-bd,#3c6fb6);border-radius:var(--ui-control-radius);background-image:none;outline:0;transform:none;filter:none;font-size:calc(11.5px * var(--app-font-scale));font-weight:900;line-height:1;text-align:center;text-align-last:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-shadow:none;}
+body .xp-sp-card .basic-info-row > b, body .xp-sp-card .basic-info-row.readonly-resource > b{border-color:var(--role-readonly-bd,#344966);background:var(--role-readonly-bg,transparent);color:var(--color-text-main);font-family:Consolas,monospace;}
 
 body .xp-sp-card .basic-sp-help{display:flex;align-items:center;justify-content:center;gap:4px;width:100%;min-width:0;min-height:31px;height:31px;margin:0;padding:0 8px;box-sizing:border-box;border:1px solid var(--tone-warn-border,#d99030);border-radius:var(--ui-control-radius);background:var(--tone-warn-bg,#241b0a);color:var(--tone-warn-text,#f6c77a);font-size:clamp(8px,1.45vw,11px);font-weight:900;line-height:1;letter-spacing:-.04em;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:clip;}
 body .xp-sp-card .basic-sp-help-icon{display:flex;align-items:center;justify-content:center;flex:0 0 auto;width:12px;height:12px;}
@@ -1340,6 +1339,7 @@ body.is-mobile .zero-calc-table .zero-star-toggle:disabled{border-color:var(--ro
 .zero-calc-table .zero-honor-input::placeholder{color:#5b6b82;font-size:calc(9px * var(--app-font-scale));text-transform:none;}
 .zero-calc-table .zero-honor-input:focus{--ui-field-current-border:var(--ui-field-focus-border);outline:none;background:var(--color-white);box-shadow:var(--ui-field-focus-shadow);}
 /* ===== 12. 공통 입력·라벨 정렬 / 모바일 참고 패널 ===== */
+body .xp-sp-card .basic-info-row > label,
 body .trait-limit-grid label span,
 body .clean-rune-card .rune-stat-row > label,
 body .clean-rune-card .rune-option-grid > label,
@@ -1347,6 +1347,9 @@ body .clean-rune-card .additional-row > label,
 body .clean-rune-card .enchant-result-label > span,
 body .final-damage-card .skill-ir > label,
 body .bus-cut-card .mini-table tbody td:first-child{border:1px solid var(--ui-line-strong,#3a4d67);border-left-color:var(--ui-line-strong,#3a4d67);background:var(--role-label-bg,#172235);background-image:none;color:var(--color-text-main);box-shadow:none;text-shadow:none;}
+body .xp-sp-card .basic-info-row > input:not([type="hidden"]),
+body .xp-sp-card .basic-info-row > select,
+body .xp-sp-card .basic-info-row > button,
 body .trait-limit-grid input,
 body .trait-limit-grid select,
 body .trait-group .tv-input,
@@ -1358,6 +1361,7 @@ body .clean-rune-card .additional-row input:not([type="hidden"]),
 body .clean-rune-card .enchant-combined-row input:not([type="hidden"]),
 body .final-damage-card .skill-ir input:not([type="hidden"]),
 body .final-damage-card .skill-ir select:not(:disabled){border:1px solid var(--role-interactive-bd,#3c6fb6);border-radius:var(--ui-control-radius);background:var(--role-interactive-bg,#10233d);background-image:none;color:var(--color-slate-900);font-weight:900;box-shadow:inset 0 1px 2px rgba(32,57,91,.035);text-shadow:none;}
+body .xp-sp-card .basic-info-row > b,
 body .clean-rune-card .enchant-result-value,
 body .trait-limit-grid input.trait-limit-unlimited,
 body .stat-row .sc-val,
@@ -1366,6 +1370,40 @@ body .enchant-combined-row b,
 body input[readonly],
 body input:disabled,
 body select:disabled{border-color:var(--role-readonly-bd,#3a4c66);background:var(--role-readonly-bg,transparent);color:var(--color-text-main);box-shadow:none;}
+body .col-left .sg.xp-sp-card .basic-info-row > label,
+body.is-tabbed .mobile-page > .sg.xp-sp-card .basic-info-row > label,
+body .col-work .col-right .trait-limit-grid label span,
+body.is-tabbed .mobile-page .trait-limit-grid label span,
+body .col-work .col-left .clean-rune-card .rune-stat-row > label,
+body .col-work .col-left .clean-rune-card .rune-option-grid > label,
+body .col-work .col-left .clean-rune-card .additional-row > label,
+body .col-work .col-left .clean-rune-card .enchant-result-label > span,
+body.is-tabbed .mobile-page .clean-rune-card .rune-stat-row > label,
+body.is-tabbed .mobile-page .clean-rune-card .rune-option-grid > label,
+body.is-tabbed .mobile-page .clean-rune-card .additional-row > label,
+body.is-tabbed .mobile-page .clean-rune-card .enchant-result-label > span{border-color:var(--ui-line-strong,#3a4d67);border-left-color:var(--ui-line-strong,#3a4d67);background:var(--role-label-bg,#172235);background-image:none;color:var(--color-text-main);box-shadow:none;text-shadow:none;}
+body .col-left .sg.xp-sp-card .basic-info-row > input:not([type="hidden"]):not([readonly]):not(:disabled),
+body .col-left .sg.xp-sp-card .basic-info-row > select:not(:disabled),
+body.is-tabbed .mobile-page > .sg.xp-sp-card .basic-info-row > input:not([type="hidden"]):not([readonly]):not(:disabled),
+body.is-tabbed .mobile-page > .sg.xp-sp-card .basic-info-row > select:not(:disabled),
+body .col-work .col-right .trait-limit-grid input:not([type="hidden"]):not([readonly]):not(:disabled),
+body .col-work .col-right .trait-limit-grid select:not(:disabled),
+body .col-work .col-right .trait-group .tv-input:not([type="hidden"]):not([readonly]):not(:disabled),
+body .col-work .col-right .trait-group .trait-value-pair input:not([type="hidden"]):not([readonly]):not(:disabled),
+body .col-work .col-left .clean-rune-card .rune-stat-row input:not([type="hidden"]):not([readonly]):not(:disabled),
+body .col-work .col-left .clean-rune-card .rune-stat-row select:not(:disabled),
+body .col-work .col-left .clean-rune-card .rune-option-grid select:not(:disabled),
+body .col-work .col-left .clean-rune-card .additional-row input:not([type="hidden"]):not([readonly]):not(:disabled),
+body .col-work .col-left .clean-rune-card .enchant-combined-row input:not([type="hidden"]):not([readonly]):not(:disabled),
+body.is-tabbed .mobile-page .trait-limit-grid input:not([type="hidden"]):not([readonly]):not(:disabled),
+body.is-tabbed .mobile-page .trait-limit-grid select:not(:disabled),
+body.is-tabbed .mobile-page .trait-group .tv-input:not([type="hidden"]):not([readonly]):not(:disabled),
+body.is-tabbed .mobile-page .trait-group .trait-value-pair input:not([type="hidden"]):not([readonly]):not(:disabled),
+body.is-tabbed .mobile-page .clean-rune-card .rune-stat-row input:not([type="hidden"]):not([readonly]):not(:disabled),
+body.is-tabbed .mobile-page .clean-rune-card .rune-stat-row select:not(:disabled),
+body.is-tabbed .mobile-page .clean-rune-card .rune-option-grid select:not(:disabled),
+body.is-tabbed .mobile-page .clean-rune-card .additional-row input:not([type="hidden"]):not([readonly]):not(:disabled),
+body.is-tabbed .mobile-page .clean-rune-card .enchant-combined-row input:not([type="hidden"]):not([readonly]):not(:disabled){border-color:var(--role-interactive-bd,#3c6fb6);border-radius:var(--ui-control-radius);background:var(--role-interactive-bg,#10233d);background-image:none;color:var(--color-slate-900);font-weight:900;box-shadow:inset 0 1px 2px rgba(32,57,91,.035);text-shadow:none;}
 body:not(.is-mobile) .zero-benefit-list,
 body.is-tablet .zero-benefit-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;}
 body.is-mobile .zero-benefit-list,
@@ -1423,7 +1461,7 @@ body.notice-modal-open .notice-modal-shell{align-items:flex-start;}
 .notice-modal-close{width:32px;height:32px;flex:0 0 auto;border:1px solid #3a4d67;border-radius:10px;background:#111a28;color:#d7e4f3;font-size:calc(18px * var(--app-font-scale));font-weight:900;line-height:1;cursor:pointer;}
 .notice-modal-close:hover{border-color:var(--ui-button-hover-border);background:var(--ui-button-hover-bg);color:var(--ui-button-hover-text);}
 .notice-modal-body{display:flex;min-height:0;flex-direction:column;padding:12px;overflow:auto;background:linear-gradient(180deg,#0b111c 0%,#0f1724 100%);}
-.notice-tabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;margin-bottom:10px;}
+.notice-tabs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin-bottom:10px;}
 .notice-tab{height:44px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:0 7px;border:1px solid #2a3b56;border-radius:12px;background:#111a28;color:#d7e4f3;font:inherit;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;box-shadow:inset 0 1px 0 rgba(255,255,255,.05);}
 .notice-tab span{display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;font-size:calc(11.5px * var(--app-font-scale));font-weight:1000;line-height:1;}
 .notice-tab small{display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;color:#93a4b9;font-size:calc(9px * var(--app-font-scale));font-weight:900;line-height:1;}
@@ -1438,23 +1476,11 @@ body.notice-modal-open .notice-modal-shell{align-items:flex-start;}
 .notice-content-body b{color:#f8fbff;}
 .notice-hero-card{display:grid;gap:6px;padding:2px 0 8px;border:0;border-radius:0;background:transparent;}
 .notice-hero-card strong{color:#f8fbff;font-size:calc(13px * var(--app-font-scale));font-weight:1000;line-height:1.25;}
-.notice-hero-card p{color:#b8c7dc;font-size:calc(11px * var(--app-font-scale));font-weight:800;line-height:1.45;}
 .notice-hero-label{display:inline-flex;width:max-content;max-width:100%;padding:0;border-radius:0;background:transparent;color:#93c5fd;font-size:calc(9px * var(--app-font-scale));font-weight:1000;line-height:1;}
-.notice-hero-note{border-color:transparent;background:transparent;}
 .notice-step-card{position:relative;border:0;border-radius:0;background:transparent;padding:3px 0 5px;overflow:visible;}
 .notice-step-card h3{margin:0 0 6px;color:#dbeafe;font-size:calc(11.5px * var(--app-font-scale));font-weight:1000;}
-.notice-step-card ol,.notice-step-card ul{margin:0;padding-left:17px;}
+.notice-step-card ul{margin:0;padding-left:17px;}
 .notice-step-card li{margin:3px 0;color:#c6d4e6;}
-.notice-version-labels{display:flex;flex-wrap:wrap;justify-content:center;gap:7px;}
-.notice-version-label{min-width:74px;min-height:34px;display:inline-flex;align-items:center;justify-content:center;gap:0;padding:0 13px;border:1px solid #2a3b56;border-radius:999px;background:#111a28;color:#d7e4f3;font:inherit;font-size:calc(11px * var(--app-font-scale));font-weight:1000;cursor:pointer;box-shadow:inset 0 1px 0 rgba(255,255,255,.05);text-align:center;}
-.notice-version-label:hover:not(.active){border-color:var(--ui-button-hover-border);background:var(--ui-button-hover-bg);color:var(--ui-button-hover-text);}
-.notice-version-label.active{border-color:#93c5fd;background:#10233d;color:#f8fbff;box-shadow:0 0 0 1px rgba(147,197,253,.22),0 10px 22px rgba(0,0,0,.22);}
-.notice-version-panels{display:grid;gap:8px;padding:4px 0 0;border:0;border-radius:0;background:transparent;box-shadow:none;}
-.notice-version-panel{display:grid;gap:8px;}
-.notice-version-panel[hidden]{display:none;}
-.notice-version-head{display:grid;gap:3px;justify-items:center;text-align:center;padding:2px 0 8px;}
-.notice-version-head h3{margin:0;color:#f8fbff;font-size:calc(14px * var(--app-font-scale));font-weight:1000;line-height:1.1;}
-.notice-version-head p{margin:0;color:#93a4b9;font-size:calc(10px * var(--app-font-scale));font-weight:900;line-height:1;}
 .notice-creator-card{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
 .notice-creator-card div{display:grid;gap:5px;padding:11px 10px;border:1px solid #26364d;border-radius:12px;background:#111a28;text-align:center;}
 .notice-creator-card span{color:#94a3b8;font-size:calc(10px * var(--app-font-scale));font-weight:900;}
@@ -1466,14 +1492,11 @@ body.is-mobile .notice-modal{width:calc(100vw - 18px);max-height:calc(var(--mobi
 body.is-mobile .notice-modal-head{min-height:58px;padding:9px 10px;}
 body.is-mobile .notice-modal-icon{width:30px;height:30px;border-radius:10px;}
 body.is-mobile .notice-modal-body{padding:8px;}
-body.is-tablet .notice-tabs, body.is-pc-portrait .notice-tabs{grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;}
+body.is-tablet .notice-tabs, body.is-pc-portrait .notice-tabs{gap:6px;}
 body.is-mobile .notice-tabs{grid-template-columns:repeat(2,minmax(0,1fr));gap:5px;}
 body.is-mobile .notice-tab{height:38px;padding:0 5px;}
 body.is-mobile .notice-tab span{font-size:calc(10.2px * var(--app-font-scale));}
 body.is-mobile .notice-tab small{font-size:calc(8px * var(--app-font-scale));}
 body.is-mobile .notice-content-body{gap:8px;padding:9px;font-size:calc(10.6px * var(--app-font-scale));}
-body.is-mobile .notice-hero-card{padding:10px;}
-body.is-mobile .notice-version-labels{gap:5px;}
-body.is-mobile .notice-version-label{min-width:64px;min-height:32px;padding:0 10px;font-size:calc(10px * var(--app-font-scale));}
-body.is-mobile .notice-version-panels{gap:7px;padding:4px 0 0;border-radius:0;}
+body.is-mobile .notice-hero-card{padding:2px 0 8px;}
 body.is-mobile .notice-creator-card{grid-template-columns:1fr;}

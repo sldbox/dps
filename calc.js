@@ -21,6 +21,7 @@ function excelFlag(value){
 
 const ROUND_INPUT_MIN=1;
 const ROUND_INPUT_MAX=300;
+const DPS_FINAL_DISPLAY_MULTIPLIER=10;
 const TOWER_FLOOR_INPUT_MIN=1;
 const TOWER_FLOOR_INPUT_MAX=90;
 function normalizedIntegerRange(value, min, max, fallback=min){
@@ -37,6 +38,13 @@ function normalizedTowerFloorNumber(value, fallback=TOWER_FLOOR_INPUT_MIN){
   return normalizedIntegerRange(value, TOWER_FLOOR_INPUT_MIN, TOWER_FLOOR_INPUT_MAX, fallback);
 }
 function normalizedTowerFloorString(value){ return String(normalizedTowerFloorNumber(value)); }
+function normalizedShardNumber(value){
+  return normalizedIntegerRange(value, 0, 9999, 0);
+}
+function shardValue(id){
+  const el=$(id);
+  return normalizedShardNumber(el ? el.value : 0);
+}
 const RUNE_CHOICE_TYPE_LABELS={
   ap:'마법공격력',
   ua:'유닛 가속',
@@ -64,11 +72,9 @@ function normalizeRuneChoiceValues(values={}){
 
 const POWER_BLESS_ALL_OPTIONS=[0,20,30,40,60,90];
 const COOP_PLAYERS_DEFAULT='3';
+const COOP_PASSENGER_DEFENSE_REDUCE_OPTIONS=[0,15,25,50,60];
 const EROSION_CONTROL_DEFAULTS={erosionStack:'500',jewelErosionRes:'30'};
 const EROSION_CONTROL_IDS=new Set(Object.keys(EROSION_CONTROL_DEFAULTS));
-const SHARD_CONTROL_DEFAULTS={coralShard:'0',aiurShard:'0',xerusShard:'0'};
-const SHARD_CONTROL_IDS=new Set(Object.keys(SHARD_CONTROL_DEFAULTS));
-const SHARD_CONTROL_MAX=9999;
 const SOLO_PENANCE_MAX=20;
 const COOP_PENANCE_MAX=13;
 function normalizeOnOffValue(value, fallback='OFF'){
@@ -78,6 +84,13 @@ function normalizeOnOffValue(value, fallback='OFF'){
 function normalizeCoopPlayersValue(value, fallback=COOP_PLAYERS_DEFAULT){
   const text=String(value??'').trim();
   return text==='3' ? '3' : text==='2' ? '2' : fallback;
+}
+function normalizeCoopPassengerDefenseReduceValue(value){
+  const n=Math.round(Number(String(value ?? '').replace(/,/g,'').trim()));
+  return COOP_PASSENGER_DEFENSE_REDUCE_OPTIONS.includes(n) ? String(n) : '0';
+}
+function coopPassengerDefenseReduceValue(id){
+  return Number(normalizeCoopPassengerDefenseReduceValue(vs(id)));
 }
 function normalizeTeamCountValue(value, fallback=1){
   const n=Math.round(Number(value));
@@ -100,12 +113,6 @@ function normalizeErosionControlValue(id, value){
   const rounded=Math.max(0, Math.round(numeric));
   if(id==='jewelErosionRes') return String(Math.min(100, rounded));
   return String(rounded);
-}
-function normalizeShardControlValue(value){
-  const raw=String(value ?? '').replace(/,/g,'').trim();
-  const numeric=Number(raw);
-  if(!Number.isFinite(numeric)) return '0';
-  return String(Math.max(0, Math.min(SHARD_CONTROL_MAX, Math.round(numeric))));
 }
 function normalizeDecimalDisplayValue(value, digits=6){
   const text=String(value ?? '').replace(/,/g,'').trim();
@@ -157,14 +164,6 @@ function erosionStoredValue(id){
   const el=$(id);
   if(!el) return EROSION_CONTROL_DEFAULTS[id] || '0';
   return normalizeErosionControlValue(id, el.value || el.dataset.erosionValue || EROSION_CONTROL_DEFAULTS[id]);
-}
-function shardStoredValue(id){
-  const el=$(id);
-  if(!el) return SHARD_CONTROL_DEFAULTS[id] || '0';
-  return normalizeShardControlValue(el.value || el.dataset.shardValue || SHARD_CONTROL_DEFAULTS[id]);
-}
-function shardAtLeast(id, threshold){
-  return Number(shardStoredValue(id)) >= threshold;
 }
 
 
@@ -286,10 +285,10 @@ const TOWER_DIFFICULTY_NAME='도전의 탑';
 const ABYSS_DIFFICULTIES=new Set(['Abyss road','Deep Abyss']);
 const COOP_DISABLED_DIFFICULTIES=new Set([TOWER_DIFFICULTY_NAME,...ABYSS_DIFFICULTIES]);
 const SOLO_START_LOCK_DIFFICULTIES=new Set([TOWER_DIFFICULTY_NAME,'Deep Abyss']);
-const ENEMY_TABLE_MODES=Object.freeze({
-  classic:{label:'클래식',unitTable:ENEMY_UNIT_TABLE,armorTable:ENEMY_ARMOR_TABLE,maxRound:300,totalMode:'sum'},
-  eternal:{label:'이터널',unitTable:ETERNAL_ENEMY_UNIT_TABLE,armorTable:ENEMY_ARMOR_TABLE,maxRound:300,totalMode:'sum'},
-  tower:{label:'클래식',unitTable:TOWER_UNIT_TABLE,armorTable:TOWER_ARMOR_TABLE,maxRound:90,totalMode:'current'}
+const BATTLE_DATA_MODES=Object.freeze({
+  classic:{label:'클래식',unitTable:ENEMY_UNIT_TABLE,armorTable:ENEMY_ARMOR_TABLE,roundTimeTable:CLASSIC_ROUND_TIME_TABLE,maxRound:300,totalMode:'sum'},
+  eternal:{label:'이터널',unitTable:ETERNAL_ENEMY_UNIT_TABLE,armorTable:ENEMY_ARMOR_TABLE,roundTimeTable:ETERNAL_ROUND_TIME_TABLE,maxRound:300,totalMode:'sum'},
+  tower:{label:'클래식',unitTable:TOWER_UNIT_TABLE,armorTable:TOWER_ARMOR_TABLE,roundTimeTable:TOWER_TIME_TABLE,maxRound:90,totalMode:'current'}
 });
 function difficultyName(value=vs('diff')){return String(value || '').trim();}
 function isDifficultyIn(value, set){return set.has(difficultyName(value));}
@@ -360,6 +359,21 @@ function actualDrWithPierce(dr,pierce){
   return dr + (100-dr) * (pierce / 100);
 }
 const COOP_PASSENGER_TARGET_EFFECTS=Object.freeze({defenseReduce:0,pierce:0,hpReduce:0,shieldReduce:0});
+function coopPassengerTargetEffects(player){
+  return {
+    defenseReduce:player===3 ? coopPassengerDefenseReduceValue('coopPassenger3Dr') : coopPassengerDefenseReduceValue('coopPassenger2Dr'),
+    pierce:0,
+    hpReduce:0,
+    shieldReduce:0
+  };
+}
+function coopPassengerTargetEffectsList(){
+  const playerCount=battleEnemyCountMultiplier();
+  if(playerCount<=1) return [];
+  const targets=[coopPassengerTargetEffects(2)];
+  if(playerCount>=3) targets.push(coopPassengerTargetEffects(3));
+  return targets;
+}
 function enemyDurabilityRemain(enemyData, displayHR, displaySR){
   const hp=enemyData?.hp || 0;
   const shield=enemyData?.shield || 0;
@@ -373,14 +387,18 @@ function enemyDurabilityRemain(enemyData, displayHR, displaySR){
 function targetDurabilityRemain(enemyData, targetEffects){
   return enemyDurabilityRemain(enemyData, targetEffects.hpReduce, targetEffects.shieldReduce);
 }
-function battleTargetDps0Average(ownTarget,passengerTarget,enemyArmor,dmgReduce){
+function battleTargetDps0Average(ownTarget,passengerTargets,enemyArmor,dmgReduce){
   const playerCount=battleEnemyCountMultiplier();
   const ownDps0=dps0(ownTarget.hpRemain, enemyArmor, ownTarget.defenseReduce, ownTarget.pierce, dmgReduce);
   if(playerCount<=1) return ownDps0;
 
-  // 협동 2P/3P 몹은 내가 직접 잡지만, 승객의 방감/방관/체력감소/실드감소는 전부 0 기준으로 본다.
-  const passengerDps0=dps0(passengerTarget.hpRemain, enemyArmor, passengerTarget.defenseReduce, passengerTarget.pierce, dmgReduce);
-  return (ownDps0 + passengerDps0 * (playerCount - 1)) / playerCount;
+  const targets=Array.isArray(passengerTargets) ? passengerTargets : [passengerTargets];
+  let totalDps0=ownDps0;
+  for(let i=0;i<playerCount-1;i++){
+    const target=targets[i] || COOP_PASSENGER_TARGET_EFFECTS;
+    totalDps0+=dps0(target.hpRemain, enemyArmor, target.defenseReduce, target.pierce, dmgReduce);
+  }
+  return totalDps0 / playerCount;
 }
 function dps2(cri,mc,cd,md,mp,mcp,radiation=0){
   let a=cri;
@@ -406,25 +424,53 @@ function lookupFloor(table, round){
   return last || table[0];
 }
 function isTowerDifficulty(value=vs('diff')){return difficultyName(value)===TOWER_DIFFICULTY_NAME;}
-function enemyTableKeyForDifficulty(diffName=vs('diff')){
+function battleDataModeKeyForDifficulty(diffName=vs('diff')){
   if(isTowerDifficulty(diffName)) return 'tower';
   return isAbyssDifficulty(diffName) ? 'eternal' : 'classic';
 }
-function enemyTableModeForDifficulty(diffName=vs('diff')){
-  return ENEMY_TABLE_MODES[enemyTableKeyForDifficulty(diffName)] || ENEMY_TABLE_MODES.classic;
+function battleDataModeForDifficulty(diffName=vs('diff')){
+  return BATTLE_DATA_MODES[battleDataModeKeyForDifficulty(diffName)] || BATTLE_DATA_MODES.classic;
 }
-function enemyUnitTableForDifficulty(diffName=vs('diff')){return enemyTableModeForDifficulty(diffName).unitTable;}
-function enemyArmorTableForDifficulty(diffName=vs('diff')){return enemyTableModeForDifficulty(diffName).armorTable;}
-function enemyMaxRoundForDifficulty(diffName=vs('diff')){return enemyTableModeForDifficulty(diffName).maxRound;}
-function enemyDisplayModeLabel(diffName=vs('diff')){return enemyTableModeForDifficulty(diffName).label;}
+function enemyTableKeyForDifficulty(diffName=vs('diff')){return battleDataModeKeyForDifficulty(diffName);}
+function enemyTableModeForDifficulty(diffName=vs('diff')){return battleDataModeForDifficulty(diffName);}
+function enemyDisplayModeLabel(diffName=vs('diff')){return battleDataModeForDifficulty(diffName).label;}
+function normalizedBattleRound(round, mode, fallback=1, min=1){
+  const max=Number.isFinite(mode?.maxRound) ? mode.maxRound : 300;
+  return Math.max(min, Math.min(max, Math.round(+round || fallback)));
+}
+function tableRoundTime(table, round, fallback=60){
+  const row=lookupFloor(table, round);
+  const value=row ? Number(row[1]) : fallback;
+  return Number.isFinite(value) && value>0 ? value : fallback;
+}
+function towerRoundTimeBonus(){
+  const tdRp=Math.max(0, +INV[129] || 0);
+  const pierceRp=Math.max(0, +INV[130] || 0);
+  return Math.floor((tdRp + pierceRp) * 0.2);
+}
+function enemyRoundTime(round, diffName=vs('diff')){
+  const mode=battleDataModeForDifficulty(diffName);
+  const r=normalizedBattleRound(round, mode);
+  const base=tableRoundTime(mode.roundTimeTable, r);
+  return isTowerDifficulty(diffName) ? base + towerRoundTimeBonus() : base;
+}
+function roundTimeDpsScale(round, diffName=vs('diff')){
+  const time=enemyRoundTime(round, diffName);
+  const count=Math.max(1, enemyRoundDisplayCount(round));
+  return time / count;
+}
+function applyRoundTimeDpsScale(dps, round, diffName=vs('diff')){
+  const value=Number(dps);
+  return Number.isFinite(value) ? value * roundTimeDpsScale(round, diffName) : 0;
+}
 function battleModeLabel(){return isCoopMode() ? '협동' : '개인';}
 function dpsContextModeLabel(diffName=vs('diff')){return `${battleModeLabel()}/${enemyDisplayModeLabel(diffName)}`;}
 function enemyRoundData(round){
-  const maxRound=enemyMaxRoundForDifficulty();
-  const r=Math.max(0,Math.min(maxRound,Math.round(+round||0)));
+  const mode=battleDataModeForDifficulty();
+  const r=normalizedBattleRound(round, mode, 0, 0);
   if(r<=0) return {round:0,armor:0,unitRound:0,count:0,hp:0,shield:0};
-  const armorRow=lookupFloor(enemyArmorTableForDifficulty(), r);
-  const unitRow=lookupFloor(enemyUnitTableForDifficulty(), r);
+  const armorRow=lookupFloor(mode.armorTable, r);
+  const unitRow=lookupFloor(mode.unitTable, r);
   return {
     round:r,
     armor: armorRow && armorRow[0] <= r ? armorRow[1] : 0,
@@ -435,11 +481,11 @@ function enemyRoundData(round){
   };
 }
 function enemyRoundCountTotal(round){
-  const tableMode=enemyTableModeForDifficulty();
-  if(tableMode.totalMode==='current') return enemyRoundData(round).count;
-  const r=Math.max(0,Math.min(tableMode.maxRound,Math.round(+round||0)));
+  const mode=battleDataModeForDifficulty();
+  if(mode.totalMode==='current') return enemyRoundData(round).count;
+  const r=normalizedBattleRound(round, mode, 0, 0);
   if(r<=0) return 0;
-  return tableMode.unitTable.reduce((total,row)=>total+(row[0]<=r ? (+row[1]||0) : 0),0);
+  return mode.unitTable.reduce((total,row)=>total+(row[0]<=r ? (+row[1]||0) : 0),0);
 }
 function enemyRoundDisplayCount(round){
   return enemyRoundData(round).count * battleEnemyCountMultiplier();
@@ -452,10 +498,8 @@ function enemyDisplayCountText(round){
   return `${fullNumber(enemyRoundDisplayCount(round))} / ${fullNumber(enemyTotalDisplayCount(round))}`;
 }
 
-function towerClearTime(floor){
-  const row=lookupFloor(TOWER_TIME_TABLE, Math.max(1, Math.round(+floor||1)));
-  const value=row ? Number(row[1]) : 60;
-  return Number.isFinite(value) && value>0 ? value : 60;
+function towerBaseClearTime(floor){
+  return tableRoundTime(TOWER_TIME_TABLE, normalizedBattleRound(floor, BATTLE_DATA_MODES.tower));
 }
 function towerFloorEnemyData(floor){
   const r=Math.max(1, Math.min(90, Math.round(+floor||1)));
@@ -475,7 +519,7 @@ function towerBurdenScore(floor, displayHR, displaySR){
   const hpRemain=Math.max(0, (enemy.hp||0) * (1 - Math.max(0, displayHR||0)/100));
   const shieldRemain=Math.max(0, (enemy.shield||0) * (1 - Math.max(0, displaySR||0)/100));
   const durability=Math.max(1, hpRemain + shieldRemain);
-  return Math.max(1, enemy.count * durability / towerClearTime(enemy.round));
+  return Math.max(1, enemy.count * durability / towerBaseClearTime(enemy.round));
 }
 function towerDpsDisplayMultiplier(floor, displayHR, displaySR){
   const r=Math.max(1, Math.min(90, Math.round(+floor||1)));
@@ -588,12 +632,12 @@ function upperOptionStats(){
     nova:on('prodNova'), teratron:on('prodTeratron'), amon:on('prodAmon'), adun:on('prodAdun'),
     kerrigan:on('prodKerrigan'), overmind:on('prodOvermind'), narud:on('prodNarud'), artifact:on('prodArtifact')
   };
-  const prodHiddenAD = (prod.nova && shardAtLeast('coralShard',250) ? 10 : 0)
-                     + (prod.teratron && shardAtLeast('coralShard',400) ? 10 : 0)
-                     + (prod.amon && shardAtLeast('aiurShard',250) ? 10 : 0)
-                     + (prod.adun && shardAtLeast('aiurShard',400) ? 10 : 0)
-                     + (prod.kerrigan && shardAtLeast('xerusShard',250) ? 10 : 0)
-                     + (prod.overmind && shardAtLeast('xerusShard',400) ? 10 : 0);
+  const coralShard=shardValue('coralShard');
+  const aiurShard=shardValue('aiurShard');
+  const xerusShard=shardValue('xerusShard');
+  const prodHiddenAD = (prod.nova && coralShard>=250 ? 10 : 0) + (prod.teratron && coralShard>=400 ? 10 : 0)
+                     + (prod.amon && aiurShard>=250 ? 10 : 0) + (prod.adun && aiurShard>=400 ? 10 : 0)
+                     + (prod.kerrigan && xerusShard>=250 ? 10 : 0) + (prod.overmind && xerusShard>=400 ? 10 : 0);
   const prodAD = (prod.amon?30:0) + prodHiddenAD;
   const prodAS = (prod.nova?15:0) + (prod.narud?15:0);
   const prodCRI = (prod.teratron?10:0) + (prod.kerrigan?10:0) + (prod.artifact?20:0);
@@ -713,7 +757,10 @@ function computeStatsRaw(){
     shieldReduce:displaySR
   };
   const ownDurability=targetDurabilityRemain(enemyData, ownTargetEffects);
-  const passengerDurability=targetDurabilityRemain(enemyData, COOP_PASSENGER_TARGET_EFFECTS);
+  const passengerTargets=coopPassengerTargetEffectsList().map(target=>{
+    const durability=targetDurabilityRemain(enemyData, target);
+    return {...target, hpRemain:durability.remain};
+  });
   const hpRatio = ownDurability.hpRatio;
   const shieldRatio = ownDurability.shieldRatio;
   const hpRemain = ownDurability.remain;
@@ -721,7 +768,7 @@ function computeStatsRaw(){
   const actualM12 = actualDrWithPierce(M12_dr, excelPierce);
   const AB3=battleTargetDps0Average(
     {...ownTargetEffects, hpRemain},
-    {...COOP_PASSENGER_TARGET_EFFECTS, hpRemain:passengerDurability.remain},
+    passengerTargets,
     enemyData.armor,
     diff.dmg*(1-penDmg/100)
   ) * upperStats.dps0Mul;
@@ -730,7 +777,10 @@ function computeStatsRaw(){
   const dt=personalUaDtMultiplier();
   const gradeAs=UNIT_GRADE_AS[activeUnitGrade()] ?? 0;
   const AB6=(1+(M7+upperStats.actualAs+gradeAs)/100)*(1-diff.as/100)*M13*dt;
-  const M19=(AB3*AB4*AB5*AB6) * contentDpsDisplayMultiplier(vs('diff'), targetRound, displayHR, displaySR);
+  const rawM19=(AB3*AB4*AB5*AB6) * contentDpsDisplayMultiplier(vs('diff'), targetRound, displayHR, displaySR);
+  const roundTime=enemyRoundTime(targetRound);
+  const roundTimeScale=roundTimeDpsScale(targetRound);
+  const M19=rawM19 * roundTimeScale * DPS_FINAL_DISPLAY_MULTIPLIER;
   let spU=0,spO=0,epU=0,rpU=0,soulU=0;
   TRAITS.forEach(t=>{
     const row=t[0];
@@ -748,7 +798,7 @@ function computeStatsRaw(){
                   + (checkboxOn('unitUniqueBuff', true) ? 20 : 0) + (v('unitLevel') || 11) * 5;
   const actualSR = displaySR * shieldRatio;
   const actualHR = displayHR * hpRatio;
-  return {M4,M7,M8,M9,M10,M11,M12,actualM12,M13,M16,M17,M18,M19,rawCD,rawTD,diff,
+  return {M4,M7,M8,M9,M10,M11,M12,actualM12,M13,M16,M17,M18,M19,rawM19,roundTime,roundTimeScale,rawCD,rawTD,diff,
           displayAD,displayAPS,displayAPU,actualAPU,displayUA,displaySR,displayHR,actualSR,actualHR,
           spTotal:spU+spO,spU,spO,epU,rpU,soulU,spBank:spBankRawBonus(),spBankApplied:isSpBankApplied(),effectiveSP:effectiveSP(),excelPierce,enemyData};
 }
@@ -772,20 +822,32 @@ function calculateArtifactDpsRaw(stats=computeStatsRaw()){
   const enemyData=stats.enemyData || enemyRoundData(ctx.targetRound);
   const ownTarget={defenseReduce:stats.M12||0,pierce:0,hpReduce:stats.displayHR||0,shieldReduce:stats.displaySR||0};
   const ownDurability=targetDurabilityRemain(enemyData, ownTarget);
-  const passengerDurability=targetDurabilityRemain(enemyData, COOP_PASSENGER_TARGET_EFFECTS);
+  const passengerTargets=coopPassengerTargetEffectsList().map(target=>{
+    const durability=targetDurabilityRemain(enemyData, target);
+    return {...target, hpRemain:durability.remain};
+  });
   const dmgReduce=ctx.diff.dmg * (1 - ctx.penDmg / 100);
-  const ownDps0=dps0(ownDurability.remain, enemyData.armor, ownTarget.defenseReduce, 0, dmgReduce);
-  const passengerDps0=dps0(passengerDurability.remain, enemyData.armor, 0, 0, dmgReduce);
+  const dps0Part=battleTargetDps0Average(
+    {...ownTarget, hpRemain:ownDurability.remain},
+    passengerTargets,
+    enemyData.armor,
+    dmgReduce
+  );
   const playerCount=battleEnemyCountMultiplier();
-  const dps0Part=playerCount>1 ? (ownDps0 + passengerDps0 * (playerCount - 1)) / playerCount : ownDps0;
   const flowerMultiplier=on('flowerSkill3') ? 1.15 : 1;
   const adTdMultiplier=(1 + (stats.M4||0) / 100) * ((stats.M11||0) / 100);
   const critMultiplier=dps2(stats.M8||0, stats.M10||0, stats.M9||0, stats.M16||0, stats.M17||0, stats.M18||0, 1);
   const uaMultiplier=(1 - (stats.diff?.as||0) / 100) * (stats.M13||0) * artifactEnergyRegenMultiplier() * personalUaDtMultiplier();
   const displayMultiplier=contentDpsDisplayMultiplier(vs('diff'), ctx.targetRound, stats.displayHR||0, stats.displaySR||0);
-  const artifactDps=dps0Part * flowerMultiplier * adTdMultiplier * critMultiplier * uaMultiplier * displayMultiplier;
+  const rawArtifactDps=dps0Part * flowerMultiplier * adTdMultiplier * critMultiplier * uaMultiplier * displayMultiplier;
+  const roundTime=enemyRoundTime(ctx.targetRound);
+  const roundTimeScale=roundTimeDpsScale(ctx.targetRound);
+  const artifactDps=rawArtifactDps * roundTimeScale * DPS_FINAL_DISPLAY_MULTIPLIER;
   return {
     dps:Number.isFinite(artifactDps) ? artifactDps : 0,
+    rawDps:Number.isFinite(rawArtifactDps) ? rawArtifactDps : 0,
+    roundTime,
+    roundTimeScale,
     dps0:dps0Part,
     flowerMultiplier,
     adTdMultiplier,
@@ -798,9 +860,7 @@ function calculateArtifactDpsRaw(stats=computeStatsRaw()){
     round:ctx.targetRound
   };
 }
-const PREVIEW_CONTEXT_IDS=['diff','penance','round','challengeTowerFloor','soloMode','coopMode','coopPlayers','team','pbless',...EROSION_CONTROL_IDS];
-const DPS_PREVIEW_IDS=[...PREVIEW_CONTEXT_IDS];
-const ARTIFACT_DPS_PREVIEW_IDS=[...PREVIEW_CONTEXT_IDS,'prodArtifact'];
+const ARTIFACT_DPS_PREVIEW_IDS=['diff','penance','round','challengeTowerFloor','soloMode','coopMode','coopPlayers','coopPassenger2Dr','coopPassenger3Dr','team','prodArtifact','pbless',...EROSION_CONTROL_IDS];
 function capturePreviewElementStates(ids){
   return ids.map(id=>{
     const el=$(id);
@@ -824,88 +884,75 @@ function restorePreviewElementStates(saved){
     Object.entries(state.dataset || {}).forEach(([key,value])=>{ el.dataset[key]=value; });
   });
 }
-function setPreviewSelectValue(id, value, datasetKey){
-  const el=$(id);
-  if(!el) return;
-  const normalized=String(value);
-  el.value=normalized;
-  if(datasetKey) el.dataset[datasetKey]=normalized;
-}
-function applyPreviewPenance(penanceLevel, battleMode, signaturePrefix){
-  const penEl=$('penance');
-  if(!penEl) return;
-  const maxForPreview=battleMode==='coop' ? COOP_DPS_TABLE_PENANCE_MAX : DPS_TABLE_PENANCE_MAX;
-  const normalizedPenance=normalizePenanceValue(penanceLevel, maxForPreview);
-  setSelectOptions(penEl, Array.from({length:SOLO_PENANCE_MAX+1}, (_,value)=>({
-    value,
-    label:penanceOptionLabel(value),
-    selected:String(value)===normalizedPenance
-  })));
-  penEl.dataset.penanceMax=`${signaturePrefix}:${SOLO_PENANCE_MAX}`;
-  penEl.value=normalizedPenance;
-  penEl.dataset.penanceValue=normalizedPenance;
-}
-function applyPreviewBattleMode(battleMode, options, signaturePrefix){
-  const soloEl=$('soloMode');
-  const coopEl=$('coopMode');
-  const coopPlayersEl=$('coopPlayers');
-  const teamEl=$('team');
-  if(battleMode==='solo'){
-    if(soloEl) soloEl.value='ON';
-    if(coopEl){
-      setSelectOptions(coopEl, [{value:'OFF',label:'OFF',selected:true},{value:'ON',label:'ON'}]);
-      coopEl.dataset.optionSignature=`${signaturePrefix}:coop-mode-toggle`;
-      coopEl.value='OFF';
-    }
-    if(coopPlayersEl){
-      setSelectOptions(coopPlayersEl, ['2','3'].map(playerCount=>({value:playerCount,label:playerCount})));
-      coopPlayersEl.dataset.optionSignature=`${signaturePrefix}:coop-players`;
-      coopPlayersEl.value=normalizeCoopPlayersValue(coopPlayersEl.value);
-    }
-    return;
-  }
-  const players=normalizeCoopPlayersValue(options.coopPlayers);
-  if(soloEl) soloEl.value='OFF';
-  if(coopEl){
-    setSelectOptions(coopEl, [{value:'OFF',label:'OFF'},{value:'ON',label:'ON',selected:true}]);
-    coopEl.dataset.optionSignature=`${signaturePrefix}:coop-mode-toggle`;
-    coopEl.value='ON';
-  }
-  if(coopPlayersEl){
-    setSelectOptions(coopPlayersEl, ['2','3'].map(playerCount=>({value:playerCount,label:playerCount,selected:playerCount===players})));
-    coopPlayersEl.dataset.optionSignature=`${signaturePrefix}:coop-players`;
-    coopPlayersEl.value=players;
-  }
-  if(teamEl) teamEl.value=players;
-}
-function applyPreviewErosionControls(){
-  EROSION_CONTROL_IDS.forEach(id=>{
-    const el=$(id);
-    if(!el) return;
-    const stored=normalizeErosionControlValue(id, el.value || el.dataset.erosionValue || EROSION_CONTROL_DEFAULTS[id]);
-    el.type='text';
-    el.inputMode='numeric';
-    el.value=stored;
-    el.dataset.erosionValue=stored;
-  });
-}
-function applyPreviewContext(diffName, penanceLevel, round, options={}, signaturePrefix='preview'){
-  const battleMode=options.battleMode==='coop' ? 'coop' : 'solo';
-  const normalizedRound=normalizedRoundString(round);
-  const normalizedTowerFloor=normalizedTowerFloorString(round);
-  setPreviewSelectValue('diff', diffName);
-  applyPreviewPenance(penanceLevel, battleMode, signaturePrefix);
-  setPreviewSelectValue('round', normalizedRound, 'roundValue');
-  setPreviewSelectValue('challengeTowerFloor', normalizedTowerFloor, 'challengeTowerFloorValue');
-  applyPreviewBattleMode(battleMode, options, signaturePrefix);
-  applyPreviewErosionControls();
-}
 function calculateArtifactDpsPreview(diffName, penanceLevel, round, options={}){
   const saved=capturePreviewElementStates(ARTIFACT_DPS_PREVIEW_IDS);
   try{
-    applyPreviewContext(diffName, penanceLevel, round, options, 'artifact');
+    const diffEl=$('diff');
+    const penEl=$('penance');
+    const roundEl=$('round');
+    const towerFloorEl=$('challengeTowerFloor');
+    const soloEl=$('soloMode');
+    const coopEl=$('coopMode');
+    const coopPlayersEl=$('coopPlayers');
+    const teamEl=$('team');
     const artifactEl=$('prodArtifact');
+    const battleMode=options.battleMode==='coop' ? 'coop' : 'solo';
+    if(diffEl) diffEl.value=diffName;
+    if(penEl){
+      const maxForPreview=battleMode==='coop' ? COOP_DPS_TABLE_PENANCE_MAX : DPS_TABLE_PENANCE_MAX;
+      const normalizedPenance=normalizePenanceValue(penanceLevel, maxForPreview);
+      setSelectOptions(penEl, Array.from({length:SOLO_PENANCE_MAX+1}, (_,value)=>({value,label:penanceOptionLabel(value),selected:String(value)===normalizedPenance})));
+      penEl.dataset.penanceMax=`artifact:${SOLO_PENANCE_MAX}`;
+      penEl.value=normalizedPenance;
+      penEl.dataset.penanceValue=normalizedPenance;
+    }
+    if(roundEl){
+      const normalizedRound=normalizedRoundString(round);
+      roundEl.value=normalizedRound;
+      roundEl.dataset.roundValue=normalizedRound;
+    }
+    if(towerFloorEl){
+      const normalizedTowerFloor=normalizedTowerFloorString(round);
+      towerFloorEl.value=normalizedTowerFloor;
+      towerFloorEl.dataset.challengeTowerFloorValue=normalizedTowerFloor;
+    }
+    if(battleMode==='solo'){
+      if(soloEl) soloEl.value='ON';
+      if(coopEl){
+        setSelectOptions(coopEl, [{value:'OFF',label:'OFF',selected:true},{value:'ON',label:'ON'}]);
+        coopEl.dataset.optionSignature='artifact:coop-mode-toggle';
+        coopEl.value='OFF';
+      }
+      if(coopPlayersEl){
+        setSelectOptions(coopPlayersEl, ['2','3'].map(playerCount=>({value:playerCount,label:playerCount})));
+        coopPlayersEl.dataset.optionSignature='artifact:coop-players';
+        coopPlayersEl.value=normalizeCoopPlayersValue(coopPlayersEl.value);
+      }
+    }else{
+      const players=normalizeCoopPlayersValue(options.coopPlayers);
+      if(soloEl) soloEl.value='OFF';
+      if(coopEl){
+        setSelectOptions(coopEl, [{value:'OFF',label:'OFF'},{value:'ON',label:'ON',selected:true}]);
+        coopEl.dataset.optionSignature='artifact:coop-mode-toggle';
+        coopEl.value='ON';
+      }
+      if(coopPlayersEl){
+        setSelectOptions(coopPlayersEl, ['2','3'].map(playerCount=>({value:playerCount,label:playerCount,selected:playerCount===players})));
+        coopPlayersEl.dataset.optionSignature='artifact:coop-players';
+        coopPlayersEl.value=players;
+      }
+      if(teamEl) teamEl.value=players;
+    }
     if(artifactEl) artifactEl.checked=true;
+    EROSION_CONTROL_IDS.forEach(id=>{
+      const el=$(id);
+      if(!el) return;
+      const stored=normalizeErosionControlValue(id, el.value || el.dataset.erosionValue || EROSION_CONTROL_DEFAULTS[id]);
+      el.type='text';
+      el.inputMode='numeric';
+      el.value=stored;
+      el.dataset.erosionValue=stored;
+    });
     const stats=computeStatsRaw();
     return {...calculateArtifactDpsRaw(stats), baseDps:Number.isFinite(stats.M19) ? stats.M19 : 0};
   }catch(e){
@@ -1171,10 +1218,74 @@ function updateDpsContextSummary(){
 
 
 /* ===== 09. DPS표 미리보기 계산 ===== */
+const DPS_PREVIEW_IDS=['diff','penance','round','challengeTowerFloor','soloMode','coopMode','coopPlayers','team','pbless',...EROSION_CONTROL_IDS];
 function computeDpsPreview(diffName, penanceLevel, round, options={}){
   const saved=capturePreviewElementStates(DPS_PREVIEW_IDS);
   try{
-    applyPreviewContext(diffName, penanceLevel, round, options, 'preview');
+    const diffEl=$('diff');
+    const penEl=$('penance');
+    const roundEl=$('round');
+    const towerFloorEl=$('challengeTowerFloor');
+    const soloEl=$('soloMode');
+    const coopEl=$('coopMode');
+    const coopPlayersEl=$('coopPlayers');
+    const teamEl=$('team');
+    const battleMode=options.battleMode==='coop' ? 'coop' : 'solo';
+    if(diffEl) diffEl.value=diffName;
+    if(penEl){
+      const maxForPreview=battleMode==='coop' ? COOP_DPS_TABLE_PENANCE_MAX : DPS_TABLE_PENANCE_MAX;
+      const normalizedPenance=normalizePenanceValue(penanceLevel, maxForPreview);
+      setSelectOptions(penEl, Array.from({length:SOLO_PENANCE_MAX+1}, (_,value)=>({value,label:penanceOptionLabel(value),selected:String(value)===normalizedPenance})));
+      penEl.dataset.penanceMax=`preview:${SOLO_PENANCE_MAX}`;
+      penEl.value=normalizedPenance;
+      penEl.dataset.penanceValue=normalizedPenance;
+    }
+    if(roundEl){
+      const normalizedRound=normalizedRoundString(round);
+      roundEl.value=normalizedRound;
+      roundEl.dataset.roundValue=normalizedRound;
+    }
+    if(towerFloorEl){
+      const normalizedTowerFloor=normalizedTowerFloorString(round);
+      towerFloorEl.value=normalizedTowerFloor;
+      towerFloorEl.dataset.challengeTowerFloorValue=normalizedTowerFloor;
+    }
+    EROSION_CONTROL_IDS.forEach(id=>{
+      const el=$(id);
+      if(!el) return;
+      const stored=normalizeErosionControlValue(id, el.value || el.dataset.erosionValue || EROSION_CONTROL_DEFAULTS[id]);
+      el.type='text';
+      el.inputMode='numeric';
+      el.value=stored;
+      el.dataset.erosionValue=stored;
+    });
+    if(battleMode==='solo'){
+      if(soloEl) soloEl.value='ON';
+      if(coopEl){
+        setSelectOptions(coopEl, [{value:'OFF',label:'OFF',selected:true},{value:'ON',label:'ON'}]);
+        coopEl.dataset.optionSignature='preview:coop-mode-toggle';
+        coopEl.value='OFF';
+      }
+      if(coopPlayersEl){
+        setSelectOptions(coopPlayersEl, ['2','3'].map(playerCount=>({value:playerCount,label:playerCount})));
+        coopPlayersEl.dataset.optionSignature='preview:coop-players';
+        coopPlayersEl.value=normalizeCoopPlayersValue(coopPlayersEl.value);
+      }
+    }else{
+      const players=normalizeCoopPlayersValue(options.coopPlayers);
+      if(soloEl) soloEl.value='OFF';
+      if(coopEl){
+        setSelectOptions(coopEl, [{value:'OFF',label:'OFF'},{value:'ON',label:'ON',selected:true}]);
+        coopEl.dataset.optionSignature='preview:coop-mode-toggle';
+        coopEl.value='ON';
+      }
+      if(coopPlayersEl){
+        setSelectOptions(coopPlayersEl, ['2','3'].map(playerCount=>({value:playerCount,label:playerCount,selected:playerCount===players})));
+        coopPlayersEl.dataset.optionSignature='preview:coop-players';
+        coopPlayersEl.value=players;
+      }
+      if(teamEl) teamEl.value=players;
+    }
     const s=computeStatsRaw();
     return Number.isFinite(s.M19) ? s.M19 : 0;
   }catch(e){
@@ -1723,7 +1834,6 @@ window.DPS_CALC=Object.freeze({
   normalizePenanceValue,
   normalizePowerBlessRawValue,
   normalizeErosionControlValue,
-  normalizeShardControlValue,
   normalizeDecimalDisplayValue,
   calculateSkillDamageRows,
   calculateArtifactDpsRaw,
@@ -1743,9 +1853,14 @@ window.DPS_CALC=Object.freeze({
   battleEnemyCountMultiplier,
   currentPenanceMax,
   shouldIgnorePenanceForDifficulty,
+  battleDataModeKeyForDifficulty,
+  battleDataModeForDifficulty,
   enemyTableKeyForDifficulty,
   enemyTableModeForDifficulty,
   enemyDisplayModeLabel,
+  enemyRoundTime,
+  roundTimeDpsScale,
+  applyRoundTimeDpsScale,
   battleModeLabel,
   dpsContextModeLabel,
   penanceStoredValue,

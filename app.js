@@ -263,17 +263,6 @@ function syncErosionControls(){
     el.dataset.erosionValue=stored;
   });
 }
-function syncShardControls(){
-  SHARD_CONTROL_IDS.forEach(id=>{
-    const el=$(id);
-    if(!el) return;
-    const stored=normalizeShardControlValue(el.value || el.dataset.shardValue || SHARD_CONTROL_DEFAULTS[id]);
-    el.type='text';
-    el.inputMode='numeric';
-    el.value=stored;
-    el.dataset.shardValue=stored;
-  });
-}
 function resetTeamOnDifficultyChange(){
   syncBattleMode('coopPlayers');
   syncTeamSelect();
@@ -308,6 +297,11 @@ function syncEnchantCodeFromInputs(updateInputs=true){
 }
 function formatMoneyInput(el){
   if(!el) return;
+  if(typeof SHARD_VALUE_IDS!=='undefined' && SHARD_VALUE_IDS.has(el.id)){
+    const normalized=normalizeShardStorageValue(el.value);
+    el.value=normalized.replace(/\B(?=(\d{3})+(?!\d))/g,',');
+    return;
+  }
   const raw=String(el.value||'').replace(/[^\d-]/g,'');
   if(raw===''||raw==='-'){el.value=raw;return;}
   const neg=raw[0]==='-';
@@ -389,7 +383,7 @@ function renderResourceSummary(s){
   syncSpBankDisplay(bankSP);
 }
 function syncControlDisplays(){
-  [syncSelectButtons,syncBuffChoiceButtons,syncBattleMode,syncDifficultyTargetControls,syncErosionControls,syncShardControls,syncPowerBlessOptions,formatAllMoneyInputs].forEach(fn=>fn());
+  [syncSelectButtons,syncBuffChoiceButtons,syncBattleMode,syncDifficultyTargetControls,syncErosionControls,syncPowerBlessOptions,formatAllMoneyInputs].forEach(fn=>fn());
 }
 function syncPreCalculationViews(){
   normalizeRoundInputs();
@@ -621,52 +615,43 @@ function syncDpsTableLabels(){
   if(closeBtn && isDpsTableOpen()) closeBtn.setAttribute('aria-label', `${label} 닫기`);
 }
 
-function dpsTableColumnHeaderHtml(difficulties, currentDiff){
-  return difficulties.map(diff=>`<th class="${diff===currentDiff?'dps-current-column':''}">${diff}</th>`).join('');
-}
-function dpsTableCellHtml(value, diff, rowCurrent, currentDiff, minDps){
-  const danger=minDps!==null && dpsTableRiskCompareValue(value)<=minDps;
-  const currentCell=rowCurrent && diff===currentDiff;
-  const classes=[danger?'dps-risk-cell':'', currentCell?'dps-current-cell':''].filter(Boolean).join(' ');
-  return `<td class="${classes}">${formatDpsTableValue(value)}</td>`;
-}
-function buildPenanceDpsMatrix({difficulties, minPenance, maxPenance, currentPenance, round, previewOptions, tableClass}){
+function buildDpsTable(round){
   const minDps=parseDpsTableMinDps();
   const currentDiff=vs('diff');
-  const currentPen=Math.max(minPenance, Math.min(maxPenance, Math.round(currentPenance)));
-  const head=dpsTableColumnHeaderHtml(difficulties, currentDiff);
+  const currentPen=Math.max(DPS_TABLE_PENANCE_MIN, Math.min(DPS_TABLE_PENANCE_MAX, Math.round(v('penance'))));
+  const head=DPS_TABLE_DIFFICULTIES.map(d=>`<th class="${d===currentDiff?'dps-current-column':''}">${d}</th>`).join('');
   const rows=[];
-  for(let pen=minPenance; pen<=maxPenance; pen++){
+  for(let pen=DPS_TABLE_PENANCE_MIN; pen<=DPS_TABLE_PENANCE_MAX; pen++){
     const rowCurrent=pen===currentPen;
-    const cells=difficulties.map(diff=>{
-      const value=dpsTablePreviewValue(diff, pen, round, previewOptions);
-      return dpsTableCellHtml(value, diff, rowCurrent, currentDiff, minDps);
+    const cells=DPS_TABLE_DIFFICULTIES.map(diff=>{
+      const value=dpsTablePreviewValue(diff, pen, round, {battleMode:'solo'});
+      const danger=minDps!==null && dpsTableRiskCompareValue(value)<=minDps;
+      const currentCell=rowCurrent && diff===currentDiff;
+      const classes=[danger?'dps-risk-cell':'', currentCell?'dps-current-cell':''].filter(Boolean).join(' ');
+      return `<td class="${classes}">${formatDpsTableValue(value)}</td>`;
     }).join('');
     rows.push(`<tr${rowCurrent?' class="dps-current-row"':''}><th>${pen}</th>${cells}</tr>`);
   }
-  return `<table class="dps-matrix dps-round-matrix${tableClass ? ` ${tableClass}` : ''}"><thead><tr><th>고행</th>${head}</tr></thead><tbody>${rows.join('')}</tbody></table>`;
-}
-function buildDpsTable(round){
-  return buildPenanceDpsMatrix({
-    difficulties:DPS_TABLE_DIFFICULTIES,
-    minPenance:DPS_TABLE_PENANCE_MIN,
-    maxPenance:DPS_TABLE_PENANCE_MAX,
-    currentPenance:v('penance'),
-    round,
-    previewOptions:{battleMode:'solo'},
-    tableClass:''
-  });
+  return `<table class="dps-matrix dps-round-matrix"><thead><tr><th>고행</th>${head}</tr></thead><tbody>${rows.join('')}</tbody></table>`;
 }
 function buildCoopDpsMatrix(players, round){
-  return buildPenanceDpsMatrix({
-    difficulties:COOP_DPS_TABLE_DIFFICULTIES,
-    minPenance:COOP_DPS_TABLE_PENANCE_MIN,
-    maxPenance:COOP_DPS_TABLE_PENANCE_MAX,
-    currentPenance:v('penance'),
-    round,
-    previewOptions:{battleMode:'coop', coopPlayers:String(players)},
-    tableClass:'dps-coop-matrix'
-  });
+  const minDps=parseDpsTableMinDps();
+  const currentDiff=vs('diff');
+  const currentPen=Math.max(COOP_DPS_TABLE_PENANCE_MIN, Math.min(COOP_DPS_TABLE_PENANCE_MAX, Math.round(v('penance'))));
+  const head=COOP_DPS_TABLE_DIFFICULTIES.map(diff=>`<th class="${diff===currentDiff?'dps-current-column':''}">${diff}</th>`).join('');
+  const rows=[];
+  for(let pen=COOP_DPS_TABLE_PENANCE_MIN; pen<=COOP_DPS_TABLE_PENANCE_MAX; pen++){
+    const rowCurrent=pen===currentPen;
+    const cells=COOP_DPS_TABLE_DIFFICULTIES.map(diff=>{
+      const value=dpsTablePreviewValue(diff, pen, round, {battleMode:'coop', coopPlayers:String(players)});
+      const danger=minDps!==null && dpsTableRiskCompareValue(value)<=minDps;
+      const currentCell=rowCurrent && diff===currentDiff;
+      const classes=[danger?'dps-risk-cell':'', currentCell?'dps-current-cell':''].filter(Boolean).join(' ');
+      return `<td class="${classes}">${formatDpsTableValue(value)}</td>`;
+    }).join('');
+    rows.push(`<tr${rowCurrent?' class="dps-current-row"':''}><th>${pen}</th>${cells}</tr>`);
+  }
+  return `<table class="dps-matrix dps-round-matrix dps-coop-matrix"><thead><tr><th>고행</th>${head}</tr></thead><tbody>${rows.join('')}</tbody></table>`;
 }
 function buildCoopDpsTable(round){
   return [2,3].map(players=>`
@@ -1117,7 +1102,6 @@ function webControlDisplay(id){
   const el=$(id);
   if(!el) return '—';
   if(EROSION_CONTROL_IDS.has(id)) return erosionStoredValue(id);
-  if(SHARD_CONTROL_IDS.has(id)) return shardStoredValue(id);
   if(id==='round') return targetRoundStoredValue();
   if(id==='challengeTowerFloor') return challengeTowerFloorStoredValue();
   if(el.type==='checkbox') return el.checked?'ON':'OFF';
@@ -1131,12 +1115,17 @@ const FIELD_REGISTRY={
   bxp:{kind:'기본정보',name:'보유 BXP',compare:true,save:true,excel:'number'},
   rp:{kind:'기본정보',name:'보유 RP',compare:true,save:true,excel:'number'},
   soul:{kind:'기본정보',name:'본인 심연의혼',compare:true,save:true,excel:'number'},
+  coralShard:{kind:'기본정보',name:'코랄의 파편',compare:true,save:true,excel:'number'},
+  aiurShard:{kind:'기본정보',name:'아이어의 파편',compare:true,save:true,excel:'number'},
+  xerusShard:{kind:'기본정보',name:'제루스의 파편',compare:true,save:true,excel:'number'},
   diff:{kind:'기본정보',name:'난이도',compare:true,save:true,excel:'select'},
   round:{kind:'기본정보',name:'목표 라운드',compare:true,save:true,excel:'number'},
   challengeTowerFloor:{kind:'기본정보',name:'도전의탑 층',compare:true,save:true,excel:'number'},
   soloMode:{kind:'기본정보',name:'개인',compare:true,save:true,excel:'select'},
   coopMode:{kind:'기본정보',name:'협동',compare:true,save:true,excel:'select'},
   coopPlayers:{kind:'기본정보',name:'협동 인원수',compare:true,save:true,excel:'select'},
+  coopPassenger2Dr:{kind:'기본정보',name:'승객 2P 방어력 감소',compare:true,save:true,excel:'select'},
+  coopPassenger3Dr:{kind:'기본정보',name:'승객 3P 방어력 감소',compare:true,save:true,excel:'select'},
   team:{kind:'기본정보',name:'출발 지원 인원수',compare:true,save:true,excel:'number'},
   pbless:{kind:'기본정보',name:'파워 블레스',compare:true,save:true,excel:'select'},
   spBankApply:{kind:'기본정보',name:'SP 은행',compare:true,save:true},
@@ -1145,9 +1134,6 @@ const FIELD_REGISTRY={
   dpsTableMinDps:{kind:'DPS',name:'도전할 최소 DPS',compare:true,save:true,excel:'number'},
   erosionStack:{kind:'기본정보',name:'침식 스텍',compare:true,save:true,excel:'number'},
   jewelErosionRes:{kind:'기본정보',name:'심연 내성',compare:true,save:true,excel:'number'},
-  coralShard:{kind:'기본정보',name:'코랄의 파편',compare:true,save:true,excel:'number'},
-  aiurShard:{kind:'기본정보',name:'아이어의 파편',compare:true,save:true,excel:'number'},
-  xerusShard:{kind:'기본정보',name:'제루스의 파편',compare:true,save:true,excel:'number'},
   aprRuneNormal:{kind:'룬효과/버프',name:'4월 일반',compare:true,save:true},
   aprRunePlus:{kind:'룬효과/버프',name:'4월 강화(+)',compare:true,save:true},
   sepRuneNormal:{kind:'룬효과/버프',name:'9월 일반',compare:true,save:true},
@@ -1314,6 +1300,9 @@ function buildExcelInputSpecs(cells,specCells,sheetName=''){
     ['기본정보','보유 BXP',specCells.R21,'bxp'],
     ['기본정보','보유 RP',cells.B16,'rp'],
     ['기본정보','본인 심연의혼',cells.B19,'soul'],
+    ['기본정보','코랄의 파편',specCells.R26,'coralShard'],
+    ['기본정보','아이어의 파편',specCells.R27,'aiurShard'],
+    ['기본정보','제루스의 파편',specCells.R28,'xerusShard'],
     ['기본정보','난이도',firstExcelValue(cells,['B4','N41']),'diff'],
     ['기본정보','고행',firstExcelValue(cells,['B6','N42','AD8']),'penance'],
     ['기본정보',roundFieldName,firstExcelValue(cells,['B7','N43']),roundFieldId],
@@ -1321,9 +1310,6 @@ function buildExcelInputSpecs(cells,specCells,sheetName=''){
     ['기본정보','타이틀 총 데미지',EXCEL_TITLE_BONUS_MAP[excelText(specCells.S17)]??specCells.S17,'titleTdBonus'],
     ['기본정보','침식 스텍',cells.H10,'erosionStack'],
     ['기본정보','심연 내성',cells.H11,'jewelErosionRes'],
-    ['기본정보','코랄의 파편',specCells.R26,'coralShard'],
-    ['기본정보','아이어의 파편',specCells.R27,'aiurShard'],
-    ['기본정보','제루스의 파편',specCells.R28,'xerusShard'],
     ['기본정보','파워 블레스',normalizePowerBlessRawValue(cells.D4),'pbless'],
     ['룬정보','공격력',cells.J5,'rAD'],
     ['룬정보','공격력 개조',specCells.C19,'rModAD'],
@@ -1427,7 +1413,7 @@ function buildExcelComparison(cells, specCells, zeroCells, fileName, sheetName){
   const buffRows=buildExcelBuffRows(cells,specCells);
   const traitRows=buildExcelTraitRows(cells);
   const zeroRows=buildZeroScoreCompareRows(zeroCells);
-  const dpsRow=buildCompareNumberRow('DPS','기본 DPS',cells.M19,stats.M19);
+  const dpsRow=buildCompareNumberRow('DPS','웹 기준 DPS',cells.M19,stats.M19);
   return {
     fileName,
     sheetName,
@@ -1734,7 +1720,7 @@ function excelStateValue(id, value, options={}){
 }
 function buildExcelState(cells, specCells, zeroCells, sheetName=''){
   const state=makeStateObject();
-  const values={...state.values, soloMode:'ON', coopMode:'OFF', coopPlayers:''};
+  const values={...state.values, soloMode:'ON', coopMode:'OFF', coopPlayers:'', coopPassenger2Dr:'0', coopPassenger3Dr:'0'};
   const roundFieldId=excelRoundFieldId(cells,sheetName);
   const assign=(id,value,options={})=>{
     const resolved=excelStateValue(id,value,options);
@@ -1751,9 +1737,9 @@ function buildExcelState(cells, specCells, zeroCells, sheetName=''){
     ['unitGrade',cells.H4],['unitLevel',cells.H5],
     ['unitUniqueBuff',cells.H6],['basePierceBuff',cells.H8],
     ['erosionStack',cells.H10],['jewelErosionRes',cells.H11],
-    ['coralShard',specCells.R26],['aiurShard',specCells.R27],['xerusShard',specCells.R28],
     ['overEnhance',cells.H14],['repairEnhance',cells.H15],['enhanceMaster',cells.H16],
     ['shareUserBuff',cells.H116],
+    ['coralShard',specCells.R26],['aiurShard',specCells.R27],['xerusShard',specCells.R28],
     ['prodNova',cells.F4],['prodTeratron',cells.F5],['prodAmon',cells.F6],['prodAdun',cells.F7],
     ['prodKerrigan',cells.F8],['prodOvermind',cells.F9],['prodNarud',cells.F10],['prodArtifact',cells.F11],
     ['flowerSkill1',cells.F13],['flowerSkill2',cells.F14],['flowerSkill3',cells.F15],
@@ -1877,7 +1863,7 @@ function buildJsonComparison(changeState,options={}){
   const effectiveChangeState={...changeSnapshot.state,fileName:changeState.fileName || changeSnapshot.state.fileName,sheetName:changeState.sheetName || changeSnapshot.state.sheetName};
   const changeStats=changeSnapshot.stats;
   const dpsCompare=compareNumber(changeStats.M19,currentStats.M19);
-  const dpsRow=buildCompareNumberRow('DPS','기본 DPS',changeStats.M19,currentStats.M19);
+  const dpsRow=buildCompareNumberRow('DPS','웹 기준 DPS',changeStats.M19,currentStats.M19);
   const inputRows=buildSavedValueCompareRows(effectiveChangeState,currentState,{onlyDiffs:false});
   const enchantRows=buildEnchantCompareRows(enchantCompareCodeFromValues(effectiveChangeState.values),enchantCompareCodeFromValues(currentState.values));
   const statRows=buildStateStatRows(changeStats,currentStats);
@@ -1987,41 +1973,26 @@ function buildExcelComparisonForSelectedBase(cells,specCells,zeroCells,fileName,
     applyStateObject(liveState);
   }
 }
-function prepareCompareSelectionRender(options={}){
-  compareState.lastResult=null;
-  if(!options.preserveRestore) clearCompareRestoreState();
-  return {
-    body:$('excelCompareBody'),
-    apply:$('excelCompareApplyBtn'),
-    reset:$('excelCompareResetBtn')
-  };
-}
-function renderCompareErrorMessage(message, controls, options={}){
-  if(controls?.apply) controls.apply.disabled=true;
-  if(controls?.reset) controls.reset.disabled=false;
-  if(controls?.body){
-    const html=escapeCompareHtml(message);
-    controls.body.innerHTML=`<div class="excel-compare-error">${options.highlightVersion ? html.replace('5.4392','<span class="excel-compare-version">5.4392</span>') : html}</div>`;
-  }
-  updateCompareActionButtons();
-}
-function renderCompareCaughtError(label, error, controls){
-  logAppError(label,error);
-  renderCompareErrorMessage(error?.message || String(error), controls);
-}
 function compareSelectedExcelSheet(options={}){
   if(!compareState.workbook) return;
   hydrateCompareControls();
   const sheetName=selectedExcelSheetName();
   if(!sheetName) return;
-  const compareControls=prepareCompareSelectionRender(options);
+  compareState.lastResult=null;
+  const body=$('excelCompareBody');
+  const apply=$('excelCompareApplyBtn');
+  const reset=$('excelCompareResetBtn');
+  if(!options.preserveRestore) clearCompareRestoreState();
   try{
     const cells=compareState.workbook.getCells(sheetName);
     const specCells=compareState.workbook.getCells('스펙');
     const zeroCells=getZeroScoreSheetCells(compareState.workbook);
     const additionalInfo=inspectSpecAdditionalStructure(specCells);
     if(!additionalInfo.valid){
-      renderCompareErrorMessage(additionalInfo.message, compareControls, {highlightVersion:true});
+      if(apply) apply.disabled=true;
+      if(reset) reset.disabled=false;
+      if(body) body.innerHTML=`<div class="excel-compare-error">${escapeCompareHtml(additionalInfo.message).replace('5.4392','<span class="excel-compare-version">5.4392</span>')}</div>`;
+      updateCompareActionButtons();
       return;
     }
     compareState.sourceType='excel';
@@ -2029,7 +2000,11 @@ function compareSelectedExcelSheet(options={}){
     renderExcelComparison(buildExcelComparisonForSelectedBase(cells,specCells,zeroCells,compareState.workbook.fileName,sheetName));
     updateCompareActionButtons();
   }catch(e){
-    renderCompareCaughtError('[Excel compare failed]',e,compareControls);
+    logAppError('[Excel compare failed]',e);
+    if(apply) apply.disabled=true;
+    if(reset) reset.disabled=false;
+    if(body) body.innerHTML=`<div class="excel-compare-error">${escapeCompareHtml(e?.message||String(e))}</div>`;
+    updateCompareActionButtons();
   }
 }
 function isTraitPresetCompareBundle(parsed){
@@ -2567,7 +2542,7 @@ const TRAIT_PRESET_SCHEMA_VERSION=2;
 const TRAIT_PRESET_NAME_PLACEHOLDER='예시) 더파300라버스';
 const TRAIT_PRESET_UNSUPPORTED_OLD_MESSAGE='구버전 프리셋은 더 이상 지원하지 않습니다.\n호환 엑셀버전: 5.4392\n엑셀 파일을 다시 불러온 뒤, 새 특성 프리셋을 생성해 주세요.';
 const TRAIT_PRESET_SYNC_EXCLUDED_VALUE_IDS=new Set([
-  'diff','penance','round','challengeTowerFloor','soloMode','coopMode','coopPlayers','team','pbless','spBankApply','spBankBudgetMode',
+  'diff','penance','round','challengeTowerFloor','soloMode','coopMode','coopPlayers','coopPassenger2Dr','coopPassenger3Dr','team','pbless','spBankApply','spBankBudgetMode',
   'overEnhance','repairEnhance','enhanceMaster',
   'dailyCouponBuff','shareUserBuff','unitUniqueBuff','basePierceBuff',
   'prodArtifact','prodNova','prodTeratron','prodAmon','prodAdun','prodKerrigan','prodOvermind','prodNarud',
@@ -2590,6 +2565,7 @@ const INTERNAL_VALUE_IDS=new Set([
 ]);
 const IGNORED_SAVED_VALUE_IDS=[...(DPS_CONFIG.state.skipElementIds || []),...INTERNAL_VALUE_IDS];
 const NORMALIZED_MONEY_VALUE_IDS=new Set(['sp','xp','bxp','rp','soul']);
+const SHARD_VALUE_IDS=new Set(['coralShard','aiurShard','xerusShard']);
 const SP_BANK_BUDGET_MODE_ID='spBankBudgetMode';
 function normalizeSpBankBudgetMode(value){
   return String(value ?? '').trim()==='included' ? 'included' : 'manual';
@@ -2604,6 +2580,16 @@ function normalizeMoneyStorageValue(value, id=''){
   const digits=String(value ?? '').replace(/[^0-9]/g,'').replace(/^0+(?=\d)/,'');
   if(id==='xp') return digits && !/^0+$/.test(digits) ? digits : '1';
   return digits || '0';
+}
+function normalizeShardStorageValue(value){
+  const digits=String(value ?? '').replace(/[^0-9]/g,'').replace(/^0+(?=\d)/,'');
+  const number=digits ? Number(digits) : 0;
+  return String(Math.max(0, Math.min(9999, Number.isFinite(number) ? Math.round(number) : 0)));
+}
+function normalizeShardStorageValues(values){
+  if(!values || typeof values!=='object') return values;
+  SHARD_VALUE_IDS.forEach(id=>{ values[id]=normalizeShardStorageValue(values[id]); });
+  return values;
 }
 function normalizeMoneyStorageValues(values){
   if(!values || typeof values!=='object') return values;
@@ -2652,10 +2638,10 @@ function readElementValue(el){
   if(el.type==='checkbox') return !!el.checked;
   if(el.type==='radio') return el.checked ? el.value : undefined;
   if(EROSION_CONTROL_IDS.has(el.id)) return erosionStoredValue(el.id);
-  if(SHARD_CONTROL_IDS.has(el.id)) return shardStoredValue(el.id);
   if(el.id==='round') return targetRoundStoredValue();
   if(el.id==='challengeTowerFloor') return challengeTowerFloorStoredValue();
   if(el.id==='penance') return penanceStoredValue();
+  if(SHARD_VALUE_IDS.has(el.id)) return normalizeShardStorageValue(el.value);
   if(NORMALIZED_MONEY_VALUE_IDS.has(el.id)) return normalizeMoneyStorageValue(el.value, el.id);
   return el.value;
 }
@@ -2682,15 +2668,11 @@ function writeElementValue(el, value){
     el.dataset.erosionValue=stored;
     value=stored;
   }
-  if(SHARD_CONTROL_IDS.has(el.id)){
-    const stored=normalizeShardControlValue(value);
-    el.dataset.shardValue=stored;
-    value=stored;
-  }
   if(el.id==='pbless'){
     value=normalizePowerBlessRawValue(value);
     syncPowerBlessOptions();
   }
+  if(SHARD_VALUE_IDS.has(el.id)) value=normalizeShardStorageValue(value);
   if(NORMALIZED_MONEY_VALUE_IDS.has(el.id)) value=normalizeMoneyStorageValue(value, el.id);
   if(el.type==='checkbox') el.checked=!!value;
   else el.value=value;
@@ -2715,6 +2697,7 @@ function makePublicDefaultState(){
   Object.assign(values,{optTier:values.optTier ?? '루키', utilOptTier:values.utilOptTier ?? '루키'});
   Object.entries(TRAIT_LIMIT_DEFAULTS).forEach(([id,value])=>{ if(!hasOwn(values,id)) values[id]=value; });
   values.dpsTableMinDps='1.0';
+  normalizeShardStorageValues(values);
   const inv={};
   TRAITS.forEach(t=>{ inv[t[0]]=0; });
   inv[116]=1;
@@ -2764,6 +2747,7 @@ function makeStateObject(){
   values.runeChoiceType=normalizedRune.runeChoiceType;
   values.runeChoiceValue=normalizedRune.runeChoiceValue;
   values.dpsTableMinDps=normalizeDpsTableMinDpsValue(dpsTableMinDps);
+  normalizeShardStorageValues(values);
   normalizeMoneyStorageValues(values);
   const inv={...INV};
   syncSpBankPresetState(values, inv, {budgetMode:currentSpBankBudgetMode()});
@@ -2790,6 +2774,8 @@ function sanitizeSavedValues(values, context={}){
   out.soloMode=coopMode ? 'OFF' : 'ON';
   out.coopMode=coopMode ? 'ON' : 'OFF';
   if(hasOwn(out,'coopPlayers')) out.coopPlayers=normalizeCoopPlayersValue(out.coopPlayers || out.team);
+  out.coopPassenger2Dr=normalizeCoopPassengerDefenseReduceValue(out.coopPassenger2Dr);
+  out.coopPassenger3Dr=normalizeCoopPassengerDefenseReduceValue(out.coopPassenger3Dr);
   if(hasOwn(out,'team')) out.team=normalizeTeamCountValue(out.team);
   if(hasOwn(out,'penance')) out.penance=normalizePenanceValue(out.penance, SOLO_PENANCE_MAX);
   ['round','skillRound'].forEach(id=>{
@@ -2801,7 +2787,6 @@ function sanitizeSavedValues(values, context={}){
     if(hasOwn(out,id)) out[id]=normalizeDecimalDisplayValue(out[id]);
   });
   if(hasOwn(out,'spBankApply')) out.spBankApply=normalizeSpBankApplyValue(out.spBankApply);
-  SHARD_CONTROL_IDS.forEach(id=>{ out[id]=normalizeShardControlValue(hasOwn(out,id) ? out[id] : SHARD_CONTROL_DEFAULTS[id]); });
   out[SP_BANK_BUDGET_MODE_ID]=normalizeSpBankBudgetMode(out[SP_BANK_BUDGET_MODE_ID]);
   if(hasOwn(out,'runeChoiceType') || hasOwn(out,'runeChoiceValue')){
     const normalizedRune=normalizeRuneChoiceValues(out);
@@ -2812,6 +2797,7 @@ function sanitizeSavedValues(values, context={}){
     if(!hasOwn(out,id)) return;
     out[id]=normalizeTraitLimitStorageValue(out[id]);
   });
+  normalizeShardStorageValues(out);
   normalizeMoneyStorageValues(out);
   return out;
 }
@@ -3893,14 +3879,22 @@ function compareSelectedTraitPreset(options={}){
   hydrateCompareControls();
   const preset=selectedCompareTraitPreset();
   if(!preset) return;
-  const compareControls=prepareCompareSelectionRender(options);
+  compareState.lastResult=null;
+  const body=$('excelCompareBody');
+  const apply=$('excelCompareApplyBtn');
+  const reset=$('excelCompareResetBtn');
+  if(!options.preserveRestore) clearCompareRestoreState();
   try{
     compareState.sourceType='traitPreset';
     compareState.selectedSheetName=preset.id;
     renderTraitPresetComparison(preset);
     updateCompareActionButtons();
   }catch(e){
-    renderCompareCaughtError('[trait preset compare failed]',e,compareControls);
+    logAppError('[trait preset compare failed]',e);
+    if(apply) apply.disabled=true;
+    if(reset) reset.disabled=false;
+    if(body) body.innerHTML=`<div class="excel-compare-error">${escapeCompareHtml(e?.message||String(e))}</div>`;
+    updateCompareActionButtons();
   }
 }
 function compareTraitPreset(){
@@ -4480,7 +4474,6 @@ function bindReactiveInputs(){
   const schedule=(target)=>{
     if(!shouldHandleReactiveInput(target)) return;
     if(target.matches('.money-input')) formatMoneyInput(target);
-    if(SHARD_CONTROL_IDS.has(target.id)) syncShardControls();
     if(target.id==='spBankApply') applySpBankBudgetMode('manual');
     if(target.id==='xp') normalizeXpInput();
     if(target.id==='round' || target.id==='skillRound' || target.id==='challengeTowerFloor') normalizeRoundInput(target.id);
@@ -4552,7 +4545,6 @@ function initApp(){
   syncExclusiveRuneOptions();
   updateZeroScoreCalculator();
   formatAllMoneyInputs();
-  syncShardControls();
   syncTraitLimitInputs();
   loadState();
   applyDefaultTraitPresetOnBoot();
