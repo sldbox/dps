@@ -222,6 +222,7 @@ function bindDpsTableEvents(){
         <div class="notice-step-card">
           <h3>도전의탑</h3>
           <p>내 스팩 x 버프 x 피해보정 x 크리/공속 보정 × 적 방어력 &amp; 체력 &amp; 실드 &amp; 물량 ÷ 라운드 시간 + RP 최대 8초 추가 (방관 &amp; 총뎀)</p>
+          <p>81층~90층은 변동폭이 크기때문에 DPS가 더 떨어질수 있습니다.</p>
         </div>
       `
     },
