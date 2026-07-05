@@ -3194,7 +3194,7 @@ function resolveTraitPresetSelection(store,requestedId=''){
   if(!presets.length) return '';
   const requested=String(requestedId || '');
   if(requested && presets.some(preset=>preset.id===requested)) return requested;
-  return presets[0].id || '';
+  return firstTraitPresetSelectId(store);
 }
 function rememberTraitPresetSelection(id){
   updateTraitPresetStatus({selectedTraitPresetId:String(id || '').trim()},{persist:true});
@@ -3251,12 +3251,30 @@ function traitPresetCategoryKey(preset){
   if(normalizeOnOffValue(values.coopMode,'OFF')==='ON') return 'coop';
   return 'solo';
 }
+function sortedTraitPresetBuckets(store){
+  const buckets=TRAIT_PRESET_SELECT_GROUPS.reduce((out,group)=>{ out[group.key]=[]; return out; },{});
+  (Array.isArray(store?.presets) ? store.presets : []).forEach(preset=>{
+    const key=traitPresetCategoryKey(preset);
+    (buckets[key] || buckets.solo).push(preset);
+  });
+  TRAIT_PRESET_SELECT_GROUPS.forEach(group=>{
+    buckets[group.key].sort((a,b)=>compareTraitPresetForSelect(a,b,group.key));
+  });
+  return buckets;
+}
+function firstTraitPresetSelectId(store){
+  const buckets=sortedTraitPresetBuckets(store);
+  for(const group of TRAIT_PRESET_SELECT_GROUPS){
+    const preset=buckets[group.key]?.[0];
+    if(preset?.id) return preset.id;
+  }
+  return '';
+}
 function traitPresetOptionName(preset, categoryKey){
+  const {values,meta}=traitPresetValueSource(preset);
   let name=normalizeTraitPresetName(preset?.name || '');
   name=name.replace(/^(개인|솔로|협동|버스)\s*[-–—:·]\s*/,'').trim();
   if(categoryKey==='tower'){
-    const values=(preset && preset.state && preset.state.values && typeof preset.state.values==='object') ? preset.state.values : {};
-    const meta=(preset && preset.meta && typeof preset.meta==='object') ? preset.meta : {};
     name=name.replace(/^(도전의\s*탑|도전의탑)\s*[-–—:·]?\s*/,'').trim();
     if(/^\d+$/.test(name)) name=`${name}층`;
     if(!name){
@@ -3266,14 +3284,12 @@ function traitPresetOptionName(preset, categoryKey){
   }
   return name || normalizeTraitPresetName(preset?.name || '프리셋');
 }
-function traitPresetSelectLabel(preset, store, updatedIds, categoryKey){
-  const tags=[];
-  if(updatedIds.has(preset.id)) tags.push('업데이트됨');
-  const suffix=tags.length ? ` · ${tags.join(' · ')}` : '';
+function traitPresetSelectLabel(preset, updatedIds, categoryKey){
+  const suffix=updatedIds.has(preset.id) ? ' · 업데이트됨' : '';
   return `${traitPresetOptionName(preset, categoryKey)}${suffix}`;
 }
 function renderTraitPresetSelectOptions(select, store, selected, updatedIds){
-  const hasPresets=store.presets.length>0;
+  const hasPresets=Array.isArray(store?.presets) && store.presets.length>0;
   select.innerHTML='';
   const empty=document.createElement('option');
   empty.value='';
@@ -3281,20 +3297,16 @@ function renderTraitPresetSelectOptions(select, store, selected, updatedIds){
   empty.disabled=true;
   empty.hidden=hasPresets;
   select.appendChild(empty);
-  const buckets=TRAIT_PRESET_SELECT_GROUPS.reduce((out,group)=>{ out[group.key]=[]; return out; },{});
-  store.presets.forEach(preset=>{
-    const key=traitPresetCategoryKey(preset);
-    (buckets[key] || buckets.solo).push(preset);
-  });
+  const buckets=sortedTraitPresetBuckets(store);
   TRAIT_PRESET_SELECT_GROUPS.forEach(group=>{
-    const presets=[...(buckets[group.key] || [])].sort((a,b)=>compareTraitPresetForSelect(a,b,group.key));
+    const presets=buckets[group.key] || [];
     if(!presets.length) return;
     const optgroup=document.createElement('optgroup');
     optgroup.label=group.label;
     presets.forEach(preset=>{
       const option=document.createElement('option');
       option.value=preset.id;
-      option.textContent=traitPresetSelectLabel(preset, store, updatedIds, group.key);
+      option.textContent=traitPresetSelectLabel(preset, updatedIds, group.key);
       optgroup.appendChild(option);
     });
     select.appendChild(optgroup);
@@ -3691,11 +3703,11 @@ function normalizeTraitPresetImportData(parsed,fileName=''){
   const importContext={fileVersion:sourceFileVersion,schemaVersion:sourceSchemaVersion,storageVersion:parsed.storageVersion || ''};
   const presets=parsed.presets.map((item,index)=>normalizeTraitPresetItem(item,index,importContext)).filter(Boolean);
   if(!presets.length) throw new Error(parsed.presets.length ? TRAIT_PRESET_UNSUPPORTED_OLD_MESSAGE : '가져올 수 있는 프리셋이 없습니다.');
-  return {defaultPresetId:String(parsed.defaultPresetId || ''),defaultPresetName:normalizeTraitPresetName(parsed.defaultPresetName || ''),presets};
+  return {presets};
 }
 function mergeTraitPresetImport(imported){
   let store=loadTraitPresetStore();
-  let added=0, replaced=0, firstImportedPresetId='', defaultImportedPresetId='';
+  let added=0, replaced=0, firstImportedPresetId='';
   const idMap=new Map();
   imported.presets.forEach((preset,index)=>{
     const existingIndex=store.presets.findIndex(item=>item.name===preset.name);
@@ -3713,10 +3725,9 @@ function mergeTraitPresetImport(imported){
       added++;
     }
   });
-  store.defaultPresetId='';
   store=saveTraitPresetStore(store,{source:'import'});
   clearTraitPresetUpdatedStatus('import');
-  return {store,added,replaced,firstImportedPresetId,defaultImportedPresetId};
+  return {store,added,replaced,firstImportedPresetId};
 }
 function isExcelPresetImportFile(file){
   const name=String(file?.name||'').toLowerCase();
@@ -3785,7 +3796,7 @@ function saveSelectedExcelSheetAsTraitPreset(){
     if(!additionalInfo.valid) throw new Error(additionalInfo.message);
     const importedState=buildExcelState(cells,specCells,zeroCells,sheetName).state;
     const now=Date.now();
-    const imported={defaultPresetId:'',defaultPresetName:'',presets:[{
+    const imported={presets:[{
       id:makeTraitPresetId(),
       name,
       schemaVersion:TRAIT_PRESET_SCHEMA_VERSION,
