@@ -1,4 +1,4 @@
-/* ===== modal.js | 모달 공통 API / 정보 모달 ===== */
+/* ===== modal.js | 모달 공통 API / 문의 팝업 ===== */
 
 /* ===== 00. 공통 모달 API ===== */
 const modalById = id => document.getElementById(id);
@@ -190,146 +190,98 @@ function bindDpsTableEvents(){
 }
 
 
-/* ===== 02. 정보 모달 ===== */
+/* ===== 02. 문의 팝업 ===== */
 (() => {
   'use strict';
 
-  const NOTICE_TABS = [
-    ['info', '정보', 'DPS 기준'],
-    ['creator', '문의', '제보 채널']
-  ];
-  const NOTICE_TAB_IDS = new Set(NOTICE_TABS.map(([id]) => id));
-  const NOTICE_CONTENT = {
-    info: {
-      title: '정보',
-      html: `
-        <div class="notice-hero-card">
-          <span class="notice-hero-label">DPS 계산기준</span>
-          <strong>웹 특성 계산기 독자적 계산법 적용</strong>
+  const CONTACT_CONTENT_HTML = `
+    <section class="notice-content" data-notice-content="creator">
+      <div class="notice-section-card notice-contact-card">
+        <header class="notice-section-head"><span>문의</span></header>
+        <div class="notice-section-body">
+          <div class="notice-creator-card">
+            <div><span>문의</span><b>회장</b></div>
+            <div><span>핸들값</span><b>3-S2-1-2461127</b></div>
+          </div>
+          <div class="notice-step-card">
+            <h3>문의할 때 제작자에게 전달할 파일 및 내용</h3>
+            <ul>
+              <li>웹버전 통합 프리셋 파일
+                <ul>
+                  <li>프리셋 명</li>
+                </ul>
+              </li>
+              <li>엑셀 파일 문제인 경우 엑셀 파일
+                <ul>
+                  <li>고행 시트 명</li>
+                </ul>
+              </li>
+              <li>어떤 문제인지</li>
+              <li>원래 나와야 하는 값과 실제로 보인 값</li>
+              <li>가능하면 스크린샷</li>
+            </ul>
+          </div>
+          <div class="notice-discord-row">
+            <span>개복디 오픈디스코드</span>
+            <a href="https://discord.gg/z7DwqvGeB5" target="_blank" rel="noopener noreferrer">입장하기</a>
+          </div>
         </div>
-        <div class="notice-step-card">
-          <h3>개인</h3>
-          <p>내 스팩 x 버프 x 피해보정 x 크리/공속 보정 × 적 방어력 &amp; 체력 &amp; 실드 &amp; 물량 ÷ 라운드 시간</p>
+      </div>
+      <div class="notice-section-card notice-dps-standard-card">
+        <header class="notice-section-head"><span>DPS 계산 기준</span></header>
+        <div class="notice-dps-standard-list">
+          <div><b>개인</b><span>내 스펙 × 버프 × 피해보정 × 크리/공속 보정 × 적 방어력 × 적 체력·실드·물량 ÷ 라운드 시간</span></div>
+          <div><b>협동</b><span>내 스펙 × 버프 × 피해보정 × 크리/공속 보정 × 적 방어력 × 적 체력·실드·물량(2인/3인 물량 반영) ÷ 라운드 시간</span></div>
+          <div><b>도전의탑</b><span>내 스펙 × 버프 × 피해보정 × 크리/공속 보정 × 적 방어력 × 적 체력·실드·물량 ÷ 라운드 시간(RP 최대 8초 반영)</span></div>
         </div>
-        <div class="notice-step-card">
-          <h3>협동</h3>
-          <p>내 스팩 x 버프 x 피해보정 x 크리/공속 보정 × 2P·3P 모든 스팩 0 기준 × 적 방어력 &amp; 체력 &amp; 실드 &amp; 물량 ÷ 라운드 시간</p>
-          <ul>
-            <li>2인 협동은 2배 물량, 3인 협동은 3배 물량 적용</li>
-            <li>기본정보에서 2P·3P 승객 방어력감소 선택 가능</li>
-          </ul>
-        </div>
-        <div class="notice-step-card">
-          <h3>도전의탑</h3>
-          <p>내 스팩 x 버프 x 피해보정 x 크리/공속 보정 × 적 방어력 &amp; 체력 &amp; 실드 &amp; 물량 ÷ 라운드 시간 + RP 최대 8초 추가 (방관 &amp; 총뎀)</p>
-          <p>81층~90층은 변동폭이 크기때문에 DPS가 더 떨어질수 있습니다.</p>
-        </div>
-      `
-    },
-    creator: {
-      title: '문의',
-      html: `
-        <div class="notice-creator-card">
-          <div><span>문의</span><b>회장</b></div>
-          <div><span>핸들값</span><b>3-S2-1-2461127</b></div>
-        </div>
-        <div class="notice-step-card">
-          <h3>문의할 때 제작자에게 전달할 파일 및 내용</h3>
-          <ul>
-            <li>웹버전 통합 프리셋 파일
-              <ul>
-                <li>프리셋 명</li>
-              </ul>
-            </li>
-            <li>엑셀 파일 문제인 경우 엑셀 파일
-              <ul>
-                <li>고행 시트 명</li>
-              </ul>
-            </li>
-            <li>어떤 문제인지</li>
-            <li>원래 나와야 하는 값과 실제로 보인 값</li>
-            <li>가능하면 스크린샷</li>
-          </ul>
-        </div>
-        <div class="notice-discord-row">
-          <span>개복디 오픈디스코드</span>
-          <a href="https://discord.gg/z7DwqvGeB5" target="_blank" rel="noopener noreferrer">입장하기</a>
-        </div>
-      `
-    }
-  };
+      </div>
+    </section>`;
 
-  let activeTab = 'info';
-  const resolveTab = (tab) => NOTICE_TAB_IDS.has(tab) ? tab : 'info';
-
-  function renderNoticeTabs(target) {
-    return NOTICE_TABS.map(([id, label, meta]) => {
-      const active = id === target;
-      return `<button type="button" class="notice-tab${active ? ' active' : ''}" data-notice-tab="${id}" aria-selected="${active ? 'true' : 'false'}"><span>${label}</span><small>${meta}</small></button>`;
-    }).join('');
-  }
-
-  function renderNoticeContent(target) {
-    const item = NOTICE_CONTENT[target] || NOTICE_CONTENT.info;
-    return `<section class="notice-content" data-notice-content="${target}"><h2><span>${item.title}</span></h2><div class="notice-content-body">${item.html}</div></section>`;
-  }
-
-  function renderNoticeInto(root, target = activeTab) {
-    if (!root) return;
-    activeTab = resolveTab(target);
-    root.innerHTML = `<div class="notice-tabs" role="tablist" aria-label="정보&안내 탭">${renderNoticeTabs(activeTab)}</div><div class="notice-content-mount">${renderNoticeContent(activeTab)}</div>`;
-  }
-
-  function ensureNoticeModal() {
+  function ensureContactPopup() {
     const existing = modalById('noticeModalShell');
     if (existing) return existing;
-    return window.DpsModal.createShell('noticeModalShell', 'notice-modal-shell', `
+    return window.DpsModal.createShell('noticeModalShell', 'notice-modal-shell contact-popup-shell', `
       <div class="notice-modal-backdrop" data-notice-close="1"></div>
-      <section class="notice-modal" role="dialog" aria-modal="true" aria-labelledby="noticeModalTitle">
+      <section class="notice-modal contact-popup" role="dialog" aria-modal="true" aria-labelledby="noticeModalTitle">
         <header class="notice-modal-head">
-          <div class="notice-modal-title-wrap"><span class="notice-modal-icon" aria-hidden="true">i</span><div><span class="notice-modal-kicker">DPS CALCULATOR</span><h2 id="noticeModalTitle">정보&안내</h2></div></div>
-          <button type="button" class="notice-modal-close" data-notice-close="1" aria-label="정보&안내 닫기">×</button>
+          <div class="notice-modal-title-wrap"><span class="notice-modal-icon" aria-hidden="true">?</span><div><span class="notice-modal-kicker">DPS CALCULATOR</span><h2 id="noticeModalTitle">문의</h2></div></div>
+          <button type="button" class="notice-modal-close" data-notice-close="1" aria-label="문의 닫기">×</button>
         </header>
-        <div class="notice-modal-body" id="noticeModalBody"></div>
+        <div class="notice-modal-body" id="noticeModalBody">${CONTACT_CONTENT_HTML}</div>
       </section>`);
   }
 
-  function openNoticeModal(tab = 'info') {
-    ensureNoticeModal();
-    renderNoticeInto(modalById('noticeModalBody'), tab);
+  function openContactPopup() {
+    ensureContactPopup();
+    const body = modalById('noticeModalBody');
+    if (body && !body.innerHTML.trim()) body.innerHTML = CONTACT_CONTENT_HTML;
     window.DpsModal.setOpen('noticeModalShell', 'notice-modal-open', true, { rootClass: true });
   }
 
-  function closeNoticeModal() {
+  function closeContactPopup() {
     window.DpsModal.setOpen('noticeModalShell', 'notice-modal-open', false, { rootClass: true });
   }
 
-  function handleNoticeClick(event) {
-    if (event.target.closest('[data-action="openNoticeModal"], [data-notice-open]')) {
+  function handleContactPopupClick(event) {
+    if (event.target.closest('[data-notice-open]')) {
       event.preventDefault();
-      openNoticeModal('info');
+      openContactPopup();
       return;
     }
     if (event.target.closest('[data-notice-close]')) {
       event.preventDefault();
-      closeNoticeModal();
-      return;
-    }
-    const tabTarget = event.target.closest('[data-notice-tab]');
-    if (tabTarget) {
-      event.preventDefault();
-      renderNoticeInto(modalById('noticeModalBody'), tabTarget.getAttribute('data-notice-tab'));
+      closeContactPopup();
     }
   }
 
-  function initNotice() {
-    document.addEventListener('click', handleNoticeClick, true);
+  function initContactPopup() {
+    document.addEventListener('click', handleContactPopupClick, true);
     document.addEventListener('keydown', (event) => {
-      if (event.key === 'Escape' && window.DpsModal.isOpen('noticeModalShell')) closeNoticeModal();
+      if (event.key === 'Escape' && window.DpsModal.isOpen('noticeModalShell')) closeContactPopup();
     });
   }
 
-  window.DpsNotice = { open: openNoticeModal, close: closeNoticeModal };
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initNotice, { once: true });
-  else initNotice();
+  window.DpsNotice = { open: openContactPopup, close: closeContactPopup };
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initContactPopup, { once: true });
+  else initContactPopup();
 })();

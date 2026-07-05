@@ -5,18 +5,18 @@
 <meta name="google-site-verification" content="RTuDWbMdnKgbpRpl05eXh9epFwWRSxju4NOl8OtjMsI" />
 <!-- 00. 빌드 버전 / 캐시 무효화 / 원격 이미지 경로 -->
 <script>
-window.APP_VERSION = "dps-2607051502R";
-window.DPS_BUILD_VERSION = "dps-2607051502R";
+window.APP_VERSION = "dps-2607052200";
+window.DPS_BUILD_VERSION = "dps-2607052200";
 window.DPS_PREVIEW_FRESH = new URLSearchParams(window.location.search).get('fresh') || '';
 window.DPS_ASSET_VERSIONS = {
-  "data.js": "dps-2607051502R",
-  "calc.js": "dps-2607051502R",
-  "app.js": "dps-2607051502R",
-  "modal.js": "dps-2607051502R",
-  "responsive.js": "dps-2607051502R",
-  "style.css": "dps-2607051502R",
-  "icon.png": "dps-2607051502R",
-  "logo.png": "dps-2607051502R"
+  "data.js": "dps-2607052200",
+  "calc.js": "dps-2607052200",
+  "app.js": "dps-2607052200",
+  "modal.js": "dps-2607052200",
+  "responsive.js": "dps-2607052200",
+  "style.css": "dps-2607052200",
+  "icon.png": "dps-2607052200",
+  "logo.png": "dps-2607052200"
 };
 window.dpsAssetVersion = function(key){
   var versions = window.DPS_ASSET_VERSIONS || {};
@@ -191,14 +191,14 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 <meta content="https://sldbox.github.io/dps/" property="og:url"/>
 <meta content="개복디 특성 계산기" property="og:title"/>
 <meta content="특성 투자, 재화 사용량, 표기 스탯, 총데미지, DPS를 한 번에 계산할 수 있는 개복디 전용 계산기입니다." property="og:description"/>
-<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2607051502R" property="og:image"/>
-<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2607051502R" property="og:image:secure_url"/>
+<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2607052200" property="og:image"/>
+<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2607052200" property="og:image:secure_url"/>
 <meta content="image/png" property="og:image:type"/>
 <meta content="개복디 특성 계산기 로고" property="og:image:alt"/>
 <meta content="summary_large_image" name="twitter:card"/>
 <meta content="개복디 특성 계산기" name="twitter:title"/>
 <meta content="특성 투자, 재화 사용량, 표기 스탯, 총데미지, DPS를 한 번에 계산할 수 있는 개복디 전용 계산기입니다." name="twitter:description"/>
-<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2607051502R" name="twitter:image"/>
+<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2607052200" name="twitter:image"/>
 <meta content="개복디 특성 계산기 로고" name="twitter:image:alt"/>
 <link href="https://cdn.jsdelivr.net" rel="preconnect"/>
 <link crossorigin="" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" rel="stylesheet"/>
@@ -262,7 +262,7 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 </script>
 <div id="dpsBootScreen" aria-live="polite"><div class="boot-card"><div class="boot-title">특성 계산기 적용 중</div><div class="boot-desc">최신 빌드와 스타일을 불러오는 중입니다.</div></div></div>
 <div class="wrap">
-<!-- 03. 앱 헤더: 자료 바로가기 / 정보 / 글씨 크기 / 편의 메뉴 -->
+<!-- 03. 앱 헤더: 자료 바로가기 / 문의 / 글씨 크기 / 편의 메뉴 -->
 <div class="hdr app-header">
 <div class="hdr-brand">
 <div aria-label="DPS 로고" class="hdr-logo">DPS</div>
@@ -277,7 +277,7 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 </div>
 </div>
 <div class="hdr-meta">
-<button class="btn subtle ui-action-btn header-reference-btn notice-entry-btn tone-notice" data-action="openNoticeModal" type="button" aria-label="정보 열기"><span class="notice-entry-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><circle cx="12" cy="12" r="9"></circle><path d="M12 7.2v6.2"></path><path d="M12 17h.01"></path></svg></span><span class="notice-entry-text">정보</span></button>
+<button class="btn subtle ui-action-btn header-reference-btn notice-entry-btn tone-notice" data-notice-open="1" type="button" aria-label="문의 열기"><span class="notice-entry-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><circle cx="12" cy="12" r="9"></circle><path d="M12 7.2v6.2"></path><path d="M12 17h.01"></path></svg></span><span class="notice-entry-text">문의</span></button>
 <div class="header-convenience">
 <button class="btn subtle ui-action-btn header-reference-btn header-convenience-toggle tone-reference" data-action="toggleConvenienceMenu" type="button" aria-expanded="false" aria-controls="headerConvenienceMenu">편의</button>
 <div class="header-convenience-menu" id="headerConvenienceMenu" aria-label="편의 메뉴" hidden>
@@ -648,11 +648,13 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 <div class="trait-preset-load-row">
 <label class="trait-preset-label" for="traitPresetSelect">프리셋 목록</label>
 <select id="traitPresetSelect" aria-label="특성 프리셋 목록" disabled><option value="" disabled selected>저장된 프리셋 없음</option></select>
-<button class="btn pri ui-action-btn" data-action="updateTraitPreset" type="button">프리셋 업데이트</button>
+<div class="trait-preset-load-actions">
+<button class="btn pri ui-action-btn" data-action="loadTraitPreset" type="button">프리셋 로드</button>
+</div>
 </div>
 <div class="trait-preset-actions">
 <button class="btn subtle ui-action-btn" data-action="renameTraitPreset" type="button">프리셋명 변경</button>
-<button class="btn subtle ui-action-btn" data-action="setDefaultTraitPreset" id="traitPresetDefaultBtn" type="button">기본 지정</button>
+<button class="btn subtle ui-action-btn" data-action="updateTraitPreset" type="button">프리셋 업데이트</button>
 <button class="btn subtle tone-compare ui-action-btn" data-action="compareTraitPreset" type="button">프리셋 분석</button>
 <button class="btn subtle tone-import ui-action-btn" data-action="importTraitPresets" type="button">가져오기</button>
 <button class="btn subtle tone-export ui-action-btn" data-action="exportTraitPresets" type="button">내보내기</button>
@@ -736,6 +738,7 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 <div class="stat-row"><div class="sc-name">멀티 크리 확률</div><div class="sc-val" id="sMCPDisplay">—</div><div class="sc-val" id="sMCPActual">—</div></div>
 <div class="stat-row"><div class="sc-name">적 방어력 / 물량 / 총물량</div><div class="sc-val" id="enemyArmorQuick">0</div><div class="sc-val" id="enemyCountQuick">0</div></div>
 <div class="stat-row"><div class="sc-name">적 체력 / 실드</div><div class="sc-val" id="enemyHpQuick">0</div><div class="sc-val" id="enemyShieldQuick">0</div></div>
+<div class="stat-row damage-board-round-time-row"><div class="sc-name">라운드 시간</div><div class="sc-val" id="enemyRoundTimeQuick">0초</div><div class="sc-val" id="enemyRpTimeQuick">RP 0초 / 최대 8초</div></div>
 </div>
 </div>
 

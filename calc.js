@@ -21,7 +21,10 @@ function excelFlag(value){
 
 const ROUND_INPUT_MIN=1;
 const ROUND_INPUT_MAX=300;
-const DPS_FINAL_DISPLAY_MULTIPLIER=10;
+const DPS_BATTLE_BASE_ROUND=300;
+const DPS_TOWER_BASE_FLOOR=81;
+const DPS_BURDEN_MULTIPLIER_MIN=0.000001;
+const TOWER_ROUND_TIME_BONUS_MAX=8;
 const TOWER_FLOOR_INPUT_MIN=1;
 const TOWER_FLOOR_INPUT_MAX=90;
 function normalizedIntegerRange(value, min, max, fallback=min){
@@ -143,7 +146,7 @@ function effectiveXpValue(){return Math.max(1, v('xp'));}
 function isCoopMode(){return normalizeOnOffValue(vs('coopMode'),'OFF')==='ON';}
 function isCoopActive(diffName=vs('diff')){return isCoopMode() && isCoopAllowedDifficulty(diffName);}
 function coopPlayerCount(){return Number(normalizeCoopPlayersValue(vs('coopPlayers')));}
-function battleEnemyCountMultiplier(){return isCoopActive() ? coopPlayerCount() : 1;}
+function battleEnemyCountMultiplier(diffName=vs('diff')){return isCoopActive(diffName) ? coopPlayerCount() : 1;}
 function currentPenanceMax(){return isCoopActive() ? COOP_PENANCE_MAX : SOLO_PENANCE_MAX;}
 function shouldIgnorePenanceForDifficulty(diffName=vs('diff')){
   const name=difficultyName(diffName);
@@ -446,27 +449,22 @@ function tableRoundTime(table, round, fallback=60){
 function towerRoundTimeBonus(){
   const tdRp=Math.max(0, +INV[129] || 0);
   const pierceRp=Math.max(0, +INV[130] || 0);
-  return Math.floor((tdRp + pierceRp) * 0.2);
+  const bonus=Math.floor((tdRp + pierceRp) * 0.2);
+  return Math.max(0, Math.min(TOWER_ROUND_TIME_BONUS_MAX, bonus));
+}
+function enemyRoundTimeBonus(diffName=vs('diff')){
+  return isTowerDifficulty(diffName) ? towerRoundTimeBonus() : 0;
 }
 function enemyRoundTime(round, diffName=vs('diff')){
   const mode=battleDataModeForDifficulty(diffName);
   const r=normalizedBattleRound(round, mode);
   const base=tableRoundTime(mode.roundTimeTable, r);
-  return isTowerDifficulty(diffName) ? base + towerRoundTimeBonus() : base;
-}
-function roundTimeDpsScale(round, diffName=vs('diff')){
-  const time=enemyRoundTime(round, diffName);
-  const count=Math.max(1, enemyRoundDisplayCount(round));
-  return time / count;
-}
-function applyRoundTimeDpsScale(dps, round, diffName=vs('diff')){
-  const value=Number(dps);
-  return Number.isFinite(value) ? value * roundTimeDpsScale(round, diffName) : 0;
+  return base + enemyRoundTimeBonus(diffName);
 }
 function battleModeLabel(){return isCoopMode() ? '협동' : '개인';}
 function dpsContextModeLabel(diffName=vs('diff')){return `${battleModeLabel()}/${enemyDisplayModeLabel(diffName)}`;}
-function enemyRoundData(round){
-  const mode=battleDataModeForDifficulty();
+function enemyRoundData(round, diffName=vs('diff')){
+  const mode=battleDataModeForDifficulty(diffName);
   const r=normalizedBattleRound(round, mode, 0, 0);
   if(r<=0) return {round:0,armor:0,unitRound:0,count:0,hp:0,shield:0};
   const armorRow=lookupFloor(mode.armorTable, r);
@@ -480,26 +478,46 @@ function enemyRoundData(round){
     shield: unitRow ? unitRow[3] : 0
   };
 }
-function enemyRoundCountTotal(round){
-  const mode=battleDataModeForDifficulty();
-  if(mode.totalMode==='current') return enemyRoundData(round).count;
+function enemyRoundCountTotal(round, diffName=vs('diff')){
+  const mode=battleDataModeForDifficulty(diffName);
+  if(mode.totalMode==='current') return enemyRoundData(round, diffName).count;
   const r=normalizedBattleRound(round, mode, 0, 0);
   if(r<=0) return 0;
   return mode.unitTable.reduce((total,row)=>total+(row[0]<=r ? (+row[1]||0) : 0),0);
 }
-function enemyRoundDisplayCount(round){
-  return enemyRoundData(round).count * battleEnemyCountMultiplier();
+function enemyRoundDisplayCount(round, diffName=vs('diff')){
+  return enemyRoundData(round, diffName).count * battleEnemyCountMultiplier(diffName);
 }
-function enemyTotalDisplayCount(round){
-  return enemyRoundCountTotal(round) * battleEnemyCountMultiplier();
+function enemyTotalDisplayCount(round, diffName=vs('diff')){
+  return enemyRoundCountTotal(round, diffName) * battleEnemyCountMultiplier(diffName);
 }
 function enemyDisplayCountText(round){
   if(isTowerDifficulty()) return fullNumber(enemyRoundData(round).count);
   return `${fullNumber(enemyRoundDisplayCount(round))} / ${fullNumber(enemyTotalDisplayCount(round))}`;
 }
 
-function towerBaseClearTime(floor){
-  return tableRoundTime(TOWER_TIME_TABLE, normalizedBattleRound(floor, BATTLE_DATA_MODES.tower));
+function enemyBurdenDurability(enemyData, displayHR, displaySR){
+  const hpReduce=Math.max(0, Number(displayHR)||0) / 100;
+  const shieldReduce=Math.max(0, Number(displaySR)||0) / 100;
+  const hpRemain=Math.max(0, (enemyData?.hp || 0) * (1 - hpReduce));
+  const shieldRemain=Math.max(0, (enemyData?.shield || 0) * (1 - shieldReduce));
+  return Math.max(1, hpRemain + shieldRemain);
+}
+function burdenMultiplier(base, current){
+  if(!Number.isFinite(base) || !Number.isFinite(current) || current<=0) return 1;
+  return Math.min(1, Math.max(DPS_BURDEN_MULTIPLIER_MIN, base / current));
+}
+function battleBurdenScore(round, displayHR, displaySR, diffName=vs('diff'), countMultiplier=battleEnemyCountMultiplier(diffName)){
+  const enemy=enemyRoundData(round, diffName);
+  if(!enemy.count) return 1;
+  const count=Math.max(1, (enemy.count || 0) * Math.max(1, Number(countMultiplier)||1));
+  const time=Math.max(1, enemyRoundTime(enemy.round, diffName));
+  return Math.max(1, count * enemyBurdenDurability(enemy, displayHR, displaySR) / time);
+}
+function battleDpsDisplayMultiplier(diffName, round, displayHR, displaySR){
+  const base=battleBurdenScore(DPS_BATTLE_BASE_ROUND, displayHR, displaySR, diffName, 1);
+  const current=battleBurdenScore(round, displayHR, displaySR, diffName, battleEnemyCountMultiplier(diffName));
+  return burdenMultiplier(base, current);
 }
 function towerFloorEnemyData(floor){
   const r=Math.max(1, Math.min(90, Math.round(+floor||1)));
@@ -516,21 +534,20 @@ function towerFloorEnemyData(floor){
 function towerBurdenScore(floor, displayHR, displaySR){
   const enemy=towerFloorEnemyData(floor);
   if(!enemy.count) return 1;
-  const hpRemain=Math.max(0, (enemy.hp||0) * (1 - Math.max(0, displayHR||0)/100));
-  const shieldRemain=Math.max(0, (enemy.shield||0) * (1 - Math.max(0, displaySR||0)/100));
-  const durability=Math.max(1, hpRemain + shieldRemain);
-  return Math.max(1, enemy.count * durability / towerBaseClearTime(enemy.round));
+  const time=Math.max(1, enemyRoundTime(enemy.round, TOWER_DIFFICULTY_NAME));
+  return Math.max(1, enemy.count * enemyBurdenDurability(enemy, displayHR, displaySR) / time);
 }
 function towerDpsDisplayMultiplier(floor, displayHR, displaySR){
   const r=Math.max(1, Math.min(90, Math.round(+floor||1)));
   if(r<=80) return 1;
-  const base=towerBurdenScore(81, displayHR, displaySR);
+  const base=towerBurdenScore(DPS_TOWER_BASE_FLOOR, displayHR, displaySR);
   const current=towerBurdenScore(r, displayHR, displaySR);
-  if(!Number.isFinite(base) || !Number.isFinite(current) || current<=0) return 1;
-  return Math.min(1, Math.max(0.000001, base/current));
+  return burdenMultiplier(base, current);
 }
 function contentDpsDisplayMultiplier(diffName, round, displayHR, displaySR){
-  return difficultyName(diffName)===TOWER_DIFFICULTY_NAME ? towerDpsDisplayMultiplier(round, displayHR, displaySR) : 1;
+  return difficultyName(diffName)===TOWER_DIFFICULTY_NAME
+    ? towerDpsDisplayMultiplier(round, displayHR, displaySR)
+    : battleDpsDisplayMultiplier(diffName, round, displayHR, displaySR);
 }
 
 /* ===== 06. 룬 / 강화 / 상단 옵션 계산 ===== */
@@ -777,10 +794,10 @@ function computeStatsRaw(){
   const dt=personalUaDtMultiplier();
   const gradeAs=UNIT_GRADE_AS[activeUnitGrade()] ?? 0;
   const AB6=(1+(M7+upperStats.actualAs+gradeAs)/100)*(1-diff.as/100)*M13*dt;
-  const rawM19=(AB3*AB4*AB5*AB6) * contentDpsDisplayMultiplier(vs('diff'), targetRound, displayHR, displaySR);
+  const displayMultiplier=contentDpsDisplayMultiplier(vs('diff'), targetRound, displayHR, displaySR);
+  const rawM19=AB3*AB4*AB5*AB6;
   const roundTime=enemyRoundTime(targetRound);
-  const roundTimeScale=roundTimeDpsScale(targetRound);
-  const M19=rawM19 * roundTimeScale * DPS_FINAL_DISPLAY_MULTIPLIER;
+  const M19=rawM19 * displayMultiplier;
   let spU=0,spO=0,epU=0,rpU=0,soulU=0;
   TRAITS.forEach(t=>{
     const row=t[0];
@@ -798,7 +815,7 @@ function computeStatsRaw(){
                   + (checkboxOn('unitUniqueBuff', true) ? 20 : 0) + (v('unitLevel') || 11) * 5;
   const actualSR = displaySR * shieldRatio;
   const actualHR = displayHR * hpRatio;
-  return {M4,M7,M8,M9,M10,M11,M12,actualM12,M13,M16,M17,M18,M19,rawM19,roundTime,roundTimeScale,rawCD,rawTD,diff,
+  return {M4,M7,M8,M9,M10,M11,M12,actualM12,M13,M16,M17,M18,M19,rawM19,roundTime,displayMultiplier,rawCD,rawTD,diff,
           displayAD,displayAPS,displayAPU,actualAPU,displayUA,displaySR,displayHR,actualSR,actualHR,
           spTotal:spU+spO,spU,spO,epU,rpU,soulU,spBank:spBankRawBonus(),spBankApplied:isSpBankApplied(),effectiveSP:effectiveSP(),excelPierce,enemyData};
 }
@@ -839,15 +856,13 @@ function calculateArtifactDpsRaw(stats=computeStatsRaw()){
   const critMultiplier=dps2(stats.M8||0, stats.M10||0, stats.M9||0, stats.M16||0, stats.M17||0, stats.M18||0, 1);
   const uaMultiplier=(1 - (stats.diff?.as||0) / 100) * (stats.M13||0) * artifactEnergyRegenMultiplier() * personalUaDtMultiplier();
   const displayMultiplier=contentDpsDisplayMultiplier(vs('diff'), ctx.targetRound, stats.displayHR||0, stats.displaySR||0);
-  const rawArtifactDps=dps0Part * flowerMultiplier * adTdMultiplier * critMultiplier * uaMultiplier * displayMultiplier;
+  const rawArtifactDps=dps0Part * flowerMultiplier * adTdMultiplier * critMultiplier * uaMultiplier;
   const roundTime=enemyRoundTime(ctx.targetRound);
-  const roundTimeScale=roundTimeDpsScale(ctx.targetRound);
-  const artifactDps=rawArtifactDps * roundTimeScale * DPS_FINAL_DISPLAY_MULTIPLIER;
+  const artifactDps=rawArtifactDps * displayMultiplier;
   return {
     dps:Number.isFinite(artifactDps) ? artifactDps : 0,
     rawDps:Number.isFinite(rawArtifactDps) ? rawArtifactDps : 0,
     roundTime,
-    roundTimeScale,
     dps0:dps0Part,
     flowerMultiplier,
     adTdMultiplier,
@@ -1859,8 +1874,11 @@ window.DPS_CALC=Object.freeze({
   enemyTableModeForDifficulty,
   enemyDisplayModeLabel,
   enemyRoundTime,
-  roundTimeDpsScale,
-  applyRoundTimeDpsScale,
+  enemyRoundTimeBonus,
+  enemyBurdenDurability,
+  battleBurdenScore,
+  towerBurdenScore,
+  contentDpsDisplayMultiplier,
   battleModeLabel,
   dpsContextModeLabel,
   penanceStoredValue,
