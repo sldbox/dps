@@ -231,7 +231,7 @@ function bindDpsTableEvents(){
         <header class="notice-section-head"><span>DPS 계산 기준</span></header>
         <div class="notice-dps-standard-list">
           <div><b>개인</b><span>내 스펙 × 버프 × 피해보정 × 크리/공속 보정 × 적 방어력 × 적 체력·실드·물량 ÷ 라운드 시간</span></div>
-          <div><b>협동</b><span>내 스펙 × 버프 × 피해보정 × 크리/공속 보정 × 적 방어력 × 적 체력·실드·물량(2인/3인 물량 반영) ÷ 라운드 시간</span></div>
+          <div><b>협동</b><span>내 스펙 × 2P &amp; 3P 모든 스펙 0 × 버프 × 피해보정 × 크리/공속 보정 × 적 방어력 × 적 체력·실드·물량(2인/3인 물량 반영) ÷ 라운드 시간<br/>승객 2P &amp; 3P 방어력 감소 0 / 15 / 25 / 50 / 60 선택 계산 가능</span></div>
           <div><b>도전의탑</b><span>내 스펙 × 버프 × 피해보정 × 크리/공속 보정 × 적 방어력 × 적 체력·실드·물량 ÷ 라운드 시간(RP 최대 8초 반영)</span></div>
         </div>
       </div>
