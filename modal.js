@@ -1,48 +1,45 @@
-/* ===== modal.js | 공통 모달 유틸 / 정보&안내 모달 ===== */
-/* 모달 쉘 생성·열기/닫기 공통 함수와 정보&안내 탭 콘텐츠를 관리한다. */
+/* ===== modal.js | 모달 공통 API / 정보 모달 ===== */
 
-
-/* ===== 00. 공통 모달 유틸 ===== */
+/* ===== 00. 공통 모달 API ===== */
 const modalById = id => document.getElementById(id);
 
-(function(){
+(() => {
   'use strict';
 
-  function createModalShell(id, className, innerHtml){
-    if(modalById(id)) return modalById(id);
-    const modal=document.createElement('div');
-    modal.id=id;
-    modal.className=className;
-    modal.setAttribute('aria-hidden','true');
-    modal.innerHTML=innerHtml;
+  function createShell(id, className, innerHtml) {
+    const existing = modalById(id);
+    if (existing) return existing;
+    const modal = document.createElement('div');
+    modal.id = id;
+    modal.className = className;
+    modal.setAttribute('aria-hidden', 'true');
+    modal.innerHTML = innerHtml;
     document.body.appendChild(modal);
     return modal;
   }
 
-  function setModalOpen(id, bodyClass, open, options={}){
-    const modal=modalById(id);
-    if(!modal) return null;
-    const active=!!open;
+  function setOpen(id, bodyClass, open, options = {}) {
+    const modal = modalById(id);
+    if (!modal) return null;
+    const active = !!open;
     modal.classList.toggle('is-open', active);
     modal.setAttribute('aria-hidden', active ? 'false' : 'true');
-    if(bodyClass){
+    if (bodyClass) {
       document.body?.classList.toggle(bodyClass, active);
-      if(options.rootClass) document.documentElement?.classList.toggle(bodyClass, active);
+      if (options.rootClass) document.documentElement?.classList.toggle(bodyClass, active);
     }
     return modal;
   }
 
-  function isModalOpen(id){
+  function isOpen(id) {
     return !!modalById(id)?.classList.contains('is-open');
   }
 
-  window.DpsModal={createModalShell,setModalOpen,isModalOpen};
-  window.createModalShell=createModalShell;
-  window.setModalOpen=setModalOpen;
+  window.DpsModal = { createShell, setOpen, isOpen };
 })();
 
 
-/* ===== 01. 프리셋 분석 / DPS표 / 이달의룬 / 쥬얼 모달 ===== */
+/* ===== 01. 분석 / DPS표 / 룬·쥬얼 모달 ===== */
 const MONTH_RUNE_MODAL_TITLES={
   compare:'프리셋 분석',
   runes:'이달의 룬',
@@ -117,7 +114,7 @@ function selectMonthRuneModalTab(tabName){
 function createMonthRuneModal(){
   const info=MONTHLY_RUNE_INFO || {months:[]};
   const jewels=RAW_JEWEL_DATA || [];
-  createModalShell('monthRuneModal','month-rune-modal-shell',`
+  window.DpsModal.createShell('monthRuneModal','month-rune-modal-shell',`
     <div class="month-rune-backdrop" data-month-rune-close="1"></div>
     <section class="month-rune-modal is-modal-compare" role="dialog" aria-modal="true" aria-labelledby="monthRuneTitle">
       <header class="month-rune-head">
@@ -141,11 +138,11 @@ function openMonthRune(tabName='compare', options={}){
   closeConvenienceMenu();
   createMonthRuneModal();
   selectMonthRuneModalTab(tabName);
-  setModalOpen('monthRuneModal','month-rune-modal-open',true);
+  window.DpsModal.setOpen('monthRuneModal','month-rune-modal-open',true);
   if(options.openFilePicker && tabName==='compare') requestCompareFileSelect();
 }
 function closeMonthRune(){
-  setModalOpen('monthRuneModal','month-rune-modal-open',false);
+  window.DpsModal.setOpen('monthRuneModal','month-rune-modal-open',false);
   DPS_MODAL_MODES.forEach(mode=>document.body?.classList.remove(`is-dps-mode-${mode}`));
 }
 function bindMonthRuneEvents(){
@@ -193,7 +190,7 @@ function bindDpsTableEvents(){
 }
 
 
-/* ===== 02. 정보&안내 모달 ===== */
+/* ===== 02. 정보 모달 ===== */
 (() => {
   'use strict';
 
@@ -212,21 +209,19 @@ function bindDpsTableEvents(){
         </div>
         <div class="notice-step-card">
           <h3>개인</h3>
-          <p>내 스팩 × 적 방어력 &amp; 체력 &amp; 실드 &amp; 물량 ÷ 라운드 시간</p>
+          <p>내 스팩 x 버프 x 피해보정 x 크리/공속 보정 × 적 방어력 &amp; 체력 &amp; 실드 &amp; 물량 ÷ 라운드 시간</p>
         </div>
         <div class="notice-step-card">
           <h3>협동</h3>
-          <p>1P 스팩 × 2P·3P 모든 스팩 0 기준 × 적 방어력 &amp; 체력 &amp; 실드 &amp; 물량 ÷ 라운드 시간</p>
+          <p>내 스팩 x 버프 x 피해보정 x 크리/공속 보정 × 2P·3P 모든 스팩 0 기준 × 적 방어력 &amp; 체력 &amp; 실드 &amp; 물량 ÷ 라운드 시간</p>
           <ul>
+            <li>2인 협동은 2배 물량, 3인 협동은 3배 물량 적용</li>
             <li>기본정보에서 2P·3P 승객 방어력감소 선택 가능</li>
           </ul>
         </div>
         <div class="notice-step-card">
           <h3>도전의탑</h3>
-          <p>내 스팩 × 적 방어력 &amp; 체력 &amp; 실드 &amp; 물량 ÷ 라운드 시간 + RP 최대 8초 추가 (방관 &amp; 총뎀)</p>
-          <ul>
-            <li>81층~90층은 변동폭이 크기때문에 DPS가 더 떨어질수 있습니다.</li>
-          </ul>
+          <p>내 스팩 x 버프 x 피해보정 x 크리/공속 보정 × 적 방어력 &amp; 체력 &amp; 실드 &amp; 물량 ÷ 라운드 시간 + RP 최대 8초 추가 (방관 &amp; 총뎀)</p>
         </div>
       `
     },
@@ -265,7 +260,6 @@ function bindDpsTableEvents(){
 
   let activeTab = 'info';
   const resolveTab = (tab) => NOTICE_TAB_IDS.has(tab) ? tab : 'info';
-  const isNoticeOpen = () => modalById('noticeModalShell')?.classList.contains('is-open');
 
   function renderNoticeTabs(target) {
     return NOTICE_TABS.map(([id, label, meta]) => {
@@ -288,7 +282,7 @@ function bindDpsTableEvents(){
   function ensureNoticeModal() {
     const existing = modalById('noticeModalShell');
     if (existing) return existing;
-    return window.DpsModal.createModalShell('noticeModalShell', 'notice-modal-shell', `
+    return window.DpsModal.createShell('noticeModalShell', 'notice-modal-shell', `
       <div class="notice-modal-backdrop" data-notice-close="1"></div>
       <section class="notice-modal" role="dialog" aria-modal="true" aria-labelledby="noticeModalTitle">
         <header class="notice-modal-head">
@@ -302,11 +296,11 @@ function bindDpsTableEvents(){
   function openNoticeModal(tab = 'info') {
     ensureNoticeModal();
     renderNoticeInto(modalById('noticeModalBody'), tab);
-    window.DpsModal.setModalOpen('noticeModalShell', 'notice-modal-open', true, { rootClass: true });
+    window.DpsModal.setOpen('noticeModalShell', 'notice-modal-open', true, { rootClass: true });
   }
 
   function closeNoticeModal() {
-    window.DpsModal.setModalOpen('noticeModalShell', 'notice-modal-open', false, { rootClass: true });
+    window.DpsModal.setOpen('noticeModalShell', 'notice-modal-open', false, { rootClass: true });
   }
 
   function handleNoticeClick(event) {
@@ -330,12 +324,11 @@ function bindDpsTableEvents(){
   function initNotice() {
     document.addEventListener('click', handleNoticeClick, true);
     document.addEventListener('keydown', (event) => {
-      if (event.key === 'Escape' && isNoticeOpen()) closeNoticeModal();
+      if (event.key === 'Escape' && window.DpsModal.isOpen('noticeModalShell')) closeNoticeModal();
     });
   }
 
   window.DpsNotice = { open: openNoticeModal, close: closeNoticeModal };
-  window.openNoticeModal = openNoticeModal;
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initNotice, { once: true });
   else initNotice();
 })();

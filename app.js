@@ -3533,7 +3533,7 @@ function setTraitPresetExportSavingState(active){
   qsa('[data-trait-preset-export-save]').forEach(btn=>{ btn.disabled=!!active; });
 }
 function createTraitPresetExportModal(){
-  createModalShell('traitPresetExportModal','trait-preset-excel-modal-shell',`
+  window.DpsModal.createShell('traitPresetExportModal','trait-preset-excel-modal-shell',`
     <div class="trait-preset-excel-backdrop" data-trait-preset-export-close="1"></div>
     <section class="trait-preset-excel-modal" role="dialog" aria-modal="true" aria-labelledby="traitPresetExportTitle">
       <header class="trait-preset-excel-head">
@@ -3555,7 +3555,7 @@ function openTraitPresetExportModal(){
     createTraitPresetExportModal();
     const input=$('traitPresetExportName');
     if(input) input.value=defaultPreset?.name || '';
-    setModalOpen('traitPresetExportModal','trait-preset-excel-modal-open',true);
+    window.DpsModal.setOpen('traitPresetExportModal','trait-preset-excel-modal-open',true);
     setTimeout(()=>{ input?.focus(); input?.select(); },0);
     return true;
   }catch(e){
@@ -3565,7 +3565,7 @@ function openTraitPresetExportModal(){
   }
 }
 function closeTraitPresetExportModal(){
-  setModalOpen('traitPresetExportModal','trait-preset-excel-modal-open',false);
+  window.DpsModal.setOpen('traitPresetExportModal','trait-preset-excel-modal-open',false);
 }
 function downloadTraitPresetExport(customName=''){
   if(traitPresetExportDownloadLocked) return false;
@@ -3668,7 +3668,7 @@ function isExcelPresetImportFile(file){
 }
 const traitPresetExcelImportState={workbook:null,fileName:''};
 function createTraitPresetExcelImportModal(){
-  createModalShell('traitPresetExcelImportModal','trait-preset-excel-modal-shell',`
+  window.DpsModal.createShell('traitPresetExcelImportModal','trait-preset-excel-modal-shell',`
     <div class="trait-preset-excel-backdrop" data-trait-preset-excel-close="1"></div>
     <section class="trait-preset-excel-modal" role="dialog" aria-modal="true" aria-labelledby="traitPresetExcelTitle">
       <header class="trait-preset-excel-head">
@@ -3701,10 +3701,10 @@ function openTraitPresetExcelImportModal(workbook,fileName){
     nameInput.dataset.autofill='1';
     nameInput.value=sheetSelect?.value || stateFileBaseName(fileName);
   }
-  setModalOpen('traitPresetExcelImportModal','trait-preset-excel-modal-open',true);
+  window.DpsModal.setOpen('traitPresetExcelImportModal','trait-preset-excel-modal-open',true);
 }
 function closeTraitPresetExcelImportModal(){
-  setModalOpen('traitPresetExcelImportModal','trait-preset-excel-modal-open',false);
+  window.DpsModal.setOpen('traitPresetExcelImportModal','trait-preset-excel-modal-open',false);
 }
 function selectedTraitPresetExcelSheetName(){
   const workbook=traitPresetExcelImportState.workbook;
