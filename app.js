@@ -123,6 +123,23 @@ function setSelectOptions(select, options){
     select.appendChild(option);
   });
 }
+function syncSelectOptionsBySignature(select, signature, options, signatureKey='optionSignature'){
+  if(!select) return;
+  if(select.dataset[signatureKey]!==signature){
+    setSelectOptions(select, options);
+    select.dataset[signatureKey]=signature;
+  }
+}
+function normalizedUnsignedDigits(value, fallback='0'){
+  const digits=String(value ?? '').replace(/[^0-9]/g,'').replace(/^0+(?=\d)/,'');
+  return digits || fallback;
+}
+function clampedIntegerString(value, min, max, fallback=0){
+  const digits=normalizedUnsignedDigits(value, '');
+  const number=digits ? Number(digits) : fallback;
+  const finite=Number.isFinite(number) ? Math.round(number) : fallback;
+  return String(Math.max(min, Math.min(max, finite)));
+}
 function setClassState(el, classNames, active){
   if(!el) return;
   const names=Array.isArray(classNames) ? classNames : [classNames];
@@ -190,11 +207,12 @@ function syncPenanceOptions(){
   const el=$('penance');
   if(!el) return;
   const current=normalizePenanceValue(el.value || el.dataset.penanceValue || '0', SOLO_PENANCE_MAX);
-  const signature=String(SOLO_PENANCE_MAX);
-  if(el.dataset.penanceMax!==signature){
-    setSelectOptions(el, Array.from({length:SOLO_PENANCE_MAX+1}, (_,value)=>({value,label:penanceOptionLabel(value)})));
-    el.dataset.penanceMax=signature;
-  }
+  syncSelectOptionsBySignature(
+    el,
+    String(SOLO_PENANCE_MAX),
+    Array.from({length:SOLO_PENANCE_MAX+1}, (_,value)=>({value,label:penanceOptionLabel(value)})),
+    'penanceMax'
+  );
   el.value=current;
   el.dataset.penanceValue=current;
 }
@@ -206,33 +224,25 @@ function syncPowerBlessOptions(){
   const el=$('pbless');
   if(!el) return;
   const current=normalizePowerBlessRawValue(el.value);
-  const signature=`pbless:${POWER_BLESS_ALL_OPTIONS.join(',')}`;
-  if(el.dataset.optionSignature!==signature){
-    setSelectOptions(el, POWER_BLESS_ALL_OPTIONS.map(value=>({value,label:powerBlessOptionLabel(value)})));
-    el.dataset.optionSignature=signature;
-  }
+  syncSelectOptionsBySignature(
+    el,
+    `pbless:${POWER_BLESS_ALL_OPTIONS.join(',')}`,
+    POWER_BLESS_ALL_OPTIONS.map(value=>({value,label:powerBlessOptionLabel(value)}))
+  );
   el.value=current;
 }
 function setCoopModeOptions(value='OFF'){
   const coop=$('coopMode');
   if(!coop) return;
   const normalized=normalizeOnOffValue(value,'OFF');
-  const signature='coop-mode-toggle';
-  if(coop.dataset.optionSignature!==signature){
-    setSelectOptions(coop, [{value:'OFF',label:'OFF'},{value:'ON',label:'ON'}]);
-    coop.dataset.optionSignature=signature;
-  }
+  syncSelectOptionsBySignature(coop, 'coop-mode-toggle', [{value:'OFF',label:'OFF'},{value:'ON',label:'ON'}]);
   coop.value=normalized;
 }
 function setCoopPlayersOptions(value=COOP_PLAYERS_DEFAULT){
   const players=$('coopPlayers');
   if(!players) return;
   const normalized=normalizeCoopPlayersValue(value);
-  const signature='coop-players';
-  if(players.dataset.optionSignature!==signature){
-    setSelectOptions(players, ['2','3'].map(playerCount=>({value:playerCount,label:playerCount})));
-    players.dataset.optionSignature=signature;
-  }
+  syncSelectOptionsBySignature(players, 'coop-players', ['2','3'].map(playerCount=>({value:playerCount,label:playerCount})));
   players.value=normalized;
 }
 function syncBattleMode(sourceId=''){
@@ -2588,14 +2598,12 @@ function applySpBankBudgetMode(value){
   if(typeof setSpBankBudgetMode==='function') setSpBankBudgetMode(normalizeSpBankBudgetMode(value));
 }
 function normalizeMoneyStorageValue(value, id=''){
-  const digits=String(value ?? '').replace(/[^0-9]/g,'').replace(/^0+(?=\d)/,'');
+  const digits=normalizedUnsignedDigits(value, '');
   if(id==='xp') return digits && !/^0+$/.test(digits) ? digits : '1';
   return digits || '0';
 }
 function normalizeShardStorageValue(value){
-  const digits=String(value ?? '').replace(/[^0-9]/g,'').replace(/^0+(?=\d)/,'');
-  const number=digits ? Number(digits) : 0;
-  return String(Math.max(0, Math.min(9999, Number.isFinite(number) ? Math.round(number) : 0)));
+  return clampedIntegerString(value, 0, 9999, 0);
 }
 function normalizeShardStorageValues(values){
   if(!values || typeof values!=='object') return values;

@@ -170,6 +170,8 @@ function erosionStoredValue(id){
 }
 
 
+
+/* ===== 02. DPS표 / 스킬 데미지 / 도전의탑 표시값 ===== */
 function calculateSkillDamageRows({ap=535,doubleSpace=1,round=1,mode='normal'}={}){
   const skillAp=Number.isFinite(Number(ap)) ? Number(ap) : 535;
   const doubleValue=Number.isFinite(Number(doubleSpace)) ? Number(doubleSpace) : 1;
@@ -193,8 +195,6 @@ function calculateSkillDamageRows({ap=535,doubleSpace=1,round=1,mode='normal'}={
     items:data.map(([name,base,add,tick])=>({name,total:(base + add*skillAp*doubleValue) * tick * (1-penalty) * 100}))
   };
 }
-
-/* ===== 02. DPS표 계산 보조 / 도전의탑 표시값 ===== */
 function chunkDpsTowerFloors(minFloor, maxFloor, groupSize){
   const chunks=[];
   for(let start=minFloor; start<=maxFloor; start+=groupSize){
@@ -590,14 +590,6 @@ function syncExclusiveRuneOptions(){
     });
   });
 }
-const STAT_KO={
-  AD:'공격력', AS:'공격속도', AP:'마법공격력', CRI:'크리티컬 확률', CD:'크리티컬 데미지',
-  MC:'다중 크리티컬', TD:'총 데미지', DR:'방어력 감소', PIERCE:'방어력 관통', UA:'유닛 가속',
-  SR:'실드 감소', HR:'체력 감소', MD:'멀티 타겟', MP:'멀티 확률', MCP:'멀티 크리 확률',
-  RA:'강화 관련', 특수:'상시 적용', 유틸:'편의/보조', 경험치:'경험치 보너스'
-};
-function statKo(type){return STAT_KO[type] || type;}
-function traitEffectText(row,type,rate){return !rate ? statKo(type) : `${statKo(type)} +${rate}${T_UA.has(row)?'%':''}`;}
 function reinforceSuccessChance(tries, isTheZero, upRev, upFRev){
   tries=clampInt(tries,0,999);
   if(tries<=0) return 0;
@@ -899,6 +891,62 @@ function restorePreviewElementStates(saved){
     Object.entries(state.dataset || {}).forEach(([key,value])=>{ el.dataset[key]=value; });
   });
 }
+function applyPreviewPenanceState(penEl, penanceLevel, battleMode, signaturePrefix){
+  if(!penEl) return;
+  const maxForPreview=battleMode==='coop' ? COOP_DPS_TABLE_PENANCE_MAX : DPS_TABLE_PENANCE_MAX;
+  const normalizedPenance=normalizePenanceValue(penanceLevel, maxForPreview);
+  setSelectOptions(penEl, Array.from({length:SOLO_PENANCE_MAX+1}, (_,value)=>({
+    value,
+    label:penanceOptionLabel(value),
+    selected:String(value)===normalizedPenance
+  })));
+  penEl.dataset.penanceMax=`${signaturePrefix}:${SOLO_PENANCE_MAX}`;
+  penEl.value=normalizedPenance;
+  penEl.dataset.penanceValue=normalizedPenance;
+}
+function applyPreviewRoundState(round, roundEl, towerFloorEl){
+  if(roundEl){
+    const normalizedRound=normalizedRoundString(round);
+    roundEl.value=normalizedRound;
+    roundEl.dataset.roundValue=normalizedRound;
+  }
+  if(towerFloorEl){
+    const normalizedTowerFloor=normalizedTowerFloorString(round);
+    towerFloorEl.value=normalizedTowerFloor;
+    towerFloorEl.dataset.challengeTowerFloorValue=normalizedTowerFloor;
+  }
+}
+function applyPreviewBattleModeState({battleMode, coopPlayers, soloEl, coopEl, coopPlayersEl, teamEl, signaturePrefix}){
+  const coopActive=battleMode==='coop';
+  const players=normalizeCoopPlayersValue(coopPlayers);
+  if(soloEl) soloEl.value=coopActive ? 'OFF' : 'ON';
+  if(coopEl){
+    setSelectOptions(coopEl, [{value:'OFF',label:'OFF',selected:!coopActive},{value:'ON',label:'ON',selected:coopActive}]);
+    coopEl.dataset.optionSignature=`${signaturePrefix}:coop-mode-toggle`;
+    coopEl.value=coopActive ? 'ON' : 'OFF';
+  }
+  if(coopPlayersEl){
+    setSelectOptions(coopPlayersEl, ['2','3'].map(playerCount=>({
+      value:playerCount,
+      label:playerCount,
+      selected:coopActive && playerCount===players
+    })));
+    coopPlayersEl.dataset.optionSignature=`${signaturePrefix}:coop-players`;
+    coopPlayersEl.value=coopActive ? players : normalizeCoopPlayersValue(coopPlayersEl.value);
+  }
+  if(coopActive && teamEl) teamEl.value=players;
+}
+function applyPreviewErosionControlState(){
+  EROSION_CONTROL_IDS.forEach(id=>{
+    const el=$(id);
+    if(!el) return;
+    const stored=normalizeErosionControlValue(id, el.value || el.dataset.erosionValue || EROSION_CONTROL_DEFAULTS[id]);
+    el.type='text';
+    el.inputMode='numeric';
+    el.value=stored;
+    el.dataset.erosionValue=stored;
+  });
+}
 function calculateArtifactDpsPreview(diffName, penanceLevel, round, options={}){
   const saved=capturePreviewElementStates(ARTIFACT_DPS_PREVIEW_IDS);
   try{
@@ -913,61 +961,19 @@ function calculateArtifactDpsPreview(diffName, penanceLevel, round, options={}){
     const artifactEl=$('prodArtifact');
     const battleMode=options.battleMode==='coop' ? 'coop' : 'solo';
     if(diffEl) diffEl.value=diffName;
-    if(penEl){
-      const maxForPreview=battleMode==='coop' ? COOP_DPS_TABLE_PENANCE_MAX : DPS_TABLE_PENANCE_MAX;
-      const normalizedPenance=normalizePenanceValue(penanceLevel, maxForPreview);
-      setSelectOptions(penEl, Array.from({length:SOLO_PENANCE_MAX+1}, (_,value)=>({value,label:penanceOptionLabel(value),selected:String(value)===normalizedPenance})));
-      penEl.dataset.penanceMax=`artifact:${SOLO_PENANCE_MAX}`;
-      penEl.value=normalizedPenance;
-      penEl.dataset.penanceValue=normalizedPenance;
-    }
-    if(roundEl){
-      const normalizedRound=normalizedRoundString(round);
-      roundEl.value=normalizedRound;
-      roundEl.dataset.roundValue=normalizedRound;
-    }
-    if(towerFloorEl){
-      const normalizedTowerFloor=normalizedTowerFloorString(round);
-      towerFloorEl.value=normalizedTowerFloor;
-      towerFloorEl.dataset.challengeTowerFloorValue=normalizedTowerFloor;
-    }
-    if(battleMode==='solo'){
-      if(soloEl) soloEl.value='ON';
-      if(coopEl){
-        setSelectOptions(coopEl, [{value:'OFF',label:'OFF',selected:true},{value:'ON',label:'ON'}]);
-        coopEl.dataset.optionSignature='artifact:coop-mode-toggle';
-        coopEl.value='OFF';
-      }
-      if(coopPlayersEl){
-        setSelectOptions(coopPlayersEl, ['2','3'].map(playerCount=>({value:playerCount,label:playerCount})));
-        coopPlayersEl.dataset.optionSignature='artifact:coop-players';
-        coopPlayersEl.value=normalizeCoopPlayersValue(coopPlayersEl.value);
-      }
-    }else{
-      const players=normalizeCoopPlayersValue(options.coopPlayers);
-      if(soloEl) soloEl.value='OFF';
-      if(coopEl){
-        setSelectOptions(coopEl, [{value:'OFF',label:'OFF'},{value:'ON',label:'ON',selected:true}]);
-        coopEl.dataset.optionSignature='artifact:coop-mode-toggle';
-        coopEl.value='ON';
-      }
-      if(coopPlayersEl){
-        setSelectOptions(coopPlayersEl, ['2','3'].map(playerCount=>({value:playerCount,label:playerCount,selected:playerCount===players})));
-        coopPlayersEl.dataset.optionSignature='artifact:coop-players';
-        coopPlayersEl.value=players;
-      }
-      if(teamEl) teamEl.value=players;
-    }
-    if(artifactEl) artifactEl.checked=true;
-    EROSION_CONTROL_IDS.forEach(id=>{
-      const el=$(id);
-      if(!el) return;
-      const stored=normalizeErosionControlValue(id, el.value || el.dataset.erosionValue || EROSION_CONTROL_DEFAULTS[id]);
-      el.type='text';
-      el.inputMode='numeric';
-      el.value=stored;
-      el.dataset.erosionValue=stored;
+    applyPreviewPenanceState(penEl, penanceLevel, battleMode, 'artifact');
+    applyPreviewRoundState(round, roundEl, towerFloorEl);
+    applyPreviewBattleModeState({
+      battleMode,
+      coopPlayers:options.coopPlayers,
+      soloEl,
+      coopEl,
+      coopPlayersEl,
+      teamEl,
+      signaturePrefix:'artifact'
     });
+    if(artifactEl) artifactEl.checked=true;
+    applyPreviewErosionControlState();
     const stats=computeStatsRaw();
     return {...calculateArtifactDpsRaw(stats), baseDps:Number.isFinite(stats.M19) ? stats.M19 : 0};
   }catch(e){
@@ -1247,60 +1253,18 @@ function computeDpsPreview(diffName, penanceLevel, round, options={}){
     const teamEl=$('team');
     const battleMode=options.battleMode==='coop' ? 'coop' : 'solo';
     if(diffEl) diffEl.value=diffName;
-    if(penEl){
-      const maxForPreview=battleMode==='coop' ? COOP_DPS_TABLE_PENANCE_MAX : DPS_TABLE_PENANCE_MAX;
-      const normalizedPenance=normalizePenanceValue(penanceLevel, maxForPreview);
-      setSelectOptions(penEl, Array.from({length:SOLO_PENANCE_MAX+1}, (_,value)=>({value,label:penanceOptionLabel(value),selected:String(value)===normalizedPenance})));
-      penEl.dataset.penanceMax=`preview:${SOLO_PENANCE_MAX}`;
-      penEl.value=normalizedPenance;
-      penEl.dataset.penanceValue=normalizedPenance;
-    }
-    if(roundEl){
-      const normalizedRound=normalizedRoundString(round);
-      roundEl.value=normalizedRound;
-      roundEl.dataset.roundValue=normalizedRound;
-    }
-    if(towerFloorEl){
-      const normalizedTowerFloor=normalizedTowerFloorString(round);
-      towerFloorEl.value=normalizedTowerFloor;
-      towerFloorEl.dataset.challengeTowerFloorValue=normalizedTowerFloor;
-    }
-    EROSION_CONTROL_IDS.forEach(id=>{
-      const el=$(id);
-      if(!el) return;
-      const stored=normalizeErosionControlValue(id, el.value || el.dataset.erosionValue || EROSION_CONTROL_DEFAULTS[id]);
-      el.type='text';
-      el.inputMode='numeric';
-      el.value=stored;
-      el.dataset.erosionValue=stored;
+    applyPreviewPenanceState(penEl, penanceLevel, battleMode, 'preview');
+    applyPreviewRoundState(round, roundEl, towerFloorEl);
+    applyPreviewErosionControlState();
+    applyPreviewBattleModeState({
+      battleMode,
+      coopPlayers:options.coopPlayers,
+      soloEl,
+      coopEl,
+      coopPlayersEl,
+      teamEl,
+      signaturePrefix:'preview'
     });
-    if(battleMode==='solo'){
-      if(soloEl) soloEl.value='ON';
-      if(coopEl){
-        setSelectOptions(coopEl, [{value:'OFF',label:'OFF',selected:true},{value:'ON',label:'ON'}]);
-        coopEl.dataset.optionSignature='preview:coop-mode-toggle';
-        coopEl.value='OFF';
-      }
-      if(coopPlayersEl){
-        setSelectOptions(coopPlayersEl, ['2','3'].map(playerCount=>({value:playerCount,label:playerCount})));
-        coopPlayersEl.dataset.optionSignature='preview:coop-players';
-        coopPlayersEl.value=normalizeCoopPlayersValue(coopPlayersEl.value);
-      }
-    }else{
-      const players=normalizeCoopPlayersValue(options.coopPlayers);
-      if(soloEl) soloEl.value='OFF';
-      if(coopEl){
-        setSelectOptions(coopEl, [{value:'OFF',label:'OFF'},{value:'ON',label:'ON',selected:true}]);
-        coopEl.dataset.optionSignature='preview:coop-mode-toggle';
-        coopEl.value='ON';
-      }
-      if(coopPlayersEl){
-        setSelectOptions(coopPlayersEl, ['2','3'].map(playerCount=>({value:playerCount,label:playerCount,selected:playerCount===players})));
-        coopPlayersEl.dataset.optionSignature='preview:coop-players';
-        coopPlayersEl.value=players;
-      }
-      if(teamEl) teamEl.value=players;
-    }
     const s=computeStatsRaw();
     return Number.isFinite(s.M19) ? s.M19 : 0;
   }catch(e){
@@ -1312,6 +1276,14 @@ function computeDpsPreview(diffName, penanceLevel, round, options={}){
 }
 
 /* ===== 10. 특성 효율 계산 / 한도 입력 표시 어댑터 ===== */
+const STAT_KO={
+  AD:'공격력', AS:'공격속도', AP:'마법공격력', CRI:'크리티컬 확률', CD:'크리티컬 데미지',
+  MC:'다중 크리티컬', TD:'총 데미지', DR:'방어력 감소', PIERCE:'방어력 관통', UA:'유닛 가속',
+  SR:'실드 감소', HR:'체력 감소', MD:'멀티 타겟', MP:'멀티 확률', MCP:'멀티 크리 확률',
+  RA:'강화 관련', 특수:'상시 적용', 유틸:'편의/보조', 경험치:'경험치 보너스'
+};
+function statKo(type){return STAT_KO[type] || type;}
+function traitEffectText(row,type,rate){return !rate ? statKo(type) : `${statKo(type)} +${rate}${T_UA.has(row)?'%':''}`;}
 const TRAIT_OPT_NORMAL_ROWS={
   SP:new Set([42,43,46,52,53,58,60,61,68,70,71,77,84,85,86,92,93,94,95,96,99,100,101,102,103,104,108,109,110,111,115,116,44,54,62,79]),
   EP:new Set([117,118,119,120,121,122]),

@@ -47,6 +47,17 @@ const MONTH_RUNE_MODAL_TITLES={
   dps:'DPS표'
 };
 const MONTH_RUNE_MODAL_CLASS_NAMES=['is-modal-compare','is-modal-runes','is-modal-jewels','is-modal-dps'];
+const DPS_TABLE_MIN_DPS_INPUT_SELECTOR='#dpsTableMinDps,#dpsTableMinDpsMain';
+function getDpsTableMinDpsInput(target){
+  return target?.closest?.(DPS_TABLE_MIN_DPS_INPUT_SELECTOR) || null;
+}
+function syncFreshDpsTableMinDpsFocus(input){
+  const fresh=$(input.id);
+  if(!fresh) return;
+  fresh.focus({preventScroll:true});
+  const pos=fresh.value.length;
+  try{ fresh.setSelectionRange(pos,pos); }catch(_e){}
+}
 function buildCompareHeaderControls(){
   return `<div class="excel-compare-controls excel-compare-header-controls">
     <label class="ui-action-btn excel-compare-file-btn excel-compare-base-file-btn">기준 파일<input id="excelCompareBaseFile" type="file" accept=".xlsm,.xlsx,.json,.txt,application/json,text/plain,application/vnd.ms-excel.sheet.macroEnabled.12"></label>
@@ -158,7 +169,7 @@ function bindDpsTableEvents(){
     switchDpsTableMode(modeTarget.getAttribute('data-dps-table-mode'));
   });
   document.addEventListener('keydown', function(e){
-    const minInput=e.target.closest('#dpsTableMinDps,#dpsTableMinDpsMain');
+    const minInput=getDpsTableMinDpsInput(e.target);
     if(!minInput) return;
     if(e.key==='.' || e.key===',' || e.key==='Decimal'){
       e.preventDefault();
@@ -171,19 +182,13 @@ function bindDpsTableEvents(){
     }
   }, true);
   document.addEventListener('input', function(e){
-    const minInput=e.target.closest('#dpsTableMinDps,#dpsTableMinDpsMain');
+    const minInput=getDpsTableMinDpsInput(e.target);
     if(!minInput) return;
-    const before=minInput.value;
-    setDpsTableMinDps(before);
-    const fresh=$(minInput.id);
-    if(fresh){
-      fresh.focus({preventScroll:true});
-      const pos=fresh.value.length;
-      try{ fresh.setSelectionRange(pos,pos); }catch(_e){}
-    }
+    setDpsTableMinDps(minInput.value);
+    syncFreshDpsTableMinDpsFocus(minInput);
   });
   document.addEventListener('focusout', function(e){
-    const minInput=e.target.closest('#dpsTableMinDps,#dpsTableMinDpsMain');
+    const minInput=getDpsTableMinDpsInput(e.target);
     if(!minInput) return;
     setDpsTableMinDps(minInput.value,{format:true});
   }, true);
