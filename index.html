@@ -5,18 +5,18 @@
 <meta name="google-site-verification" content="RTuDWbMdnKgbpRpl05eXh9epFwWRSxju4NOl8OtjMsI" />
 <!-- 00. 빌드 버전 / 캐시 무효화 / 원격 이미지 경로 -->
 <script>
-window.APP_VERSION = "2607060000";
-window.DPS_BUILD_VERSION = "2607060000";
+window.APP_VERSION = "2607072210";
+window.DPS_BUILD_VERSION = "2607072210";
 window.DPS_PREVIEW_FRESH = new URLSearchParams(window.location.search).get('fresh') || '';
 window.DPS_ASSET_VERSIONS = {
-  "data.js": "2607060000",
-  "calc.js": "2607060000",
-  "app.js": "2607060000",
-  "modal.js": "2607060000",
-  "responsive.js": "2607060000",
-  "style.css": "2607060000",
-  "icon.png": "2607060000",
-  "logo.png": "2607060000"
+  "data.js": "2607072210",
+  "calc.js": "2607072210",
+  "app.js": "2607072210",
+  "modal.js": "2607072210",
+  "responsive.js": "2607072210",
+  "style.css": "2607072210",
+  "icon.png": "2607072210",
+  "logo.png": "2607072210"
 };
 window.dpsAssetVersion = function(key){
   var versions = window.DPS_ASSET_VERSIONS || {};
@@ -191,14 +191,14 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 <meta content="https://sldbox.github.io/dps/" property="og:url"/>
 <meta content="개복디 특성 계산기" property="og:title"/>
 <meta content="특성 투자, 재화 사용량, 표기 스탯, 총데미지, DPS를 한 번에 계산할 수 있는 개복디 전용 계산기입니다." property="og:description"/>
-<meta content="https://sldbox.github.io/dps/logo.png?v=2607060000" property="og:image"/>
-<meta content="https://sldbox.github.io/dps/logo.png?v=2607060000" property="og:image:secure_url"/>
+<meta content="https://sldbox.github.io/dps/logo.png?v=2607072210" property="og:image"/>
+<meta content="https://sldbox.github.io/dps/logo.png?v=2607072210" property="og:image:secure_url"/>
 <meta content="image/png" property="og:image:type"/>
 <meta content="개복디 특성 계산기 로고" property="og:image:alt"/>
 <meta content="summary_large_image" name="twitter:card"/>
 <meta content="개복디 특성 계산기" name="twitter:title"/>
 <meta content="특성 투자, 재화 사용량, 표기 스탯, 총데미지, DPS를 한 번에 계산할 수 있는 개복디 전용 계산기입니다." name="twitter:description"/>
-<meta content="https://sldbox.github.io/dps/logo.png?v=2607060000" name="twitter:image"/>
+<meta content="https://sldbox.github.io/dps/logo.png?v=2607072210" name="twitter:image"/>
 <meta content="개복디 특성 계산기 로고" name="twitter:image:alt"/>
 <link href="https://cdn.jsdelivr.net" rel="preconnect"/>
 <link crossorigin="" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" rel="stylesheet"/>
@@ -262,7 +262,7 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 </script>
 <div id="dpsBootScreen" aria-live="polite"><div class="boot-card"><div class="boot-title">특성 계산기 적용 중</div><div class="boot-desc">최신 빌드와 스타일을 불러오는 중입니다.</div></div></div>
 <div class="wrap">
-<!-- 03. 앱 헤더: 자료 바로가기 / 문의 / 글씨 크기 / 편의 메뉴 -->
+<!-- 03. 앱 헤더: 자료 바로가기 / 메뉴 / 글씨 크기 -->
 <div class="hdr app-header">
 <div class="hdr-brand">
 <div aria-label="DPS 로고" class="hdr-logo">DPS</div>
@@ -277,14 +277,29 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 </div>
 </div>
 <div class="hdr-meta">
-<button class="btn subtle ui-action-btn header-reference-btn notice-entry-btn tone-notice" data-notice-open="1" type="button" aria-label="문의 열기"><span class="notice-entry-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><circle cx="12" cy="12" r="9"></circle><path d="M12 7.2v6.2"></path><path d="M12 17h.01"></path></svg></span><span class="notice-entry-text">문의</span></button>
 <div class="header-convenience">
-<button class="btn subtle ui-action-btn header-reference-btn header-convenience-toggle tone-reference" data-action="toggleConvenienceMenu" type="button" aria-expanded="false" aria-controls="headerConvenienceMenu">편의</button>
-<div class="header-convenience-menu" id="headerConvenienceMenu" aria-label="편의 메뉴" hidden>
-<a class="btn subtle ui-action-btn header-reference-btn header-convenience-link" href="https://sldbox.github.io/site/">개복디 넥서스 이동 <span aria-hidden="true">↗</span></a>
+<button class="btn subtle ui-action-btn header-reference-btn header-convenience-toggle tone-reference" data-action="toggleConvenienceMenu" type="button" aria-expanded="false" aria-controls="headerConvenienceMenu">메뉴</button>
+<div class="header-convenience-menu" id="headerConvenienceMenu" aria-label="메뉴" hidden>
 <button id="dpsTableMenuButton" class="btn subtle ui-action-btn header-reference-btn" data-action="openDpsTable" type="button">DPS표</button>
 <button class="btn subtle ui-action-btn header-reference-btn" data-action="openMonthRuneTab" data-month-rune-open-tab="runes" type="button">이달의룬</button>
 <button class="btn subtle ui-action-btn header-reference-btn" data-action="openMonthRuneTab" data-month-rune-open-tab="jewels" type="button">쥬얼</button>
+<button class="btn subtle ui-action-btn header-reference-btn header-creator-toggle" data-action="toggleCreatorMenuPanel" type="button" aria-expanded="false" aria-controls="headerCreatorPanel">제작자</button>
+<a class="btn subtle ui-action-btn header-reference-btn header-convenience-link" href="https://sldbox.github.io/site/">개복디 넥서스 이동 <span aria-hidden="true">↗</span></a>
+<div class="header-creator-panel" id="headerCreatorPanel" hidden>
+<div class="header-creator-grid">
+<div><span>문의</span><b>회장</b></div>
+<div><span>핸들값</span><b>3-S2-1-2461127</b></div>
+</div>
+<div class="header-creator-guide">
+<b>문의할 때 제작자에게 전달할 파일 및 내용</b>
+<ul>
+<li>웹버전 통합 프리셋 파일과 프리셋 명</li>
+<li>엑셀 파일 문제인 경우 엑셀 파일과 고행 시트 명</li>
+<li>어떤 문제인지, 원래 나와야 하는 값과 실제로 보인 값, 가능하면 스크린샷</li>
+</ul>
+</div>
+<div class="header-creator-discord"><span>개복디 오픈디스코드</span><a href="https://discord.gg/z7DwqvGeB5" target="_blank" rel="noopener noreferrer">입장하기</a></div>
+</div>
 </div>
 </div>
 <div aria-label="글씨 크기 조절" class="font-scale-ctrl">
@@ -302,8 +317,7 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 <div class="sg-title basic-info-head"><span>기본정보</span></div>
 <div class="xp-sp-split basic-info-grid">
 <div class="xp-sp-panel basic-info-panel" data-basic-info-side="left">
-<div class="basic-info-row manual-resource" data-basic-row="total-sp"><label for="sp">총 SP</label><input class="money-input" id="sp" inputmode="numeric" type="text" value="0"/></div>
-<div class="basic-sp-help" data-basic-help="total-sp"><span class="basic-sp-help-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="M12 20V6"></path><path d="M6.5 11.5L12 6l5.5 5.5"></path></svg></span><span class="basic-sp-help-text">난이도 선택 후 왼쪽 상단 본인 SP를 입력해주세요.</span></div>
+<div class="basic-info-row manual-resource" data-basic-row="total-sp"><label for="sp">시작 SP</label><input class="money-input" id="sp" inputmode="numeric" type="text" value="0"/></div>
 <div class="basic-info-row readonly-resource" data-basic-row="used-sp-attack"><label>사용한 SP (공격)</label><b id="spAttackView">0</b></div>
 <div class="basic-info-row readonly-resource" data-basic-row="used-sp-utility"><label>사용한 SP (유틸)</label><b id="spUtilityView">0</b></div>
 <div class="basic-info-row readonly-resource" data-basic-row="remain-sp"><label>남은 SP</label><b id="spRemainBasicView">0</b></div>
@@ -343,6 +357,7 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 <div class="basic-info-row title-td-row" data-basic-row="title-total-damage"><label for="titleTdBonus">타이틀 총 데미지</label><select id="titleTdBonus"><option selected="" value="0">선택안함</option><option value="2">전문 · +2%</option><option value="4">장인 · +4%</option><option value="6">명장 · +6%</option><option value="8">도인 · +8%</option><option value="10">지존 · +10%</option><option value="12">패왕 · +12%</option><option value="13">패왕+ · +13%</option><option value="14">제왕 · +14%</option><option value="15">제왕+ · +15%</option><option value="16">신황 · +16%</option><option value="17">신황+ · +17%</option></select></div>
 <div class="basic-info-row" data-basic-row="power-bless"><label for="pbless">파워 블레스</label><select id="pbless"><option selected="" value="0">없음</option><option value="20">20</option><option value="30">30</option><option value="40">40</option><option value="60">60</option><option value="90">90</option></select></div>
 <div class="basic-info-row" data-basic-row="sp-bank"><label for="spBankApply">SP 은행</label><select id="spBankApply"><option selected="" value="미반영">OFF</option><option value="반영">ON</option></select></div>
+<input id="spBankImportedBonus" type="hidden" value="0"/>
 <div class="basic-info-row readonly-resource" data-basic-row="sp-bank-status"><label>SP 은행 상태</label><b id="spBankStatusView">미적용</b></div>
 <input id="dt" type="hidden" value="ON"/>
 <div class="basic-info-row" data-basic-row="erosion-stack"><label for="erosionStack">침식 스텍</label><input id="erosionStack" data-erosion-value="500" type="text" value="500" inputmode="numeric"/></div>
@@ -708,7 +723,7 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 <!-- 04-3. 중앙 결과 패널: DPS / 스탯 / 버스보드 / 데미지보드 -->
 <div class="col-mid">
 <div class="data-card stat-dps-card">
-<div class="section-title damage-board-title"><span>데미지 보드</span><div class="artifact-dps-switch-wrap" aria-label="유물 DPS 표시 전환"><span class="artifact-dps-switch-label">유물 DPS</span><button class="artifact-dps-switch" id="artifactDpsViewToggle" type="button" role="switch" aria-checked="false"><span class="artifact-dps-switch-text artifact-dps-switch-off">OFF</span><span class="artifact-dps-switch-text artifact-dps-switch-on">ON</span><i aria-hidden="true"></i></button></div></div>
+<div class="section-title damage-board-title"><span class="damage-board-heading">데미지 보드 <button class="damage-board-help-btn" id="dpsStandardHelpToggle" data-action="toggleDpsStandardHelp" type="button" aria-expanded="false" aria-controls="dpsStandardHelpBubble" aria-label="DPS 계산 기준 보기">?</button></span><div class="dps-standard-popover" id="dpsStandardHelpBubble" role="tooltip" hidden><b>DPS 계산 기준</b><dl><div><dt>개인</dt><dd>내 스펙 × 버프 × 피해보정 × 크리/공속 보정 × 적 방어력 × 적 체력·실드·물량 ÷ 라운드 시간</dd></div><div><dt>협동</dt><dd>내 스펙 × 2P &amp; 3P 모든 스펙 0 × 버프 × 피해보정 × 크리/공속 보정 × 적 방어력 × 적 체력·실드·물량(2인/3인 물량 반영) ÷ 라운드 시간<br/>승객 2P &amp; 3P 방어력 감소 0 / 15 / 25 / 50 / 60 선택 계산 가능</dd></div><div><dt>도전의탑</dt><dd>내 스펙 × 버프 × 피해보정 × 크리/공속 보정 × 적 방어력 × 적 체력·실드·물량 ÷ 라운드 시간(RP 최대 8초 반영)</dd></div></dl></div><div class="artifact-dps-switch-wrap" aria-label="유물 DPS 표시 전환"><span class="artifact-dps-switch-label">유물 DPS</span><button class="artifact-dps-switch" id="artifactDpsViewToggle" type="button" role="switch" aria-checked="false"><span class="artifact-dps-switch-text artifact-dps-switch-off">OFF</span><span class="artifact-dps-switch-text artifact-dps-switch-on">ON</span><i aria-hidden="true"></i></button></div></div>
 <div class="dps-card stat-dps-summary" id="statDpsSummary">
 <div class="dps-lbl" id="dpsMainLabel">DPS</div>
 <div class="dps-num" id="dpsVal">—</div>

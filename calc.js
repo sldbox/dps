@@ -793,7 +793,10 @@ function computeStatsRaw(){
   let spU=0,spO=0,epU=0,rpU=0,soulU=0;
   TRAITS.forEach(t=>{
     const row=t[0];
-    if(SP_ROWS.has(row)){const c=cumCost(row); if(['유틸','AP','RA','경험치','특수'].includes(t[3])) spU+=c; else spO+=c;}
+    if(SP_ROWS.has(row)){
+      const c=cumCost(row);
+      if(isUtilitySpTrait(t)) spU+=c; else spO+=c;
+    }
     if(EP_ROWS.has(row)) epU+=cumCost(row);
     if(RP_ROWS.has(row)) rpU+=rpCost(row, INV[row]||0);
     if(SOUL_ROWS.has(row)) soulU+=cumCost(row);
@@ -809,7 +812,7 @@ function computeStatsRaw(){
   const actualHR = displayHR * hpRatio;
   return {M4,M7,M8,M9,M10,M11,M12,actualM12,M13,M16,M17,M18,M19,rawM19,roundTime,displayMultiplier,rawCD,rawTD,diff,
           displayAD,displayAPS,displayAPU,actualAPU,displayUA,displaySR,displayHR,actualSR,actualHR,
-          spTotal:spU+spO,spU,spO,epU,rpU,soulU,spBank:spBankRawBonus(),spBankApplied:isSpBankApplied(),effectiveSP:effectiveSP(),excelPierce,enemyData};
+          spTotal:spU+spO,spU,spO,epU,rpU,soulU,spBank:effectiveSpBankBonus(),spBankApplied:isSpBankApplied(),effectiveSP:effectiveSP(),excelPierce,enemyData};
 }
 
 /* ===== 08. 유물 DPS 계산 / 미리보기 상태 보존 ===== */
@@ -947,33 +950,42 @@ function applyPreviewErosionControlState(){
     el.dataset.erosionValue=stored;
   });
 }
+function previewControlElements(){
+  return {
+    diffEl:$('diff'),
+    penEl:$('penance'),
+    roundEl:$('round'),
+    towerFloorEl:$('challengeTowerFloor'),
+    soloEl:$('soloMode'),
+    coopEl:$('coopMode'),
+    coopPlayersEl:$('coopPlayers'),
+    teamEl:$('team')
+  };
+}
+function prepareDpsPreviewControls(diffName, penanceLevel, round, options={}, signaturePrefix='preview'){
+  const controls=previewControlElements();
+  const battleMode=options.battleMode==='coop' ? 'coop' : 'solo';
+  if(controls.diffEl) controls.diffEl.value=diffName;
+  applyPreviewPenanceState(controls.penEl, penanceLevel, battleMode, signaturePrefix);
+  applyPreviewRoundState(round, controls.roundEl, controls.towerFloorEl);
+  applyPreviewErosionControlState();
+  applyPreviewBattleModeState({
+    battleMode,
+    coopPlayers:options.coopPlayers,
+    soloEl:controls.soloEl,
+    coopEl:controls.coopEl,
+    coopPlayersEl:controls.coopPlayersEl,
+    teamEl:controls.teamEl,
+    signaturePrefix
+  });
+  return controls;
+}
 function calculateArtifactDpsPreview(diffName, penanceLevel, round, options={}){
   const saved=capturePreviewElementStates(ARTIFACT_DPS_PREVIEW_IDS);
   try{
-    const diffEl=$('diff');
-    const penEl=$('penance');
-    const roundEl=$('round');
-    const towerFloorEl=$('challengeTowerFloor');
-    const soloEl=$('soloMode');
-    const coopEl=$('coopMode');
-    const coopPlayersEl=$('coopPlayers');
-    const teamEl=$('team');
+    prepareDpsPreviewControls(diffName, penanceLevel, round, options, 'artifact');
     const artifactEl=$('prodArtifact');
-    const battleMode=options.battleMode==='coop' ? 'coop' : 'solo';
-    if(diffEl) diffEl.value=diffName;
-    applyPreviewPenanceState(penEl, penanceLevel, battleMode, 'artifact');
-    applyPreviewRoundState(round, roundEl, towerFloorEl);
-    applyPreviewBattleModeState({
-      battleMode,
-      coopPlayers:options.coopPlayers,
-      soloEl,
-      coopEl,
-      coopPlayersEl,
-      teamEl,
-      signaturePrefix:'artifact'
-    });
     if(artifactEl) artifactEl.checked=true;
-    applyPreviewErosionControlState();
     const stats=computeStatsRaw();
     return {...calculateArtifactDpsRaw(stats), baseDps:Number.isFinite(stats.M19) ? stats.M19 : 0};
   }catch(e){
@@ -1031,6 +1043,9 @@ function nextRpCost(row){
   if(n>=TMAX[row]) return Infinity;
   return rpCost(row,n+1)-rpCost(row,n);
 }
+function isUtilitySpTrait(trait){
+  return trait[3]==='유틸' || trait[3]==='경험치';
+}
 function resourceUsed(kind){
   let total=0;
   TRAITS.forEach(t=>{
@@ -1075,19 +1090,6 @@ function fillRowToBudget(row){
   while(addOneIfAffordable(row)) changed=true;
   return changed;
 }
-let spBankBudgetMode='manual';
-function normalizeSpBankBudgetModeCalc(value){
-  return String(value ?? '').trim()==='included' ? 'included' : 'manual';
-}
-function setSpBankBudgetMode(value){
-  spBankBudgetMode=normalizeSpBankBudgetModeCalc(value);
-}
-function getSpBankBudgetMode(){
-  return spBankBudgetMode;
-}
-function isSpBankBonusAlreadyInTotalSP(){
-  return spBankBudgetMode==='included';
-}
 function normalizeSpBankApplyValue(value){
   if(typeof value==='boolean') return value ? '반영' : '미반영';
   const raw=String(value ?? '').trim();
@@ -1095,20 +1097,17 @@ function normalizeSpBankApplyValue(value){
   return (raw==='반영' || raw==='적용' || upper==='ON' || upper==='TRUE' || upper==='1' || upper==='YES') ? '반영' : '미반영';
 }
 function isSpBankApplied(){
+  const bankLevel=Math.max(0, Math.round(+(INV[SP_BANK_TRAIT_ROW]||0)));
+  if(bankLevel<1) return false;
   const select=(typeof $==='function' ? $('spBankApply') : (typeof document!=='undefined' ? document.getElementById('spBankApply') : null));
   if(select) return normalizeSpBankApplyValue(select.value)==='반영';
-  return Math.max(0, Math.round(+(INV[SP_BANK_TRAIT_ROW]||0)))>=1;
+  return true;
 }
 function spBankApplyDisplayValue(value){
   return normalizeSpBankApplyValue(value)==='반영' ? 'ON' : 'OFF';
 }
-function syncSpBankDisplay(bankSP=null){
-  const select=$('spBankApply');
-  const applied=isSpBankApplied();
-  const state=applied ? '반영' : '미반영';
-  if(select && select.value!==state) select.value=state;
-  const n=bankSP==null ? spBankRawBonus() : bankSP;
-  setText('spBankStatusView', applied ? fullNumber(n) : '미적용');
+function spBankImportedBonus(){
+  return Math.max(0, Math.round(v('spBankImportedBonus')||0));
 }
 function spBankRawBonus(){
   const bankLevel=INV[SP_BANK_TRAIT_ROW]||0;
@@ -1116,9 +1115,26 @@ function spBankRawBonus(){
   const ticks=Math.floor(appliedRound/10);
   return bankLevel * 1000 * ticks;
 }
+function effectiveSpBankBonus(){
+  if(!isSpBankApplied()) return 0;
+  const imported=spBankImportedBonus();
+  return imported>0 ? imported : spBankRawBonus();
+}
+function syncSpBankDisplay(bankSP=null){
+  const select=$('spBankApply');
+  const bankLevel=Math.max(0, Math.round(+(INV[SP_BANK_TRAIT_ROW]||0)));
+  const applied=isSpBankApplied();
+  const state=applied ? '반영' : '미반영';
+  if(select){
+    const onOption=select.querySelector('option[value="반영"]');
+    if(onOption) onOption.disabled=bankLevel<1;
+    if(select.value!==state) select.value=state;
+  }
+  const n=applied ? (bankSP==null ? effectiveSpBankBonus() : bankSP) : 0;
+  setText('spBankStatusView', n>0 ? fullNumber(n) : '미적용');
+}
 function effectiveSP(){
-  const bonus=(isSpBankApplied() && !isSpBankBonusAlreadyInTotalSP()) ? spBankRawBonus() : 0;
-  return Math.max(0, v('sp') + bonus);
+  return Math.max(0, v('sp') + effectiveSpBankBonus());
 }
 function rpPierceBonus(){return Math.max(0, Math.min(20, INV[130]||0));}
 function enforceBudgets(){
@@ -1243,28 +1259,7 @@ const DPS_PREVIEW_IDS=['diff','penance','round','challengeTowerFloor','soloMode'
 function computeDpsPreview(diffName, penanceLevel, round, options={}){
   const saved=capturePreviewElementStates(DPS_PREVIEW_IDS);
   try{
-    const diffEl=$('diff');
-    const penEl=$('penance');
-    const roundEl=$('round');
-    const towerFloorEl=$('challengeTowerFloor');
-    const soloEl=$('soloMode');
-    const coopEl=$('coopMode');
-    const coopPlayersEl=$('coopPlayers');
-    const teamEl=$('team');
-    const battleMode=options.battleMode==='coop' ? 'coop' : 'solo';
-    if(diffEl) diffEl.value=diffName;
-    applyPreviewPenanceState(penEl, penanceLevel, battleMode, 'preview');
-    applyPreviewRoundState(round, roundEl, towerFloorEl);
-    applyPreviewErosionControlState();
-    applyPreviewBattleModeState({
-      battleMode,
-      coopPlayers:options.coopPlayers,
-      soloEl,
-      coopEl,
-      coopPlayersEl,
-      teamEl,
-      signaturePrefix:'preview'
-    });
+    prepareDpsPreviewControls(diffName, penanceLevel, round, options, 'preview');
     const s=computeStatsRaw();
     return Number.isFinite(s.M19) ? s.M19 : 0;
   }catch(e){
@@ -1274,6 +1269,7 @@ function computeDpsPreview(diffName, penanceLevel, round, options={}){
     restorePreviewElementStates(saved);
   }
 }
+
 
 /* ===== 10. 특성 효율 계산 / 한도 입력 표시 어댑터 ===== */
 const STAT_KO={

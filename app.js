@@ -408,6 +408,28 @@ function renderResourceSummary(s){
 function syncControlDisplays(){
   [syncSelectButtons,syncBuffChoiceButtons,syncBattleMode,syncDifficultyTargetControls,syncErosionControls,syncPowerBlessOptions,formatAllMoneyInputs].forEach(fn=>fn());
 }
+function syncSpBankApplyFromInvestment(){
+  const select=$('spBankApply');
+  if(!select) return false;
+  const state=(INV[SP_BANK_TRAIT_ROW]||0)>0 ? '반영' : '미반영';
+  if(select.value!==state) select.value=state;
+  return true;
+}
+function applySpBankToggleToInvestment(){
+  const select=$('spBankApply');
+  if(!select) return false;
+  const applyState=normalizeSpBankApplyValue(select.value);
+  const bankLevel=Math.max(0, Math.round(+(INV[SP_BANK_TRAIT_ROW]||0)));
+  if(applyState==='반영'){
+    if(bankLevel>=1) return false;
+    select.value='미반영';
+    try{showToast('SP 은행 투자수가 0이면 ON으로 바꿀 수 없습니다','err');}catch(_e){}
+    return true;
+  }
+  if(bankLevel===0) return false;
+  INV[SP_BANK_TRAIT_ROW]=0;
+  return true;
+}
 function syncPreCalculationViews(){
   normalizeRoundInputs();
   syncExclusiveRuneOptions();
@@ -638,43 +660,47 @@ function syncDpsTableLabels(){
   if(closeBtn && isDpsTableOpen()) closeBtn.setAttribute('aria-label', `${label} 닫기`);
 }
 
-function buildDpsTable(round){
+function dpsTableCellHtml(value, active){
   const minDps=parseDpsTableMinDps();
+  const danger=minDps!==null && dpsTableRiskCompareValue(value)<=minDps;
+  const classes=[danger?'dps-risk-cell':'', active?'dps-current-cell':''].filter(Boolean).join(' ');
+  return `<td class="${classes}">${formatDpsTableValue(value)}</td>`;
+}
+function buildPenanceDpsMatrix({difficulties, penanceMin, penanceMax, currentPen, round, previewOptions={}, tableClass=''}){
   const currentDiff=vs('diff');
-  const currentPen=Math.max(DPS_TABLE_PENANCE_MIN, Math.min(DPS_TABLE_PENANCE_MAX, Math.round(v('penance'))));
-  const head=DPS_TABLE_DIFFICULTIES.map(d=>`<th class="${d===currentDiff?'dps-current-column':''}">${d}</th>`).join('');
+  const clampedPen=Math.max(penanceMin, Math.min(penanceMax, Math.round(currentPen)));
+  const head=difficulties.map(diff=>`<th class="${diff===currentDiff?'dps-current-column':''}">${diff}</th>`).join('');
   const rows=[];
-  for(let pen=DPS_TABLE_PENANCE_MIN; pen<=DPS_TABLE_PENANCE_MAX; pen++){
-    const rowCurrent=pen===currentPen;
-    const cells=DPS_TABLE_DIFFICULTIES.map(diff=>{
-      const value=dpsTablePreviewValue(diff, pen, round, {battleMode:'solo'});
-      const danger=minDps!==null && dpsTableRiskCompareValue(value)<=minDps;
-      const currentCell=rowCurrent && diff===currentDiff;
-      const classes=[danger?'dps-risk-cell':'', currentCell?'dps-current-cell':''].filter(Boolean).join(' ');
-      return `<td class="${classes}">${formatDpsTableValue(value)}</td>`;
+  for(let pen=penanceMin; pen<=penanceMax; pen++){
+    const rowCurrent=pen===clampedPen;
+    const cells=difficulties.map(diff=>{
+      const value=dpsTablePreviewValue(diff, pen, round, previewOptions);
+      return dpsTableCellHtml(value, rowCurrent && diff===currentDiff);
     }).join('');
     rows.push(`<tr${rowCurrent?' class="dps-current-row"':''}><th>${pen}</th>${cells}</tr>`);
   }
-  return `<table class="dps-matrix dps-round-matrix"><thead><tr><th>고행</th>${head}</tr></thead><tbody>${rows.join('')}</tbody></table>`;
+  return `<table class="dps-matrix dps-round-matrix${tableClass ? ' '+tableClass : ''}"><thead><tr><th>고행</th>${head}</tr></thead><tbody>${rows.join('')}</tbody></table>`;
+}
+function buildDpsTable(round){
+  return buildPenanceDpsMatrix({
+    difficulties:DPS_TABLE_DIFFICULTIES,
+    penanceMin:DPS_TABLE_PENANCE_MIN,
+    penanceMax:DPS_TABLE_PENANCE_MAX,
+    currentPen:v('penance'),
+    round,
+    previewOptions:{battleMode:'solo'}
+  });
 }
 function buildCoopDpsMatrix(players, round){
-  const minDps=parseDpsTableMinDps();
-  const currentDiff=vs('diff');
-  const currentPen=Math.max(COOP_DPS_TABLE_PENANCE_MIN, Math.min(COOP_DPS_TABLE_PENANCE_MAX, Math.round(v('penance'))));
-  const head=COOP_DPS_TABLE_DIFFICULTIES.map(diff=>`<th class="${diff===currentDiff?'dps-current-column':''}">${diff}</th>`).join('');
-  const rows=[];
-  for(let pen=COOP_DPS_TABLE_PENANCE_MIN; pen<=COOP_DPS_TABLE_PENANCE_MAX; pen++){
-    const rowCurrent=pen===currentPen;
-    const cells=COOP_DPS_TABLE_DIFFICULTIES.map(diff=>{
-      const value=dpsTablePreviewValue(diff, pen, round, {battleMode:'coop', coopPlayers:String(players)});
-      const danger=minDps!==null && dpsTableRiskCompareValue(value)<=minDps;
-      const currentCell=rowCurrent && diff===currentDiff;
-      const classes=[danger?'dps-risk-cell':'', currentCell?'dps-current-cell':''].filter(Boolean).join(' ');
-      return `<td class="${classes}">${formatDpsTableValue(value)}</td>`;
-    }).join('');
-    rows.push(`<tr${rowCurrent?' class="dps-current-row"':''}><th>${pen}</th>${cells}</tr>`);
-  }
-  return `<table class="dps-matrix dps-round-matrix dps-coop-matrix"><thead><tr><th>고행</th>${head}</tr></thead><tbody>${rows.join('')}</tbody></table>`;
+  return buildPenanceDpsMatrix({
+    difficulties:COOP_DPS_TABLE_DIFFICULTIES,
+    penanceMin:COOP_DPS_TABLE_PENANCE_MIN,
+    penanceMax:COOP_DPS_TABLE_PENANCE_MAX,
+    currentPen:v('penance'),
+    round,
+    previewOptions:{battleMode:'coop', coopPlayers:String(players)},
+    tableClass:'dps-coop-matrix'
+  });
 }
 function buildCoopDpsTable(round){
   return [2,3].map(players=>`
@@ -1133,7 +1159,7 @@ function webControlDisplay(id){
 const EXCEL_TITLE_BONUS_MAP={'패왕':'12','패왕+':'13','제왕':'14','제왕+':'15','신황':'16','신황+':'17'};
 const EXCEL_RUNE_TYPE_MAP={'AP':'ap','UA':'ua','TD':'td','TD&UA':'harmony','TD＆UA':'harmony','마법공격력':'ap','마법 공격력':'ap','유닛가속':'ua','유닛 가속':'ua','총데미지':'td','총 데미지':'td','총데미지&유닛가속':'harmony','총 데미지 & 유닛 가속':'harmony','총뎀가속':'harmony'};
 const FIELD_REGISTRY={
-  sp:{kind:'기본정보',name:'총 SP',compare:true,save:true,excel:'number'},
+  sp:{kind:'기본정보',name:'시작 SP',compare:true,save:true,excel:'number'},
   xp:{kind:'기본정보',name:'보유 XP',compare:true,save:true,excel:'number'},
   bxp:{kind:'기본정보',name:'보유 BXP',compare:true,save:true,excel:'number'},
   rp:{kind:'기본정보',name:'보유 RP',compare:true,save:true,excel:'number'},
@@ -1152,6 +1178,7 @@ const FIELD_REGISTRY={
   team:{kind:'기본정보',name:'출발 지원 인원수',compare:true,save:true,excel:'number'},
   pbless:{kind:'기본정보',name:'파워 블레스',compare:true,save:true,excel:'select'},
   spBankApply:{kind:'기본정보',name:'SP 은행',compare:true,save:true},
+  spBankImportedBonus:{kind:'기본정보',name:'SP 은행 보너스',compare:false,save:true},
   penance:{kind:'기본정보',name:'고행 단계',compare:true,save:true,excel:'number'},
   titleTdBonus:{kind:'기본정보',name:'타이틀 총 데미지',compare:true,save:true,excel:'number'},
   dpsTableMinDps:{kind:'DPS',name:'도전할 최소 DPS',compare:true,save:true,excel:'number'},
@@ -1318,7 +1345,8 @@ function buildExcelInputSpecs(cells,specCells,sheetName=''){
   const roundFieldId=excelRoundFieldId(cells,sheetName);
   const roundFieldName=excelRoundFieldName(cells,sheetName);
   return [
-    ['기본정보','총 SP',Math.round(Number(cells.B9)||0),'sp'],
+    ['기본정보','시작 SP',Math.round(Number(normalizedExcelTotalSpValue(cells))||0),'sp'],
+    ['기본정보','SP 은행 보너스',Math.round(Number(excelSpBankBonusValue(cells))||0),'spBankImportedBonus'],
     ['기본정보','보유 XP',specCells.R20,'xp'],
     ['기본정보','보유 BXP',specCells.R21,'bxp'],
     ['기본정보','보유 RP',cells.B16,'rp'],
@@ -1599,6 +1627,18 @@ function compareSummaryHtml(summary,active){
     active
   )).join('');
 }
+function setCompareError(message, options={}){
+  const body=$('excelCompareBody');
+  const apply=$('excelCompareApplyBtn');
+  const reset=$('excelCompareResetBtn');
+  if(apply) apply.disabled=true;
+  if(reset) reset.disabled=false;
+  if(body){
+    const html=escapeCompareHtml(message ?? '비교 실패');
+    body.innerHTML=`<div class="excel-compare-error">${options.keepVersionMarkup ? html.replace('5.4392','<span class="excel-compare-version">5.4392</span>') : html}</div>`;
+  }
+  updateCompareActionButtons();
+}
 function compareRowsHtml(rows,emptyMessage){
   return rows.map(row=>`<tr class="${row.status}"><td>${escapeCompareHtml(row.kind)}</td><th>${escapeCompareHtml(row.name)}</th><td>${row.current}</td><td>${row.change}</td><td class="compare-diff ${row.diffClass||''}">${row.difference}</td></tr>`).join('') ||
     `<tr class="same"><td colspan="5" class="excel-compare-no-diff">${escapeCompareHtml(emptyMessage)}</td></tr>`;
@@ -1623,17 +1663,11 @@ function renderExcelComparison(result,options={}){
     </div>`;
   updateCompareActionButtons();
 }
-function openCompareInfo(options={}){
-  openMonthRune('compare', options);
+function openCompareInfo(){
+  openMonthRune('compare');
 }
 function closeCompareInfo(){
   closeMonthRune();
-}
-function requestCompareFileSelect(){
-  setTimeout(()=>{
-    const input=$('excelCompareFile');
-    if(input && !input.disabled) input.click();
-  },60);
 }
 function compareCanApply(){
   if(compareState.applied) return false;
@@ -1721,6 +1755,28 @@ function firstExcelValue(cells, refs){
   }
   return null;
 }
+function hasExcelCellValue(cells={}, ref=''){
+  return cells[ref]!==undefined && cells[ref]!==null && String(cells[ref]).trim()!=='';
+}
+function excelSpBankBonusValue(cells={}){
+  const direct=hasExcelCellValue(cells,'AM9') ? excelNumber(cells.AM9) : null;
+  if(direct!==null) return Math.max(0,direct);
+  const ticks=hasExcelCellValue(cells,'AL9') ? excelNumber(cells.AL9) : null;
+  if(ticks===null || ticks<=0) return 0;
+  const unitBonus=hasExcelCellValue(cells,'D89') ? excelNumber(cells.D89) : null;
+  if(unitBonus!==null && unitBonus>0) return unitBonus*ticks;
+  const bankLevel=hasExcelCellValue(cells,'H89') ? excelNumber(cells.H89) : null;
+  return bankLevel!==null && bankLevel>0 ? bankLevel*1000*ticks : 0;
+}
+function excelSpBankApplyValue(cells={}){
+  return excelSpBankBonusValue(cells)>0 ? '반영' : '미반영';
+}
+function normalizedExcelTotalSpValue(cells={}){
+  const total=hasExcelCellValue(cells,'B9') ? excelNumber(cells.B9) : null;
+  if(total===null) return cells.B9;
+  const spBankBonus=excelSpBankBonusValue(cells);
+  return spBankBonus>0 && total>=spBankBonus ? total-spBankBonus : total;
+}
 function excelStateValue(id, value, options={}){
   const el=$(id);
   if(!el || value===undefined || value===null || value==='') return undefined;
@@ -1777,7 +1833,7 @@ function buildExcelState(cells, specCells, zeroCells, sheetName=''){
     values.pbless=normalizePowerBlessRawValue(cells.D4);
     applied++;
   }
-  applied+=assign('sp',cells.B9,{number:true,integer:true});
+  applied+=assign('sp',normalizedExcelTotalSpValue(cells),{number:true,integer:true});
   applied+=assign('xp',specCells.R20,{number:true,integer:true});
   applied+=assign('bxp',specCells.R21,{number:true,integer:true});
   applied+=assign('rp',cells.B16,{number:true,integer:true});
@@ -1806,8 +1862,10 @@ function buildExcelState(cells, specCells, zeroCells, sheetName=''){
     inv[row]=Math.max(0,Math.min(TMAX[row]||999,Math.round(value)));
     applied++;
   });
-  syncSpBankPresetState(values, inv, {budgetMode:'included', forceFromInvestment:true});
-  if(excelNumber(cells.H89)!==null) applied++;
+  values.spBankApply=excelSpBankApplyValue(cells);
+  values.spBankImportedBonus=String(Math.round(Number(excelSpBankBonusValue(cells))||0));
+  syncSpBankPresetState(values, inv, {zeroWhenOff:true});
+  if(hasExcelCellValue(cells,'H89')) applied++;
   inv[116]=1;
   const zeroScore=zeroScoreStateFromExcel(zeroCells) || state.zeroScore;
   if(zeroScore?.rows?.length) applied+=zeroScore.rows.reduce((sum,row)=>sum+(row.type==='penance'?5:(row.type==='towerCombo'?4:2)),0);
@@ -2000,9 +2058,6 @@ function compareSelectedExcelSheet(options={}){
   const sheetName=selectedExcelSheetName();
   if(!sheetName) return;
   compareState.lastResult=null;
-  const body=$('excelCompareBody');
-  const apply=$('excelCompareApplyBtn');
-  const reset=$('excelCompareResetBtn');
   if(!options.preserveRestore) clearCompareRestoreState();
   try{
     const cells=compareState.workbook.getCells(sheetName);
@@ -2010,10 +2065,7 @@ function compareSelectedExcelSheet(options={}){
     const zeroCells=getZeroScoreSheetCells(compareState.workbook);
     const additionalInfo=inspectSpecAdditionalStructure(specCells);
     if(!additionalInfo.valid){
-      if(apply) apply.disabled=true;
-      if(reset) reset.disabled=false;
-      if(body) body.innerHTML=`<div class="excel-compare-error">${escapeCompareHtml(additionalInfo.message).replace('5.4392','<span class="excel-compare-version">5.4392</span>')}</div>`;
-      updateCompareActionButtons();
+      setCompareError(additionalInfo.message, {keepVersionMarkup:true});
       return;
     }
     compareState.sourceType='excel';
@@ -2022,10 +2074,7 @@ function compareSelectedExcelSheet(options={}){
     updateCompareActionButtons();
   }catch(e){
     logAppError('[Excel compare failed]',e);
-    if(apply) apply.disabled=true;
-    if(reset) reset.disabled=false;
-    if(body) body.innerHTML=`<div class="excel-compare-error">${escapeCompareHtml(e?.message||String(e))}</div>`;
-    updateCompareActionButtons();
+    setCompareError(e?.message||String(e));
   }
 }
 function isTraitPresetCompareBundle(parsed){
@@ -2345,7 +2394,7 @@ function adjustTraitBy(row,d,step=1){
     INV[row]=next;
   }
   if(applied>0){
-    if(row===SP_BANK_TRAIT_ROW) applySpBankBudgetMode('manual');
+    if(row===SP_BANK_TRAIT_ROW) syncSpBankApplyFromInvestment();
     recalc();
     scheduleAutoSaveToast();
     return true;
@@ -2399,7 +2448,7 @@ function setInv(row,val){
   const wanted=Math.round(val);
   const applied=setRowToAffordableValue(row,wanted);
   if(applied<wanted) try{showToast('보유 재화 한도까지만 입력되었습니다','err');}catch(e){}
-  if(row===SP_BANK_TRAIT_ROW) applySpBankBudgetMode('manual');
+  if(row===SP_BANK_TRAIT_ROW) syncSpBankApplyFromInvestment();
   recalc();
   scheduleAutoSaveToast();
 }
@@ -2408,6 +2457,7 @@ function adjMax(row){
     if(row===116) return false;
     const before=INV[row]||0;
     fillRowToBudget(row);
+    if(row===SP_BANK_TRAIT_ROW) syncSpBankApplyFromInvestment();
     recalc();
     scheduleAutoSaveToast();
     try{showToast((INV[row]||0)>before?'가능한 만큼 MAX 적용':'보유 재화가 부족합니다',(INV[row]||0)>before?'ok':'err');}catch(e){}
@@ -2471,20 +2521,35 @@ function optimizeUtility(){
   try{showToast(changed ? '유틸 마스터 완료' : '보유 재화가 부족하거나 이미 최대입니다', changed ? 'ok' : 'err');}catch(e){}
   return changed>0;
 }
-function clearUtility(){
-  const rows=utilityRowsOrNotify();
-  if(!rows) return false;
+function isSpAttackClearTrait(t){
+  if(!Array.isArray(t)) return false;
+  const row=+t[0];
+  return Number.isFinite(row) && row!==116 && SP_ROWS.has(row) && !isUtilitySpTrait(t);
+}
+function isSpUtilityClearTrait(t){
+  if(!Array.isArray(t)) return false;
+  const row=+t[0];
+  return Number.isFinite(row) && row!==116 && SP_ROWS.has(row) && isUtilitySpTrait(t);
+}
+function clearTraitInvestmentsBy(predicate, options={}){
   let changed=0;
-  rows.forEach(row=>{
+  TRAITS.forEach(t=>{
+    if(!predicate(t)) return;
+    const row=+t[0];
     if((INV[row]||0)>0){
       INV[row]=0;
       changed++;
     }
   });
   if(116 in INV) INV[116]=1;
+  if(options.syncSpBank) syncSpBankApplyFromInvestment();
   recalc();
   scheduleAutoSaveToast();
-  try{showToast(changed ? '유틸 초기화 완료' : '초기화할 유틸 특성이 없습니다', changed ? 'ok' : 'err');}catch(e){}
+  return changed;
+}
+function clearUtility(){
+  const changed=clearTraitInvestmentsBy(isSpUtilityClearTrait, {syncSpBank:true});
+  try{showToast(changed ? '유틸 초기화 완료 · 사용한 SP (유틸) 0' : '초기화할 유틸 특성이 없습니다', changed ? 'ok' : 'err');}catch(e){}
   return changed>0;
 }
 function renderTraitEfficiencyItem(cand,idx){
@@ -2534,17 +2599,9 @@ function applyTraitEfficiencyTop(trigger){
 }
 function clearAll(){
   try{
-    TRAITS.forEach(t=>{
-      const row=Array.isArray(t) ? t[0] : t.row;
-      if(!Number.isFinite(+row)) return;
-      if(isUtilityOptimizationTrait(t)) return;
-      INV[+row]=0;
-    });
-    if(116 in INV) INV[116]=1;
-    recalc();
-    scheduleAutoSaveToast();
-    try{showToast('특성 초기화 완료 · 유틸 특성 유지','ok');}catch(e){}
-    return true;
+    const changed=clearTraitInvestmentsBy(isSpAttackClearTrait);
+    try{showToast(changed ? '특성 초기화 완료 · 사용한 SP (공격) 0' : '초기화할 공격 특성이 없습니다', changed ? 'ok' : 'err');}catch(e){}
+    return changed>0;
   }catch(e){
     logAppError('[clearAll failed]', e);
     alertApp('특성 초기화 실패: '+(e && e.message ? e.message : e));
@@ -2563,7 +2620,7 @@ const TRAIT_PRESET_SCHEMA_VERSION=2;
 const TRAIT_PRESET_NAME_PLACEHOLDER='예시) 더파300라버스';
 const TRAIT_PRESET_UNSUPPORTED_OLD_MESSAGE='구버전 프리셋은 더 이상 지원하지 않습니다.\n호환 엑셀버전: 5.4392\n엑셀 파일을 다시 불러온 뒤, 새 특성 프리셋을 생성해 주세요.';
 const TRAIT_PRESET_SYNC_EXCLUDED_VALUE_IDS=new Set([
-  'diff','penance','round','challengeTowerFloor','soloMode','coopMode','coopPlayers','coopPassenger2Dr','coopPassenger3Dr','team','pbless','spBankApply','spBankBudgetMode',
+  'diff','penance','round','challengeTowerFloor','soloMode','coopMode','coopPlayers','coopPassenger2Dr','coopPassenger3Dr','team','pbless','spBankApply',
   'overEnhance','repairEnhance','enhanceMaster',
   'dailyCouponBuff','shareUserBuff','unitUniqueBuff','basePierceBuff',
   'prodArtifact','prodNova','prodTeratron','prodAmon','prodAdun','prodKerrigan','prodOvermind','prodNarud',
@@ -2585,18 +2642,8 @@ const INTERNAL_VALUE_IDS=new Set([
   'dt','ep','rAP','rTD','rUA','rHarmony'
 ]);
 const IGNORED_SAVED_VALUE_IDS=[...(DPS_CONFIG.state.skipElementIds || []),...INTERNAL_VALUE_IDS];
-const NORMALIZED_MONEY_VALUE_IDS=new Set(['sp','xp','bxp','rp','soul']);
+const NORMALIZED_MONEY_VALUE_IDS=new Set(['sp','spBankImportedBonus','xp','bxp','rp','soul']);
 const SHARD_VALUE_IDS=new Set(['coralShard','aiurShard','xerusShard']);
-const SP_BANK_BUDGET_MODE_ID='spBankBudgetMode';
-function normalizeSpBankBudgetMode(value){
-  return String(value ?? '').trim()==='included' ? 'included' : 'manual';
-}
-function currentSpBankBudgetMode(){
-  return typeof getSpBankBudgetMode==='function' ? getSpBankBudgetMode() : 'manual';
-}
-function applySpBankBudgetMode(value){
-  if(typeof setSpBankBudgetMode==='function') setSpBankBudgetMode(normalizeSpBankBudgetMode(value));
-}
 function normalizeMoneyStorageValue(value, id=''){
   const digits=normalizedUnsignedDigits(value, '');
   if(id==='xp') return digits && !/^0+$/.test(digits) ? digits : '1';
@@ -2621,20 +2668,17 @@ function normalizedSpBankInvestmentLevel(inv){
   if(!inv || typeof inv!=='object') return 0;
   return Math.max(0, Math.min(TMAX[SP_BANK_TRAIT_ROW]||999, Math.round(+(inv[SP_BANK_TRAIT_ROW]||0))));
 }
-function resolveSpBankApplyFromValues(values, bankLevel, forceFromInvestment=false){
-  if(forceFromInvestment) return bankLevel>=1 ? '반영' : '미반영';
+function resolveSpBankApplyFromValues(values, bankLevel){
   return hasOwn(values,'spBankApply') ? normalizeSpBankApplyValue(values.spBankApply) : (bankLevel>=1 ? '반영' : '미반영');
 }
 function syncSpBankPresetState(values, inv, options={}){
   if(!values || typeof values!=='object' || !inv || typeof inv!=='object') return;
   const bankLevel=normalizedSpBankInvestmentLevel(inv);
-  const stored=resolveSpBankApplyFromValues(values, bankLevel, options.forceFromInvestment===true);
-  const budgetMode=options.budgetMode===undefined ? values[SP_BANK_BUDGET_MODE_ID] : options.budgetMode;
-  inv[SP_BANK_TRAIT_ROW]=bankLevel;
-  values.spBankApply=stored;
-  values[SP_BANK_BUDGET_MODE_ID]=stored==='반영' ? normalizeSpBankBudgetMode(budgetMode) : 'manual';
+  const applyState=resolveSpBankApplyFromValues(values, bankLevel);
+  inv[SP_BANK_TRAIT_ROW]=options.zeroWhenOff===true && applyState!=='반영' ? 0 : bankLevel;
+  values.spBankApply=applyState;
 }
-function isUserStateValueId(id){ return USER_STATE_VALUE_IDS.has(id) || id===SP_BANK_BUDGET_MODE_ID; }
+function isUserStateValueId(id){ return USER_STATE_VALUE_IDS.has(id); }
 function userStateElementIds(){ return storageElementIds().filter(isUserStateValueId); }
 const storageState={isLoading:false,suppressSave:false,factoryState:null,saveFailCount:0,hasSavedState:false};
 function isStorageLocked(){return storageState.isLoading || storageState.suppressSave;}
@@ -2769,7 +2813,7 @@ function makeStateObject(){
   normalizeShardStorageValues(values);
   normalizeMoneyStorageValues(values);
   const inv={...INV};
-  syncSpBankPresetState(values, inv, {budgetMode:currentSpBankBudgetMode()});
+  syncSpBankPresetState(values, inv);
   return makeStorageEnvelope({
     values,
     inv,
@@ -2806,7 +2850,8 @@ function sanitizeSavedValues(values, context={}){
     if(hasOwn(out,id)) out[id]=normalizeDecimalDisplayValue(out[id]);
   });
   if(hasOwn(out,'spBankApply')) out.spBankApply=normalizeSpBankApplyValue(out.spBankApply);
-  out[SP_BANK_BUDGET_MODE_ID]=normalizeSpBankBudgetMode(out[SP_BANK_BUDGET_MODE_ID]);
+  if(!hasOwn(out,'spBankImportedBonus')) out.spBankImportedBonus='0';
+  delete out['spBank'+'BudgetMode'];
   if(hasOwn(out,'runeChoiceType') || hasOwn(out,'runeChoiceValue')){
     const normalizedRune=normalizeRuneChoiceValues(out);
     out.runeChoiceType=normalizedRune.runeChoiceType;
@@ -2910,7 +2955,6 @@ function applyStateObject(data){
       INV[r]=Math.max(0, Math.min(TMAX[r]||999, Math.round(+val||0)));
     });
     INV[116]=1;
-    applySpBankBudgetMode(sanitizedValues[SP_BANK_BUDGET_MODE_ID]);
     enforceBudgets();
     if(hasOwn(sanitizedValues,'runeChoiceType') || hasOwn(sanitizedValues,'runeChoiceValue')) syncRuneChoice();
     else hydrateRuneChoiceFromHidden();
@@ -3956,9 +4000,6 @@ function compareSelectedTraitPreset(options={}){
   const preset=selectedCompareTraitPreset();
   if(!preset) return;
   compareState.lastResult=null;
-  const body=$('excelCompareBody');
-  const apply=$('excelCompareApplyBtn');
-  const reset=$('excelCompareResetBtn');
   if(!options.preserveRestore) clearCompareRestoreState();
   try{
     compareState.sourceType='traitPreset';
@@ -3967,10 +4008,7 @@ function compareSelectedTraitPreset(options={}){
     updateCompareActionButtons();
   }catch(e){
     logAppError('[trait preset compare failed]',e);
-    if(apply) apply.disabled=true;
-    if(reset) reset.disabled=false;
-    if(body) body.innerHTML=`<div class="excel-compare-error">${escapeCompareHtml(e?.message||String(e))}</div>`;
-    updateCompareActionButtons();
+    setCompareError(e?.message||String(e));
   }
 }
 function compareTraitPreset(){
@@ -4432,6 +4470,15 @@ function setZeroRankTab(trigger){
 }
 /* ===== 12. 공통 이벤트 바인딩 / 앱 초기화 ===== */
 let appEventsBound=false;
+function setDisclosureOpen(toggle, panel, open){
+  if(!toggle || !panel) return false;
+  toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+  panel.hidden=!open;
+  return true;
+}
+function toggleDisclosure(toggle, panel){
+  return setDisclosureOpen(toggle, panel, toggle?.getAttribute('aria-expanded')!=='true');
+}
 function getConvenienceMenuParts(){
   const wrap=document.querySelector('.header-convenience');
   if(!wrap) return {};
@@ -4441,20 +4488,48 @@ function getConvenienceMenuParts(){
     menu:wrap.querySelector('.header-convenience-menu')
   };
 }
+function getCreatorMenuParts(){
+  const panel=$('headerCreatorPanel');
+  const toggle=document.querySelector('.header-creator-toggle');
+  return {panel,toggle};
+}
+function setCreatorMenuPanelOpen(open){
+  const {panel,toggle}=getCreatorMenuParts();
+  return setDisclosureOpen(toggle, panel, open);
+}
+function closeCreatorMenuPanel(){
+  setCreatorMenuPanelOpen(false);
+}
+function toggleCreatorMenuPanel(){
+  const {panel,toggle}=getCreatorMenuParts();
+  return toggleDisclosure(toggle, panel);
+}
 function setConvenienceMenuOpen(open){
-  const { toggle, menu }=getConvenienceMenuParts();
-  if(!toggle || !menu) return false;
-  toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
-  menu.hidden=!open;
-  return true;
+  const {toggle, menu}=getConvenienceMenuParts();
+  const changed=setDisclosureOpen(toggle, menu, open);
+  if(changed && !open) closeCreatorMenuPanel();
+  return changed;
 }
 function closeConvenienceMenu(){
   setConvenienceMenuOpen(false);
 }
 function toggleConvenienceMenu(){
-  const { toggle }=getConvenienceMenuParts();
-  const open=toggle?.getAttribute('aria-expanded')==='true';
-  return setConvenienceMenuOpen(!open);
+  const {toggle, menu}=getConvenienceMenuParts();
+  return toggleDisclosure(toggle, menu);
+}
+function getDpsStandardHelpParts(){
+  return {toggle:$('dpsStandardHelpToggle'), bubble:$('dpsStandardHelpBubble')};
+}
+function setDpsStandardHelpOpen(open){
+  const {toggle,bubble}=getDpsStandardHelpParts();
+  return setDisclosureOpen(toggle, bubble, open);
+}
+function closeDpsStandardHelp(){
+  setDpsStandardHelpOpen(false);
+}
+function toggleDpsStandardHelp(){
+  const {toggle,bubble}=getDpsStandardHelpParts();
+  return toggleDisclosure(toggle, bubble);
 }
 function bindConvenienceMenuEvents(){
   document.addEventListener('click', e=>{
@@ -4468,6 +4543,15 @@ function bindConvenienceMenuEvents(){
   });
   document.addEventListener('keydown', e=>{
     if(e.key==='Escape') closeConvenienceMenu();
+  });
+}
+function bindDpsStandardHelpEvents(){
+  document.addEventListener('click', e=>{
+    if(e.target.closest('.damage-board-title')) return;
+    closeDpsStandardHelp();
+  });
+  document.addEventListener('keydown', e=>{
+    if(e.key==='Escape') closeDpsStandardHelp();
   });
 }
 const ACTION_HANDLERS={
@@ -4488,6 +4572,8 @@ const ACTION_HANDLERS={
   openDpsTable,
   openMonthRuneTab:(trigger)=>openMonthRune(trigger?.dataset?.monthRuneOpenTab || 'compare'),
   toggleConvenienceMenu,
+  toggleCreatorMenuPanel,
+  toggleDpsStandardHelp,
   zeroRankTab:(trigger)=>setZeroRankTab(trigger),
   zeroScoreStar:(trigger)=>toggleZeroScoreStar(trigger),
   decreaseFont:()=>changeFontScale(-DPS_CONFIG.ui.fontScaleStep),
@@ -4538,7 +4624,7 @@ function bindReactiveInputs(){
   const schedule=(target)=>{
     if(!shouldHandleReactiveInput(target)) return;
     if(target.matches('.money-input')) formatMoneyInput(target);
-    if(target.id==='spBankApply') applySpBankBudgetMode('manual');
+    if(target.id==='spBankApply') applySpBankToggleToInvestment();
     if(target.id==='xp') normalizeXpInput();
     if(target.id==='round' || target.id==='skillRound' || target.id==='challengeTowerFloor') normalizeRoundInput(target.id);
     if(target.id==='diff'){
@@ -4595,7 +4681,7 @@ function bindAppEvents(){
   [
     bindFontScaleViewportGuard, bindActionEvents, bindBusCutEvents, bindTraitHoldEvents, bindTraitInputEvents,
     bindDpsTableEvents, bindExcelCompareEvents, bindTraitPresetEvents, bindMonthRuneEvents, bindJewelImageEvents,
-    bindConvenienceMenuEvents, bindZeroScoreCalculator, bindTraitLimitDisplayEvents, bindReactiveInputs,
+    bindConvenienceMenuEvents, bindDpsStandardHelpEvents, bindZeroScoreCalculator, bindTraitLimitDisplayEvents, bindReactiveInputs,
     bindButtonPressFeedback, bindArtifactDpsViewEvents, bindAppTitleVersion
   ].forEach(fn=>fn());
 }
