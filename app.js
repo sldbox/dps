@@ -1,5 +1,4 @@
-/* ===== app.js | 앱 상태·렌더링·이벤트·파일 연동 통합 ===== */
-/* 계산 산식과 공통 값 헬퍼는 calc.js, 고정 데이터는 data.js에 두고 이 파일은 화면 상태와 사용자 흐름을 관리한다. */
+/* ===== app.js | 화면 상태·렌더링·이벤트·파일 연동 ===== */
 
 /* ===== 00. DOM 헬퍼 ===== */
 const $=id=>document.getElementById(id);
@@ -202,7 +201,7 @@ function syncBuffChoiceButtons(){
     item.setAttribute('aria-pressed', active ? 'true' : 'false');
   });
 }
-function penanceOptionLabel(value){return value>0 ? `${value} 고행` : '없음';}
+function penanceOptionLabel(value){return value>0 ? `${value} 고행` : '선택 안함';}
 function syncPenanceOptions(){
   const el=$('penance');
   if(!el) return;
@@ -216,7 +215,7 @@ function syncPenanceOptions(){
   el.value=current;
   el.dataset.penanceValue=current;
 }
-function powerBlessOptionLabel(value){return Number(value)>0 ? String(value) : '없음';}
+function powerBlessOptionLabel(value){return Number(value)>0 ? String(value) : '선택 안함';}
 function powerBlessDisplayText(value){
   return powerBlessOptionLabel(normalizePowerBlessRawValue(value));
 }
@@ -390,44 +389,30 @@ function renderDamageBoardRoundTime(s){
   setText('enemyRpTimeQuick', rpTimeText);
 }
 function renderResourceSummary(s){
-  const bankSP=s.spBank||0;
-  const spOwn=s.effectiveSP||effectiveSP();
-  const spRemain=spOwn-s.spTotal;
+  const totalSp=s.effectiveSP ?? effectiveSP();
+  const usedSp=s.spUsedTotal ?? ((s.spO||0)+(s.spU||0));
+  const spRemain=totalSp-usedSp;
   const epOwned=v('ep');
   const epRemain=epOwned-s.epU;
   const rpRemain=v('rp')-s.rpU;
   const soulRemain=v('soul')-s.soulU;
   setTextMap({
+    spTotalBasicView:fullNumber(totalSp),
     spAttackView:fullNumber(s.spO), spUtilityView:fullNumber(s.spU), spRemainBasicView:fullNumber(spRemain),
     epUsedBasicView:fullNumber(s.epU), epRemainBasicView:fullNumber(epRemain),
     rpUsedBasicView:fullNumber(s.rpU), rpRemainBasicView:fullNumber(rpRemain),
     soulUsedBasicView:fullNumber(s.soulU), soulRemainBasicView:fullNumber(soulRemain)
   });
-  syncSpBankDisplay(bankSP);
+  syncSpBankDisplay();
 }
 function syncControlDisplays(){
   [syncSelectButtons,syncBuffChoiceButtons,syncBattleMode,syncDifficultyTargetControls,syncErosionControls,syncPowerBlessOptions,formatAllMoneyInputs].forEach(fn=>fn());
 }
-function syncSpBankApplyFromInvestment(){
+function syncSpBankApplyControl(){
   const select=$('spBankApply');
   if(!select) return false;
-  const state=(INV[SP_BANK_TRAIT_ROW]||0)>0 ? '반영' : '미반영';
+  const state=normalizeSpBankApplyValue(select.value);
   if(select.value!==state) select.value=state;
-  return true;
-}
-function applySpBankToggleToInvestment(){
-  const select=$('spBankApply');
-  if(!select) return false;
-  const applyState=normalizeSpBankApplyValue(select.value);
-  const bankLevel=Math.max(0, Math.round(+(INV[SP_BANK_TRAIT_ROW]||0)));
-  if(applyState==='반영'){
-    if(bankLevel>=1) return false;
-    select.value='미반영';
-    try{showToast('SP 은행 투자수가 0이면 ON으로 바꿀 수 없습니다','err');}catch(_e){}
-    return true;
-  }
-  if(bankLevel===0) return false;
-  INV[SP_BANK_TRAIT_ROW]=0;
   return true;
 }
 function syncPreCalculationViews(){
@@ -478,7 +463,7 @@ function renderEnchantPreview(){
     if(out) out.textContent=val;
   });
 }
-/* 버스보드: 렌더링 / 행 클릭 피드백 */
+/* 버스 보드: 렌더링 / 행 클릭 피드백 */
 const XP_CUT_DIVISOR_ROWS=[
   {stage:'1단계', party2:10, party3:6},
   {stage:'2단계', party2:20, party3:12},
@@ -733,7 +718,7 @@ function buildDpsTowerTable(){
   }).join('');
   return `<div class="dps-tower-grid" data-tower-group-size="${groupSize}">${blocks}</div>`;
 }
-function renderDpsTableTabs(round, options={}){
+function renderDpsTableTabs(){
   return [
     {key:'solo',label:'개인'},
     {key:'coop',label:'협동'},
@@ -775,11 +760,10 @@ function syncDpsTableModalModeClass(){
   document.body?.classList.add(`is-dps-mode-${mode}`);
 }
 function renderDpsTablePanelContent(){
-  const round=dpsTableRound();
   syncDpsTableModalModeClass();
   syncDpsTableLabels();
   qsa('[data-dps-table-tabs-mount]').forEach(tabs=>{
-    tabs.innerHTML=renderDpsTableTabs(round, {compact:true});
+    tabs.innerHTML=renderDpsTableTabs();
   });
   const inner=dpsTablePanelInnerHtml();
   qsa('[data-dps-table-mount]').forEach(mount=>{
@@ -1091,6 +1075,17 @@ const COMPARE_SPECIAL_RUNE_LABELS={ap:'마법공격력',ua:'유닛 가속',td:'�
 function compareNormalizedText(value){
   return String(value??'').trim().replace(/\s+/g,'').toLowerCase();
 }
+function findSelectOptionByText(select, value){
+  const text=String(value??'').trim();
+  const normalized=compareNormalizedText(text);
+  return [...select.options].find(item=>{
+    const optionValue=String(item.value??'').trim();
+    const optionText=String(item.textContent??'').trim();
+    return optionValue===text || optionText===text ||
+      compareNormalizedText(optionValue)===normalized ||
+      compareNormalizedText(optionText)===normalized;
+  }) || null;
+}
 function compareSelectDisplayText(value,id){
   const text=String(value??'').trim();
   if(id==='runeChoiceType'){
@@ -1099,14 +1094,7 @@ function compareSelectDisplayText(value,id){
   }
   const select=$(id);
   if(select?.tagName==='SELECT'){
-    const normalized=compareNormalizedText(text);
-    const option=[...select.options].find(item=>{
-      const optionValue=String(item.value??'').trim();
-      const optionText=String(item.textContent??'').trim();
-      return optionValue===text || optionText===text ||
-        compareNormalizedText(optionValue)===normalized ||
-        compareNormalizedText(optionText)===normalized;
-    });
+    const option=findSelectOptionByText(select, text);
     if(option) return String(option.textContent||option.value||'').trim() || '—';
   }
   return text || '—';
@@ -1134,7 +1122,7 @@ function buildCompareTextRow(kind, name, changeValue, currentValue, options={}){
 function buildRuneChoiceCompareRow(kind, changeValues, currentValues){
   const display=values=>{
     const v=normalizeRuneChoiceValue(values?.runeChoiceValue);
-    if(v===0) return '없음';
+    if(v===0) return '선택 안함';
     const t=normalizeRuneChoiceType(values?.runeChoiceType);
     return `${RUNE_CHOICE_TYPE_LABELS[t] || RUNE_CHOICE_TYPE_LABELS.harmony} +${v.toLocaleString('ko-KR')}`;
   };
@@ -1178,7 +1166,6 @@ const FIELD_REGISTRY={
   team:{kind:'기본정보',name:'출발 지원 인원수',compare:true,save:true,excel:'number'},
   pbless:{kind:'기본정보',name:'파워 블레스',compare:true,save:true,excel:'select'},
   spBankApply:{kind:'기본정보',name:'SP 은행',compare:true,save:true},
-  spBankImportedBonus:{kind:'기본정보',name:'SP 은행 보너스',compare:false,save:true},
   penance:{kind:'기본정보',name:'고행 단계',compare:true,save:true,excel:'number'},
   titleTdBonus:{kind:'기본정보',name:'타이틀 총 데미지',compare:true,save:true,excel:'number'},
   dpsTableMinDps:{kind:'DPS',name:'도전할 최소 DPS',compare:true,save:true,excel:'number'},
@@ -1236,18 +1223,18 @@ const FIELD_REGISTRY={
   enchSR:{kind:'인첸트',name:'실드 감소',save:true,excel:'number'},
   enchHR:{kind:'인첸트',name:'체력 감소',save:true,excel:'number'},
   enchantCode:{kind:'인첸트',name:'인첸트 코드',save:true},
-  optTier:{kind:'특성보드',name:'특성 최적화 범위',compare:true,save:true},
-  utilOptTier:{kind:'특성보드',name:'유틸 마스터 범위',compare:true,save:true},
-  traitLimitAD:{kind:'특성보드 / 특성 투자 제한',name:'공격력',compare:true,save:true},
-  traitLimitAS:{kind:'특성보드 / 특성 투자 제한',name:'공격속도',compare:true,save:true},
-  traitLimitCRI:{kind:'특성보드 / 특성 투자 제한',name:'크리티컬 확률',compare:true,save:true},
-  traitLimitCD:{kind:'특성보드 / 특성 투자 제한',name:'크리티컬 데미지',compare:true,save:true},
-  traitLimitMC:{kind:'특성보드 / 특성 투자 제한',name:'다중 크리',compare:true,save:true},
-  traitLimitDR:{kind:'특성보드 / 특성 투자 제한',name:'방어력 감소',compare:true,save:true},
-  traitLimitTD:{kind:'특성보드 / 특성 투자 제한',name:'총 데미지',compare:true,save:true},
-  traitLimitUA:{kind:'특성보드 / 특성 투자 제한',name:'유닛 가속',compare:true,save:true},
-  traitLimitMultiTarget:{kind:'특성보드 / 특성 투자 제한',name:'멀티타겟',compare:true,save:true},
-  traitLimitInfinite:{kind:'특성보드 / 특성 투자 제한',name:'무한특성',compare:true,save:true},
+  optTier:{kind:'특성 보드',name:'특성 최적화 범위',compare:true,save:true},
+  utilOptTier:{kind:'특성 보드',name:'유틸 마스터 범위',compare:true,save:true},
+  traitLimitAD:{kind:'특성 보드 / 특성 투자 제한',name:'공격력',compare:true,save:true},
+  traitLimitAS:{kind:'특성 보드 / 특성 투자 제한',name:'공격속도',compare:true,save:true},
+  traitLimitCRI:{kind:'특성 보드 / 특성 투자 제한',name:'크리티컬 확률',compare:true,save:true},
+  traitLimitCD:{kind:'특성 보드 / 특성 투자 제한',name:'크리티컬 데미지',compare:true,save:true},
+  traitLimitMC:{kind:'특성 보드 / 특성 투자 제한',name:'다중 크리',compare:true,save:true},
+  traitLimitDR:{kind:'특성 보드 / 특성 투자 제한',name:'방어력 감소',compare:true,save:true},
+  traitLimitTD:{kind:'특성 보드 / 특성 투자 제한',name:'총 데미지',compare:true,save:true},
+  traitLimitUA:{kind:'특성 보드 / 특성 투자 제한',name:'유닛 가속',compare:true,save:true},
+  traitLimitMultiTarget:{kind:'특성 보드 / 특성 투자 제한',name:'멀티타겟',compare:true,save:true},
+  traitLimitInfinite:{kind:'특성 보드 / 특성 투자 제한',name:'무한특성',compare:true,save:true},
   skillDouble:{kind:'성소스킬보드',name:'더블스페',compare:true,save:true,excel:'number'},
   skillMode:{kind:'성소스킬보드',name:'모드',compare:true,save:true},
   skillRound:{kind:'성소스킬보드',name:'라운드',compare:true,save:true,excel:'number'},
@@ -1346,7 +1333,6 @@ function buildExcelInputSpecs(cells,specCells,sheetName=''){
   const roundFieldName=excelRoundFieldName(cells,sheetName);
   return [
     ['기본정보','시작 SP',Math.round(Number(normalizedExcelTotalSpValue(cells))||0),'sp'],
-    ['기본정보','SP 은행 보너스',Math.round(Number(excelSpBankBonusValue(cells))||0),'spBankImportedBonus'],
     ['기본정보','보유 XP',specCells.R20,'xp'],
     ['기본정보','보유 BXP',specCells.R21,'bxp'],
     ['기본정보','보유 RP',cells.B16,'rp'],
@@ -1739,14 +1725,7 @@ function resolveExcelSelectValue(id, value){
   const select=$(id);
   const text=excelText(value);
   if(!select||!text) return null;
-  const normalized=text.replace(/\s+/g,'').toLowerCase();
-  const option=[...select.options].find(item=>{
-    const optionValue=String(item.value).trim();
-    const optionText=String(item.textContent||'').trim();
-    return optionValue===text || optionText===text ||
-      optionValue.replace(/\s+/g,'').toLowerCase()===normalized ||
-      optionText.replace(/\s+/g,'').toLowerCase()===normalized;
-  });
+  const option=findSelectOptionByText(select, text);
   return option ? option.value : null;
 }
 function firstExcelValue(cells, refs){
@@ -1863,8 +1842,7 @@ function buildExcelState(cells, specCells, zeroCells, sheetName=''){
     applied++;
   });
   values.spBankApply=excelSpBankApplyValue(cells);
-  values.spBankImportedBonus=String(Math.round(Number(excelSpBankBonusValue(cells))||0));
-  syncSpBankPresetState(values, inv, {zeroWhenOff:true});
+  syncSpBankPresetState(values, inv);
   if(hasExcelCellValue(cells,'H89')) applied++;
   inv[116]=1;
   const zeroScore=zeroScoreStateFromExcel(zeroCells) || state.zeroScore;
@@ -2292,7 +2270,7 @@ function bindExcelCompareEvents(){
   });
   document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeCompareInfo(); });
 }
-/* ===== 07. 특성보드 / 투자 조작 / 최적화 ===== */
+/* ===== 07. 특성 보드 / 투자 조작 / 최적화 ===== */
 const INFINITE_TRAIT_TIER='무한∞';
 const TIERS=['루키','비기너','아마추어','프로','엑스퍼트','마스터','디바인','더원1','더원2',INFINITE_TRAIT_TIER,'EP특성','RP특성','심연특성'];
 function updateTraits(){
@@ -2394,7 +2372,6 @@ function adjustTraitBy(row,d,step=1){
     INV[row]=next;
   }
   if(applied>0){
-    if(row===SP_BANK_TRAIT_ROW) syncSpBankApplyFromInvestment();
     recalc();
     scheduleAutoSaveToast();
     return true;
@@ -2448,7 +2425,6 @@ function setInv(row,val){
   const wanted=Math.round(val);
   const applied=setRowToAffordableValue(row,wanted);
   if(applied<wanted) try{showToast('보유 재화 한도까지만 입력되었습니다','err');}catch(e){}
-  if(row===SP_BANK_TRAIT_ROW) syncSpBankApplyFromInvestment();
   recalc();
   scheduleAutoSaveToast();
 }
@@ -2457,7 +2433,6 @@ function adjMax(row){
     if(row===116) return false;
     const before=INV[row]||0;
     fillRowToBudget(row);
-    if(row===SP_BANK_TRAIT_ROW) syncSpBankApplyFromInvestment();
     recalc();
     scheduleAutoSaveToast();
     try{showToast((INV[row]||0)>before?'가능한 만큼 MAX 적용':'보유 재화가 부족합니다',(INV[row]||0)>before?'ok':'err');}catch(e){}
@@ -2531,7 +2506,7 @@ function isSpUtilityClearTrait(t){
   const row=+t[0];
   return Number.isFinite(row) && row!==116 && SP_ROWS.has(row) && isUtilitySpTrait(t);
 }
-function clearTraitInvestmentsBy(predicate, options={}){
+function clearTraitInvestmentsBy(predicate){
   let changed=0;
   TRAITS.forEach(t=>{
     if(!predicate(t)) return;
@@ -2542,13 +2517,12 @@ function clearTraitInvestmentsBy(predicate, options={}){
     }
   });
   if(116 in INV) INV[116]=1;
-  if(options.syncSpBank) syncSpBankApplyFromInvestment();
   recalc();
   scheduleAutoSaveToast();
   return changed;
 }
 function clearUtility(){
-  const changed=clearTraitInvestmentsBy(isSpUtilityClearTrait, {syncSpBank:true});
+  const changed=clearTraitInvestmentsBy(isSpUtilityClearTrait);
   try{showToast(changed ? '유틸 초기화 완료 · 사용한 SP (유틸) 0' : '초기화할 유틸 특성이 없습니다', changed ? 'ok' : 'err');}catch(e){}
   return changed>0;
 }
@@ -2642,7 +2616,7 @@ const INTERNAL_VALUE_IDS=new Set([
   'dt','ep','rAP','rTD','rUA','rHarmony'
 ]);
 const IGNORED_SAVED_VALUE_IDS=[...(DPS_CONFIG.state.skipElementIds || []),...INTERNAL_VALUE_IDS];
-const NORMALIZED_MONEY_VALUE_IDS=new Set(['sp','spBankImportedBonus','xp','bxp','rp','soul']);
+const NORMALIZED_MONEY_VALUE_IDS=new Set(['sp','xp','bxp','rp','soul']);
 const SHARD_VALUE_IDS=new Set(['coralShard','aiurShard','xerusShard']);
 function normalizeMoneyStorageValue(value, id=''){
   const digits=normalizedUnsignedDigits(value, '');
@@ -2668,14 +2642,14 @@ function normalizedSpBankInvestmentLevel(inv){
   if(!inv || typeof inv!=='object') return 0;
   return Math.max(0, Math.min(TMAX[SP_BANK_TRAIT_ROW]||999, Math.round(+(inv[SP_BANK_TRAIT_ROW]||0))));
 }
-function resolveSpBankApplyFromValues(values, bankLevel){
-  return hasOwn(values,'spBankApply') ? normalizeSpBankApplyValue(values.spBankApply) : (bankLevel>=1 ? '반영' : '미반영');
+function resolveSpBankApplyFromValues(values){
+  return hasOwn(values,'spBankApply') ? normalizeSpBankApplyValue(values.spBankApply) : '미반영';
 }
-function syncSpBankPresetState(values, inv, options={}){
+function syncSpBankPresetState(values, inv){
   if(!values || typeof values!=='object' || !inv || typeof inv!=='object') return;
   const bankLevel=normalizedSpBankInvestmentLevel(inv);
-  const applyState=resolveSpBankApplyFromValues(values, bankLevel);
-  inv[SP_BANK_TRAIT_ROW]=options.zeroWhenOff===true && applyState!=='반영' ? 0 : bankLevel;
+  const applyState=resolveSpBankApplyFromValues(values);
+  inv[SP_BANK_TRAIT_ROW]=bankLevel;
   values.spBankApply=applyState;
 }
 function isUserStateValueId(id){ return USER_STATE_VALUE_IDS.has(id); }
@@ -2825,7 +2799,7 @@ function makeStateObject(){
 function savedTowerFloorValue(values={}){
   return normalizedTowerFloorString(values.challengeTowerFloor ?? TOWER_FLOOR_INPUT_MIN);
 }
-function sanitizeSavedValues(values, context={}){
+function sanitizeSavedValues(values){
   if(!values || typeof values!=='object') values={};
   const out=normalizeRuneChoiceValues(values);
   IGNORED_SAVED_VALUE_IDS.forEach(id=>delete out[id]);
@@ -2850,7 +2824,6 @@ function sanitizeSavedValues(values, context={}){
     if(hasOwn(out,id)) out[id]=normalizeDecimalDisplayValue(out[id]);
   });
   if(hasOwn(out,'spBankApply')) out.spBankApply=normalizeSpBankApplyValue(out.spBankApply);
-  if(!hasOwn(out,'spBankImportedBonus')) out.spBankImportedBonus='0';
   delete out['spBank'+'BudgetMode'];
   if(hasOwn(out,'runeChoiceType') || hasOwn(out,'runeChoiceValue')){
     const normalizedRune=normalizeRuneChoiceValues(out);
@@ -2870,7 +2843,7 @@ function normalizeSavedState(data){
   if(!data || typeof data!=='object') return null;
   const rawValues=(data.values && typeof data.values==='object') ? data.values : {};
   const hasRawValues=Object.keys(rawValues).some(id=>isUserStateValueId(id) || id==='dpsTableMinDps');
-  const values=sanitizeSavedValues(rawValues, data);
+  const values=sanitizeSavedValues(rawValues);
   const inv=(data.inv && typeof data.inv==='object') ? {...data.inv} : {};
   syncSpBankPresetState(values, inv);
   const hasZeroScore=!!(data.zeroScore && Array.isArray(data.zeroScore.rows));
@@ -3089,17 +3062,22 @@ function loadState(){
     resetToFactoryState();
   }
 }
-function stateFileBaseName(fileName=''){
-  return normalizeTraitPresetName(String(fileName || '').replace(/\.[^.]+$/,'')) || '가져온 프리셋';
-}
-
 /* ===== 09. 특성 프리셋 저장 / 로드 / 비교 ===== */
 function normalizeTraitPresetName(value){
   return String(value ?? '').replace(/\s+/g,' ').trim().slice(0,40);
 }
+function stateFileBaseName(fileName=''){
+  return normalizeTraitPresetName(String(fileName || '').replace(/\.[^.]+$/,'')) || '가져온 프리셋';
+}
 function makeTraitPresetId(){
   const seed=(typeof crypto!=='undefined' && crypto.randomUUID) ? crypto.randomUUID() : `${Date.now()}_${Math.random().toString(16).slice(2)}`;
   return `trait_${String(seed).replace(/[^0-9A-Za-z_-]/g,'')}`;
+}
+function appendUniqueTraitPreset(presets, seen, preset){
+  if(!preset) return;
+  if(seen.has(preset.id)) preset.id=makeTraitPresetId();
+  seen.add(preset.id);
+  presets.push(preset);
 }
 function emptyTraitPresetStore(){
   return {type:TRAIT_PRESET_FILE_TYPE,fileVersion:TRAIT_PRESET_FILE_VERSION,schemaVersion:TRAIT_PRESET_SCHEMA_VERSION,storageVersion:STORAGE_VERSION,updatedAt:Date.now(),defaultPresetId:'',presets:[]};
@@ -3137,10 +3115,7 @@ function finalizeTraitPresetStoreForExport(store){
   const presets=[];
   (Array.isArray(source.presets) ? source.presets : []).forEach((item,index)=>{
     const preset=cleanTraitPresetForExport(item,index);
-    if(!preset) return;
-    if(seen.has(preset.id)) preset.id=makeTraitPresetId();
-    seen.add(preset.id);
-    presets.push(preset);
+    appendUniqueTraitPreset(presets, seen, preset);
   });
   return {
     type:TRAIT_PRESET_FILE_TYPE,
@@ -3210,10 +3185,7 @@ function normalizeTraitPresetStore(data){
   const itemContext={fileVersion:sourceFileVersion || TRAIT_PRESET_FILE_VERSION,schemaVersion:sourceSchemaVersion || TRAIT_PRESET_SCHEMA_VERSION,storageVersion:data.storageVersion || ''};
   data.presets.forEach((item,index)=>{
     const preset=normalizeTraitPresetItem(item,index,itemContext);
-    if(!preset) return;
-    if(seen.has(preset.id)) preset.id=makeTraitPresetId();
-    seen.add(preset.id);
-    presets.push(preset);
+    appendUniqueTraitPreset(presets, seen, preset);
   });
   return {...empty,updatedAt:+data.updatedAt || Date.now(),defaultPresetId:'',presets};
 }
@@ -3485,16 +3457,18 @@ function stableTraitPresetValue(value){
   }
   return String(value ?? '');
 }
-function hasSharedTraitPresetValueChanges(previousState, currentState){
-  const previous=normalizeSavedState(previousState);
-  const current=normalizeSavedState(currentState);
-  if(!previous || !current) return true;
+function hasTraitPresetValueChanges(previous, current, options={}){
   const ids=new Set([...Object.keys(previous.values || {}), ...Object.keys(current.values || {})]);
   for(const id of ids){
-    if(TRAIT_PRESET_SYNC_EXCLUDED_VALUE_IDS.has(id)) continue;
+    if(options.ignoreSyncExcluded && TRAIT_PRESET_SYNC_EXCLUDED_VALUE_IDS.has(id)) continue;
     if(stableTraitPresetValue(previous.values?.[id])!==stableTraitPresetValue(current.values?.[id])) return true;
   }
   return false;
+}
+function hasSharedTraitPresetValueChanges(previousState, currentState){
+  const previous=normalizeSavedState(previousState);
+  const current=normalizeSavedState(currentState);
+  return !previous || !current || hasTraitPresetValueChanges(previous, current, {ignoreSyncExcluded:true});
 }
 function stableTraitPresetInv(inv){
   const source=(inv && typeof inv==='object') ? inv : {};
@@ -3509,10 +3483,7 @@ function hasTraitPresetStateChanges(previousState, currentState){
   const previous=normalizeSavedState(previousState);
   const current=normalizeSavedState(currentState);
   if(!previous || !current) return true;
-  const ids=new Set([...Object.keys(previous.values || {}), ...Object.keys(current.values || {})]);
-  for(const id of ids){
-    if(stableTraitPresetValue(previous.values?.[id])!==stableTraitPresetValue(current.values?.[id])) return true;
-  }
+  if(hasTraitPresetValueChanges(previous, current)) return true;
   if(stableTraitPresetInv(previous.inv)!==stableTraitPresetInv(current.inv)) return true;
   if(stableTraitPresetValue(normalizeZeroScoreState(previous.zeroScore || {rows:[]}))!==stableTraitPresetValue(normalizeZeroScoreState(current.zeroScore || {rows:[]}))) return true;
   return false;
@@ -3746,7 +3717,7 @@ function openTraitPresetImportPicker(){
     if(input) input.click();
   },60);
 }
-function normalizeTraitPresetImportData(parsed,fileName=''){
+function normalizeTraitPresetImportData(parsed){
   if(!parsed || typeof parsed!=='object' || Array.isArray(parsed)) throw new Error('특성 프리셋 파일 형식이 아닙니다.');
   if(!isTraitPresetFileType(parsed.type) || !Array.isArray(parsed.presets)) throw new Error(TRAIT_PRESET_UNSUPPORTED_OLD_MESSAGE);
   const sourceFileVersion=+parsed.fileVersion || 0;
@@ -3760,18 +3731,15 @@ function normalizeTraitPresetImportData(parsed,fileName=''){
 function mergeTraitPresetImport(imported){
   let store=loadTraitPresetStore();
   let added=0, replaced=0, firstImportedPresetId='';
-  const idMap=new Map();
   imported.presets.forEach((preset,index)=>{
     const existingIndex=store.presets.findIndex(item=>item.name===preset.name);
     if(existingIndex>=0){
       const id=store.presets[existingIndex].id;
-      idMap.set(preset.id,id);
       store.presets[existingIndex]={...preset,id,createdAt:store.presets[existingIndex].createdAt || preset.createdAt,updatedAt:Date.now()};
       if(index===0) firstImportedPresetId=id;
       replaced++;
     }else{
       const id=store.presets.some(item=>item.id===preset.id) ? makeTraitPresetId() : preset.id;
-      idMap.set(preset.id,id);
       store.presets.push({...preset,id,createdAt:preset.createdAt || Date.now(),updatedAt:Date.now()});
       if(index===0) firstImportedPresetId=id;
       added++;
@@ -3882,7 +3850,7 @@ async function importTraitPresetFile(file){
     const raw=await readFileAsText(file);
     const parsed=safeJsonParse(raw);
     if(isUnsupportedOldTraitPresetPayload(parsed)) throw new Error(TRAIT_PRESET_UNSUPPORTED_OLD_MESSAGE);
-    const imported=normalizeTraitPresetImportData(parsed,file?.name || '');
+    const imported=normalizeTraitPresetImportData(parsed);
     const result=mergeTraitPresetImport(imported);
     const loadId=result.firstImportedPresetId || '';
     if(loadId) loadTraitPresetById(loadId,{notifySuccess:false,preserveSharedValues:false});
@@ -4171,8 +4139,8 @@ function buildZeroPenanceCalcRow(name){
             <td><input class="zero-calc-current" inputmode="numeric" type="text" value="0"/></td>
             <td><input class="zero-calc-target" inputmode="numeric" type="text" value="0"/></td>
             <td><button class="ui-toggle-btn zero-star-toggle" data-action="zeroScoreStar" type="button" aria-pressed="false">+2</button></td>
-            <td><input class="zero-current-honor zero-honor-input" inputmode="latin" maxlength="1" placeholder="B" type="text" value=""/></td>
-            <td><input class="zero-target-honor zero-honor-input" inputmode="latin" maxlength="1" placeholder="X" type="text" value=""/></td>
+            <td><input class="zero-current-honor zero-honor-input" inputmode="latin" maxlength="1" placeholder="B" type="text" value="0"/></td>
+            <td><input class="zero-target-honor zero-honor-input" inputmode="latin" maxlength="1" placeholder="X" type="text" value="0"/></td>
             <td><b class="zero-row-score">0</b></td>
           </tr>`;
 }
@@ -4256,7 +4224,7 @@ function buildZeroScoreCompareRows(zeroCells){
     target:String(Math.max(0,Math.min(90,Math.round(excelNumber(zeroCells.C27) ?? 0)))),
     honorCurrent:String(Math.max(0,Math.min(90,Math.round(excelNumber(zeroCells.B28) ?? 0)))),
     honorTarget:String(Math.max(0,Math.min(90,Math.round(excelNumber(zeroCells.C28) ?? 0)))),
-    star:false,currentHonor:'',targetHonor:''
+    star:false,currentHonor:'0',targetHonor:'0'
   };
   const comboWeb=zeroTowerComboFromRows(webState.rows);
   addZeroTowerComboCompareRows(rows,'도전의탑',comboExcel,comboWeb);
@@ -4441,8 +4409,7 @@ function toggleZeroScoreStar(trigger){
 }
 function normalizeZeroHonorInputElement(el){
   if(!el || !el.classList?.contains('zero-honor-input')) return;
-  const normalized=normalizeZeroHonorValue(el.value);
-  el.value=normalized ? normalized.toUpperCase() : '';
+  el.value=normalizeZeroHonorValue(el.value).toUpperCase();
 }
 function bindZeroScoreCalculator(){
   if(document.documentElement.dataset.zeroScoreCalcBound==='1') return;
@@ -4624,7 +4591,7 @@ function bindReactiveInputs(){
   const schedule=(target)=>{
     if(!shouldHandleReactiveInput(target)) return;
     if(target.matches('.money-input')) formatMoneyInput(target);
-    if(target.id==='spBankApply') applySpBankToggleToInvestment();
+    if(target.id==='spBankApply') syncSpBankApplyControl();
     if(target.id==='xp') normalizeXpInput();
     if(target.id==='round' || target.id==='skillRound' || target.id==='challengeTowerFloor') normalizeRoundInput(target.id);
     if(target.id==='diff'){

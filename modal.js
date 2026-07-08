@@ -88,7 +88,7 @@ function renderMonthRuneModalHeader(tabName){
     actions.innerHTML=next==='compare'
       ? buildCompareHeaderControls()
       : next==='dps'
-        ? `<div class="dps-table-tabs month-rune-header-tabs" id="dpsTableTabsMount" data-dps-table-tabs-mount role="tablist" aria-label="DPS 기준 선택">${renderDpsTableTabs(dpsTableRound(), {compact:true})}</div>`
+        ? `<div class="dps-table-tabs month-rune-header-tabs" id="dpsTableTabsMount" data-dps-table-tabs-mount role="tablist" aria-label="DPS 기준 선택">${renderDpsTableTabs()}</div>`
         : '';
   }
 }

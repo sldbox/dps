@@ -1,5 +1,4 @@
-/* ===== calc.js | 계산식·계산 보조·DOM 어댑터·엑셀 파싱 헬퍼 ===== */
-/* 계산식은 보존하고, 현재 구조상 필요한 DOM 기반 preview/입력 어댑터와 엑셀 파싱 헬퍼를 함께 둔다. */
+/* ===== calc.js | 계산식·DOM 어댑터·엑셀 파싱 헬퍼 ===== */
 
 
 /* ===== 00. 공통 객체/엑셀 값 헬퍼 / 계산 입력 정규화 ===== */
@@ -463,20 +462,25 @@ function enemyRoundTime(round, diffName=vs('diff')){
 }
 function battleModeLabel(){return isCoopMode() ? '협동' : '개인';}
 function dpsContextModeLabel(diffName=vs('diff')){return `${battleModeLabel()}/${enemyDisplayModeLabel(diffName)}`;}
-function enemyRoundData(round, diffName=vs('diff')){
-  const mode=battleDataModeForDifficulty(diffName);
-  const r=normalizedBattleRound(round, mode, 0, 0);
-  if(r<=0) return {round:0,armor:0,unitRound:0,count:0,hp:0,shield:0};
+function enemyDataFromTables(mode, round, options={}){
+  const r=Number(round) || 0;
   const armorRow=lookupFloor(mode.armorTable, r);
   const unitRow=lookupFloor(mode.unitTable, r);
-  return {
+  const data={
     round:r,
     armor: armorRow && armorRow[0] <= r ? armorRow[1] : 0,
-    unitRound: unitRow ? unitRow[0] : r,
     count: unitRow ? unitRow[1] : 0,
     hp: unitRow ? unitRow[2] : 0,
     shield: unitRow ? unitRow[3] : 0
   };
+  if(options.includeUnitRound) data.unitRound=unitRow ? unitRow[0] : r;
+  return data;
+}
+function enemyRoundData(round, diffName=vs('diff')){
+  const mode=battleDataModeForDifficulty(diffName);
+  const r=normalizedBattleRound(round, mode, 0, 0);
+  if(r<=0) return {round:0,armor:0,unitRound:0,count:0,hp:0,shield:0};
+  return enemyDataFromTables(mode, r, {includeUnitRound:true});
 }
 function enemyRoundCountTotal(round, diffName=vs('diff')){
   const mode=battleDataModeForDifficulty(diffName);
@@ -521,15 +525,7 @@ function battleDpsDisplayMultiplier(diffName, round, displayHR, displaySR){
 }
 function towerFloorEnemyData(floor){
   const r=Math.max(1, Math.min(90, Math.round(+floor||1)));
-  const armorRow=lookupFloor(TOWER_ARMOR_TABLE, r);
-  const unitRow=lookupFloor(TOWER_UNIT_TABLE, r);
-  return {
-    round:r,
-    armor: armorRow && armorRow[0] <= r ? armorRow[1] : 0,
-    count: unitRow ? unitRow[1] : 0,
-    hp: unitRow ? unitRow[2] : 0,
-    shield: unitRow ? unitRow[3] : 0
-  };
+  return enemyDataFromTables({armorTable:TOWER_ARMOR_TABLE,unitTable:TOWER_UNIT_TABLE}, r);
 }
 function towerBurdenScore(floor, displayHR, displaySR){
   const enemy=towerFloorEnemyData(floor);
@@ -704,10 +700,8 @@ function growthGraduationAttackBonus(){
 /* ===== 07. 메인 스탯 / 버프 / DPS 계산 ===== */
 function computeStatsRaw(){
   const autoEP=syncAutoEP();
-  const diff=DIFF[vs('diff')]||DIFF['The Final'];
-  const targetRound=effectiveTargetRound();
-  const towerPenaltyLevel=isTowerDifficulty() ? (targetRound>=65 ? Math.floor((targetRound-63)/2) : 0) : v('penance');
-  const penanceLevel=Math.max(0,Math.min(towerPenaltyLevel,currentPenanceMax()));
+  const penaltyContext=currentPenaltyContext();
+  const {diff,targetRound,penanceLevel}=penaltyContext;
   const penCD=PEN_CD[penanceLevel];
   const penTD=PEN_TD[penanceLevel];
   const penDmg=PEN_DMG[penanceLevel];
@@ -812,7 +806,7 @@ function computeStatsRaw(){
   const actualHR = displayHR * hpRatio;
   return {M4,M7,M8,M9,M10,M11,M12,actualM12,M13,M16,M17,M18,M19,rawM19,roundTime,displayMultiplier,rawCD,rawTD,diff,
           displayAD,displayAPS,displayAPU,actualAPU,displayUA,displaySR,displayHR,actualSR,actualHR,
-          spTotal:spU+spO,spU,spO,epU,rpU,soulU,spBank:effectiveSpBankBonus(),spBankApplied:isSpBankApplied(),effectiveSP:effectiveSP(),excelPierce,enemyData};
+          spUsedTotal:spU+spO,spU,spO,epU,rpU,soulU,spBank:effectiveSpBankBonus(),spBankApplied:isSpBankApplied(),effectiveSP:effectiveSP(),excelPierce,enemyData};
 }
 
 /* ===== 08. 유물 DPS 계산 / 미리보기 상태 보존 ===== */
@@ -1097,41 +1091,26 @@ function normalizeSpBankApplyValue(value){
   return (raw==='반영' || raw==='적용' || upper==='ON' || upper==='TRUE' || upper==='1' || upper==='YES') ? '반영' : '미반영';
 }
 function isSpBankApplied(){
-  const bankLevel=Math.max(0, Math.round(+(INV[SP_BANK_TRAIT_ROW]||0)));
-  if(bankLevel<1) return false;
   const select=(typeof $==='function' ? $('spBankApply') : (typeof document!=='undefined' ? document.getElementById('spBankApply') : null));
-  if(select) return normalizeSpBankApplyValue(select.value)==='반영';
-  return true;
+  return select ? normalizeSpBankApplyValue(select.value)==='반영' : false;
 }
 function spBankApplyDisplayValue(value){
   return normalizeSpBankApplyValue(value)==='반영' ? 'ON' : 'OFF';
 }
-function spBankImportedBonus(){
-  return Math.max(0, Math.round(v('spBankImportedBonus')||0));
-}
 function spBankRawBonus(){
-  const bankLevel=INV[SP_BANK_TRAIT_ROW]||0;
+  const bankLevel=Math.max(0, Math.round(+(INV[SP_BANK_TRAIT_ROW]||0)));
   const appliedRound=Math.min(Math.max(0, effectiveTargetRound()), 290);
   const ticks=Math.floor(appliedRound/10);
   return bankLevel * 1000 * ticks;
 }
 function effectiveSpBankBonus(){
-  if(!isSpBankApplied()) return 0;
-  const imported=spBankImportedBonus();
-  return imported>0 ? imported : spBankRawBonus();
+  return isSpBankApplied() ? spBankRawBonus() : 0;
 }
-function syncSpBankDisplay(bankSP=null){
+function syncSpBankDisplay(){
   const select=$('spBankApply');
-  const bankLevel=Math.max(0, Math.round(+(INV[SP_BANK_TRAIT_ROW]||0)));
-  const applied=isSpBankApplied();
-  const state=applied ? '반영' : '미반영';
-  if(select){
-    const onOption=select.querySelector('option[value="반영"]');
-    if(onOption) onOption.disabled=bankLevel<1;
-    if(select.value!==state) select.value=state;
-  }
-  const n=applied ? (bankSP==null ? effectiveSpBankBonus() : bankSP) : 0;
-  setText('spBankStatusView', n>0 ? fullNumber(n) : '미적용');
+  if(!select) return;
+  const state=isSpBankApplied() ? '반영' : '미반영';
+  if(select.value!==state) select.value=state;
 }
 function effectiveSP(){
   return Math.max(0, v('sp') + effectiveSpBankBonus());
@@ -1664,11 +1643,11 @@ function normalizeZeroHonorValue(value){
   const text=excelText(value).toLowerCase().replace(/명예/g,'').trim();
   const first=text.charAt(0);
   if(['b','a','s','x'].includes(first)) return first;
-  if(['없음','none','off','n','0','-',''].includes(text)) return '';
-  return '';
+  if(['없음','none','off','n','0','-',''].includes(text)) return '0';
+  return '0';
 }
 function zeroHonorDisplay(value){
-  return value ? String(value).toUpperCase() : '없음';
+  return normalizeZeroHonorValue(value).toUpperCase();
 }
 function firstOwnedValue(row, keys, fallback, mapper=value=>value){
   if(!row || typeof row!=='object') return fallback;
@@ -1681,7 +1660,7 @@ function zeroScoreFieldValue(row, kind){
   return firstOwnedValue(row, kind==='current' ? ['current','현재 일반'] : ['target','목표 일반'], undefined);
 }
 function zeroScoreHonorValue(row, kind){
-  return firstOwnedValue(row, kind==='current' ? ['currentHonor','현재 명예'] : ['targetHonor','목표 명예'], '', normalizeZeroHonorValue);
+  return firstOwnedValue(row, kind==='current' ? ['currentHonor','현재 명예'] : ['targetHonor','목표 명예'], '0', normalizeZeroHonorValue);
 }
 function zeroScoreTowerHonorValue(row, kind){
   return firstOwnedValue(row, kind==='current' ? ['honorCurrent','현재 명예탑'] : ['honorTarget','목표 명예탑'],
@@ -1706,7 +1685,7 @@ function zeroScoreStateFromExcel(zeroCells){
     target:String(Math.max(0,Math.min(90,Math.round(excelNumber(zeroCells.C27) ?? 0)))),
     honorCurrent:String(Math.max(0,Math.min(90,Math.round(excelNumber(zeroCells.B28) ?? 0)))),
     honorTarget:String(Math.max(0,Math.min(90,Math.round(excelNumber(zeroCells.C28) ?? 0)))),
-    star:false,currentHonor:'',targetHonor:''
+    star:false,currentHonor:'0',targetHonor:'0'
   });
   return {rows};
 }
@@ -1763,7 +1742,7 @@ function zeroTowerComboFromRows(rows, index=14){
       target:zeroScoreFieldValue(base,'target') ?? '0',
       honorCurrent:zeroScoreTowerHonorValue(base,'current') ?? '0',
       honorTarget:zeroScoreTowerHonorValue(base,'target') ?? '0',
-      star:false,currentHonor:'',targetHonor:''
+      star:false,currentHonor:'0',targetHonor:'0'
     };
   }
   const honor=base.type==='honorTower' ? base : (list[index+1] || {});
@@ -1773,7 +1752,7 @@ function zeroTowerComboFromRows(rows, index=14){
     target:zeroScoreFieldValue(base,'target') ?? '0',
     honorCurrent:zeroScoreTowerHonorValue(honor,'current') ?? '0',
     honorTarget:zeroScoreTowerHonorValue(honor,'target') ?? '0',
-    star:false,currentHonor:'',targetHonor:''
+    star:false,currentHonor:'0',targetHonor:'0'
   };
 }
 function normalizeZeroScoreState(zeroScore){
@@ -1796,7 +1775,7 @@ function normalizeZeroScoreState(zeroScore){
     target:String(zeroScoreNumber(zeroScoreFieldValue(towerCombo,'target'),0,90)),
     honorCurrent:String(zeroScoreNumber(zeroScoreTowerHonorValue(towerCombo,'current'),0,90)),
     honorTarget:String(zeroScoreNumber(zeroScoreTowerHonorValue(towerCombo,'target'),0,90)),
-    star:false,currentHonor:'',targetHonor:''
+    star:false,currentHonor:'0',targetHonor:'0'
   });
   return {rows};
 }
