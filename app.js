@@ -4455,27 +4455,9 @@ function getConvenienceMenuParts(){
     menu:wrap.querySelector('.header-convenience-menu')
   };
 }
-function getCreatorMenuParts(){
-  const panel=$('headerCreatorPanel');
-  const toggle=document.querySelector('.header-creator-toggle');
-  return {panel,toggle};
-}
-function setCreatorMenuPanelOpen(open){
-  const {panel,toggle}=getCreatorMenuParts();
-  return setDisclosureOpen(toggle, panel, open);
-}
-function closeCreatorMenuPanel(){
-  setCreatorMenuPanelOpen(false);
-}
-function toggleCreatorMenuPanel(){
-  const {panel,toggle}=getCreatorMenuParts();
-  return toggleDisclosure(toggle, panel);
-}
 function setConvenienceMenuOpen(open){
   const {toggle, menu}=getConvenienceMenuParts();
-  const changed=setDisclosureOpen(toggle, menu, open);
-  if(changed && !open) closeCreatorMenuPanel();
-  return changed;
+  return setDisclosureOpen(toggle, menu, open);
 }
 function closeConvenienceMenu(){
   setConvenienceMenuOpen(false);
@@ -4539,7 +4521,6 @@ const ACTION_HANDLERS={
   openDpsTable,
   openMonthRuneTab:(trigger)=>openMonthRune(trigger?.dataset?.monthRuneOpenTab || 'compare'),
   toggleConvenienceMenu,
-  toggleCreatorMenuPanel,
   toggleDpsStandardHelp,
   zeroRankTab:(trigger)=>setZeroRankTab(trigger),
   zeroScoreStar:(trigger)=>toggleZeroScoreStar(trigger),
