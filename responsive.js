@@ -8,9 +8,9 @@
   const qsa = (selector) => Array.from(document.querySelectorAll(selector));
   const MODES = ['is-pc-landscape', 'is-pc-portrait', 'is-tablet', 'is-mobile', 'is-portrait-view', 'is-mobile-device', 'is-tablet-device', 'is-narrow-mobile', 'is-tabbed'];
   const MOBILE_PAGES = [
-    { key: 'spec', label: '기본정보', selectors: ['.xp-sp-card'] },
+    { key: 'spec', label: '기본 정보', selectors: ['.xp-sp-card'] },
     { key: 'rune-spec', label: '룬정보', selectors: ['.clean-rune-card'] },
-    { key: 'rune-effect', label: '룬효과/버프', selectors: ['.unit-enhance-card'] },
+    { key: 'rune-effect', label: '룬효과 버프', selectors: ['.unit-enhance-card'] },
     { key: 'trait', label: '특성 보드', selectors: ['.col-right'] },
     { key: 'result', label: '데미지 보드', selectors: ['.stat-dps-card', '.bus-cut-card', '.final-damage-card'] },
     { key: 'zero-rank', label: '승단', selectors: ['.zero-rank-card'] }

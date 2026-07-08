@@ -936,8 +936,8 @@ const compareState={workbook:null,backupState:null,traitPresetBundle:null,baseTr
 function resetCompareState(){Object.assign(compareState,{workbook:null,backupState:null,traitPresetBundle:null,baseTraitPresetBundle:null,baseFileRejected:false,sourceType:null,lastResult:null,activeFilter:'all',restoreState:null,applied:false,selectedSheetName:'',baseTraitPresetId:''});}
 const EXCEL_COMPARE_STATS=[
   ['AD','공격력','L4','M4',s=>s.displayAD,s=>s.M4],
-  ['APS','AP(성소)','L5','M5',s=>s.displayAPS,s=>s.displayAPS],
-  ['APU','AP(유닛)','L6','M6',s=>s.displayAPU,s=>s.actualAPU],
+  ['APS','성소 마법공격력','L5','M5',s=>s.displayAPS,s=>s.displayAPS],
+  ['APU','유닛 마법공격력','L6','M6',s=>s.displayAPU,s=>s.actualAPU],
   ['AS','공격속도','L7','M7',s=>s.M7,s=>s.M7],
   ['CRI','크리티컬 확률','L8','M8',s=>s.M8,s=>s.M8],
   ['CD','크리티컬 데미지','L9','M9',s=>s.rawCD,s=>s.M9],
@@ -945,7 +945,7 @@ const EXCEL_COMPARE_STATS=[
   ['TD','총 데미지','L11','M11',s=>s.rawTD,s=>s.M11],
   ['DR','방어력 감소','L12','M12',s=>s.M12,s=>s.actualM12],
   ['UA','유닛 가속','L13','M13',s=>s.displayUA,s=>s.M13],
-  ['SR','쉴드 감소','L14','M14',s=>s.displaySR,s=>s.actualSR],
+  ['SR','실드 감소','L14','M14',s=>s.displaySR,s=>s.actualSR],
   ['HR','체력 감소','L15','M15',s=>s.displayHR,s=>s.actualHR],
   ['MD','멀티 타겟','L16','M16',s=>s.M16,s=>s.M16],
   ['MP','멀티 확률','L17','M17',s=>s.M17,s=>s.M17],
@@ -1147,52 +1147,52 @@ function webControlDisplay(id){
 const EXCEL_TITLE_BONUS_MAP={'패왕':'12','패왕+':'13','제왕':'14','제왕+':'15','신황':'16','신황+':'17'};
 const EXCEL_RUNE_TYPE_MAP={'AP':'ap','UA':'ua','TD':'td','TD&UA':'harmony','TD＆UA':'harmony','마법공격력':'ap','마법 공격력':'ap','유닛가속':'ua','유닛 가속':'ua','총데미지':'td','총 데미지':'td','총데미지&유닛가속':'harmony','총 데미지 & 유닛 가속':'harmony','총뎀가속':'harmony'};
 const FIELD_REGISTRY={
-  sp:{kind:'기본정보',name:'시작 SP',compare:true,save:true,excel:'number'},
-  xp:{kind:'기본정보',name:'보유 XP',compare:true,save:true,excel:'number'},
-  bxp:{kind:'기본정보',name:'보유 BXP',compare:true,save:true,excel:'number'},
-  rp:{kind:'기본정보',name:'보유 RP',compare:true,save:true,excel:'number'},
-  soul:{kind:'기본정보',name:'본인 심연의혼',compare:true,save:true,excel:'number'},
-  coralShard:{kind:'기본정보',name:'코랄의 파편',compare:true,save:true,excel:'number'},
-  aiurShard:{kind:'기본정보',name:'아이어의 파편',compare:true,save:true,excel:'number'},
-  xerusShard:{kind:'기본정보',name:'제루스의 파편',compare:true,save:true,excel:'number'},
-  diff:{kind:'기본정보',name:'난이도',compare:true,save:true,excel:'select'},
-  round:{kind:'기본정보',name:'목표 라운드',compare:true,save:true,excel:'number'},
-  challengeTowerFloor:{kind:'기본정보',name:'도전의탑 층',compare:true,save:true,excel:'number'},
-  soloMode:{kind:'기본정보',name:'개인',compare:true,save:true,excel:'select'},
-  coopMode:{kind:'기본정보',name:'협동',compare:true,save:true,excel:'select'},
-  coopPlayers:{kind:'기본정보',name:'협동 인원수',compare:true,save:true,excel:'select'},
-  coopPassenger2Dr:{kind:'기본정보',name:'승객 2P 방어력 감소',compare:true,save:true,excel:'select'},
-  coopPassenger3Dr:{kind:'기본정보',name:'승객 3P 방어력 감소',compare:true,save:true,excel:'select'},
-  team:{kind:'기본정보',name:'출발 지원 인원수',compare:true,save:true,excel:'number'},
-  pbless:{kind:'기본정보',name:'파워 블레스',compare:true,save:true,excel:'select'},
-  spBankApply:{kind:'기본정보',name:'SP 은행',compare:true,save:true},
-  penance:{kind:'기본정보',name:'고행 단계',compare:true,save:true,excel:'number'},
-  titleTdBonus:{kind:'기본정보',name:'타이틀 총 데미지',compare:true,save:true,excel:'number'},
-  dpsTableMinDps:{kind:'DPS',name:'도전할 최소 DPS',compare:true,save:true,excel:'number'},
-  erosionStack:{kind:'기본정보',name:'침식 스텍',compare:true,save:true,excel:'number'},
-  jewelErosionRes:{kind:'기본정보',name:'심연 내성',compare:true,save:true,excel:'number'},
-  aprRuneNormal:{kind:'룬효과/버프',name:'4월 일반',compare:true,save:true},
-  aprRunePlus:{kind:'룬효과/버프',name:'4월 강화(+)',compare:true,save:true},
-  sepRuneNormal:{kind:'룬효과/버프',name:'9월 일반',compare:true,save:true},
-  sepRunePlus:{kind:'룬효과/버프',name:'9월 강화(+)',compare:true,save:true},
-  overEnhance:{kind:'룬효과/버프',name:'오버핸스',compare:true,save:true},
-  repairEnhance:{kind:'룬효과/버프',name:'리페핸스',compare:true,save:true},
-  enhanceMaster:{kind:'룬효과/버프',name:'강화의 달인',compare:true,save:true},
-  dailyCouponBuff:{kind:'룬효과/버프',name:'일일쿠폰',compare:true,save:true},
-  shareUserBuff:{kind:'룬효과/버프',name:'나눔유저',compare:true,save:true},
-  unitUniqueBuff:{kind:'룬효과/버프',name:'단일유닛버프',compare:true,save:true},
-  basePierceBuff:{kind:'룬효과/버프',name:'방어력관통 10%',compare:true,save:true},
-  prodArtifact:{kind:'룬효과/버프',name:'유물',compare:true,save:true},
-  prodNova:{kind:'룬효과/버프',name:'노바',compare:true,save:true},
-  prodTeratron:{kind:'룬효과/버프',name:'테라트론',compare:true,save:true},
-  prodAmon:{kind:'룬효과/버프',name:'아몬',compare:true,save:true},
-  prodAdun:{kind:'룬효과/버프',name:'아둔의 창',compare:true,save:true},
-  prodKerrigan:{kind:'룬효과/버프',name:'불새 케리건',compare:true,save:true},
-  prodOvermind:{kind:'룬효과/버프',name:'초월체',compare:true,save:true},
-  prodNarud:{kind:'룬효과/버프',name:'나루드',compare:true,save:true},
-  flowerSkill1:{kind:'룬효과/버프',name:'근성의 꽃가루',compare:true,save:true},
-  flowerSkill2:{kind:'룬효과/버프',name:'바람의 꽃가루',compare:true,save:true},
-  flowerSkill3:{kind:'룬효과/버프',name:'안개의 꽃가루',compare:true,save:true},
+  sp:{kind:'기본 정보',name:'시작 SP',compare:true,save:true,excel:'number'},
+  xp:{kind:'기본 정보',name:'보유 XP',compare:true,save:true,excel:'number'},
+  bxp:{kind:'기본 정보',name:'보유 BXP',compare:true,save:true,excel:'number'},
+  rp:{kind:'기본 정보',name:'보유 RP',compare:true,save:true,excel:'number'},
+  soul:{kind:'기본 정보',name:'본인 심연의혼',compare:true,save:true,excel:'number'},
+  coralShard:{kind:'기본 정보',name:'코랄의 파편',compare:true,save:true,excel:'number'},
+  aiurShard:{kind:'기본 정보',name:'아이어의 파편',compare:true,save:true,excel:'number'},
+  xerusShard:{kind:'기본 정보',name:'제루스의 파편',compare:true,save:true,excel:'number'},
+  diff:{kind:'기본 정보',name:'난이도',compare:true,save:true,excel:'select'},
+  round:{kind:'기본 정보',name:'목표 라운드',compare:true,save:true,excel:'number'},
+  challengeTowerFloor:{kind:'기본 정보',name:'도전의탑 층',compare:true,save:true,excel:'number'},
+  soloMode:{kind:'기본 정보',name:'개인',compare:true,save:true,excel:'select'},
+  coopMode:{kind:'기본 정보',name:'협동',compare:true,save:true,excel:'select'},
+  coopPlayers:{kind:'기본 정보',name:'협동 인원수',compare:true,save:true,excel:'select'},
+  coopPassenger2Dr:{kind:'기본 정보',name:'승객 2P 방어력 감소',compare:true,save:true,excel:'select'},
+  coopPassenger3Dr:{kind:'기본 정보',name:'승객 3P 방어력 감소',compare:true,save:true,excel:'select'},
+  team:{kind:'기본 정보',name:'출발 지원 인원수',compare:true,save:true,excel:'number'},
+  pbless:{kind:'기본 정보',name:'파워 블레스',compare:true,save:true,excel:'select'},
+  spBankApply:{kind:'기본 정보',name:'SP 은행',compare:true,save:true},
+  penance:{kind:'기본 정보',name:'고행 단계',compare:true,save:true,excel:'number'},
+  titleTdBonus:{kind:'기본 정보',name:'타이틀 총 데미지',compare:true,save:true,excel:'number'},
+  dpsTableMinDps:{kind:'기본 정보',name:'도전할 최소 DPS',compare:true,save:true,excel:'number'},
+  erosionStack:{kind:'기본 정보',name:'침식 스텍',compare:true,save:true,excel:'number'},
+  jewelErosionRes:{kind:'기본 정보',name:'심연 내성',compare:true,save:true,excel:'number'},
+  aprRuneNormal:{kind:'룬효과 버프',name:'4월 일반',compare:true,save:true},
+  aprRunePlus:{kind:'룬효과 버프',name:'4월 강화(+)',compare:true,save:true},
+  sepRuneNormal:{kind:'룬효과 버프',name:'9월 일반',compare:true,save:true},
+  sepRunePlus:{kind:'룬효과 버프',name:'9월 강화(+)',compare:true,save:true},
+  overEnhance:{kind:'룬효과 버프',name:'오버핸스',compare:true,save:true},
+  repairEnhance:{kind:'룬효과 버프',name:'리페핸스',compare:true,save:true},
+  enhanceMaster:{kind:'룬효과 버프',name:'강화의 달인',compare:true,save:true},
+  dailyCouponBuff:{kind:'룬효과 버프',name:'일일쿠폰',compare:true,save:true},
+  shareUserBuff:{kind:'룬효과 버프',name:'나눔유저',compare:true,save:true},
+  unitUniqueBuff:{kind:'룬효과 버프',name:'단일유닛버프',compare:true,save:true},
+  basePierceBuff:{kind:'룬효과 버프',name:'방어력관통 10%',compare:true,save:true},
+  prodArtifact:{kind:'룬효과 버프',name:'유물',compare:true,save:true},
+  prodNova:{kind:'룬효과 버프',name:'비밀 작전 노바',compare:true,save:true},
+  prodTeratron:{kind:'룬효과 버프',name:'테라트론',compare:true,save:true},
+  prodAmon:{kind:'룬효과 버프',name:'아몬',compare:true,save:true},
+  prodAdun:{kind:'룬효과 버프',name:'아둔의 창',compare:true,save:true},
+  prodKerrigan:{kind:'룬효과 버프',name:'불새 케리건',compare:true,save:true},
+  prodOvermind:{kind:'룬효과 버프',name:'초월체',compare:true,save:true},
+  prodNarud:{kind:'룬효과 버프',name:'나루드',compare:true,save:true},
+  flowerSkill1:{kind:'룬효과 버프',name:'근성의 꽃가루',compare:true,save:true},
+  flowerSkill2:{kind:'룬효과 버프',name:'바람의 꽃가루',compare:true,save:true},
+  flowerSkill3:{kind:'룬효과 버프',name:'안개의 꽃가루',compare:true,save:true},
   rAD:{kind:'룬정보',name:'공격력',compare:true,save:true,excel:'number'},
   rModAD:{kind:'룬정보',name:'공격력 개조',compare:true,save:true,excel:'number'},
   runeChoiceType:{kind:'룬정보',name:'룬 특수 옵션',compare:true,save:true,excel:'select'},
@@ -1216,30 +1216,30 @@ const FIELD_REGISTRY={
   addAP:{kind:'에디셔널',name:'마법공격력',compare:true,save:true,excel:'number'},
   addTD:{kind:'에디셔널',name:'총 데미지',compare:true,save:true,excel:'number'},
   addUA:{kind:'에디셔널',name:'유닛 가속',compare:true,save:true,excel:'number'},
-  enchAD:{kind:'인첸트',name:'공격력',save:true,excel:'number'},
-  enchCRI:{kind:'인첸트',name:'크리티컬 확률',save:true,excel:'number'},
-  enchUA:{kind:'인첸트',name:'유닛 가속',save:true,excel:'number'},
-  enchTD:{kind:'인첸트',name:'총 데미지',save:true,excel:'number'},
-  enchSR:{kind:'인첸트',name:'실드 감소',save:true,excel:'number'},
-  enchHR:{kind:'인첸트',name:'체력 감소',save:true,excel:'number'},
-  enchantCode:{kind:'인첸트',name:'인첸트 코드',save:true},
-  optTier:{kind:'특성 보드',name:'특성 최적화 범위',compare:true,save:true},
-  utilOptTier:{kind:'특성 보드',name:'유틸 마스터 범위',compare:true,save:true},
-  traitLimitAD:{kind:'특성 보드 / 특성 투자 제한',name:'공격력',compare:true,save:true},
-  traitLimitAS:{kind:'특성 보드 / 특성 투자 제한',name:'공격속도',compare:true,save:true},
-  traitLimitCRI:{kind:'특성 보드 / 특성 투자 제한',name:'크리티컬 확률',compare:true,save:true},
-  traitLimitCD:{kind:'특성 보드 / 특성 투자 제한',name:'크리티컬 데미지',compare:true,save:true},
-  traitLimitMC:{kind:'특성 보드 / 특성 투자 제한',name:'다중 크리',compare:true,save:true},
-  traitLimitDR:{kind:'특성 보드 / 특성 투자 제한',name:'방어력 감소',compare:true,save:true},
-  traitLimitTD:{kind:'특성 보드 / 특성 투자 제한',name:'총 데미지',compare:true,save:true},
-  traitLimitUA:{kind:'특성 보드 / 특성 투자 제한',name:'유닛 가속',compare:true,save:true},
-  traitLimitMultiTarget:{kind:'특성 보드 / 특성 투자 제한',name:'멀티타겟',compare:true,save:true},
-  traitLimitInfinite:{kind:'특성 보드 / 특성 투자 제한',name:'무한특성',compare:true,save:true},
-  skillDouble:{kind:'성소스킬보드',name:'더블스페',compare:true,save:true,excel:'number'},
-  skillMode:{kind:'성소스킬보드',name:'모드',compare:true,save:true},
-  skillRound:{kind:'성소스킬보드',name:'라운드',compare:true,save:true,excel:'number'},
-  unitGrade:{kind:'유닛정보',name:'유닛 등급',compare:true},
-  unitLevel:{kind:'유닛정보',name:'유닛 레벨',compare:true},
+  enchAD:{kind:'인챈트 레벨 / 결과',name:'공격력',save:true,excel:'number'},
+  enchCRI:{kind:'인챈트 레벨 / 결과',name:'크리티컬 확률',save:true,excel:'number'},
+  enchUA:{kind:'인챈트 레벨 / 결과',name:'유닛 가속',save:true,excel:'number'},
+  enchTD:{kind:'인챈트 레벨 / 결과',name:'총 데미지',save:true,excel:'number'},
+  enchSR:{kind:'인챈트 레벨 / 결과',name:'실드 감소',save:true,excel:'number'},
+  enchHR:{kind:'인챈트 레벨 / 결과',name:'체력 감소',save:true,excel:'number'},
+  enchantCode:{kind:'인챈트 레벨 / 결과',name:'인챈트 코드',save:true},
+  optTier:{kind:'특성 보드',name:'특성 최적화',compare:true,save:true},
+  utilOptTier:{kind:'특성 보드',name:'유틸 마스터',compare:true,save:true},
+  traitLimitAD:{kind:'특성 투자 제한',name:'공격력',compare:true,save:true},
+  traitLimitAS:{kind:'특성 투자 제한',name:'공격속도',compare:true,save:true},
+  traitLimitCRI:{kind:'특성 투자 제한',name:'크리티컬 확률',compare:true,save:true},
+  traitLimitCD:{kind:'특성 투자 제한',name:'크리티컬 데미지',compare:true,save:true},
+  traitLimitMC:{kind:'특성 투자 제한',name:'다중 크리',compare:true,save:true},
+  traitLimitDR:{kind:'특성 투자 제한',name:'방어력 감소',compare:true,save:true},
+  traitLimitTD:{kind:'특성 투자 제한',name:'총 데미지',compare:true,save:true},
+  traitLimitUA:{kind:'특성 투자 제한',name:'유닛 가속',compare:true,save:true},
+  traitLimitMultiTarget:{kind:'특성 투자 제한',name:'멀티타겟',compare:true,save:true},
+  traitLimitInfinite:{kind:'특성 투자 제한',name:'무한특성',compare:true,save:true},
+  skillDouble:{kind:'성소 보드',name:'더블스페',compare:true,save:true,excel:'number'},
+  skillMode:{kind:'성소 보드',name:'모드',compare:true,save:true},
+  skillRound:{kind:'성소 보드',name:'라운드',compare:true,save:true,excel:'number'},
+  unitGrade:{kind:'룬효과 버프',name:'유닛 등급',compare:true},
+  unitLevel:{kind:'룬효과 버프',name:'유닛 레벨',compare:true},
 };
 const fieldEntriesByFlag=flag=>Object.entries(FIELD_REGISTRY).filter(([,field])=>field[flag]).map(([id])=>id);
 const EXCEL_NUMERIC_INPUT_IDS=new Set(Object.entries(FIELD_REGISTRY).filter(([,field])=>field.excel==='number').map(([id])=>id));
@@ -1294,7 +1294,7 @@ function buildEnchantCompareRows(changeCode,currentCode){
   const change=normalizeEnchantCompareCode(changeCode);
   const current=normalizeEnchantCompareCode(currentCode);
   return ENCHANT_COMPARE_ITEMS.map(([,name],index)=>
-    buildCompareNumberRow('인첸트',name,change[index]||0,current[index]||0,0.0001)
+    buildCompareNumberRow('인챈트 레벨 / 결과',name,change[index]||0,current[index]||0,0.0001)
   );
 }
 function applyRuneChoiceState(values, cells){
@@ -1307,7 +1307,7 @@ function applyRuneChoiceState(values, cells){
 function buildExcelChoiceRow(name, excel, id, options={}){
   const changeValue=options.boolean ? (excelFlag(excel)?'ON':'OFF') : String(excel??'');
   const currentValue=webControlDisplay(id);
-  return buildCompareTextRow('룬효과/버프',name,changeValue,currentValue,{id});
+  return buildCompareTextRow('룬효과 버프',name,changeValue,currentValue,{id});
 }
 function compareExcelInputValue(value,id){
   if(EXCEL_NUMERIC_INPUT_IDS.has(id)) return formatCompareNumber(value);
@@ -1326,32 +1326,32 @@ function excelRoundFieldId(cells={}, sheetName=''){
   return isExcelTowerContext(cells, sheetName) ? 'challengeTowerFloor' : 'round';
 }
 function excelRoundFieldName(cells={}, sheetName=''){
-  return isExcelTowerContext(cells, sheetName) ? '도전의탑 층' : '라운드';
+  return isExcelTowerContext(cells, sheetName) ? '도전의탑 층' : '목표 라운드';
 }
 function buildExcelInputSpecs(cells,specCells,sheetName=''){
   const roundFieldId=excelRoundFieldId(cells,sheetName);
   const roundFieldName=excelRoundFieldName(cells,sheetName);
   return [
-    ['기본정보','시작 SP',Math.round(Number(normalizedExcelTotalSpValue(cells))||0),'sp'],
-    ['기본정보','보유 XP',specCells.R20,'xp'],
-    ['기본정보','보유 BXP',specCells.R21,'bxp'],
-    ['기본정보','보유 RP',cells.B16,'rp'],
-    ['기본정보','본인 심연의혼',cells.B19,'soul'],
-    ['기본정보','코랄의 파편',specCells.R26,'coralShard'],
-    ['기본정보','아이어의 파편',specCells.R27,'aiurShard'],
-    ['기본정보','제루스의 파편',specCells.R28,'xerusShard'],
-    ['기본정보','난이도',firstExcelValue(cells,['B4','N41']),'diff'],
-    ['기본정보','고행',firstExcelValue(cells,['B6','N42','AD8']),'penance'],
-    ['기본정보',roundFieldName,firstExcelValue(cells,['B7','N43']),roundFieldId],
-    ['기본정보','출발 지원 인원수',cells.D5,'team'],
-    ['기본정보','타이틀 총 데미지',EXCEL_TITLE_BONUS_MAP[excelText(specCells.S17)]??specCells.S17,'titleTdBonus'],
-    ['기본정보','침식 스텍',cells.H10,'erosionStack'],
-    ['기본정보','심연 내성',cells.H11,'jewelErosionRes'],
-    ['기본정보','파워 블레스',normalizePowerBlessRawValue(cells.D4),'pbless'],
+    ['기본 정보','시작 SP',Math.round(Number(normalizedExcelTotalSpValue(cells))||0),'sp'],
+    ['기본 정보','보유 XP',specCells.R20,'xp'],
+    ['기본 정보','보유 BXP',specCells.R21,'bxp'],
+    ['기본 정보','보유 RP',cells.B16,'rp'],
+    ['기본 정보','본인 심연의혼',cells.B19,'soul'],
+    ['기본 정보','코랄의 파편',specCells.R26,'coralShard'],
+    ['기본 정보','아이어의 파편',specCells.R27,'aiurShard'],
+    ['기본 정보','제루스의 파편',specCells.R28,'xerusShard'],
+    ['기본 정보','난이도',firstExcelValue(cells,['B4','N41']),'diff'],
+    ['기본 정보','고행 단계',firstExcelValue(cells,['B6','N42','AD8']),'penance'],
+    ['기본 정보',roundFieldName,firstExcelValue(cells,['B7','N43']),roundFieldId],
+    ['기본 정보','출발 지원 인원수',cells.D5,'team'],
+    ['기본 정보','타이틀 총 데미지',EXCEL_TITLE_BONUS_MAP[excelText(specCells.S17)]??specCells.S17,'titleTdBonus'],
+    ['기본 정보','침식 스텍',cells.H10,'erosionStack'],
+    ['기본 정보','심연 내성',cells.H11,'jewelErosionRes'],
+    ['기본 정보','파워 블레스',normalizePowerBlessRawValue(cells.D4),'pbless'],
     ['룬정보','공격력',cells.J5,'rAD'],
     ['룬정보','공격력 개조',specCells.C19,'rModAD'],
-    ['룬정보','특수룬 종류',EXCEL_RUNE_TYPE_MAP[excelText(cells.I6)]??cells.I6,'runeChoiceType'],
-    ['룬정보','특수룬 수치',cells.J6,'runeChoiceValue'],
+    ['룬정보','룬 특수 옵션',EXCEL_RUNE_TYPE_MAP[excelText(cells.I6)]??cells.I6,'runeChoiceType'],
+    ['룬정보','룬 특수 옵션',cells.J6,'runeChoiceValue'],
     ['룬정보','공격속도',cells.J7,'rAS'],
     ['룬정보','공격속도 개조',specCells.C21,'rModAS'],
     ['룬정보','크리티컬 데미지',cells.J8,'rCD'],
@@ -1404,14 +1404,14 @@ function buildExcelStatRows(cells,stats){
     const excelDisplay=excelCompareNumberValue(cells[displayCell]);
     const webDisplay=excelCompareRound(getDisplay(stats),6);
     const displayCompare=compareNumber(excelDisplay,webDisplay);
-    return {kind:'스탯',name,current:formatCompareNumber(webDisplay),change:formatCompareNumber(excelDisplay),
+    return {kind:'데미지 보드',name,current:formatCompareNumber(webDisplay),change:formatCompareNumber(excelDisplay),
       difference:formatCompareDiff(displayCompare.diff),status:displayCompare.status,diffClass:compareNumberDiffClass(displayCompare.diff)};
   });
 }
 function buildExcelTraitRows(cells){
   return TRAITS.filter(t=>t[0]>=42&&t[0]<=138).map(t=>{
     const row=t[0], changeValue=excelCompareNumberValue(cells[`H${row}`]), currentValue=Number(INV[row]||0);
-    return buildCompareNumberRow('특성',t[1],changeValue,currentValue,0.0001);
+    return buildCompareNumberRow('특성 보드',t[1],changeValue,currentValue,0.0001);
   }).filter(row=>row.status!=='same');
 }
 function buildExcelBuffRows(cells,specCells){
@@ -1428,7 +1428,7 @@ function buildExcelBuffRows(cells,specCells){
     buildExcelChoiceRow('단일유닛버프',cells.H6,'unitUniqueBuff',{boolean:true}),
     buildExcelChoiceRow('방어력관통 10%',cells.H8,'basePierceBuff',{boolean:true}),
     buildExcelChoiceRow('유물',cells.F11,'prodArtifact',{boolean:true}),
-    buildExcelChoiceRow('노바',cells.F4,'prodNova',{boolean:true}),
+    buildExcelChoiceRow('비밀 작전 노바',cells.F4,'prodNova',{boolean:true}),
     buildExcelChoiceRow('테라트론',cells.F5,'prodTeratron',{boolean:true}),
     buildExcelChoiceRow('아몬',cells.F6,'prodAmon',{boolean:true}),
     buildExcelChoiceRow('아둔의 창',cells.F7,'prodAdun',{boolean:true}),
@@ -1474,7 +1474,7 @@ function buildExcelComparison(cells, specCells, zeroCells, fileName, sheetName){
     ]
   };
 }
-const COMPARE_FILTER_LABELS={all:'전체 보기',stat:'스탯 차이',input:'입력값 차이',buff:'룬/버프 차이',trait:'특성 차이',zero:'승단 차이'};
+const COMPARE_FILTER_LABELS={all:'전체 보기',stat:'스탯 차이',input:'입력값 차이',buff:'룬효과 버프 차이',trait:'특성 차이',zero:'승단 차이'};
 const COMPARE_FILTER_ORDER=['all','stat','input','buff','trait','zero'];
 const COMPARE_SUMMARY_COUNT_KEYS={stat:'statDiffs',input:'inputDiffs',buff:'buffDiffs',trait:'traitDiffs',zero:'zeroDiffs'};
 const EXCEL_COMPARE_COLGROUP='<colgroup><col class="compare-col-kind"><col class="compare-col-name"><col class="compare-col-current"><col class="compare-col-change"><col class="compare-col-diff"></colgroup>';
@@ -1584,7 +1584,7 @@ function selectedExcelSheetName(){
   return sheetName;
 }
 
-const COMPARE_INPUT_EXCLUDE_KINDS=new Set(['DPS','스탯','룬효과/버프','특성','승단계산','승단계산 결과']);
+const COMPARE_INPUT_EXCLUDE_KINDS=new Set(['DPS','데미지 보드','룬효과 버프','특성 보드','더제로 승단 정보']);
 function compareSummaryCard(filter,label,count,active){
   const isAll=filter==='all';
   const stateClass=isAll ? 'same is-all' : count ? 'diff' : 'same';
@@ -1598,10 +1598,10 @@ function compareSummaryCard(filter,label,count,active){
 function compareRowMatchesFilter(row,filter){
   if(filter==='all') return true;
   if(!row || row.status==='same') return false;
-  if(filter==='stat') return row.kind==='스탯';
-  if(filter==='buff') return row.kind==='룬효과/버프';
-  if(filter==='trait') return row.kind==='특성';
-  if(filter==='zero') return row.kind==='승단계산' || row.kind==='승단계산 결과';
+  if(filter==='stat') return row.kind==='데미지 보드';
+  if(filter==='buff') return row.kind==='룬효과 버프';
+  if(filter==='trait') return row.kind==='특성 보드';
+  if(filter==='zero') return row.kind==='더제로 승단 정보';
   if(filter==='input') return !COMPARE_INPUT_EXCLUDE_KINDS.has(row.kind);
   return true;
 }
@@ -1889,7 +1889,7 @@ function buildSavedTraitCompareRows(changeState,currentState){
   const currentInv=currentState?.inv || INV;
   return TRAITS.filter(t=>t[0]>=42&&t[0]<=138).map(t=>{
     const row=t[0], changeValue=Number(changeState.inv?.[row]||0), currentValue=Number(currentInv?.[row]||0);
-    return buildCompareNumberRow('특성',t[1],changeValue,currentValue,0.0001);
+    return buildCompareNumberRow('특성 보드',t[1],changeValue,currentValue,0.0001);
   }).filter(row=>row.status!=='same');
 }
 function snapshotComparisonState(changeState,currentState){
@@ -1906,7 +1906,7 @@ function buildStateStatRows(changeStats,currentStats){
     const changeDisplay=excelCompareRound(getDisplay(changeStats),6);
     const currentDisplay=excelCompareRound(getDisplay(currentStats),6);
     const displayCompare=compareNumber(changeDisplay,currentDisplay);
-    return {kind:'스탯',name,current:formatCompareNumber(currentDisplay),change:formatCompareNumber(changeDisplay),
+    return {kind:'데미지 보드',name,current:formatCompareNumber(currentDisplay),change:formatCompareNumber(changeDisplay),
       difference:formatCompareDiff(displayCompare.diff),status:displayCompare.status,diffClass:compareNumberDiffClass(displayCompare.diff)};
   });
 }
@@ -1926,8 +1926,8 @@ function buildJsonComparison(changeState,options={}){
   const statRows=buildStateStatRows(changeStats,currentStats);
   const traitRows=buildSavedTraitCompareRows(effectiveChangeState,currentState);
   const zeroRows=buildSavedZeroScoreCompareRows(effectiveChangeState.zeroScore,currentState.zeroScore,{onlyDiffs:true});
-  const inputDiffs=inputRows.filter(r=>r.status!=='same' && r.kind!=='룬효과/버프').length + enchantRows.filter(r=>r.status!=='same').length;
-  const buffDiffs=inputRows.filter(r=>r.status!=='same' && r.kind==='룬효과/버프').length;
+  const inputDiffs=inputRows.filter(r=>r.status!=='same' && r.kind!=='룬효과 버프').length + enchantRows.filter(r=>r.status!=='same').length;
+  const buffDiffs=inputRows.filter(r=>r.status!=='same' && r.kind==='룬효과 버프').length;
   return {
     fileName:options.fileName || effectiveChangeState.fileName || '저장파일',
     sheetName:options.sheetName || effectiveChangeState.sheetName || '저장파일',
@@ -2105,53 +2105,17 @@ async function readCompareJsonSource(file){
   if(!state) throw new Error('계산기 저장값 형식이 아닙니다.');
   return {sourceType:'json',backupState:{...state,fileName:file.name}};
 }
-function buildBaseTraitPresetBundleFromExcelWorkbook(workbook,fileName=''){
-  const specCells=workbook.getCells('스펙');
-  const additionalInfo=inspectSpecAdditionalStructure(specCells);
-  if(!additionalInfo.valid) throw new Error(additionalInfo.message);
-  const zeroCells=getZeroScoreSheetCells(workbook);
-  const now=Date.now();
-  const presets=[];
-  (workbook.sheets || []).forEach((sheet,index)=>{
-    const sheetName=sheet?.name || '';
-    if(!sheetName || sheetName==='스펙') return;
-    try{
-      const cells=workbook.getCells(sheetName);
-      validateExcelCompareSheet(cells,sheetName);
-      const imported=buildExcelState(cells,specCells,zeroCells,sheetName);
-      const state=markPresetStateCurrentVersion({...imported.state,fileName:fileName || workbook.fileName || '엑셀 기준 파일',sheetName,savedAt:now});
-      if(!state) return;
-      const id=`base_excel_${index}_${String(sheetName).replace(/[^0-9A-Za-z가-힣_-]/g,'_')}`;
-      const name=normalizeTraitPresetName(sheetName || `엑셀 기준 ${presets.length+1}`);
-      presets.push({id,name,schemaVersion:TRAIT_PRESET_SCHEMA_VERSION,createdAt:now,updatedAt:now,meta:traitPresetMetaFromSavedState(state),state});
-    }catch(e){
-      logAppWarn('[skip base excel sheet]', sheetName, e);
-    }
-  });
-  if(!presets.length) throw new Error('분석 기준으로 사용할 수 있는 엑셀 시트를 찾을 수 없습니다.');
-  const defaultPreset=presets.find(preset=>preset.name==='고행') || presets[0];
-  return {fileName:fileName || workbook.fileName || '엑셀 기준 파일',defaultPresetId:defaultPreset?.id || '',presets};
-}
 async function handleBaseCompareFile(file){
   try{
     compareState.baseFileRejected=false;
     if(isExcelPresetImportFile(file)){
-      const workbook=await readExcelWorkbook(file);
-      if(!workbook.sheets?.length) throw new Error('엑셀 시트를 찾을 수 없습니다.');
-      compareState.baseTraitPresetBundle=buildBaseTraitPresetBundleFromExcelWorkbook(workbook,file?.name || '엑셀 기준 파일');
-    }else{
-      const source=await readCompareJsonSource(file);
-      const now=Date.now();
-      if(source.sourceType==='traitPreset'){
-        compareState.baseTraitPresetBundle=source.traitPresetBundle;
-      }else if(source.sourceType==='json' && source.backupState){
-        const id='base_saved_file';
-        const name=normalizeTraitPresetName(stateFileBaseName(file?.name || '') || '기준 저장값');
-        compareState.baseTraitPresetBundle={fileName:file?.name || '기준 파일',defaultPresetId:id,presets:[{id,name,schemaVersion:TRAIT_PRESET_SCHEMA_VERSION,createdAt:now,updatedAt:now,meta:traitPresetMetaFromSavedState(source.backupState),state:source.backupState}]};
-      }else{
-        throw new Error('기준 파일은 엑셀, 특성 프리셋 또는 저장값 파일만 사용할 수 있습니다.');
-      }
+      throw new Error('기준 파일은 특성 프리셋 파일만 사용할 수 있습니다. 엑셀 파일은 비교 파일에서 불러오세요.');
     }
+    const source=await readCompareJsonSource(file);
+    if(source.sourceType!=='traitPreset'){
+      throw new Error('기준 파일은 특성 프리셋 파일만 사용할 수 있습니다. 저장값 파일은 비교 파일에서 불러오세요.');
+    }
+    compareState.baseTraitPresetBundle=source.traitPresetBundle;
     const presets=compareState.baseTraitPresetBundle.presets || [];
     const preferred=presets.find(preset=>preset.id===compareState.baseTraitPresetBundle.defaultPresetId) || presets[0];
     compareState.baseTraitPresetId=preferred?.id || '';
@@ -3349,7 +3313,7 @@ function refreshTraitPresetControls(selectedId){
   const currentId=select?.value || '';
   const current=store.presets.find(preset=>preset.id===currentId);
   dispatchTraitPresetStoreChanged({source:'selection', selectedTraitPresetId:current?.id || ''});
-  qsa('[data-action="loadTraitPreset"],[data-action="updateTraitPreset"],[data-action="renameTraitPreset"],[data-action="deleteTraitPreset"]').forEach(btn=>{
+  qsa('[data-action="loadTraitPreset"],[data-action="updateTraitPreset"],[data-action="renameTraitPreset"],[data-action="deleteTraitPreset"],[data-action="compareTraitPreset"]').forEach(btn=>{
     btn.disabled=!current;
   });
   qsa('[data-action="exportTraitPresets"]').forEach(btn=>{ btn.disabled=!store.presets.length; });
@@ -3983,10 +3947,13 @@ function compareTraitPreset(){
   const id=selectedTraitPresetId();
   const store=loadTraitPresetStore();
   const preset=store.presets.find(item=>item.id===id);
-  resetCompareState();
-  if(preset){
-    compareState.baseTraitPresetId=id;
+  if(!preset){
+    notifyStorageAction('특성 프리셋을 먼저 가져오거나 로드해야 프리셋 분석을 사용할 수 있습니다.','err');
+    refreshTraitPresetControls('');
+    return false;
   }
+  resetCompareState();
+  compareState.baseTraitPresetId=id;
   openCompareInfo();
   hydrateCompareControls();
   const body=$('excelCompareBody');
@@ -4165,7 +4132,7 @@ function renderZeroScoreCalculatorRows(){
 /* 더제로 승단: 점수 계산 공통 */
 /* 더제로 승단 점수 계산은 calc.js에서 로드된다. */
 function compareZeroTextRow(name, changeValue, currentValue){
-  return buildCompareTextRow('승단계산',name,changeValue,currentValue);
+  return buildCompareTextRow('더제로 승단 정보',name,changeValue,currentValue);
 }
 function compareZeroNumberRow(kind,name,changeValue,currentValue){
   return buildCompareNumberRow(kind,name,changeValue,currentValue,0.0001);
@@ -4174,20 +4141,20 @@ function compareZeroNumberRow(kind,name,changeValue,currentValue){
 function addZeroPenanceCompareRows(rows,name,change={},current={}){
   const currentCalc=zeroScoreRowCalculation(current);
   const changeCalc=zeroScoreRowCalculation(change);
-  rows.push(compareZeroNumberRow('승단계산',`${name} 현재 일반`,change.current ?? 0,current.current ?? 0));
-  rows.push(compareZeroNumberRow('승단계산',`${name} 목표 일반`,change.target ?? 0,current.target ?? 0));
+  rows.push(compareZeroNumberRow('더제로 승단 정보',`${name} 현재 일반`,change.current ?? 0,current.current ?? 0));
+  rows.push(compareZeroNumberRow('더제로 승단 정보',`${name} 목표 일반`,change.target ?? 0,current.target ?? 0));
   rows.push(compareZeroTextRow(`${name} 24스타`,change.star?'ON':'OFF',current.star?'ON':'OFF'));
   rows.push(compareZeroTextRow(`${name} 현재 명예`,zeroHonorDisplay(change.currentHonor||''),zeroHonorDisplay(current.currentHonor||'')));
   rows.push(compareZeroTextRow(`${name} 목표 명예`,zeroHonorDisplay(change.targetHonor||''),zeroHonorDisplay(current.targetHonor||'')));
-  rows.push(compareZeroNumberRow('승단계산 결과',`${name} 추가점수`,changeCalc.score,currentCalc.score));
+  rows.push(compareZeroNumberRow('더제로 승단 정보',`${name} 목표 추가점수`,changeCalc.score,currentCalc.score));
 }
 function addZeroTowerComboCompareRows(rows,label,change={},current={}){
-  rows.push(compareZeroNumberRow('승단계산',`${label} 현재 일반`,change.current ?? 0,current.current ?? 0));
-  rows.push(compareZeroNumberRow('승단계산',`${label} 목표 일반`,change.target ?? 0,current.target ?? 0));
+  rows.push(compareZeroNumberRow('더제로 승단 정보',`${label} 현재 일반`,change.current ?? 0,current.current ?? 0));
+  rows.push(compareZeroNumberRow('더제로 승단 정보',`${label} 목표 일반`,change.target ?? 0,current.target ?? 0));
   rows.push(compareZeroTextRow(`${label} 24스타`,'비활성화','비활성화'));
-  rows.push(compareZeroNumberRow('승단계산',`${label} 현재 명예`,change.honorCurrent ?? 0,current.honorCurrent ?? 0));
-  rows.push(compareZeroNumberRow('승단계산',`${label} 목표 명예`,change.honorTarget ?? 0,current.honorTarget ?? 0));
-  rows.push(compareZeroNumberRow('승단계산 결과',`${label} 목표 추가점수`,zeroScoreRowCalculation(change).score,zeroScoreRowCalculation(current).score));
+  rows.push(compareZeroNumberRow('더제로 승단 정보',`${label} 현재 명예`,change.honorCurrent ?? 0,current.honorCurrent ?? 0));
+  rows.push(compareZeroNumberRow('더제로 승단 정보',`${label} 목표 명예`,change.honorTarget ?? 0,current.honorTarget ?? 0));
+  rows.push(compareZeroNumberRow('더제로 승단 정보',`${label} 목표 추가점수`,zeroScoreRowCalculation(change).score,zeroScoreRowCalculation(current).score));
 }
 function buildSavedZeroScoreCompareRows(changeZeroScore,currentZeroScore,options={}){
   const onlyDiffs=options.onlyDiffs!==false;
@@ -4200,8 +4167,8 @@ function buildSavedZeroScoreCompareRows(changeZeroScore,currentZeroScore,options
   addZeroTowerComboCompareRows(rows,'도전의탑',changeRows[14] || {},currentRows[14] || {});
   const changeSummary=zeroScoreSummaryFromState(changeState);
   const currentSummary=zeroScoreSummaryFromState(currentState);
-  rows.push(compareZeroNumberRow('승단계산 결과','현재 승단점수',changeSummary.currentTotal,currentSummary.currentTotal));
-  rows.push(compareZeroNumberRow('승단계산 결과','목표 완료 시',changeSummary.targetScore,currentSummary.targetScore));
+  rows.push(compareZeroNumberRow('더제로 승단 정보','현재 승단점수',changeSummary.currentTotal,currentSummary.currentTotal));
+  rows.push(compareZeroNumberRow('더제로 승단 정보','목표 완료',changeSummary.targetScore,currentSummary.targetScore));
   return onlyDiffs ? rows.filter(row=>row.status!=='same') : rows;
 }
 function buildZeroScoreCompareRows(zeroCells){
@@ -4211,12 +4178,12 @@ function buildZeroScoreCompareRows(zeroCells){
   ZERO_EXCEL_PENANCE_ROWS.forEach(({name,row},index)=>{
     const web=webState.rows[index] || {};
     const webCalc=zeroScoreRowCalculation(web);
-    rows.push(compareZeroNumberRow('승단계산',`${name} 현재 일반`,zeroCells[`B${row}`],web.current ?? 0));
-    rows.push(compareZeroNumberRow('승단계산',`${name} 목표 일반`,zeroCells[`C${row}`],web.target ?? 0));
+    rows.push(compareZeroNumberRow('더제로 승단 정보',`${name} 현재 일반`,zeroCells[`B${row}`],web.current ?? 0));
+    rows.push(compareZeroNumberRow('더제로 승단 정보',`${name} 목표 일반`,zeroCells[`C${row}`],web.target ?? 0));
     rows.push(compareZeroTextRow(`${name} 24스타`,excelFlag(zeroCells[`D${row}`])?'ON':'OFF',web.star?'ON':'OFF'));
     rows.push(compareZeroTextRow(`${name} 현재 명예`,zeroHonorDisplay(normalizeZeroHonorValue(zeroCells[`E${row}`])),zeroHonorDisplay(web.currentHonor||'')));
     rows.push(compareZeroTextRow(`${name} 목표 명예`,zeroHonorDisplay(normalizeZeroHonorValue(zeroCells[`F${row}`])),zeroHonorDisplay(web.targetHonor||'')));
-    rows.push(compareZeroNumberRow('승단계산 결과',`${name} 추가점수`,zeroCells[`G${row}`],webCalc.score));
+    rows.push(compareZeroNumberRow('더제로 승단 정보',`${name} 목표 추가점수`,zeroCells[`G${row}`],webCalc.score));
   });
   const comboExcel={
     type:'towerCombo',
@@ -4229,8 +4196,8 @@ function buildZeroScoreCompareRows(zeroCells){
   const comboWeb=zeroTowerComboFromRows(webState.rows);
   addZeroTowerComboCompareRows(rows,'도전의탑',comboExcel,comboWeb);
   const webSummary=zeroScoreSummaryFromState(webState);
-  rows.push(compareZeroNumberRow('승단계산 결과','현재 승단점수',zeroCells.H28,webSummary.currentTotal));
-  rows.push(compareZeroNumberRow('승단계산 결과','목표 완료 시',zeroCells.I28,webSummary.targetScore));
+  rows.push(compareZeroNumberRow('더제로 승단 정보','현재 승단점수',zeroCells.H28,webSummary.currentTotal));
+  rows.push(compareZeroNumberRow('더제로 승단 정보','목표 완료',zeroCells.I28,webSummary.targetScore));
   return rows;
 }
 const ZERO_RANK_FALLBACK_TABLE=[
