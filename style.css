@@ -1451,6 +1451,8 @@ body .trait-board-panel .trait-group .tr-type{color:var(--color-slate-500);}
 .header-creator-discord a{display:inline-flex;align-items:center;justify-content:center;min-width:68px;height:27px;padding:0 9px;border:1px solid #93c5fd;border-radius:8px;background:#2563eb;color:#f8fbff;text-decoration:none;font-weight:1000;}
 .damage-board-round-time-row .sc-val{font-size:calc(11px * var(--app-font-scale));}
 .damage-board-round-time-row #enemyRpTimeQuick{color:#cfe0ff;font-weight:1000;}
-body.is-mobile .header-creator-grid{grid-template-columns:1fr;}
+body.is-mobile .header-creator-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:5px;}
+body.is-mobile .header-creator-grid div{min-width:0;padding:7px 4px;}
+body.is-mobile .header-creator-grid b{font-size:calc(9.8px * var(--app-font-scale));white-space:nowrap;}
 body.is-mobile .header-creator-guide{font-size:calc(9px * var(--app-font-scale));}
 body.is-mobile .damage-board-round-time-row .sc-val{font-size:calc(10px * var(--app-font-scale));}
