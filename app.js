@@ -475,13 +475,17 @@ let xpCutRowFeedbackCells=[];
 function renderXpCut(){
   restoreXpCutRowFeedback();
   const base=Math.max(0, v('sp'))*0.8;
-  const el=$('xpCutRows');
-  if(!el) return;
-  const valueCell=(partyLabel, divisor)=>{
-    const value=big(base/divisor);
-    return `<td class="bus-cut-value" data-value="${value}" data-feedback="÷${divisor}배"><span class="bus-cut-party">${partyLabel}</span><span class="bus-cut-text">${value}</span></td>`;
+  const renderPartyRows=(targetId, divisorKey)=>{
+    const target=$(targetId);
+    if(!target) return;
+    target.innerHTML=XP_CUT_DIVISOR_ROWS.map(row=>{
+      const divisor=row[divisorKey];
+      const value=big(base/divisor);
+      return `<button class="bus-cut-row" type="button"><span class="bus-cut-stage">${row.stage}</span><span class="bus-cut-value" data-value="${value}" data-feedback="÷${divisor}배"><span class="bus-cut-text">${value}</span></span></button>`;
+    }).join('');
   };
-  el.innerHTML=XP_CUT_DIVISOR_ROWS.map(row=>`<tr class="bus-cut-row" role="button" tabindex="0"><td>${row.stage}</td>${valueCell('2인', row.party2)}${valueCell('3인', row.party3)}</tr>`).join('');
+  renderPartyRows('xpCutRows2','party2');
+  renderPartyRows('xpCutRows3','party3');
 }
 function restoreXpCutRowFeedback(){
   if(xpCutRowFeedbackTimer) clearTimeout(xpCutRowFeedbackTimer);
@@ -511,7 +515,7 @@ function showXpCutRowFeedback(row){
 }
 function activateXpCutRowFeedback(target,e){
   const row=target?.closest?.('.bus-cut-row');
-  if(!row || !$('xpCutRows')?.contains(row)) return false;
+  if(!row || !row.closest('.bus-cut-card')) return false;
   e?.preventDefault?.();
   return showXpCutRowFeedback(row);
 }
@@ -697,7 +701,6 @@ function buildCoopDpsTable(round){
 }
 function buildDpsTowerTable(){
   const minDps=parseDpsTableMinDps();
-  const currentDiff=vs('diff');
   const currentFloor=normalizedTowerFloorNumber(challengeTowerFloorStoredValue());
   const tower=DPS_CONFIG.dpsTable.tower || {};
   const range={ min:Math.max(1, Math.round(tower.minFloor || 1)), max:Math.max(1, Math.round(tower.maxFloor || 90)) };
