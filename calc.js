@@ -433,6 +433,8 @@ function battleDataModeKeyForDifficulty(diffName=vs('diff')){
 function battleDataModeForDifficulty(diffName=vs('diff')){
   return BATTLE_DATA_MODES[battleDataModeKeyForDifficulty(diffName)] || BATTLE_DATA_MODES.classic;
 }
+function enemyTableKeyForDifficulty(diffName=vs('diff')){return battleDataModeKeyForDifficulty(diffName);}
+function enemyTableModeForDifficulty(diffName=vs('diff')){return battleDataModeForDifficulty(diffName);}
 function enemyDisplayModeLabel(diffName=vs('diff')){return battleDataModeForDifficulty(diffName).label;}
 function normalizedBattleRound(round, mode, fallback=1, min=1){
   const max=Number.isFinite(mode?.maxRound) ? mode.maxRound : 300;
@@ -696,155 +698,6 @@ function growthGraduationAttackBonus(){
 
 
 /* ===== 07. 메인 스탯 / 버프 / DPS 계산 ===== */
-
-/* ----- 07-1. 유닛 보드 선택·수량·방관 계산 ----- */
-const DPS_BASE_UNIT_STORAGE_SEPARATOR=',';
-function dpsBaseUnitList(){
-  return Array.isArray(window.DPS_DATA?.DPS_BASE_UNITS) ? window.DPS_DATA.DPS_BASE_UNITS : [];
-}
-function dpsBaseUnitById(id){
-  return dpsBaseUnitList().find(unit=>unit.id===id) || null;
-}
-function dpsBaseUnitAllId(){
-  return window.DPS_DATA?.DPS_BASE_UNIT_ALL_ID || 'all';
-}
-function dpsBaseUnitSelectionLimit(){
-  return 10;
-}
-function dpsBaseUnitArtifactId(){
-  return window.DPS_DATA?.DPS_BASE_UNIT_ARTIFACT_ID || 'prodArtifact';
-}
-function dpsBaseUnitLabel(unitOrId){
-  const unit=typeof unitOrId==='string' ? dpsBaseUnitById(unitOrId) : unitOrId;
-  return unit?.label || String(unitOrId || '');
-}
-function dpsBaseUnitGradeOrder(){
-  return Array.isArray(window.DPS_DATA?.DPS_BASE_UNIT_GRADE_ORDER) ? window.DPS_DATA.DPS_BASE_UNIT_GRADE_ORDER : ['슈퍼히든','히든','레전드','버프'];
-}
-function dpsBaseUnitRaceOrder(){
-  return Array.isArray(window.DPS_DATA?.DPS_BASE_UNIT_RACE_ORDER) ? window.DPS_DATA.DPS_BASE_UNIT_RACE_ORDER : ['테바','테메','프바','프메','저그','중립','혼종'];
-}
-function dpsBaseUnitQuantityInputId(unitOrId){
-  const unit=typeof unitOrId==='string' ? dpsBaseUnitById(unitOrId) : unitOrId;
-  return unit?.quantityId || `dpsQty${String(unit?.id || unitOrId || '').replace(/^prod/,'')}`;
-}
-function dpsBaseUnitHasQuantity(unitOrId){
-  const unit=typeof unitOrId==='string' ? dpsBaseUnitById(unitOrId) : unitOrId;
-  return !!unit?.quantityEnabled;
-}
-function dpsBaseUnitQuantityIds(){
-  return dpsBaseUnitList().filter(dpsBaseUnitHasQuantity).map(unit=>dpsBaseUnitQuantityInputId(unit));
-}
-function dpsBaseUnitQuantityLimit(){
-  return vs('coopMode')==='ON' ? 16 : 8;
-}
-function normalizeDpsBaseUnitQuantityValue(value){
-  const limit=dpsBaseUnitQuantityLimit();
-  return String(Math.max(0, Math.min(limit, Math.round(Number(value) || 0))));
-}
-function dpsBaseUnitQuantity(unitOrId){
-  const unit=typeof unitOrId==='string' ? dpsBaseUnitById(unitOrId) : unitOrId;
-  if(!dpsBaseUnitHasQuantity(unit)) return 1;
-  const el=typeof $==='function' ? $(dpsBaseUnitQuantityInputId(unit)) : null;
-  return Number(normalizeDpsBaseUnitQuantityValue(el?.value ?? 0));
-}
-function nonNegativeNumber(value){
-  return Math.max(0, Number(value) || 0);
-}
-function totalDpsPierce(...values){
-  return values.reduce((sum,value)=>sum + nonNegativeNumber(value), 0);
-}
-function dpsBaseUnitConditionalPierceBonus(unit){
-  const rule=unit?.conditionalArmorPierce;
-  if(!rule?.inputId) return 0;
-  const minimum=nonNegativeNumber(rule.minimum);
-  return shardValue(rule.inputId)>=minimum ? nonNegativeNumber(rule.bonus) : 0;
-}
-function dpsBaseUnitPierceBonus(unit){
-  return totalDpsPierce(unit?.armorPierceBonus, dpsBaseUnitConditionalPierceBonus(unit));
-}
-function averageFiniteNumber(items, getter){
-  const values=items.map(item=>Number(getter(item))).filter(Number.isFinite);
-  return values.length ? values.reduce((sum,value)=>sum + value, 0) / values.length : NaN;
-}
-function dpsBaseUnitResultAverage(results, key){
-  return averageFiniteNumber(results, item=>item?.[key]);
-}
-function dpsBaseUnitDurabilityAverage(results, key){
-  return averageFiniteNumber(results, item=>item?.ownDurability?.[key]);
-}
-function averageDpsBaseUnitParts(results){
-  if(!Array.isArray(results) || !results.length) return null;
-  if(results.length===1) return {...results[0]};
-  return {
-    ...results[0],
-    unitId:'',
-    AB3:dpsBaseUnitResultAverage(results,'AB3'),
-    AB4:dpsBaseUnitResultAverage(results,'AB4'),
-    AB5:dpsBaseUnitResultAverage(results,'AB5'),
-    AB6:dpsBaseUnitResultAverage(results,'AB6'),
-    rawM19:dpsBaseUnitResultAverage(results,'rawM19'),
-    M19:dpsBaseUnitResultAverage(results,'M19'),
-    excelPierce:dpsBaseUnitResultAverage(results,'excelPierce'),
-    unitPierceBonus:dpsBaseUnitResultAverage(results,'unitPierceBonus'),
-    ownDurability:{
-      hpRatio:dpsBaseUnitDurabilityAverage(results,'hpRatio'),
-      shieldRatio:dpsBaseUnitDurabilityAverage(results,'shieldRatio'),
-      remain:dpsBaseUnitDurabilityAverage(results,'remain')
-    },
-    actualM12:dpsBaseUnitResultAverage(results,'actualM12'),
-    isAverage:true
-  };
-}
-function dpsBaseUnitIdSet(){
-  return new Set(dpsBaseUnitList().map(unit=>unit.id));
-}
-function normalizeDpsBaseUnitsValue(value){
-  const allId=dpsBaseUnitAllId();
-  const validIds=dpsBaseUnitIdSet();
-  const limit=dpsBaseUnitSelectionLimit();
-  const source=Array.isArray(value) ? value : String(value ?? '').split(DPS_BASE_UNIT_STORAGE_SEPARATOR);
-  const ids=[];
-  source.forEach(item=>{
-    const id=String(item ?? '').trim();
-    if(!id || ids.includes(id) || ids.length>=limit) return;
-    if(id===allId){
-      dpsBaseUnitList().slice(0,limit).forEach(unit=>{
-        if(!ids.includes(unit.id)) ids.push(unit.id);
-      });
-      return;
-    }
-    if(validIds.has(id)) ids.push(id);
-  });
-  return ids.join(DPS_BASE_UNIT_STORAGE_SEPARATOR);
-}
-function dpsBaseUnitSelectionIds(value){
-  const normalized=normalizeDpsBaseUnitsValue(value);
-  return normalized ? normalized.split(DPS_BASE_UNIT_STORAGE_SEPARATOR).filter(Boolean) : [];
-}
-function dpsBaseUnitStorageValue(){
-  const el=typeof $==='function' ? $('dpsBaseUnits') : null;
-  return normalizeDpsBaseUnitsValue(el ? el.value : '');
-}
-function selectedDpsBaseUnits(value=dpsBaseUnitStorageValue()){
-  const ids=dpsBaseUnitSelectionIds(value);
-  const units=dpsBaseUnitList();
-  if(ids.includes(dpsBaseUnitAllId())) return units.slice();
-  const idSet=new Set(ids);
-  return units.filter(unit=>idSet.has(unit.id));
-}
-function dpsBaseUnitAttackRate(unit, speedMultiplier){
-  const weaponSpeed=Number(unit?.weaponSpeed) || 0;
-  const targetCount=Number(unit?.targetCount) || 0;
-  const attackCount=Number(unit?.attackCount) || 0;
-  const baseSpeedMultiplier=Math.max(0.000001, Number(speedMultiplier) || 1);
-  if(weaponSpeed<=0 || targetCount<=0 || attackCount<=0) return baseSpeedMultiplier;
-  const rawCooldown=weaponSpeed / baseSpeedMultiplier;
-  const asLimit=Math.max(0, Number(unit?.asLimit) || 0);
-  const cooldown=asLimit>0 ? Math.max(asLimit, rawCooldown) : rawCooldown;
-  return targetCount * attackCount / Math.max(0.000001, cooldown);
-}
-/* ----- 07-2. 메인 스탯 및 DPS 산출 ----- */
 function computeStatsRaw(){
   const autoEP=syncAutoEP();
   const penaltyContext=currentPenaltyContext();
@@ -899,122 +752,38 @@ function computeStatsRaw(){
   const enemyData=enemyRoundData(targetRound);
   const displaySR = sumStat('SR') + enchantAt(4).sr + additionalStats.sr;
   const displayHR = enchantAt(5).hr + additionalStats.hr;
-  const basePierceBonus = checkboxOn('basePierceBuff') ? 10 : 0;
-  const rpPierce = rpPierceBonus();
-  const dpsBaseUnitSelection=dpsBaseUnitStorageValue();
-  const dpsBaseUnits=selectedDpsBaseUnits(dpsBaseUnitSelection);
-  const useDpsBaseUnits=dpsBaseUnits.length>0;
+  const excelPierce = (checkboxOn('basePierceBuff') ? 10 : 0) + rpPierceBonus();
+  const ownTargetEffects={
+    defenseReduce:M12_dr,
+    pierce:excelPierce,
+    hpReduce:displayHR,
+    shieldReduce:displaySR
+  };
+  const ownDurability=targetDurabilityRemain(enemyData, ownTargetEffects);
   const passengerTargets=coopPassengerTargetEffectsList().map(target=>{
     const durability=targetDurabilityRemain(enemyData, target);
     return {...target, hpRemain:durability.remain};
   });
+  const hpRatio = ownDurability.hpRatio;
+  const shieldRatio = ownDurability.shieldRatio;
+  const hpRemain = ownDurability.remain;
+  const M12 = M12_dr;
+  const actualM12 = actualDrWithPierce(M12_dr, excelPierce);
+  const AB3=battleTargetDps0Average(
+    {...ownTargetEffects, hpRemain},
+    passengerTargets,
+    enemyData.armor,
+    diff.dmg*(1-penDmg/100)
+  ) * upperStats.dps0Mul;
+  const AB4=(1+M4/100)*(M11/100);
   const AB5=dps2(M8, M10, M9, M16, M17, M18, 0);
   const dt=personalUaDtMultiplier();
   const gradeAs=UNIT_GRADE_AS[activeUnitGrade()] ?? 0;
-  const speedMultiplier=(1+(M7+upperStats.actualAs+gradeAs)/100)*(1-diff.as/100)*M13*dt;
+  const AB6=(1+(M7+upperStats.actualAs+gradeAs)/100)*(1-diff.as/100)*M13*dt;
   const displayMultiplier=contentDpsDisplayMultiplier(vs('diff'), targetRound, displayHR, displaySR);
-  const calculateDpsParts=(unitPierceBonus=0, weaponAttackBonus=0, dpsBaseUnit=null)=>{
-    const excelPierce=totalDpsPierce(basePierceBonus, rpPierce, unitPierceBonus);
-    const effectiveM4=M4 + nonNegativeNumber(weaponAttackBonus);
-    const ownTargetEffects={
-      defenseReduce:M12_dr,
-      pierce:excelPierce,
-      hpReduce:displayHR,
-      shieldReduce:displaySR
-    };
-    const ownDurability=targetDurabilityRemain(enemyData, ownTargetEffects);
-    const hpRemain=ownDurability.remain;
-    const AB3=battleTargetDps0Average(
-      {...ownTargetEffects, hpRemain},
-      passengerTargets,
-      enemyData.armor,
-      diff.dmg*(1-penDmg/100)
-    ) * upperStats.dps0Mul;
-    const AB4=(1+effectiveM4/100)*(M11/100);
-    const AB6=dpsBaseUnit ? dpsBaseUnitAttackRate(dpsBaseUnit, speedMultiplier) : speedMultiplier;
-    const rawM19=AB3*AB4*AB5*AB6;
-    return {
-      AB3,AB4,AB5,AB6,
-      rawM19,
-      M19:rawM19 * displayMultiplier,
-      excelPierce,
-      unitPierceBonus:Math.max(0, Number(unitPierceBonus) || 0),
-      ownDurability,
-      actualM12:actualDrWithPierce(M12_dr, excelPierce)
-    };
-  };
-  const baseDpsParts=calculateDpsParts(0);
-  const dpsBaseUnitResults=useDpsBaseUnits ? dpsBaseUnits.map(unit=>{
-    const weaponAttack=nonNegativeNumber(unit.weaponAttack);
-    const unitPierceBonus=dpsBaseUnitPierceBonus(unit);
-    const quantity=Math.max(1, dpsBaseUnitQuantity(unit));
-    const quantityMultiplier=dpsBaseUnitHasQuantity(unit) ? quantity : 1;
-    const unitMeta={
-      unitId:unit.id,
-      quantity:quantityMultiplier,
-      weaponAttack,
-      weaponSpeed:Number(unit.weaponSpeed) || 0,
-      asLimit:Number(unit.asLimit) || 0,
-      targetCount:Number(unit.targetCount) || 0,
-      attackCount:Number(unit.attackCount) || 0
-    };
-    if(unit?.isArtifact){
-      const artifactParts=calculateArtifactDpsRaw({enemyData,M12:M12_dr,displayHR,displaySR,M4,M11,M8,M10,M9,M16,M17,M18,M13,diff});
-      return {
-        AB3:artifactParts.dps0,
-        AB4:artifactParts.adTdMultiplier,
-        AB5:artifactParts.critMultiplier,
-        AB6:artifactParts.uaMultiplier,
-        rawM19:artifactParts.rawDps,
-        M19:artifactParts.dps,
-        excelPierce:0,
-        unitPierceBonus:0,
-        ownDurability:targetDurabilityRemain(enemyData, {defenseReduce:M12_dr,pierce:0,hpReduce:displayHR,shieldReduce:displaySR}),
-        actualM12:actualDrWithPierce(M12_dr, 0),
-        ...unitMeta
-      };
-    }
-    const unitParts=calculateDpsParts(unitPierceBonus, weaponAttack, unit);
-    const multipliedRawM19=unitParts.rawM19 * quantityMultiplier;
-    const multipliedM19=unitParts.M19 * quantityMultiplier;
-    return {
-      ...unitParts,
-      rawM19:multipliedRawM19,
-      M19:multipliedM19,
-      baseRawM19:unitParts.rawM19,
-      baseM19:unitParts.M19,
-      ...unitMeta
-    };
-  }) : [];
-  const representativeDpsParts=useDpsBaseUnits && dpsBaseUnitResults.length
-    ? averageDpsBaseUnitParts(dpsBaseUnitResults)
-    : null;
-
-  const representativeParts=useDpsBaseUnits && representativeDpsParts ? representativeDpsParts : baseDpsParts;
-  const hpRatio = representativeParts.ownDurability.hpRatio;
-  const shieldRatio = representativeParts.ownDurability.shieldRatio;
-  const hpRemain = representativeParts.ownDurability.remain;
-  const M12 = M12_dr;
-  const actualM12 = representativeParts.actualM12;
-  const AB3=useDpsBaseUnits && representativeDpsParts ? NaN : baseDpsParts.AB3;
-  const AB4=useDpsBaseUnits && representativeDpsParts ? NaN : baseDpsParts.AB4;
-  const AB6=useDpsBaseUnits && representativeDpsParts ? NaN : baseDpsParts.AB6;
-  const rawM19=useDpsBaseUnits && representativeDpsParts ? representativeDpsParts.rawM19 : baseDpsParts.rawM19;
+  const rawM19=AB3*AB4*AB5*AB6;
   const roundTime=enemyRoundTime(targetRound);
-  const M19=useDpsBaseUnits && representativeDpsParts ? representativeDpsParts.M19 : baseDpsParts.M19;
-  const excelPierce=representativeParts.excelPierce;
-  const dpsBaseUnit={
-    selection:dpsBaseUnitSelection,
-    selectedIds:dpsBaseUnitSelectionIds(dpsBaseUnitSelection),
-    basePierceBonus,
-    rpPierce,
-    isActive:useDpsBaseUnits,
-    isAll:dpsBaseUnitSelectionIds(dpsBaseUnitSelection).includes(dpsBaseUnitAllId()),
-    representativeMode:dpsBaseUnitResults.length>1 ? 'average' : 'single',
-    representativeM19:M19,
-    representativeRawM19:rawM19,
-    results:dpsBaseUnitResults
-  };
+  const M19=rawM19 * displayMultiplier;
   let spU=0,spO=0,epU=0,rpU=0,soulU=0;
   TRAITS.forEach(t=>{
     const row=t[0];
@@ -1037,7 +806,7 @@ function computeStatsRaw(){
   const actualHR = displayHR * hpRatio;
   return {M4,M7,M8,M9,M10,M11,M12,actualM12,M13,M16,M17,M18,M19,rawM19,roundTime,displayMultiplier,rawCD,rawTD,diff,
           displayAD,displayAPS,displayAPU,actualAPU,displayUA,displaySR,displayHR,actualSR,actualHR,
-          spUsedTotal:spU+spO,spU,spO,epU,rpU,soulU,spBank:effectiveSpBankBonus(),spBankApplied:isSpBankApplied(),effectiveSP:effectiveSP(),excelPierce,enemyData,dpsBaseUnit};
+          spUsedTotal:spU+spO,spU,spO,epU,rpU,soulU,spBank:effectiveSpBankBonus(),spBankApplied:isSpBankApplied(),effectiveSP:effectiveSP(),excelPierce,enemyData};
 }
 
 /* ===== 08. 유물 DPS 계산 / 미리보기 상태 보존 ===== */
@@ -1053,14 +822,6 @@ function artifactEnergyRegenMultiplier(){
   const row=Number(config.energyRegenTraitRow || 79);
   const rate=Number(config.energyRegenRate || 2.5);
   return 1 + ((INV[row]||0) * rate) / 100;
-}
-function selectedArtifactDpsBaseWeaponAttack(){
-  const artifactId=dpsBaseUnitArtifactId();
-  const ids=dpsBaseUnitSelectionIds(dpsBaseUnitStorageValue());
-  if(!ids.includes(artifactId) && !ids.includes(dpsBaseUnitAllId())) return 0;
-  const unit=dpsBaseUnitById(artifactId);
-  const value=Number(unit?.weaponAttack);
-  return Number.isFinite(value) ? Math.max(0, value) : 0;
 }
 function calculateArtifactDpsRaw(stats=computeStatsRaw()){
   const ctx=currentPenaltyContext();
@@ -1080,8 +841,7 @@ function calculateArtifactDpsRaw(stats=computeStatsRaw()){
   );
   const playerCount=battleEnemyCountMultiplier();
   const flowerMultiplier=on('flowerSkill3') ? 1.15 : 1;
-  const artifactAttackBonus=selectedArtifactDpsBaseWeaponAttack();
-  const adTdMultiplier=(1 + ((stats.M4||0) + artifactAttackBonus) / 100) * ((stats.M11||0) / 100);
+  const adTdMultiplier=(1 + (stats.M4||0) / 100) * ((stats.M11||0) / 100);
   const critMultiplier=dps2(stats.M8||0, stats.M10||0, stats.M9||0, stats.M16||0, stats.M17||0, stats.M18||0, 1);
   const uaMultiplier=(1 - (stats.diff?.as||0) / 100) * (stats.M13||0) * artifactEnergyRegenMultiplier() * personalUaDtMultiplier();
   const displayMultiplier=contentDpsDisplayMultiplier(vs('diff'), ctx.targetRound, stats.displayHR||0, stats.displaySR||0);
@@ -1098,7 +858,6 @@ function calculateArtifactDpsRaw(stats=computeStatsRaw()){
     critMultiplier,
     uaMultiplier,
     displayMultiplier,
-    artifactAttackBonus,
     playerCount,
     enemyData,
     penanceLevel:ctx.penanceLevel,
@@ -2044,25 +1803,6 @@ window.DPS_CALC=Object.freeze({
   chunkDpsTowerFloors,
   dpsTableMinDpsIntegerPart,
   normalizeDpsTableMinDpsValue,
-  dpsBaseUnitList,
-  dpsBaseUnitById,
-  dpsBaseUnitAllId,
-  dpsBaseUnitSelectionLimit,
-  dpsBaseUnitArtifactId,
-  dpsBaseUnitLabel,
-  dpsBaseUnitGradeOrder,
-  dpsBaseUnitRaceOrder,
-  dpsBaseUnitQuantityInputId,
-  dpsBaseUnitHasQuantity,
-  dpsBaseUnitQuantityIds,
-  dpsBaseUnitQuantityLimit,
-  normalizeDpsBaseUnitQuantityValue,
-  dpsBaseUnitQuantity,
-  dpsBaseUnitConditionalPierceBonus,
-  dpsBaseUnitPierceBonus,
-  normalizeDpsBaseUnitsValue,
-  dpsBaseUnitSelectionIds,
-  selectedDpsBaseUnits,
   dpsTableRiskCompareValue,
   towerEnemySummaryItems,
   targetRoundStoredValue,
@@ -2077,6 +1817,8 @@ window.DPS_CALC=Object.freeze({
   shouldIgnorePenanceForDifficulty,
   battleDataModeKeyForDifficulty,
   battleDataModeForDifficulty,
+  enemyTableKeyForDifficulty,
+  enemyTableModeForDifficulty,
   enemyDisplayModeLabel,
   enemyRoundTime,
   enemyRoundTimeBonus,

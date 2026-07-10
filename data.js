@@ -245,55 +245,13 @@ window.RAW_JEWEL_DATA=RAW_JEWEL_DATA;
 
 window.MONTHLY_RUNE_INFO=MONTHLY_RUNE_INFO;
 
-
-/* ===== 06. 유닛 보드 데이터 ===== */
-const DPS_BASE_UNIT_ALL_ID='all';
-const DPS_BASE_UNIT_ARTIFACT_ID='prodArtifact';
-const DPS_BASE_UNIT_RACE_ORDER=Object.freeze(['테바','테메','프바','프메','저그','중립','혼종']);
-const DPS_BASE_UNIT_GRADE_ORDER=Object.freeze(['슈퍼히든','히든','레전드','버프']);
-const DPS_BASE_UNITS=Object.freeze([
-  Object.freeze({id:'prodNova',label:'비밀 작전 노바',grade:'슈퍼히든',raceGroup:'테바',weaponSpeed:0.63,asLimit:0,targetCount:1,attackCount:2,armorPierceBonus:20,critFormula:'일반',weaponAttack:1112.00}),
-  Object.freeze({id:'prodTeratron',label:'테라트론',grade:'슈퍼히든',raceGroup:'테메',weaponSpeed:0.5,asLimit:0,targetCount:1,attackCount:1,armorPierceBonus:20,critFormula:'일반',weaponAttack:1819.65}),
-  Object.freeze({id:'prodAmon',label:'아몬',grade:'슈퍼히든',raceGroup:'프바',weaponSpeed:0.5,asLimit:0,targetCount:1,attackCount:2,armorPierceBonus:15,critFormula:'일반',weaponAttack:1819.65}),
-  Object.freeze({id:'prodAdun',label:'아둔의 창',grade:'슈퍼히든',raceGroup:'프메',weaponSpeed:0.5,asLimit:0.5,targetCount:1,attackCount:2,armorPierceBonus:30,critFormula:'일반',weaponAttack:1482.68}),
-  Object.freeze({id:'prodKerrigan',label:'불새 케리건',grade:'슈퍼히든',raceGroup:'저그',weaponSpeed:0.5,asLimit:0,targetCount:5,attackCount:1,armorPierceBonus:15,critFormula:'일반',weaponAttack:673.940}),
-  Object.freeze({id:'prodOvermind',label:'초월체',grade:'슈퍼히든',raceGroup:'중립',weaponSpeed:2.67,asLimit:0,targetCount:1,attackCount:4,armorPierceBonus:15,critFormula:'일반',weaponAttack:977.210}),
-  Object.freeze({id:'prodNarud',label:'나루드',grade:'슈퍼히든',raceGroup:'혼종',weaponSpeed:0.43,asLimit:0,targetCount:1,attackCount:2,armorPierceBonus:30,critFormula:'일반',weaponAttack:1609.560}),
-  Object.freeze({id:'prodTychus',label:'타이커스 핀들레이',grade:'히든',raceGroup:'테바',quantityEnabled:true,quantityId:'dpsQtyTychus',weaponSpeed:0.75,asLimit:0,targetCount:1,attackCount:1,armorPierceBonus:0,critFormula:'일반',weaponAttack:842.43}),
-  Object.freeze({id:'prodMiles',label:'마일스 블레이즈 루이스',grade:'히든',raceGroup:'테바',quantityEnabled:true,quantityId:'dpsQtyMiles',weaponSpeed:2.2,asLimit:0,targetCount:1,attackCount:1,armorPierceBonus:5,critFormula:'일반',weaponAttack:1213.10}),
-  Object.freeze({id:'prodPirateFlagship',label:'해적 주력함',grade:'히든',raceGroup:'테메',quantityEnabled:true,quantityId:'dpsQtyPirateFlagship',weaponSpeed:0.82,asLimit:0,targetCount:1,attackCount:1,armorPierceBonus:5,critFormula:'일반',weaponAttack:943.52}),
-  Object.freeze({id:'prodZeusBomber',label:'제우스 폭격기',grade:'히든',raceGroup:'테메',quantityEnabled:true,quantityId:'dpsQtyZeusBomber',weaponSpeed:0.7,asLimit:0,targetCount:1,attackCount:1,armorPierceBonus:10,critFormula:'일반',weaponAttack:1044.61}),
-  Object.freeze({id:'prodAugustradPride',label:'아우구스트그라드의 자랑',grade:'히든',raceGroup:'테메',quantityEnabled:true,quantityId:'dpsQtyAugustradPride',weaponSpeed:1.35,asLimit:0,targetCount:1,attackCount:1,armorPierceBonus:5,critFormula:'일반',weaponAttack:1617.46}),
-  Object.freeze({id:'prodMalash',label:'말라쉬',grade:'히든',raceGroup:'프바',quantityEnabled:true,quantityId:'dpsQtyMalash',weaponSpeed:1.5,asLimit:0,targetCount:1,attackCount:1,armorPierceBonus:5,critFormula:'일반',weaponAttack:1280.48}),
-  Object.freeze({id:'prodTalDarimMothership',label:'탈다림 모선',grade:'히든',raceGroup:'프메',quantityEnabled:true,quantityId:'dpsQtyTalDarimMothership',weaponSpeed:1.5,asLimit:0.175,targetCount:1,attackCount:3,armorPierceBonus:5,critFormula:'일반',weaponAttack:640.24}),
-  Object.freeze({id:'prodKhaydarinMonolith',label:'케이다린 초석',grade:'히든',raceGroup:'프메',quantityEnabled:true,quantityId:'dpsQtyKhaydarinMonolith',weaponSpeed:3,asLimit:0,targetCount:1,attackCount:1,armorPierceBonus:0,critFormula:'일반',weaponAttack:667.200}),
-  Object.freeze({id:'prodPurifierSentinel',label:'정화자 감시자',grade:'히든',raceGroup:'프메',quantityEnabled:true,quantityId:'dpsQtyPurifierSentinel',weaponSpeed:2,asLimit:0,targetCount:1,attackCount:1,armorPierceBonus:15,critFormula:'일반',weaponAttack:2257.710}),
-  Object.freeze({id:'prodSkyLord',label:'하늘군주',grade:'히든',raceGroup:'프메',quantityEnabled:true,quantityId:'dpsQtySkyLord',weaponSpeed:1.25,asLimit:0,targetCount:1,attackCount:2,armorPierceBonus:10,critFormula:'일반',weaponAttack:842.430}),
-  Object.freeze({id:'prodDehaka',label:'데하카',grade:'히든',raceGroup:'저그',quantityEnabled:true,quantityId:'dpsQtyDehaka',weaponSpeed:0.7,asLimit:0,targetCount:1,attackCount:1,armorPierceBonus:15,conditionalArmorPierce:Object.freeze({inputId:'xerusShard',minimum:3000,bonus:10}),critFormula:'일반',weaponAttack:842.425}),
-  Object.freeze({id:'prodAleksander',label:'알렉산더',grade:'히든',raceGroup:'저그',quantityEnabled:true,quantityId:'dpsQtyAleksander',weaponSpeed:1.45,asLimit:0.2,targetCount:1,attackCount:4,armorPierceBonus:10,critFormula:'일반',weaponAttack:485.238}),
-  Object.freeze({id:'prodApocalisk',label:'아포칼리스크',grade:'히든',raceGroup:'저그',quantityEnabled:true,quantityId:'dpsQtyApocalisk',weaponSpeed:1.7,asLimit:0,targetCount:1,attackCount:1,armorPierceBonus:15,critFormula:'일반',weaponAttack:1725.300}),
-  Object.freeze({id:'prodHybridLof',label:'하이브리드로프',grade:'히든',raceGroup:'중립',quantityEnabled:true,quantityId:'dpsQtyHybridLof',weaponSpeed:1,asLimit:0,targetCount:1,attackCount:1,armorPierceBonus:10,critFormula:'일반',weaponAttack:876.120}),
-  Object.freeze({id:'prodNydusDestroyer',label:'땅굴 파괴자',grade:'히든',raceGroup:'중립',quantityEnabled:true,quantityId:'dpsQtyNydusDestroyer',weaponSpeed:1.39,asLimit:0,targetCount:1,attackCount:1,armorPierceBonus:25,critFormula:'일반',weaponAttack:2527.290}),
-  Object.freeze({id:'prodSarahKerrigan',label:'사라 케리건',grade:'히든',raceGroup:'혼종',quantityEnabled:true,quantityId:'dpsQtySarahKerrigan',weaponSpeed:1,asLimit:0,targetCount:1,attackCount:1,armorPierceBonus:0,critFormula:'일반',weaponAttack:1163.750}),
-  Object.freeze({id:'prodDestroyer',label:'파멸자',grade:'히든',raceGroup:'혼종',quantityEnabled:true,quantityId:'dpsQtyDestroyer',weaponSpeed:0.5,asLimit:0.5,targetCount:3,attackCount:1,armorPierceBonus:10,critFormula:'일반',weaponAttack:761.720}),
-  Object.freeze({id:'prodHybridTerminator',label:'혼종 종언자',grade:'히든',raceGroup:'혼종',quantityEnabled:true,quantityId:'dpsQtyHybridTerminator',weaponSpeed:0.9,asLimit:0,targetCount:1,attackCount:2,armorPierceBonus:15,critFormula:'일반',weaponAttack:1163.750}),
-  Object.freeze({id:'prodXelnagaCreature',label:'아몬의 젤나가 피조물',grade:'히든',raceGroup:'혼종',quantityEnabled:true,quantityId:'dpsQtyXelnagaCreature',weaponSpeed:0.55,asLimit:0,targetCount:1,attackCount:1,armorPierceBonus:15,critFormula:'일반',weaponAttack:1939.590}),
-  Object.freeze({id:'prodTyrannozor',label:'티라노조르',grade:'히든',raceGroup:'혼종',quantityEnabled:true,quantityId:'dpsQtyTyrannozor',weaponSpeed:2.5,asLimit:0,targetCount:1,attackCount:5,armorPierceBonus:15,critFormula:'일반',weaponAttack:902.780}),
-  Object.freeze({id:'prodHologramNemesis',label:'홀로그램 네메시스',grade:'히든',raceGroup:'혼종',quantityEnabled:true,quantityId:'dpsQtyHologramNemesis',weaponSpeed:1.25,asLimit:0,targetCount:1,attackCount:1,armorPierceBonus:5,critFormula:'일반',weaponAttack:1057.950}),
-  Object.freeze({id:'prodRaynor',label:'특공대 레이너',grade:'레전드',raceGroup:'테바',quantityEnabled:true,quantityId:'dpsQtyRaynor',weaponSpeed:1.3,asLimit:0,targetCount:1,attackCount:1,armorPierceBonus:0,critFormula:'일반',weaponAttack:545.89}),
-  Object.freeze({id:'prodGorgon',label:'고르곤 전투순양함',grade:'레전드',raceGroup:'테메',quantityEnabled:true,quantityId:'dpsQtyGorgon',weaponSpeed:1.25,asLimit:0,targetCount:1,attackCount:1,armorPierceBonus:0,critFormula:'일반',weaponAttack:977.21}),
-  Object.freeze({id:'prodSelendis',label:'셀렌디스',grade:'레전드',raceGroup:'프메',quantityEnabled:true,quantityId:'dpsQtySelendis',weaponSpeed:1.3,asLimit:0,targetCount:1,attackCount:1,armorPierceBonus:0,critFormula:'일반',weaponAttack:1010.91}),
-  Object.freeze({id:'prodPrimalKerrigan',label:'원시 케리건',grade:'레전드',raceGroup:'저그',quantityEnabled:true,quantityId:'dpsQtyPrimalKerrigan',weaponSpeed:1.65,asLimit:0,targetCount:1,attackCount:1,armorPierceBonus:0,critFormula:'일반',weaponAttack:707.64}),
-  Object.freeze({id:'prodArtifact',label:'유물',grade:'버프',raceGroup:'버프',isArtifact:true,weaponSpeed:0,asLimit:0,targetCount:0,attackCount:0,armorPierceBonus:0,critFormula:'일반',weaponAttack:802.5})
-]);
-
-/* ===== 07. 유물 DPS 계산 고정 데이터 ===== */
+/* ===== 06. 유물 DPS 계산 고정 데이터 ===== */
 const ARTIFACT_DPS_CONFIG=Object.freeze({
   energyRegenTraitRow:79,
   energyRegenRate:2.5
 });
 
-/* ===== 08. 고정 데이터 공개 API ===== */
+/* ===== 07. 고정 데이터 공개 API ===== */
 window.DPS_DATA=Object.freeze({
   DIFF,
   PEN_TD,
@@ -322,10 +280,5 @@ window.DPS_DATA=Object.freeze({
   SOUL_ROWS,
   MONTHLY_RUNE_INFO,
   RAW_JEWEL_DATA,
-  DPS_BASE_UNIT_ALL_ID,
-  DPS_BASE_UNIT_ARTIFACT_ID,
-  DPS_BASE_UNIT_RACE_ORDER,
-  DPS_BASE_UNIT_GRADE_ORDER,
-  DPS_BASE_UNITS,
   ARTIFACT_DPS_CONFIG
 });
