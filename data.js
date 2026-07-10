@@ -245,28 +245,13 @@ window.RAW_JEWEL_DATA=RAW_JEWEL_DATA;
 
 window.MONTHLY_RUNE_INFO=MONTHLY_RUNE_INFO;
 
-
-/* ===== 06. DPS 기준 유닛 고정 데이터 ===== */
-const DPS_BASE_UNIT_ALL_ID='all';
-const DPS_BASE_UNIT_ARTIFACT_ID='prodArtifact';
-const DPS_BASE_UNITS=Object.freeze([
-  Object.freeze({id:'prodNova',weaponSpeed:0.63,asLimit:0,targetCount:1,attackCount:2,armorPierceBonus:20,critFormula:'일반',weaponAttack:1112.00,raceUpgradeLabel:'테바 / 20업 기준'}),
-  Object.freeze({id:'prodTeratron',weaponSpeed:0.5,asLimit:0,targetCount:1,attackCount:1,armorPierceBonus:20,critFormula:'일반',weaponAttack:1819.65,raceUpgradeLabel:'테메 / 20업 기준'}),
-  Object.freeze({id:'prodAmon',weaponSpeed:0.5,asLimit:0,targetCount:1,attackCount:2,armorPierceBonus:15,critFormula:'일반',weaponAttack:1819.65,raceUpgradeLabel:'프바 / 20업 기준'}),
-  Object.freeze({id:'prodAdun',weaponSpeed:0.5,asLimit:0.5,targetCount:1,attackCount:2,armorPierceBonus:30,critFormula:'일반',weaponAttack:1482.68,raceUpgradeLabel:'프메 / 20업 기준'}),
-  Object.freeze({id:'prodKerrigan',weaponSpeed:0.5,asLimit:0,targetCount:5,attackCount:1,armorPierceBonus:15,critFormula:'일반',weaponAttack:673.940,raceUpgradeLabel:'저그 / 20업 기준'}),
-  Object.freeze({id:'prodOvermind',weaponSpeed:2.67,asLimit:0,targetCount:1,attackCount:4,armorPierceBonus:15,critFormula:'일반',weaponAttack:977.210,raceUpgradeLabel:'중립 / 20업 기준'}),
-  Object.freeze({id:'prodNarud',weaponSpeed:0.43,asLimit:0,targetCount:1,attackCount:2,armorPierceBonus:30,critFormula:'일반',weaponAttack:1609.560,raceUpgradeLabel:'테바·프바·저그 / 60업 기준'}),
-  Object.freeze({id:'prodArtifact',isArtifact:true,weaponSpeed:0,asLimit:0,targetCount:0,attackCount:0,armorPierceBonus:0,critFormula:'일반',weaponAttack:802.5,raceUpgradeLabel:'종족 전체 / 100업 기준'})
-]);
-
-/* ===== 07. 유물 DPS 계산 고정 데이터 ===== */
+/* ===== 06. 유물 DPS 계산 고정 데이터 ===== */
 const ARTIFACT_DPS_CONFIG=Object.freeze({
   energyRegenTraitRow:79,
   energyRegenRate:2.5
 });
 
-/* ===== 08. 고정 데이터 공개 API ===== */
+/* ===== 07. 고정 데이터 공개 API ===== */
 window.DPS_DATA=Object.freeze({
   DIFF,
   PEN_TD,
@@ -295,8 +280,5 @@ window.DPS_DATA=Object.freeze({
   SOUL_ROWS,
   MONTHLY_RUNE_INFO,
   RAW_JEWEL_DATA,
-  DPS_BASE_UNIT_ALL_ID,
-  DPS_BASE_UNIT_ARTIFACT_ID,
-  DPS_BASE_UNITS,
   ARTIFACT_DPS_CONFIG
 });

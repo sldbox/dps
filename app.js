@@ -336,21 +336,17 @@ function currentArtifactDpsResult(){
 }
 function renderDpsSummary(s){
   updateDpsContextSummary();
-  syncDpsBaseUnitControl();
   const artifactView=isArtifactDpsViewEnabled();
   setText('dpsMainLabel', artifactView ? '유물 DPS' : 'DPS');
   if(shouldHideDpsForRound()){
     setText('dpsVal', '—');
-    renderDpsBaseUnitResults(s,true);
     syncDpsMinDpsInputs();
     updateDpsRiskViews(NaN);
     if(isDpsTableOpen()) renderDpsTablePanelContent();
     return;
   }
-  const artifactResult=artifactView ? currentArtifactDpsResult() : null;
-  const displayDps=artifactView ? artifactResult.dps : s.M19;
+  const displayDps=artifactView ? currentArtifactDpsResult().dps : s.M19;
   setText('dpsVal', Number.isFinite(displayDps) ? displayDps.toFixed(2) : '—');
-  renderDpsBaseUnitResults(s,false);
   syncDpsMinDpsInputs();
   updateDpsRiskViews(displayDps);
   if(isDpsTableOpen()) renderDpsTablePanelContent();
@@ -374,12 +370,9 @@ const STAT_COMPARE_ROWS=[
   ['MCP', s=>fmt(s.M18,0), s=>fmt(s.M18,0)]
 ];
 function renderStatSummary(s){
-  const artifactView=isArtifactDpsViewEnabled();
   STAT_COMPARE_ROWS.forEach(([key,display,actual])=>{
-    const displayText=artifactView && key==='PIERCE' ? '0%' : display(s);
-    const actualText=artifactView && key==='PIERCE' ? '0%' : actual(s);
-    setText('s'+key+'Display', displayText);
-    setText('s'+key+'Actual', actualText);
+    setText('s'+key+'Display', display(s));
+    setText('s'+key+'Actual', actual(s));
   });
   renderDamageBoardRoundTime(s);
 }
@@ -528,30 +521,10 @@ function bindBusCutEvents(){
     if(e.key==='Enter' || e.key===' ') activateXpCutRowFeedback(e.target,e);
   });
 }
-/* 데미지 보드: 유물 DPS 표시 상태 */
+/* 데미지 보드: 성소스킬 / 유물 DPS 표시 전환 */
 function isArtifactDpsViewEnabled(){
   const toggle=$('artifactDpsViewToggle');
   return toggle?.getAttribute('aria-checked')==='true';
-}
-function setArtifactDpsViewEnabled(enabled){
-  const toggle=$('artifactDpsViewToggle');
-  if(!toggle) return;
-  toggle.setAttribute('aria-checked', enabled ? 'true' : 'false');
-  syncArtifactDpsViewSwitch();
-}
-function syncArtifactDpsViewSwitch(){
-  const toggle=$('artifactDpsViewToggle');
-  if(!toggle) return;
-  const active=isArtifactDpsViewEnabled();
-  toggle.classList.toggle('is-active', active);
-  toggle.setAttribute('aria-checked', active ? 'true' : 'false');
-}
-function setArtifactDpsViewFromSwitch(enabled){
-  if(!enabled && dpsBaseUnitValueIds().includes(dpsBaseUnitArtifactId())){
-    setDpsBaseUnitStoredValue('', true);
-    return;
-  }
-  setArtifactDpsViewEnabled(enabled);
 }
 function withArtifactDpsViewBuffApplied(callback){
   const artifactEl=$('prodArtifact');
@@ -563,6 +536,13 @@ function withArtifactDpsViewBuffApplied(callback){
   }finally{
     artifactEl.checked=checked;
   }
+}
+function syncArtifactDpsViewSwitch(){
+  const toggle=$('artifactDpsViewToggle');
+  if(!toggle) return;
+  const active=isArtifactDpsViewEnabled();
+  toggle.classList.toggle('is-active', active);
+  toggle.setAttribute('aria-checked', active ? 'true' : 'false');
 }
 function renderDamageBoardView(){
   syncArtifactDpsViewSwitch();
@@ -1086,13 +1066,10 @@ function formatCompareDiff(diff){
   const value=excelCompareRound(diff,6);
   return `${value>0?'+':''}${parseFloat(value.toFixed(6)).toLocaleString('ko-KR')}`;
 }
-function escapeHtml(value){
+function escapeCompareHtml(value){
   return String(value??'').replace(/[&<>"']/g,char=>({
     '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
   }[char]));
-}
-function escapeCompareHtml(value){
-  return escapeHtml(value);
 }
 const COMPARE_SPECIAL_RUNE_LABELS={ap:'마법공격력',ua:'유닛 가속',td:'총 데미지',harmony:'총 데미지 & 유닛 가속','td&ua':'총 데미지 & 유닛 가속','td＆ua':'총 데미지 & 유닛 가속'};
 function compareNormalizedText(value){
@@ -1192,7 +1169,6 @@ const FIELD_REGISTRY={
   penance:{kind:'기본 정보',name:'고행 단계',compare:true,save:true,excel:'number'},
   titleTdBonus:{kind:'기본 정보',name:'타이틀 총 데미지',compare:true,save:true,excel:'number'},
   dpsTableMinDps:{kind:'기본 정보',name:'도전할 최소 DPS',compare:true,save:true,excel:'number'},
-  dpsBaseUnits:{kind:'기본 정보',name:'DPS 기준 유닛',compare:true,save:true},
   erosionStack:{kind:'기본 정보',name:'침식 스텍',compare:true,save:true,excel:'number'},
   jewelErosionRes:{kind:'기본 정보',name:'심연 내성',compare:true,save:true,excel:'number'},
   aprRuneNormal:{kind:'룬효과 버프',name:'4월 일반',compare:true,save:true},
@@ -1270,144 +1246,6 @@ const EXCEL_NUMERIC_INPUT_IDS=new Set(Object.entries(FIELD_REGISTRY).filter(([,f
 const EXCEL_SELECT_INPUT_IDS=new Set(Object.entries(FIELD_REGISTRY).filter(([,field])=>field.excel==='select').map(([id])=>id));
 const COMPARE_VALUE_META=Object.fromEntries(Object.entries(FIELD_REGISTRY).filter(([,field])=>field.compare).map(([id,field])=>[id,{kind:field.kind,name:field.name}]));
 const USER_STATE_VALUE_IDS=new Set(fieldEntriesByFlag('save'));
-const DPS_BASE_UNIT_NONE_LABEL='선택 안함';
-function dpsBaseUnitValueIds(value=vs('dpsBaseUnits')){
-  return dpsBaseUnitSelectionIds(value);
-}
-function dpsBaseUnitLabel(id){
-  return FIELD_REGISTRY[id]?.name || String(id || '');
-}
-function dpsBaseUnitSummaryLabel(value=vs('dpsBaseUnits')){
-  const ids=dpsBaseUnitValueIds(value);
-  if(!ids.length) return DPS_BASE_UNIT_NONE_LABEL;
-  if(ids.includes(dpsBaseUnitAllId())) return '전체 유닛';
-  if(ids.length===1) return dpsBaseUnitLabel(ids[0]);
-  return `${dpsBaseUnitLabel(ids[0])} 외 ${ids.length-1}`;
-}
-function dpsBaseUnitOptionHtml(id, label, normalized){
-  const ids=dpsBaseUnitValueIds(normalized);
-  const active=!id ? ids.length===0 : ids.includes(id);
-  return `<button type="button" class="dps-base-unit-option${active ? ' is-active' : ''}" data-dps-base-unit-option="${escapeHtml(id)}" role="option" aria-selected="${active ? 'true' : 'false'}">${escapeHtml(label)}</button>`;
-}
-function renderDpsBaseUnitMenu(normalized=''){
-  const menu=$('dpsBaseUnitMenu');
-  if(!menu) return;
-  const options=[dpsBaseUnitOptionHtml('', DPS_BASE_UNIT_NONE_LABEL, normalized)]
-    .concat(dpsBaseUnitList().map(unit=>dpsBaseUnitOptionHtml(unit.id, dpsBaseUnitLabel(unit.id), normalized)))
-    .concat(dpsBaseUnitOptionHtml(dpsBaseUnitAllId(), '전체 유닛', normalized));
-  const html=options.join('');
-  if(menu.innerHTML!==html) menu.innerHTML=html;
-}
-function setDpsBaseUnitMenuOpen(open){
-  const menu=$('dpsBaseUnitMenu');
-  const trigger=$('dpsBaseUnitTrigger');
-  if(!menu || !trigger) return;
-  menu.hidden=!open;
-  trigger.setAttribute('aria-expanded', open ? 'true' : 'false');
-}
-function closeDpsBaseUnitMenu(){
-  setDpsBaseUnitMenuOpen(false);
-}
-function setDpsBaseUnitStoredValue(value, notify=true){
-  const input=$('dpsBaseUnits');
-  if(!input) return;
-  const previous=normalizeDpsBaseUnitsValue(input.value || '');
-  const normalized=normalizeDpsBaseUnitsValue(value);
-  input.value=normalized;
-  if(normalized===dpsBaseUnitArtifactId()) setArtifactDpsViewEnabled(true);
-  else if(previous===dpsBaseUnitArtifactId()) setArtifactDpsViewEnabled(false);
-  syncDpsBaseUnitControl();
-  if(notify){
-    input.dispatchEvent(new Event('input',{bubbles:true}));
-    input.dispatchEvent(new Event('change',{bubbles:true}));
-  }
-}
-function toggleDpsBaseUnitOption(id){
-  const allId=dpsBaseUnitAllId();
-  const artifactId=dpsBaseUnitArtifactId();
-  const target=String(id || '');
-  const current=dpsBaseUnitValueIds();
-  if(!target){
-    setDpsBaseUnitStoredValue('');
-    return;
-  }
-  if(target===artifactId){
-    setDpsBaseUnitStoredValue(current.includes(artifactId) ? '' : artifactId);
-    return;
-  }
-  if(target===allId){
-    setDpsBaseUnitStoredValue(current.includes(allId) ? '' : allId);
-    return;
-  }
-  const baseCurrent=current.filter(item=>item!==allId && item!==artifactId);
-  const next=baseCurrent.includes(target) ? baseCurrent.filter(item=>item!==target) : baseCurrent.concat(target);
-  setDpsBaseUnitStoredValue(next);
-}
-function syncDpsBaseUnitControl(){
-  const input=$('dpsBaseUnits');
-  const normalized=normalizeDpsBaseUnitsValue(input?.value || '');
-  if(input && input.value!==normalized) input.value=normalized;
-  if(normalized===dpsBaseUnitArtifactId()) setArtifactDpsViewEnabled(true);
-  setText('dpsBaseUnitTriggerLabel', dpsBaseUnitSummaryLabel(normalized));
-  setText('dpsContextBaseUnit', dpsBaseUnitSummaryLabel(normalized));
-  renderDpsBaseUnitMenu(normalized);
-}
-function bindDpsBaseUnitControlEvents(){
-  if(document.documentElement.dataset.dpsBaseUnitControlBound==='1') return;
-  document.documentElement.dataset.dpsBaseUnitControlBound='1';
-  document.addEventListener('click', e=>{
-    const trigger=e.target?.closest?.('#dpsBaseUnitTrigger');
-    if(trigger){
-      e.preventDefault();
-      const menu=$('dpsBaseUnitMenu');
-      setDpsBaseUnitMenuOpen(!!menu?.hidden);
-      return;
-    }
-    const option=e.target?.closest?.('[data-dps-base-unit-option]');
-    if(option){
-      e.preventDefault();
-      toggleDpsBaseUnitOption(option.getAttribute('data-dps-base-unit-option') || '');
-      return;
-    }
-    const control=qs('[data-dps-base-unit-control]');
-    if(control && !control.contains(e.target)) closeDpsBaseUnitMenu();
-  }, true);
-  document.addEventListener('keydown', e=>{
-    if(e.key==='Escape') closeDpsBaseUnitMenu();
-  }, true);
-}
-function dpsBaseUnitRaceUpgradeLabel(unitId){
-  return dpsBaseUnitById(unitId)?.raceUpgradeLabel || '20업 기준';
-}
-function dpsBaseUnitPercentText(value){
-  const num=Number(value);
-  if(!Number.isFinite(num)) return '—';
-  const fixed=Number.isInteger(num) ? String(num) : num.toFixed(1).replace(/\.0$/, '');
-  return `${fixed}%`;
-}
-function dpsBaseUnitPierceText(item){
-  return dpsBaseUnitById(item?.unitId)?.isArtifact ? '0%' : dpsBaseUnitPercentText(item?.excelPierce);
-}
-function dpsBaseUnitDpsText(item, artifactDps=NaN){
-  const value=dpsBaseUnitById(item?.unitId)?.isArtifact && Number.isFinite(artifactDps) ? artifactDps : Number(item?.M19);
-  return Number.isFinite(value) ? value.toFixed(2) : '—';
-}
-function renderDpsBaseUnitResults(s, hidden=false){
-  const el=$('dpsBaseUnitResults');
-  if(!el) return;
-  const info=s?.dpsBaseUnit;
-  const results=Array.isArray(info?.results) ? info.results : [];
-  if(hidden || !info?.isActive || !results.length){
-    el.hidden=true;
-    el.innerHTML='';
-    return;
-  }
-  const hasArtifact=results.some(item=>dpsBaseUnitById(item.unitId)?.isArtifact);
-  const artifactDps=hasArtifact && typeof currentArtifactDpsResult==='function' ? Number(currentArtifactDpsResult()?.dps) : NaN;
-  const rows=results.map(item=>`<div class="dps-base-unit-result-row" role="row"><span class="dps-base-unit-result-name">${escapeHtml(dpsBaseUnitLabel(item.unitId))}</span><span class="dps-base-unit-result-pierce">${escapeHtml(dpsBaseUnitPierceText(item))}</span><span class="dps-base-unit-result-race">${escapeHtml(dpsBaseUnitRaceUpgradeLabel(item.unitId))}</span><b class="dps-base-unit-result-dps">${dpsBaseUnitDpsText(item, artifactDps)}</b></div>`).join('');
-  el.innerHTML=`<div class="dps-base-unit-result-table" role="table" aria-label="DPS 기준 유닛 상세"><div class="dps-base-unit-result-row dps-base-unit-result-labels" role="row"><span class="dps-base-unit-result-name">선택 유닛명</span><span class="dps-base-unit-result-pierce">방어력 관통</span><span class="dps-base-unit-result-race">종족업</span><span class="dps-base-unit-result-dps">DPS</span></div>${rows}</div>`;
-  el.hidden=false;
-}
 const ENCHANT_COMPARE_ITEMS=[['enchAD','공격력'],['enchCRI','크리티컬 확률'],['enchUA','유닛 가속'],['enchTD','총 데미지'],['enchSR','실드 감소'],['enchHR','체력 감소']];
 const LATEST_SPEC_ADDITIONAL_STRUCTURE_MESSAGE='불러온 엑셀파일은 5.4392 버전과 구조가 달라 프리셋 분석 기능을 사용할 수 없습니다.';
 const LATEST_SPEC_ADDITIONAL_LABELS=[['Q36','AD'],['Q37','AS'],['Q38','CD'],['Q39','CRI'],['Q40','AP'],['Q41','TD'],['Q42','UA']];
@@ -2720,7 +2558,7 @@ const TRAIT_PRESET_SCHEMA_VERSION=2;
 const TRAIT_PRESET_NAME_PLACEHOLDER='예시) 더파300라버스';
 const TRAIT_PRESET_UNSUPPORTED_OLD_MESSAGE='구버전 프리셋은 더 이상 지원하지 않습니다.\n호환 엑셀버전: 5.4392\n엑셀 파일을 다시 불러온 뒤, 새 특성 프리셋을 생성해 주세요.';
 const TRAIT_PRESET_SYNC_EXCLUDED_VALUE_IDS=new Set([
-  'diff','penance','round','challengeTowerFloor','soloMode','coopMode','coopPlayers','coopPassenger2Dr','coopPassenger3Dr','team','pbless','spBankApply','dpsBaseUnits',
+  'diff','penance','round','challengeTowerFloor','soloMode','coopMode','coopPlayers','coopPassenger2Dr','coopPassenger3Dr','team','pbless','spBankApply',
   'overEnhance','repairEnhance','enhanceMaster',
   'dailyCouponBuff','shareUserBuff','unitUniqueBuff','basePierceBuff',
   'prodArtifact','prodNova','prodTeratron','prodAmon','prodAdun','prodKerrigan','prodOvermind','prodNarud',
@@ -2804,7 +2642,6 @@ function readElementValue(el){
   if(el.id==='round') return targetRoundStoredValue();
   if(el.id==='challengeTowerFloor') return challengeTowerFloorStoredValue();
   if(el.id==='penance') return penanceStoredValue();
-  if(el.id==='dpsBaseUnits') return normalizeDpsBaseUnitsValue(el.value);
   if(SHARD_VALUE_IDS.has(el.id)) return normalizeShardStorageValue(el.value);
   if(NORMALIZED_MONEY_VALUE_IDS.has(el.id)) return normalizeMoneyStorageValue(el.value, el.id);
   return el.value;
@@ -2836,7 +2673,6 @@ function writeElementValue(el, value){
     value=normalizePowerBlessRawValue(value);
     syncPowerBlessOptions();
   }
-  if(el.id==='dpsBaseUnits') value=normalizeDpsBaseUnitsValue(value);
   if(SHARD_VALUE_IDS.has(el.id)) value=normalizeShardStorageValue(value);
   if(NORMALIZED_MONEY_VALUE_IDS.has(el.id)) value=normalizeMoneyStorageValue(value, el.id);
   if(el.type==='checkbox') el.checked=!!value;
@@ -2952,7 +2788,6 @@ function sanitizeSavedValues(values){
     if(hasOwn(out,id)) out[id]=normalizeDecimalDisplayValue(out[id]);
   });
   if(hasOwn(out,'spBankApply')) out.spBankApply=normalizeSpBankApplyValue(out.spBankApply);
-  out.dpsBaseUnits=normalizeDpsBaseUnitsValue(out.dpsBaseUnits ?? '');
   delete out['spBank'+'BudgetMode'];
   if(hasOwn(out,'runeChoiceType') || hasOwn(out,'runeChoiceValue')){
     const normalizedRune=normalizeRuneChoiceValues(out);
@@ -3063,7 +2898,6 @@ function applyStateObject(data){
     applyZeroScoreState(data.zeroScore ? normalizeZeroScoreState(data.zeroScore) : data.zeroScore);
     syncEnchantCodeFromInputs(true);
     syncControlDisplays();
-    syncDpsBaseUnitControl();
     recalc();
   }finally{ storageState.isLoading=false; }
 }
@@ -4752,7 +4586,7 @@ function bindArtifactDpsViewEvents(){
     const toggle=e.target?.closest?.('#artifactDpsViewToggle');
     if(!toggle) return;
     e.preventDefault();
-    setArtifactDpsViewFromSwitch(!isArtifactDpsViewEnabled());
+    toggle.setAttribute('aria-checked', isArtifactDpsViewEnabled() ? 'false' : 'true');
     requestAppUpdate();
   }, true);
 }
@@ -4762,7 +4596,7 @@ function bindAppEvents(){
   [
     bindFontScaleViewportGuard, bindActionEvents, bindBusCutEvents, bindTraitHoldEvents, bindTraitInputEvents,
     bindDpsTableEvents, bindExcelCompareEvents, bindTraitPresetEvents, bindMonthRuneEvents, bindJewelImageEvents,
-    bindConvenienceMenuEvents, bindDpsStandardHelpEvents, bindZeroScoreCalculator, bindTraitLimitDisplayEvents, bindDpsBaseUnitControlEvents, bindReactiveInputs,
+    bindConvenienceMenuEvents, bindDpsStandardHelpEvents, bindZeroScoreCalculator, bindTraitLimitDisplayEvents, bindReactiveInputs,
     bindButtonPressFeedback, bindArtifactDpsViewEvents, bindAppTitleVersion
   ].forEach(fn=>fn());
 }
@@ -4773,7 +4607,6 @@ function initApp(){
   syncEnchantCodeFromInputs(true);
   syncSelectButtons();
   syncBuffChoiceButtons();
-  syncDpsBaseUnitControl();
   syncExclusiveRuneOptions();
   updateZeroScoreCalculator();
   formatAllMoneyInputs();
