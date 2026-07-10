@@ -5,18 +5,18 @@
 <meta name="google-site-verification" content="RTuDWbMdnKgbpRpl05eXh9epFwWRSxju4NOl8OtjMsI" />
 <!-- 00. 빌드 버전 / 캐시 무효화 / 원격 이미지 경로 -->
 <script>
-window.APP_VERSION = "2607100000";
-window.DPS_BUILD_VERSION = "2607100000";
+window.APP_VERSION = "260710-2000";
+window.DPS_BUILD_VERSION = "260710-2000";
 window.DPS_PREVIEW_FRESH = new URLSearchParams(window.location.search).get('fresh') || '';
 window.DPS_ASSET_VERSIONS = {
-  "data.js": "2607100000",
-  "calc.js": "2607100000",
-  "app.js": "2607100000",
-  "modal.js": "2607100000",
-  "responsive.js": "2607100000",
-  "style.css": "2607100000",
-  "icon.png": "2607100000",
-  "logo.png": "2607100000"
+  "data.js": "260710-2000",
+  "calc.js": "260710-2000",
+  "app.js": "260710-2000",
+  "modal.js": "260710-2000",
+  "responsive.js": "260710-2000",
+  "style.css": "260710-2000",
+  "icon.png": "260710-2000",
+  "logo.png": "260710-2000"
 };
 window.dpsAssetVersion = function(key){
   var versions = window.DPS_ASSET_VERSIONS || {};
@@ -191,14 +191,14 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 <meta content="https://sldbox.github.io/dps/" property="og:url"/>
 <meta content="개복디 특성 계산기" property="og:title"/>
 <meta content="특성 투자, 재화 사용량, 표기 스탯, 총데미지, DPS를 한 번에 계산할 수 있는 개복디 전용 계산기입니다." property="og:description"/>
-<meta content="https://sldbox.github.io/dps/logo.png?v=2607100000" property="og:image"/>
-<meta content="https://sldbox.github.io/dps/logo.png?v=2607100000" property="og:image:secure_url"/>
+<meta content="https://sldbox.github.io/dps/logo.png?v=260710-2000" property="og:image"/>
+<meta content="https://sldbox.github.io/dps/logo.png?v=260710-2000" property="og:image:secure_url"/>
 <meta content="image/png" property="og:image:type"/>
 <meta content="개복디 특성 계산기 로고" property="og:image:alt"/>
 <meta content="summary_large_image" name="twitter:card"/>
 <meta content="개복디 특성 계산기" name="twitter:title"/>
 <meta content="특성 투자, 재화 사용량, 표기 스탯, 총데미지, DPS를 한 번에 계산할 수 있는 개복디 전용 계산기입니다." name="twitter:description"/>
-<meta content="https://sldbox.github.io/dps/logo.png?v=2607100000" name="twitter:image"/>
+<meta content="https://sldbox.github.io/dps/logo.png?v=260710-2000" name="twitter:image"/>
 <meta content="개복디 특성 계산기 로고" name="twitter:image:alt"/>
 <link href="https://cdn.jsdelivr.net" rel="preconnect"/>
 <link crossorigin="" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" rel="stylesheet"/>
@@ -339,6 +339,7 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 <input id="ep" type="hidden" value="0"/>
 </div>
 <div class="xp-sp-panel basic-info-panel" data-basic-info-side="right">
+
 <div class="basic-info-row" data-basic-row="difficulty"><label for="diff">난이도</label><select id="diff">
 <option selected="">Practice</option><option>Very Easy</option><option>Easy</option>
 <option>Normal</option><option>Hard</option><option>Very Hard</option>
@@ -741,19 +742,22 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 <div class="tp-body" id="traitBody"></div>
 </div>
 </div>
-<!-- 04-3. 중앙 결과 패널: DPS / 스탯 / 데미지 보드 -->
+<!-- 04-3. 중앙 결과 패널: 데미지 보드 / 스탯 / 유닛 보드 -->
 <div class="col-mid">
 <div class="data-card stat-dps-card">
-<div class="section-title damage-board-title"><span class="damage-board-heading">데미지 보드 <button class="damage-board-help-btn" id="dpsStandardHelpToggle" data-action="toggleDpsStandardHelp" type="button" aria-expanded="false" aria-controls="dpsStandardHelpBubble" aria-label="DPS 계산 기준 보기">?</button></span><div class="dps-standard-popover" id="dpsStandardHelpBubble" role="tooltip" hidden><b>DPS 계산 기준</b><dl><div><dt>개인</dt><dd>내 스펙 × 버프 × 피해보정 × 크리/공속 보정 × 적 방어력 × 적 체력·실드·물량 ÷ 라운드 시간</dd></div><div><dt>협동</dt><dd>내 스펙 × 2P &amp; 3P 모든 스펙 0 × 버프 × 피해보정 × 크리/공속 보정 × 적 방어력 × 적 체력·실드·물량(2인/3인 물량 반영) ÷ 라운드 시간<br/>승객 2P &amp; 3P 방어력 감소 0 / 15 / 25 / 50 / 60 선택 계산 가능</dd></div><div><dt>도전의탑</dt><dd>내 스펙 × 버프 × 피해보정 × 크리/공속 보정 × 적 방어력 × 적 체력·실드·물량 ÷ 라운드 시간(RP 최대 8초 반영)</dd></div></dl></div><div class="artifact-dps-switch-wrap" aria-label="유물 DPS 표시 전환"><span class="artifact-dps-switch-label">유물 DPS</span><button class="artifact-dps-switch" id="artifactDpsViewToggle" type="button" role="switch" aria-checked="false"><span class="artifact-dps-switch-text artifact-dps-switch-off">OFF</span><span class="artifact-dps-switch-text artifact-dps-switch-on">ON</span><i aria-hidden="true"></i></button></div></div>
+<div class="section-title damage-board-title"><span class="damage-board-heading">데미지 보드 <button class="damage-board-help-btn" id="dpsStandardHelpToggle" data-action="toggleDpsStandardHelp" type="button" aria-expanded="false" aria-controls="dpsStandardHelpBubble" aria-label="DPS 계산 기준 보기">?</button></span><div class="dps-standard-popover" id="dpsStandardHelpBubble" role="tooltip" hidden><b>DPS 계산 기준</b><dl><div><dt>유닛 미선택 기준 DPS 계산식</dt><dd>아래 개인/협동/도전의탑 계산식을 사용합니다.</dd></div><div><dt>개인</dt><dd>내 스펙 × 버프 × 피해보정 × 크리/공속 보정 × 적 방어력 × 적 체력·실드·물량 ÷ 라운드 시간</dd></div><div><dt>협동</dt><dd>내 스펙 × 2P &amp; 3P 모든 스펙 0 × 버프 × 피해보정 × 크리/공속 보정 × 적 방어력 × 적 체력·실드·물량(2인/3인 물량 반영) ÷ 라운드 시간<br/>승객 2P &amp; 3P 방어력 감소 0 / 15 / 25 / 50 / 60 선택 계산 가능</dd></div><div><dt>도전의탑</dt><dd>내 스펙 × 버프 × 피해보정 × 크리/공속 보정 × 적 방어력 × 적 체력·실드·물량 ÷ 라운드 시간(RP 최대 8초 반영)</dd></div><div><dt>유닛 1개 이상 선택 기준 DPS 계산식</dt><dd>선택 유닛의 무기공격력, 무기속도, AS 한계점, 타겟 수, 공격 횟수, 방어력 관통을 반영해 유닛별 DPS를 계산합니다.<br/>수량형 유닛은 DPS 기여량만 수량만큼 반영하고, 방어력 관통은 유닛 종류별 1회만 적용합니다.<br/>복수 유닛 선택 시 유닛별 계산값의 평균 DPS를 표시합니다.</dd></div></dl></div><div class="artifact-dps-switch-wrap" aria-label="유물 DPS 표시 전환"><span class="artifact-dps-switch-label">유물 DPS</span><button class="artifact-dps-switch" id="artifactDpsViewToggle" type="button" role="switch" aria-checked="false"><span class="artifact-dps-switch-text artifact-dps-switch-off">OFF</span><span class="artifact-dps-switch-text artifact-dps-switch-on">ON</span><i aria-hidden="true"></i></button></div></div>
 <div class="dps-card stat-dps-summary" id="statDpsSummary">
 <div class="dps-lbl" id="dpsMainLabel">DPS</div>
 <div class="dps-num" id="dpsVal">—</div>
 <div class="dps-context-summary" id="dpsContextSummary" aria-label="현재 DPS 기준">
+<span data-label="계산 기준" id="dpsContextBaseUnit">스펙</span>
 <span data-label="모드" id="dpsContextMode">—</span>
 <span data-label="난이도" id="dpsContextDiff">—</span>
 <span data-label="고행" id="dpsContextPenance">—</span>
 <span data-label="라운드" id="dpsContextRound">—</span>
 </div>
+<div class="dps-base-unit-results" id="dpsBaseUnitResults" hidden></div>
+<div class="dps-risk-badge" id="dpsRiskBadge" aria-hidden="true">위험구간</div>
 </div>
 <div class="stat-grid stat-compare-grid">
 <div class="stat-row"><div class="sc-name">공격력</div><div class="sc-val" id="sADDisplay">—</div><div class="sc-val" id="sADActual">—</div></div>
@@ -777,7 +781,7 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 <div class="stat-row damage-board-round-time-row"><div class="sc-name">라운드 시간</div><div class="sc-val" id="enemyRoundTimeQuick">0초</div><div class="sc-val" id="enemyRpTimeQuick">RP 0초 / 최대 8초</div></div>
 </div>
 </div>
-
+<div class="dps-base-unit-panel" data-dps-base-unit-control><h3 class="dps-base-unit-panel-title"><span>유닛 보드</span><em>종족업 20 기준</em></h3><input id="dpsBaseUnits" type="hidden" value=""/><input id="dpsBaseUnitSlots" type="hidden" value=""/><div class="dps-base-unit-quantity-store" id="dpsBaseUnitQuantityStore" hidden></div><div class="dps-base-unit-slot-stack" id="dpsBaseUnitSlotStack" aria-label="유닛 보드"></div></div>
 
 </div></div>
 </div>
