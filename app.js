@@ -4429,20 +4429,6 @@ function toggleConvenienceMenu(){
   const {toggle, menu}=getConvenienceMenuParts();
   return toggleDisclosure(toggle, menu);
 }
-function getDpsStandardHelpParts(){
-  return {toggle:$('dpsStandardHelpToggle'), bubble:$('dpsStandardHelpBubble')};
-}
-function setDpsStandardHelpOpen(open){
-  const {toggle,bubble}=getDpsStandardHelpParts();
-  return setDisclosureOpen(toggle, bubble, open);
-}
-function closeDpsStandardHelp(){
-  setDpsStandardHelpOpen(false);
-}
-function toggleDpsStandardHelp(){
-  const {toggle,bubble}=getDpsStandardHelpParts();
-  return toggleDisclosure(toggle, bubble);
-}
 function bindConvenienceMenuEvents(){
   document.addEventListener('click', e=>{
     const { wrap }=getConvenienceMenuParts();
@@ -4455,15 +4441,6 @@ function bindConvenienceMenuEvents(){
   });
   document.addEventListener('keydown', e=>{
     if(e.key==='Escape') closeConvenienceMenu();
-  });
-}
-function bindDpsStandardHelpEvents(){
-  document.addEventListener('click', e=>{
-    if(e.target.closest('.damage-board-title')) return;
-    closeDpsStandardHelp();
-  });
-  document.addEventListener('keydown', e=>{
-    if(e.key==='Escape') closeDpsStandardHelp();
   });
 }
 const ACTION_HANDLERS={
@@ -4484,7 +4461,6 @@ const ACTION_HANDLERS={
   openDpsTable,
   openMonthRuneTab:(trigger)=>openMonthRune(trigger?.dataset?.monthRuneOpenTab || 'compare'),
   toggleConvenienceMenu,
-  toggleDpsStandardHelp,
   zeroRankTab:(trigger)=>setZeroRankTab(trigger),
   zeroScoreStar:(trigger)=>toggleZeroScoreStar(trigger),
   decreaseFont:()=>changeFontScale(-DPS_CONFIG.ui.fontScaleStep),
@@ -4592,7 +4568,7 @@ function bindAppEvents(){
   [
     bindFontScaleViewportGuard, bindActionEvents, bindBusCutEvents, bindTraitHoldEvents, bindTraitInputEvents,
     bindDpsTableEvents, bindExcelCompareEvents, bindTraitPresetEvents, bindMonthRuneEvents, bindJewelImageEvents,
-    bindConvenienceMenuEvents, bindDpsStandardHelpEvents, bindZeroScoreCalculator, bindTraitLimitDisplayEvents, bindReactiveInputs,
+    bindConvenienceMenuEvents, bindZeroScoreCalculator, bindTraitLimitDisplayEvents, bindReactiveInputs,
     bindButtonPressFeedback, bindArtifactDpsViewEvents, bindAppTitleVersion
   ].forEach(fn=>fn());
 }
