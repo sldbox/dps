@@ -35,7 +35,18 @@ const modalById = id => document.getElementById(id);
     return !!modalById(id)?.classList.contains('is-open');
   }
 
-  window.DpsModal = { createShell, setOpen, isOpen };
+  function syncModeClasses(dialog, modes, activeMode = '') {
+    const variants = Array.isArray(modes) ? modes : [];
+    variants.forEach(mode => {
+      dialog?.classList.remove(`is-dps-mode-${mode}`);
+      document.body?.classList.remove(`is-dps-mode-${mode}`);
+    });
+    if (!variants.includes(activeMode)) return;
+    dialog?.classList.add(`is-dps-mode-${activeMode}`);
+    document.body?.classList.add(`is-dps-mode-${activeMode}`);
+  }
+
+  window.DpsModal = Object.freeze({ createShell, setOpen, isOpen, syncModeClasses });
 })();
 
 
@@ -56,7 +67,7 @@ function syncFreshDpsTableMinDpsFocus(input){
   if(!fresh) return;
   fresh.focus({preventScroll:true});
   const pos=fresh.value.length;
-  try{ fresh.setSelectionRange(pos,pos); }catch(_e){}
+  if(typeof fresh.setSelectionRange==='function') fresh.setSelectionRange(pos,pos);
 }
 function buildCompareHeaderControls(){
   return `<div class="excel-compare-controls excel-compare-header-controls">
@@ -113,11 +124,7 @@ function selectMonthRuneModalTab(tabName){
   });
   renderMonthRuneModalHeader(next);
   if(next!=='dps'){
-    const dialog=modal.querySelector('.month-rune-modal');
-    DPS_MODAL_MODES.forEach(mode=>{
-      dialog?.classList.remove(`is-dps-mode-${mode}`);
-      document.body?.classList.remove(`is-dps-mode-${mode}`);
-    });
+    window.DpsModal?.syncModeClasses(modal.querySelector('.month-rune-modal'), DPS_MODAL_MODES);
   }
   if(next==='compare') syncComparePanelAfterRender();
   if(next==='dps') renderDpsTablePanelContent();
@@ -149,8 +156,9 @@ function openMonthRune(tabName='compare'){
   window.DpsModal.setOpen('monthRuneModal','month-rune-modal-open',true);
 }
 function closeMonthRune(){
+  const modal=$('monthRuneModal');
   window.DpsModal.setOpen('monthRuneModal','month-rune-modal-open',false);
-  DPS_MODAL_MODES.forEach(mode=>document.body?.classList.remove(`is-dps-mode-${mode}`));
+  window.DpsModal?.syncModeClasses(modal?.querySelector('.month-rune-modal'), DPS_MODAL_MODES);
 }
 function bindMonthRuneEvents(){
   document.addEventListener('click',e=>{

@@ -5,18 +5,19 @@
 <meta name="google-site-verification" content="RTuDWbMdnKgbpRpl05eXh9epFwWRSxju4NOl8OtjMsI" />
 <!-- 00. 빌드 버전 / 캐시 무효화 / 원격 이미지 경로 -->
 <script>
-window.APP_VERSION = "2607111500";
-window.DPS_BUILD_VERSION = "2607111500";
+window.APP_VERSION = "2607120000";
+window.DPS_BUILD_VERSION = "2607120000";
 window.DPS_PREVIEW_FRESH = new URLSearchParams(window.location.search).get('fresh') || '';
 window.DPS_ASSET_VERSIONS = {
-  "data.js": "2607111500",
-  "calc.js": "2607111500",
-  "app.js": "2607111500",
-  "modal.js": "2607111500",
-  "responsive.js": "2607111500",
-  "style.css": "2607111500",
-  "icon.png": "2607111500",
-  "logo.png": "2607111500"
+  "data.js": "2607120000",
+  "calc.js": "2607120000",
+  "app.js": "2607120000",
+  "modal.js": "2607120000",
+  "preset.js": "2607120000",
+  "responsive.js": "2607120000",
+  "style.css": "2607120000",
+  "icon.png": "2607120000",
+  "logo.png": "2607120000"
 };
 window.dpsAssetVersion = function(key){
   var versions = window.DPS_ASSET_VERSIONS || {};
@@ -66,12 +67,12 @@ window.dpsCheckIndexUpdate = function(){
     try{
       if(sessionStorage.getItem(key) === '1') return;
       sessionStorage.setItem(key, '1');
-    }catch(e){}
+    }catch(e){ window.DPS_LAST_INDEX_UPDATE_STORAGE_ERROR=e; }
     var next = new URL(window.location.href);
     next.searchParams.set('fresh', latest);
     next.searchParams.delete('__dps_check');
     window.location.replace(next.href);
-  }).catch(function(){});
+  }).catch(function(error){ window.DPS_LAST_INDEX_UPDATE_ERROR=error; });
 };
 setTimeout(window.dpsCheckIndexUpdate, 1200);
 window.addEventListener('focus', window.dpsCheckIndexUpdate);
@@ -114,7 +115,7 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
     area.style.left='-9999px';
     document.body.appendChild(area);
     area.select();
-    try{document.execCommand('copy');}catch(e){}
+    try{document.execCommand('copy');}catch(e){ window.DPS_LAST_BOOT_COPY_ERROR=e; }
     area.remove();
   }
   window.dpsCopyBootErrorCode=function(code, btn){
@@ -127,7 +128,7 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
   };
   window.dpsShowBootError=function(code, err){
     window.__dpsBootError=true;
-    try{window.DPS_LAST_BOOT_ERROR={code:code,error:err||'unknown',time:Date.now()};}catch(e){}
+    try{window.DPS_LAST_BOOT_ERROR={code:code,error:err||'unknown',time:Date.now()};}catch(e){ window.__dpsBootErrorRecordFailed=e; }
     try{
       document.documentElement.classList.add('dps-booting','dps-boot-error');
       var boot=document.getElementById('dpsBootScreen');
@@ -139,7 +140,7 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
         if(copyBtn) copyBtn.addEventListener('click',function(){ window.dpsCopyBootErrorCode(code, copyBtn); });
         if(reloadBtn) reloadBtn.addEventListener('click',function(){ window.location.reload(); });
       }
-    }catch(e){}
+    }catch(e){ window.__dpsBootRenderError=e; }
   };
   function dpsGetBootViewport(){
     var root=document.documentElement || {};
@@ -154,11 +155,11 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
   function dpsReleaseBootScreen(){
     if(window.__dpsBootError) return;
     window.__dpsAppReadyPendingForResponsive=false;
-    try{document.documentElement.classList.remove('dps-booting','dps-boot-error');}catch(e){}
+    try{document.documentElement.classList.remove('dps-booting','dps-boot-error');}catch(e){ window.__dpsBootReleaseClassError=e; }
     try{
       var boot=document.getElementById('dpsBootScreen');
       if(boot) boot.setAttribute('aria-hidden','true');
-    }catch(e){}
+    }catch(e){ window.__dpsBootReleaseElementError=e; }
   }
   window.dpsMarkAppReady=function(){
     window.__dpsAppReady=true;
@@ -191,14 +192,14 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 <meta content="https://sldbox.github.io/dps/" property="og:url"/>
 <meta content="개복디 특성 계산기" property="og:title"/>
 <meta content="특성 투자, 재화 사용량, 표기 스탯, 총데미지, DPS를 한 번에 계산할 수 있는 개복디 전용 계산기입니다." property="og:description"/>
-<meta content="https://sldbox.github.io/dps/logo.png?v=2607111500" property="og:image"/>
-<meta content="https://sldbox.github.io/dps/logo.png?v=2607111500" property="og:image:secure_url"/>
+<meta content="https://sldbox.github.io/dps/logo.png?v=2607120000" property="og:image"/>
+<meta content="https://sldbox.github.io/dps/logo.png?v=2607120000" property="og:image:secure_url"/>
 <meta content="image/png" property="og:image:type"/>
 <meta content="개복디 특성 계산기 로고" property="og:image:alt"/>
 <meta content="summary_large_image" name="twitter:card"/>
 <meta content="개복디 특성 계산기" name="twitter:title"/>
 <meta content="특성 투자, 재화 사용량, 표기 스탯, 총데미지, DPS를 한 번에 계산할 수 있는 개복디 전용 계산기입니다." name="twitter:description"/>
-<meta content="https://sldbox.github.io/dps/logo.png?v=2607111500" name="twitter:image"/>
+<meta content="https://sldbox.github.io/dps/logo.png?v=2607120000" name="twitter:image"/>
 <meta content="개복디 특성 계산기 로고" name="twitter:image:alt"/>
 <link href="https://cdn.jsdelivr.net" rel="preconnect"/>
 <link crossorigin="" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" rel="stylesheet"/>
@@ -223,7 +224,7 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
       if(changed && window.history && window.history.replaceState){
         window.history.replaceState(null, document.title || '', url.pathname + url.search + url.hash);
       }
-    }catch(e){}
+    }catch(e){ window.DPS_LAST_URL_CLEANUP_ERROR=e; }
   }
 
   function appendLink(attrs){
@@ -308,10 +309,36 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 </div>
 </div>
 </div>
-<!-- 04. 앱 본문: 좌측 입력 / 우측 특성 / 중앙 결과 -->
+<!-- 04. 앱 본문: 좌측 메인 설정 / 중앙 데미지 / 우측 유닛 -->
 <div class="col-work">
-<!-- 04-1. 좌측 입력 패널: 기본 정보 / 룬정보 / 룬효과 버프 / 버스·성소 보드 -->
+<!-- 04-1. 좌측 메인 설정 패널 -->
 <div class="col-left">
+<div class="trait-standalone-panel trait-preset-panel" aria-label="특성 프리셋">
+<div class="trait-preset-title trait-subgroup-title"><span class="trait-preset-heading">특성 프리셋</span><button class="btn subtle danger ui-action-btn trait-preset-reset-btn" data-action="resetAllTraitPresetState" id="traitPresetResetAllBtn" type="button">전체 초기화</button></div>
+<div class="trait-preset-body trait-subgroup-body">
+<div class="trait-preset-name-row">
+<label class="trait-preset-label" for="traitPresetName">프리셋 이름</label>
+<input id="traitPresetName" type="text" placeholder="예시) 더파300라버스" autocomplete="off" maxlength="40"/>
+<button class="btn pri ui-action-btn" data-action="saveTraitPreset" type="button">프리셋 저장</button>
+</div>
+<div class="trait-preset-load-row">
+<label class="trait-preset-label" for="traitPresetSelect">프리셋 목록</label>
+<select id="traitPresetSelect" aria-label="특성 프리셋 목록" disabled><option value="" disabled selected>저장된 프리셋 없음</option></select>
+<div class="trait-preset-load-actions">
+<button class="btn pri ui-action-btn" data-action="loadTraitPreset" type="button">프리셋 로드</button>
+</div>
+</div>
+<div class="trait-preset-actions">
+<button class="btn subtle ui-action-btn" data-action="renameTraitPreset" type="button">프리셋명 변경</button>
+<button class="btn subtle ui-action-btn" data-action="updateTraitPreset" type="button">프리셋 업데이트</button>
+<button class="btn subtle tone-compare ui-action-btn" data-action="compareTraitPreset" type="button">프리셋 분석</button>
+<button class="btn subtle tone-import ui-action-btn" data-action="importTraitPresets" type="button">가져오기</button>
+<button class="btn subtle tone-export ui-action-btn" data-action="exportTraitPresets" type="button">내보내기</button>
+<button class="btn subtle danger ui-action-btn" data-action="deleteTraitPreset" type="button">프리셋 삭제</button>
+</div>
+<input id="traitPresetImportFile" class="hidden-field" type="file" accept=".txt,.json,.xlsx,.xlsm,application/json,text/plain,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel.sheet.macroEnabled.12"/>
+</div>
+</div>
 <div class="sg xp-sp-card">
 <div class="sg-title basic-info-head"><span>기본 정보</span></div>
 <div class="xp-sp-split basic-info-grid">
@@ -339,6 +366,7 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 <input id="ep" type="hidden" value="0"/>
 </div>
 <div class="xp-sp-panel basic-info-panel" data-basic-info-side="right">
+
 <div class="basic-info-row" data-basic-row="difficulty"><label for="diff">난이도</label><select id="diff">
 <option selected="">Practice</option><option>Very Easy</option><option>Easy</option>
 <option>Normal</option><option>Hard</option><option>Very Hard</option>
@@ -552,7 +580,49 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 <input id="rUA" type="hidden" value="0"/>
 <input id="rHarmony" type="hidden" value="0"/>
 </div>
+<div class="trait-board-panel">
 
+<div class="trait-optimizer-panel">
+<div class="optimizer-head"><span class="optimizer-head-title">특성 보드</span></div>
+<div class="trait-dashboard-tools trait-board-control-grid">
+<div class="trait-optimizer-row">
+<button class="btn pri ui-action-btn" data-action="optimizeSP" type="button">특성 최적화</button>
+<select id="optTier" aria-label="최적화 범위 목록"><option selected="">루키</option><option>비기너</option><option>아마추어</option><option>프로</option><option>엑스퍼트</option><option>마스터</option><option>디바인</option><option>더원1</option><option>더원2</option><option>무한∞</option><option>EP특성</option><option>RP특성</option><option>심연특성</option></select>
+<button class="btn subtle danger ui-action-btn" data-action="clearAll" type="button">특성 초기화</button>
+</div>
+<div class="trait-optimizer-row">
+<button class="btn pri ui-action-btn" data-action="optimizeUtility" type="button">유틸 마스터</button>
+<select id="utilOptTier" aria-label="유틸 마스터 범위 목록"><option selected="">루키</option><option>비기너</option><option>아마추어</option><option>프로</option><option>엑스퍼트</option><option>마스터</option><option>디바인</option><option>더원1</option><option>더원2</option></select>
+<button class="btn subtle danger ui-action-btn" data-action="clearUtility" type="button">유틸 초기화</button>
+</div>
+</div>
+</div>
+<div class="trait-standalone-panel">
+<div class="trait-subgroup-title">특성 투자 제한</div>
+<div class="trait-limit-grid trait-subgroup-body">
+<label><span>공격력</span><input id="traitLimitAD" type="text" inputmode="decimal" value="0" aria-label="공격력 제한"></label>
+<label><span>공격속도</span><input id="traitLimitAS" type="text" inputmode="decimal" value="0" aria-label="공격속도 제한"></label>
+<label><span>크리티컬 확률</span><input id="traitLimitCRI" type="text" inputmode="decimal" value="0" aria-label="크리티컬 확률 제한"></label>
+<label><span>크리티컬 데미지</span><input id="traitLimitCD" type="text" inputmode="decimal" value="0" aria-label="크리티컬 데미지 제한"></label>
+<label><span>다중 크리</span><input id="traitLimitMC" type="text" inputmode="decimal" value="0" aria-label="다중 크리 제한"></label>
+<label><span>방어력 감소</span><input id="traitLimitDR" type="text" inputmode="decimal" value="0" aria-label="방어력 감소 제한"></label>
+<label><span>총 데미지</span><input id="traitLimitTD" type="text" inputmode="decimal" value="0" aria-label="총 데미지 제한"></label>
+<label><span>유닛 가속</span><input id="traitLimitUA" type="text" inputmode="decimal" value="0" aria-label="유닛 가속 제한"></label>
+<label><span>멀티타겟</span><select id="traitLimitMultiTarget" aria-label="멀티타겟 제한"><option>ON</option><option selected="">OFF</option></select></label>
+<label><span>무한특성</span><select id="traitLimitInfinite" aria-label="무한특성 제한"><option>ON</option><option selected="">OFF</option></select></label>
+</div>
+</div>
+<div class="trait-standalone-panel" aria-live="polite">
+<div class="trait-subgroup-title">특성 효율 TOP 5</div>
+<div class="trait-subgroup-body">
+<div class="trait-efficiency-grid trait-efficiency-head"><span>특성명</span><span>투자수</span><span>DPS 증가</span><span>필요량</span><span>특성 적용</span></div>
+<div id="traitEfficiencyTop5Body">
+<div class="trait-efficiency-empty">추천 항목을 계산 중입니다.</div>
+</div>
+</div>
+</div>
+<div class="tp-body" id="traitBody"></div>
+</div>
 <div class="data-card zero-rank-card">
   <h3 class="zero-rank-title">더제로 승단 정보</h3>
   <div class="zero-rank-tabs" role="tablist" aria-label="더제로 승단 정보 탭">
@@ -669,82 +739,10 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 </div>
 </div>
 </div>
-
-<!-- 04-2. 우측 특성 패널: 프리셋 / 최적화 / 제한 / TOP5 / 투자 목록 -->
+<!-- 04-2. 중앙 패널: 데미지 보드 전용 -->
 <div class="col-right">
-<div class="trait-board-panel">
-<div class="trait-standalone-panel" aria-label="특성 프리셋">
-<div class="trait-preset-title trait-subgroup-title"><span class="trait-preset-heading">특성 프리셋</span><button class="btn subtle danger ui-action-btn trait-preset-reset-btn" data-action="resetAllTraitPresetState" id="traitPresetResetAllBtn" type="button">전체 초기화</button></div>
-<div class="trait-preset-body trait-subgroup-body">
-<div class="trait-preset-name-row">
-<label class="trait-preset-label" for="traitPresetName">프리셋 이름</label>
-<input id="traitPresetName" type="text" placeholder="예시) 더파300라버스" autocomplete="off" maxlength="40"/>
-<button class="btn pri ui-action-btn" data-action="saveTraitPreset" type="button">프리셋 저장</button>
-</div>
-<div class="trait-preset-load-row">
-<label class="trait-preset-label" for="traitPresetSelect">프리셋 목록</label>
-<select id="traitPresetSelect" aria-label="특성 프리셋 목록" disabled><option value="" disabled selected>저장된 프리셋 없음</option></select>
-<div class="trait-preset-load-actions">
-<button class="btn pri ui-action-btn" data-action="loadTraitPreset" type="button">프리셋 로드</button>
-</div>
-</div>
-<div class="trait-preset-actions">
-<button class="btn subtle ui-action-btn" data-action="renameTraitPreset" type="button">프리셋명 변경</button>
-<button class="btn subtle ui-action-btn" data-action="updateTraitPreset" type="button">프리셋 업데이트</button>
-<button class="btn subtle tone-compare ui-action-btn" data-action="compareTraitPreset" type="button">프리셋 분석</button>
-<button class="btn subtle tone-import ui-action-btn" data-action="importTraitPresets" type="button">가져오기</button>
-<button class="btn subtle tone-export ui-action-btn" data-action="exportTraitPresets" type="button">내보내기</button>
-<button class="btn subtle danger ui-action-btn" data-action="deleteTraitPreset" type="button">프리셋 삭제</button>
-</div>
-<input id="traitPresetImportFile" class="hidden-field" type="file" accept=".txt,.json,.xlsx,.xlsm,application/json,text/plain,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel.sheet.macroEnabled.12"/>
-</div>
-</div>
-<div class="trait-optimizer-panel">
-<div class="optimizer-head"><span class="optimizer-head-title">특성 보드</span></div>
-<div class="trait-dashboard-tools trait-board-control-grid">
-<div class="trait-optimizer-row">
-<button class="btn pri ui-action-btn" data-action="optimizeSP" type="button">특성 최적화</button>
-<select id="optTier" aria-label="최적화 범위 목록"><option selected="">루키</option><option>비기너</option><option>아마추어</option><option>프로</option><option>엑스퍼트</option><option>마스터</option><option>디바인</option><option>더원1</option><option>더원2</option><option>무한∞</option><option>EP특성</option><option>RP특성</option><option>심연특성</option></select>
-<button class="btn subtle danger ui-action-btn" data-action="clearAll" type="button">특성 초기화</button>
-</div>
-<div class="trait-optimizer-row">
-<button class="btn pri ui-action-btn" data-action="optimizeUtility" type="button">유틸 마스터</button>
-<select id="utilOptTier" aria-label="유틸 마스터 범위 목록"><option selected="">루키</option><option>비기너</option><option>아마추어</option><option>프로</option><option>엑스퍼트</option><option>마스터</option><option>디바인</option><option>더원1</option><option>더원2</option></select>
-<button class="btn subtle danger ui-action-btn" data-action="clearUtility" type="button">유틸 초기화</button>
-</div>
-</div>
-</div>
-<div class="trait-standalone-panel">
-<div class="trait-subgroup-title">특성 투자 제한</div>
-<div class="trait-limit-grid trait-subgroup-body">
-<label><span>공격력</span><input id="traitLimitAD" type="text" inputmode="decimal" value="0" aria-label="공격력 제한"></label>
-<label><span>공격속도</span><input id="traitLimitAS" type="text" inputmode="decimal" value="0" aria-label="공격속도 제한"></label>
-<label><span>크리티컬 확률</span><input id="traitLimitCRI" type="text" inputmode="decimal" value="0" aria-label="크리티컬 확률 제한"></label>
-<label><span>크리티컬 데미지</span><input id="traitLimitCD" type="text" inputmode="decimal" value="0" aria-label="크리티컬 데미지 제한"></label>
-<label><span>다중 크리</span><input id="traitLimitMC" type="text" inputmode="decimal" value="0" aria-label="다중 크리 제한"></label>
-<label><span>방어력 감소</span><input id="traitLimitDR" type="text" inputmode="decimal" value="0" aria-label="방어력 감소 제한"></label>
-<label><span>총 데미지</span><input id="traitLimitTD" type="text" inputmode="decimal" value="0" aria-label="총 데미지 제한"></label>
-<label><span>유닛 가속</span><input id="traitLimitUA" type="text" inputmode="decimal" value="0" aria-label="유닛 가속 제한"></label>
-<label><span>멀티타겟</span><select id="traitLimitMultiTarget" aria-label="멀티타겟 제한"><option>ON</option><option selected="">OFF</option></select></label>
-<label><span>무한특성</span><select id="traitLimitInfinite" aria-label="무한특성 제한"><option>ON</option><option selected="">OFF</option></select></label>
-</div>
-</div>
-<div class="trait-standalone-panel" aria-live="polite">
-<div class="trait-subgroup-title">특성 효율 TOP 5</div>
-<div class="trait-subgroup-body">
-<div class="trait-efficiency-grid trait-efficiency-head"><span>특성명</span><span>투자수</span><span>DPS 증가</span><span>필요량</span><span>특성 적용</span></div>
-<div id="traitEfficiencyTop5Body">
-<div class="trait-efficiency-empty">추천 항목을 계산 중입니다.</div>
-</div>
-</div>
-</div>
-<div class="tp-body" id="traitBody"></div>
-</div>
-</div>
-<!-- 04-3. 중앙 결과 패널: DPS / 스탯 / 데미지 보드 -->
-<div class="col-mid">
 <div class="data-card stat-dps-card">
-<div class="section-title damage-board-title"><span>데미지 보드</span><div class="artifact-dps-switch-wrap" aria-label="유물 DPS 표시 전환"><span class="artifact-dps-switch-label">유물 DPS</span><button class="artifact-dps-switch" id="artifactDpsViewToggle" type="button" role="switch" aria-checked="false"><span class="artifact-dps-switch-text artifact-dps-switch-off">OFF</span><span class="artifact-dps-switch-text artifact-dps-switch-on">ON</span><i aria-hidden="true"></i></button></div></div>
+<div class="section-title damage-board-title"><span class="damage-board-heading">데미지 보드</span><div class="artifact-dps-switch-wrap" aria-label="유물 DPS 표시 전환"><span class="artifact-dps-switch-label">유물 DPS</span><button class="artifact-dps-switch" id="artifactDpsViewToggle" type="button" role="switch" aria-checked="false"><span class="artifact-dps-switch-text artifact-dps-switch-off">OFF</span><span class="artifact-dps-switch-text artifact-dps-switch-on">ON</span><i aria-hidden="true"></i></button></div></div>
 <div class="dps-card stat-dps-summary" id="statDpsSummary">
 <div class="dps-lbl" id="dpsMainLabel">DPS</div>
 <div class="dps-num" id="dpsVal">—</div>
@@ -778,17 +776,23 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 <div class="stat-row damage-board-round-time-row"><div class="sc-name">라운드 시간</div><div class="sc-val" id="enemyRoundTimeQuick">0초</div><div class="sc-val" id="enemyRpTimeQuick">RP 0초 / 최대 8초</div></div>
 </div>
 </div>
-
-
-</div></div>
+</div>
+<!-- 04-3. 우측 패널: 유닛 보드 전용 -->
+<div class="col-mid">
+<div class="dps-base-unit-panel" data-dps-base-unit-control><h3 class="dps-base-unit-panel-title"><span>유닛 보드</span><em id="dpsBaseUnitMode">모드 : —</em></h3><div class="dps-base-unit-summary" id="dpsBaseUnitSummary" aria-label="유닛 클리어 기대값" hidden></div><input id="dpsBaseUnits" type="hidden" value=""/><input id="dpsBaseUnitSlots" type="hidden" value=""/><input id="dpsJewelSettings" type="hidden" value="{}"/><input id="dpsNormalJewelSettings" type="hidden" value="{}"/><input id="dpsNormalJewelAssignments" type="hidden" value="{}"/><input id="dpsBaseUnitSlotExpansions" type="hidden" value="[]"/><div class="dps-base-unit-quantity-store" id="dpsBaseUnitQuantityStore" hidden></div><div class="dps-base-unit-slot-stack" id="dpsBaseUnitSlotStack" aria-label="유닛 보드"></div><div class="dps-jewel-config-controls" data-dps-jewel-config-controls><div class="dps-jewel-config-buttons" role="group" aria-label="쥬얼 능력치 설정"><button class="dps-jewel-config-button dps-normal-jewel-config-button" type="button" data-dps-jewel-config-toggle="normal" aria-expanded="false" aria-controls="dpsNormalJewelConfigPanel"><span>일반 쥬얼 설정</span></button><button class="dps-jewel-config-button dps-legendary-jewel-config-button" type="button" data-dps-jewel-config-toggle="legendary" aria-expanded="false" aria-controls="dpsJewelConfigPanel"><span>전설·신화 쥬얼 설정</span></button></div><section class="dps-jewel-config-panel dps-normal-jewel-config-panel" id="dpsNormalJewelConfigPanel" data-dps-normal-jewel-config hidden><div class="dps-jewel-config-grid" id="dpsNormalJewelConfigGrid"></div></section><section class="dps-jewel-config-panel dps-legendary-jewel-config-panel" id="dpsJewelConfigPanel" data-dps-jewel-config hidden><div class="dps-jewel-config-grid" id="dpsJewelConfigGrid"></div></section></div></div>
+</div>
+</div>
 </div>
 <!-- 05. 공통 토스트 / 스크립트 로더 -->
 <div aria-live="polite" class="toast-root" id="toastRoot"></div>
 <script>
-function loadScriptSequence(files){
+function loadScriptSequence(files, onComplete){
   var index=0;
   function next(){
-    if(index>=files.length) return;
+    if(index>=files.length){
+      if(typeof onComplete==='function') onComplete();
+      return;
+    }
     var fileName=files[index++] + '.js';
     var script=document.createElement('script');
     script.src=window.dpsAssetUrl('./' + fileName, fileName);
@@ -802,7 +806,10 @@ function loadScriptSequence(files){
   }
   next();
 }
-loadScriptSequence(['data','calc','modal','app','responsive']);
+loadScriptSequence(['data','calc','modal','app','preset','responsive'],function(){
+  if(typeof window.dpsStartApp==='function') window.dpsStartApp();
+  else if(typeof window.dpsShowBootError==='function') window.dpsShowBootError('D1003',new Error('app start function missing'));
+});
 </script>
 
 </body>
