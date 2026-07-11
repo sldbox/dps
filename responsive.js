@@ -1,5 +1,5 @@
 /* ===== responsive.js | 반응형 레이아웃 / 모바일·태블릿 탭 재배치 ===== */
-/* PC·태블릿·모바일 모드를 판정하고, 태블릿·모바일에서 주요 카드를 탭 페이지로 재배치한다. */
+/* 화면 크기에 따라 PC/태블릿/모바일 클래스를 동기화하고, 모바일에서는 주요 카드를 탭 페이지로 재배치한다. */
 
 (() => {
   'use strict';
@@ -7,18 +7,20 @@
   const qs = (selector) => document.querySelector(selector);
   const qsa = (selector) => Array.from(document.querySelectorAll(selector));
   const MODES = ['is-pc-landscape', 'is-pc-portrait', 'is-tablet', 'is-mobile', 'is-portrait-view', 'is-mobile-device', 'is-tablet-device', 'is-narrow-mobile', 'is-tabbed'];
-  const TABBED_PAGES = [
-    { key: 'spec', label: '기본정보', selectors: ['.xp-sp-card', '.zero-rank-card', '.bus-cut-card', '.final-damage-card'] },
-    { key: 'trait', label: '특성 보드', selectors: ['.trait-preset-panel', '.unit-enhance-card', '.clean-rune-card', '.trait-board-panel'] },
+  const MOBILE_PAGES = [
+    { key: 'spec', label: '기본 정보', selectors: ['.xp-sp-card', '.bus-cut-card', '.final-damage-card'] },
+    { key: 'rune-spec', label: '룬정보', selectors: ['.clean-rune-card'] },
+    { key: 'rune-effect', label: '룬효과 버프', selectors: ['.unit-enhance-card'] },
+    { key: 'trait', label: '특성 보드', selectors: ['.col-right'] },
     { key: 'result', label: '데미지 보드', selectors: ['.stat-dps-card'] },
-    { key: 'unit', label: '유닛 보드', selectors: ['.dps-base-unit-panel'] }
+    { key: 'zero-rank', label: '승단', selectors: ['.zero-rank-card'] }
   ];
   const state = {
     tabs: null,
     pages: [],
     restore: new Map(),
     raf: 0,
-    arrangedTabbed: false,
+    arrangedMobile: false,
     layoutWidth: 0,
     layoutPortrait: null,
     activeIndex: 0,
@@ -83,10 +85,10 @@
     }
     state.layoutWidth = w;
     state.layoutPortrait = h > w;
-    syncTabbedLayout();
+    syncMobileLayout();
     updateMobileOffsets();
   }
-  /* ===== 02. 태블릿·모바일 탭 페이지 구성 / 원위치 복원 ===== */
+  /* ===== 02. 모바일 탭 페이지 구성 / 원위치 복원 ===== */
   function rememberPosition(el) {
     if (!el || state.restore.has(el)) return;
     const marker = document.createComment(`mobile-restore:${el.className || el.tagName}`);
@@ -100,9 +102,6 @@
       page.className = `mobile-page mobile-page-${key}`;
       page.dataset.mobilePage = key;
     }
-    page.id = `mobilePage-${key}`;
-    page.setAttribute('role', 'tabpanel');
-    page.setAttribute('tabindex', '0');
     return page;
   }
   function getPageIndexByKey(key) {
@@ -113,40 +112,19 @@
     if (!state.tabs) {
       state.tabs = document.createElement('div');
       state.tabs.className = 'mobile-section-tabs';
-      state.tabs.setAttribute('role', 'tablist');
-      state.tabs.setAttribute('aria-label', '화면 전환');
+      state.tabs.setAttribute('aria-label', '모바일 섹션 이동');
       colWork.parentNode.insertBefore(state.tabs, colWork);
     }
     state.tabs.textContent = '';
     pages.forEach((page, idx) => {
       const btn = document.createElement('button');
       btn.type = 'button';
-      btn.id = `mobileTab-${page.key}`;
       btn.className = ['mobile-section-tab', page.toneClass].filter(Boolean).join(' ');
       btn.textContent = page.label;
-      btn.setAttribute('role', 'tab');
-      btn.setAttribute('aria-selected', 'false');
-      btn.setAttribute('aria-controls', page.el.id);
-      btn.tabIndex = -1;
-      page.el.setAttribute('aria-labelledby', btn.id);
-      btn.addEventListener('click', () => showTabbedPage(idx, true));
+      btn.setAttribute('aria-pressed', 'false');
+      btn.addEventListener('click', () => showMobilePage(idx, true));
       state.tabs.appendChild(btn);
     });
-    state.tabs.addEventListener('keydown', handleTabKeydown);
-  }
-  function handleTabKeydown(event) {
-    const tabs = Array.from(state.tabs?.querySelectorAll('.mobile-section-tab') || []);
-    const currentIndex = tabs.indexOf(document.activeElement);
-    if (currentIndex < 0) return;
-    let nextIndex = currentIndex;
-    if (event.key === 'ArrowRight' || event.key === 'ArrowDown') nextIndex = (currentIndex + 1) % tabs.length;
-    else if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') nextIndex = (currentIndex - 1 + tabs.length) % tabs.length;
-    else if (event.key === 'Home') nextIndex = 0;
-    else if (event.key === 'End') nextIndex = tabs.length - 1;
-    else return;
-    event.preventDefault();
-    showTabbedPage(nextIndex, false);
-    tabs[nextIndex]?.focus();
   }
   function setActiveTab(activeIndex) {
     const nextIndex = Math.max(0, Math.min(state.pages.length - 1, activeIndex));
@@ -156,8 +134,7 @@
       state.tabs.querySelectorAll('.mobile-section-tab').forEach((btn, idx) => {
         const active = idx === nextIndex;
         btn.classList.toggle('active', active);
-        btn.setAttribute('aria-selected', active ? 'true' : 'false');
-        btn.tabIndex = active ? 0 : -1;
+        btn.setAttribute('aria-pressed', active ? 'true' : 'false');
       });
     }
     state.pages.forEach((page, idx) => {
@@ -167,17 +144,17 @@
       page.el.setAttribute('aria-hidden', active ? 'false' : 'true');
     });
   }
-  function showTabbedPage(index, resetPageScroll = false) {
+  function showMobilePage(index, resetPageScroll = false) {
     if (!state.pages.length) return;
     const nextIndex = Math.max(0, Math.min(state.pages.length - 1, index));
     setActiveTab(nextIndex);
     if (resetPageScroll) state.pages[nextIndex].el.scrollTop = 0;
     updateMobileOffsets();
   }
-  function arrangeTabbed(colWork) {
+  function arrangeMobile(colWork) {
     const pages = [];
     const keepKey = state.activeKey || state.pages[state.activeIndex]?.key || 'spec';
-    TABBED_PAGES.forEach((config) => {
+    MOBILE_PAGES.forEach((config) => {
       const elements = config.selectors.map(selector => qs(selector)).filter(Boolean);
       if (!elements.length) return;
       const page = getOrCreatePage(config.key);
@@ -192,29 +169,27 @@
     });
     state.pages = pages;
     buildTabs(colWork, pages);
-    colWork.classList.add('is-mobile-arranged');
-    state.arrangedTabbed = true;
+    state.arrangedMobile = true;
     const keepIndex = getPageIndexByKey(keepKey);
-    showTabbedPage(keepIndex >= 0 ? keepIndex : state.activeIndex, false, false);
+    showMobilePage(keepIndex >= 0 ? keepIndex : state.activeIndex, false, false);
   }
   function restoreDesktop() {
-    if (!state.arrangedTabbed) return;
+    if (!state.arrangedMobile) return;
     state.restore.forEach((marker, el) => {
       if (marker.parentNode) marker.parentNode.insertBefore(el, marker.nextSibling);
     });
     qsa('.mobile-page').forEach(page => page.remove());
     if (state.tabs) state.tabs.remove();
-    qs('.col-work')?.classList.remove('is-mobile-arranged');
     state.tabs = null;
     state.pages = [];
-    state.arrangedTabbed = false;
+    state.arrangedMobile = false;
   }
-  function syncTabbedLayout() {
+  function syncMobileLayout() {
     const colWork = qs('.col-work');
     if (!colWork) return;
     if (document.body.classList.contains('is-tabbed')) {
-      if (!state.arrangedTabbed) arrangeTabbed(colWork);
-      else showTabbedPage(getPageIndexByKey(state.activeKey), false, false);
+      if (!state.arrangedMobile) arrangeMobile(colWork);
+      else showMobilePage(getPageIndexByKey(state.activeKey), false, false);
     } else {
       restoreDesktop();
     }
@@ -233,7 +208,7 @@
       const el = event.target;
       if (!isTextInput(el)) return;
       requestAnimationFrame(() => {
-        if(typeof el.select==='function') el.select();
+        try { el.select(); } catch (e) {}
       });
     });
   }
