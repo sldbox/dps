@@ -394,30 +394,22 @@ function normalizeTraitPresetUnitBoardState(value){
     });
   });
   units.sort((a,b)=>a.slot-b.slot);
+  const usedLegendaryJewels=new Set();
+  units.forEach(item=>{
+    const name=normalizeDpsJewelName(item.legendaryMythicJewel);
+    item.legendaryMythicJewel=name && !usedLegendaryJewels.has(name) ? name : '';
+    if(item.legendaryMythicJewel) usedLegendaryJewels.add(item.legendaryMythicJewel);
+  });
   const unitMap=new Map(units.map(item=>[item.unitId,item]));
   units.forEach(item=>{ if(item.unitId==='prodNarud') item.voidPower='OFF'; });
   if(!unitMap.has('prodNarud')) units.forEach(item=>{ item.voidPower='OFF'; });
   const slotExpansions=normalizeDpsBaseUnitSlotExpansions(source.slotExpansions || source.expandedSlots || [])
     .filter(unitId=>unitMap.has(unitId));
-  const usedNormalJewels=new Set();
-  const normalJewelAssignments={};
   const rawAssignments=source.normalJewelAssignments && typeof source.normalJewelAssignments==='object' && !Array.isArray(source.normalJewelAssignments)
     ? source.normalJewelAssignments
     : {};
-  Object.entries(rawAssignments).forEach(([unitId,items])=>{
-    const unitState=unitMap.get(unitId);
-    const unit=dpsBaseUnitById(unitId);
-    if(!unitState || !unit || !Array.isArray(items)) return;
-    const slotLimit=dpsBaseUnitAllowsNormalJewels(unit) ? 8 : 0;
-    const normalized=items.slice(0,slotLimit).map(value=>{
-      const name=normalizeDpsNormalJewelName(value);
-      if(!name || usedNormalJewels.has(name)) return '';
-      usedNormalJewels.add(name);
-      return name;
-    });
-    while(normalized.length && !normalized[normalized.length-1]) normalized.pop();
-    if(normalized.length) normalJewelAssignments[unitId]=normalized;
-  });
+  const normalizedAssignments=normalizeDpsNormalJewelAssignments(rawAssignments,units.map(item=>item.unitId));
+  const normalJewelAssignments=Object.fromEntries(Object.entries(normalizedAssignments).filter(([unitId])=>unitMap.has(unitId)));
   return {
     schemaVersion:TRAIT_PRESET_UNIT_BOARD_SCHEMA_VERSION,
     units,
@@ -427,7 +419,7 @@ function normalizeTraitPresetUnitBoardState(value){
 }
 function captureTraitPresetUnitBoardState(){
   ensureDpsBaseUnitStore();
-  const assignments=normalizeDpsNormalJewelAssignments($('dpsNormalJewelAssignments')?.value || '{}');
+  const assignments=normalizeDpsNormalJewelAssignments($('dpsNormalJewelAssignments')?.value || '{}',currentDpsBaseUnitSlots());
   const units=currentDpsBaseUnitSlots().map((unitId,slot)=>{
     const unit=dpsBaseUnitById(unitId);
     if(!unit) return null;

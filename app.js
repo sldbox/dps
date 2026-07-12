@@ -1658,27 +1658,37 @@ function activeDpsJewelNames(settings=dpsJewelSettingsObject()){
 function activeDpsNormalJewelNames(settings=dpsNormalJewelSettingsObject()){
   return dpsNormalJewelNames().filter(name=>dpsNormalJewelSettingIsActive(settings?.[name]));
 }
+function dpsBaseUnitJewelSelectionOrder(){
+  const selected=currentDpsBaseUnitSlots().filter(Boolean);
+  const selectedSet=new Set(selected);
+  return [...selected,...dpsBaseUnitList().map(unit=>unit.id).filter(unitId=>!selectedSet.has(unitId))];
+}
 function sanitizeDpsJewelSelections(){
   const activeLegendary=new Set(activeDpsJewelNames());
   const activeNormal=new Set(activeDpsNormalJewelNames());
+  const unitOrder=dpsBaseUnitJewelSelectionOrder();
+  const usedLegendary=new Set();
   let changed=false;
-  dpsBaseUnitList().forEach(unit=>{
-    const input=dpsBaseUnitJewelInput(unit);
+  unitOrder.forEach(unitId=>{
+    const input=dpsBaseUnitJewelInput(unitId);
     const name=normalizeDpsJewelName(input?.value || '');
-    if(name && !activeLegendary.has(name)){
+    if(!name) return;
+    if(!activeLegendary.has(name) || usedLegendary.has(name)){
       input.value='';
       changed=true;
+      return;
     }
+    usedLegendary.add(name);
   });
   const assignmentStore=$('dpsNormalJewelAssignments');
   if(assignmentStore){
-    const assignments=normalizeDpsNormalJewelAssignments(assignmentStore.value || '{}');
+    const assignments=normalizeDpsNormalJewelAssignments(assignmentStore.value || '{}',unitOrder);
     Object.keys(assignments).forEach(unitId=>{
       assignments[unitId]=assignments[unitId].map(name=>name && activeNormal.has(name) ? name : '');
       while(assignments[unitId].length && !assignments[unitId][assignments[unitId].length-1]) assignments[unitId].pop();
       if(!assignments[unitId].length) delete assignments[unitId];
     });
-    const serialized=serializeDpsNormalJewelAssignments(assignments);
+    const serialized=serializeDpsNormalJewelAssignments(assignments,unitOrder);
     if(assignmentStore.value!==serialized){
       assignmentStore.value=serialized;
       changed=true;
@@ -1687,22 +1697,30 @@ function sanitizeDpsJewelSelections(){
   return changed;
 }
 
+function dpsLegendaryJewelActiveUsage(){
+  const usage=new Map();
+  currentDpsBaseUnitSlots().filter(Boolean).forEach(unitId=>{
+    const name=normalizeDpsJewelName(dpsBaseUnitJewelInput(unitId)?.value || '');
+    if(name && !usage.has(name)) usage.set(name,unitId);
+  });
+  return usage;
+}
 function dpsNormalJewelActiveUsage(){
   const usage=new Map();
-  selectedDpsBaseUnits().forEach(unit=>{
-    dpsBaseUnitNormalJewelNames(unit).forEach((name,index)=>{
-      if(name && !usage.has(name)) usage.set(name,{unitId:unit.id,index});
+  currentDpsBaseUnitSlots().filter(Boolean).forEach(unitId=>{
+    dpsBaseUnitNormalJewelNames(unitId).forEach((name,index)=>{
+      if(name && !usage.has(name)) usage.set(name,{unitId,index});
     });
   });
   return usage;
 }
 function dpsBaseUnitNormalJewelOptionsHtml(selectedName,unitId,index){
   const usage=dpsNormalJewelActiveUsage();
-  return `<option value="">없음</option>${activeDpsNormalJewelNames().map(name=>{
+  const names=activeDpsNormalJewelNames().filter(name=>{
     const owner=usage.get(name);
-    const disabled=owner && !(owner.unitId===unitId && owner.index===index);
-    return `<option value="${escapeHtml(name)}"${name===selectedName?' selected':''}${disabled?' disabled':''}>${escapeHtml(name)}</option>`;
-  }).join('')}`;
+    return !owner || (owner.unitId===unitId && owner.index===index) || name===selectedName;
+  });
+  return `<option value="">없음</option>${names.map(name=>`<option value="${escapeHtml(name)}"${name===selectedName?' selected':''}>${escapeHtml(name)}</option>`).join('')}`;
 }
 function dpsBaseUnitNormalJewelAssignmentsHtml(unit){
   const slotCount=dpsBaseUnitNormalJewelSlotCount(unit);
@@ -1759,8 +1777,28 @@ function updateDpsBaseUnitNormalJewelAssignment(select){
   }
   syncDpsBaseUnitControl();
 }
-function dpsBaseUnitJewelOptionsHtml(selectedName){
-  return `<option value="">없음</option>${activeDpsJewelNames().map(name=>`<option value="${escapeHtml(name)}"${name===selectedName?' selected':''}>${escapeHtml(name)}</option>`).join('')}`;
+function updateDpsBaseUnitJewelAssignment(select){
+  const unitId=String(select?.getAttribute?.('data-dps-base-unit-slot-jewel') || '');
+  const unit=dpsBaseUnitById(unitId);
+  if(!unit) return;
+  const next=normalizeDpsJewelName(select.value);
+  dpsBaseUnitList().forEach(otherUnit=>{
+    if(otherUnit.id===unitId) return;
+    const otherInput=dpsBaseUnitJewelInput(otherUnit);
+    if(next && normalizeDpsJewelName(otherInput?.value || '')===next) otherInput.value='';
+  });
+  const store=dpsBaseUnitJewelInput(unit);
+  if(store) store.value=next;
+  if(next) trimDpsBaseUnitNormalJewelAssignments(unit,dpsBaseUnitNormalJewelCapacity(unit));
+  syncDpsBaseUnitControl();
+}
+function dpsBaseUnitJewelOptionsHtml(selectedName,unitId){
+  const usage=dpsLegendaryJewelActiveUsage();
+  const names=activeDpsJewelNames().filter(name=>{
+    const owner=usage.get(name);
+    return !owner || owner===unitId || name===selectedName;
+  });
+  return `<option value="">없음</option>${names.map(name=>`<option value="${escapeHtml(name)}"${name===selectedName?' selected':''}>${escapeHtml(name)}</option>`).join('')}`;
 }
 function dpsBaseUnitVoidPowerAvailable(selectedIds=null){
   const ids=Array.isArray(selectedIds)
@@ -1829,7 +1867,7 @@ function dpsBaseUnitSettingsHtml(unit,slotIndex){
   const voidButton=`<div class="dps-base-unit-void-power-control"><span class="dps-base-unit-void-power-usage">${voidPowerUsage} / ${voidPowerLimit}</span><button class="ui-choice-btn dps-base-unit-option-btn${voidPower==='ON'?' is-active':''}" id="dpsBaseUnitSlotVoidPower${slotIndex+1}" data-dps-base-unit-void-power-toggle="${unitId}" type="button" aria-pressed="${voidPower==='ON'?'true':'false'}" aria-label="${label} 공허의 힘"${voidPowerCanEnable?'':' disabled'}>공허의 힘</button></div>`;
   const slotButton=dpsBaseUnitAllowsNormalJewels(unit) ? `<button class="ui-choice-btn dps-base-unit-option-btn dps-base-unit-slot-expansion-btn${slotExpanded?' is-active':''}" data-dps-base-unit-slot-expansion-toggle="${unitId}" type="button" aria-pressed="${slotExpanded?'true':'false'}" aria-label="${label} 일반 쥬얼 선택 슬롯">슬롯 확장</button>` : '';
   const actionButtons=`<div class="dps-base-unit-action-buttons">${voidButton}${slotButton}</div>`;
-  const mainSettings=`<div class="dps-base-unit-settings" data-dps-base-unit-settings="${unitId}"><label class="dps-base-unit-setting dps-base-unit-enhance-setting"><span>강화 기대값</span><input class="dps-base-unit-setting-input" id="dpsBaseUnitSlotEnhance${slotIndex+1}" data-dps-base-unit-slot-enhance="${unitId}" type="text" inputmode="decimal" min="0" max="1000" value="${escapeHtml(enhance)}" aria-label="${label} 강화 기대값"/></label><label class="dps-base-unit-setting"><span>한계 돌파</span><select class="dps-base-unit-setting-select" id="dpsBaseUnitSlotLimitBreak${slotIndex+1}" data-dps-base-unit-slot-limit-break="${unitId}" aria-label="${label} 한계 돌파">${limitOptions}</select></label><label class="dps-base-unit-setting"><span>전설·신화 쥬얼</span><select class="dps-base-unit-setting-select" id="dpsBaseUnitSlotJewel${slotIndex+1}" data-dps-base-unit-slot-jewel="${unitId}" aria-label="${label} 전설·신화 쥬얼">${dpsBaseUnitJewelOptionsHtml(jewelName)}</select></label>${actionButtons}</div>`;
+  const mainSettings=`<div class="dps-base-unit-settings" data-dps-base-unit-settings="${unitId}"><label class="dps-base-unit-setting dps-base-unit-enhance-setting"><span>강화 기대값</span><input class="dps-base-unit-setting-input" id="dpsBaseUnitSlotEnhance${slotIndex+1}" data-dps-base-unit-slot-enhance="${unitId}" type="text" inputmode="decimal" min="0" max="1000" value="${escapeHtml(enhance)}" aria-label="${label} 강화 기대값"/></label><label class="dps-base-unit-setting"><span>한계 돌파</span><select class="dps-base-unit-setting-select" id="dpsBaseUnitSlotLimitBreak${slotIndex+1}" data-dps-base-unit-slot-limit-break="${unitId}" aria-label="${label} 한계 돌파">${limitOptions}</select></label><label class="dps-base-unit-setting"><span>전설·신화 쥬얼</span><select class="dps-base-unit-setting-select" id="dpsBaseUnitSlotJewel${slotIndex+1}" data-dps-base-unit-slot-jewel="${unitId}" aria-label="${label} 전설·신화 쥬얼">${dpsBaseUnitJewelOptionsHtml(jewelName,unit.id)}</select></label>${actionButtons}</div>`;
   return mainSettings+dpsBaseUnitNormalJewelAssignmentsHtml(unit);
 }
 function dpsBaseUnitSelectOptionsHtml(selectedId, selectedIds){
@@ -2127,12 +2165,7 @@ function bindDpsBaseUnitControlEvents(){
     }
     const unitJewel=e.target?.closest?.('[data-dps-base-unit-slot-jewel]');
     if(unitJewel?.closest?.('[data-dps-base-unit-control]')){
-      const unit=dpsBaseUnitById(unitJewel.getAttribute('data-dps-base-unit-slot-jewel') || '');
-      const store=dpsBaseUnitJewelInput(unit);
-      const next=normalizeDpsJewelName(unitJewel.value);
-      if(store) store.value=next;
-      if(next) trimDpsBaseUnitNormalJewelAssignments(unit,dpsBaseUnitNormalJewelCapacity(unit));
-      syncDpsBaseUnitControl();
+      updateDpsBaseUnitJewelAssignment(unitJewel);
       requestAppUpdate();
       scheduleAutoSaveToast();
       return;

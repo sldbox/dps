@@ -867,17 +867,22 @@ function dpsBaseUnitAllowsNormalJewels(unitOrId){
   const unit=typeof unitOrId==='string' ? dpsBaseUnitById(unitOrId) : unitOrId;
   return !!unit && unit.grade!=='슈퍼히든';
 }
-function normalizeDpsNormalJewelAssignments(value){
+function normalizeDpsNormalJewelAssignments(value,unitOrder=[]){
   let source=value;
   if(typeof source==='string'){
     try{source=JSON.parse(source || '{}');}catch(_error){source={};}
   }
   if(!source || typeof source!=='object' || Array.isArray(source)) source={};
   const validUnits=new Set(dpsBaseUnitList().filter(dpsBaseUnitAllowsNormalJewels).map(unit=>unit.id));
+  const orderedUnitIds=[
+    ...(Array.isArray(unitOrder) ? unitOrder : []),
+    ...Object.keys(source)
+  ].map(unitId=>String(unitId || '')).filter((unitId,index,list)=>validUnits.has(unitId) && list.indexOf(unitId)===index);
   const used=new Set();
   const out={};
-  Object.entries(source).forEach(([unitId,items])=>{
-    if(!validUnits.has(unitId) || !Array.isArray(items)) return;
+  orderedUnitIds.forEach(unitId=>{
+    const items=source[unitId];
+    if(!Array.isArray(items)) return;
     const normalized=items.slice(0,4).map(value=>{
       const name=normalizeDpsNormalJewelName(value);
       if(!name || used.has(name)) return '';
@@ -889,7 +894,7 @@ function normalizeDpsNormalJewelAssignments(value){
   });
   return out;
 }
-function serializeDpsNormalJewelAssignments(value){return JSON.stringify(normalizeDpsNormalJewelAssignments(value));}
+function serializeDpsNormalJewelAssignments(value,unitOrder=[]){return JSON.stringify(normalizeDpsNormalJewelAssignments(value,unitOrder));}
 function dpsNormalJewelAssignmentsObject(){
   const el=typeof $==='function' ? $('dpsNormalJewelAssignments') : null;
   return normalizeDpsNormalJewelAssignments(el?.value || '{}');
