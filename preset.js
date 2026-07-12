@@ -1657,9 +1657,10 @@ function normalizeTraitPresetImportData(parsed){
     unitBoard:normalizeTraitPresetUnitBoardStore(parsed.unitBoard,presets.map(preset=>preset.id))
   };
 }
-function mergeTraitPresetImport(imported){
+function mergeTraitPresetImport(imported,options={}){
   let store=loadTraitPresetStore();
   let added=0, replaced=0, firstImportedPresetId='';
+  const preserveExistingUnitBoardOnReplace=options.preserveExistingUnitBoardOnReplace===true;
   const importedUnitBoard=normalizeTraitPresetUnitBoardStore(imported?.unitBoard,(imported?.presets || []).map(preset=>preset.id));
   const importedJewelSettings=normalizeTraitPresetJewelSettings(imported?.jewelSettings);
   if(importedJewelSettings) store.jewelSettings=importedJewelSettings;
@@ -1676,8 +1677,12 @@ function mergeTraitPresetImport(imported){
       store.presets.push({...preset,id:targetId,createdAt:preset.createdAt || Date.now(),updatedAt:Date.now()});
       added++;
     }
-    if(hasOwn(importedUnitBoard.presets,sourceId)) setTraitPresetUnitBoardState(store,targetId,importedUnitBoard.presets[sourceId]);
-    else if(existingIndex>=0) deleteTraitPresetUnitBoardState(store,targetId);
+    if(hasOwn(importedUnitBoard.presets,sourceId)){
+      const preserveExisting=existingIndex>=0 && preserveExistingUnitBoardOnReplace && traitPresetHasUnitBoard(store,targetId);
+      if(!preserveExisting) setTraitPresetUnitBoardState(store,targetId,importedUnitBoard.presets[sourceId]);
+    }else if(existingIndex>=0 && !preserveExistingUnitBoardOnReplace){
+      deleteTraitPresetUnitBoardState(store,targetId);
+    }
     if(index===0) firstImportedPresetId=targetId;
   });
   store=saveTraitPresetStore(store,{source:'import'});
@@ -1799,16 +1804,20 @@ function saveSelectedExcelSheetAsTraitPreset(){
     const importedState=buildExcelState(cells,specCells,zeroCells,sheetName).state;
     const jewelImport=readExcelJewelSettings(workbook);
     const now=Date.now();
+    const presetId=makeTraitPresetId();
     const imported={presets:[{
-      id:makeTraitPresetId(),
+      id:presetId,
       name,
       schemaVersion:TRAIT_PRESET_SCHEMA_VERSION,
       createdAt:now,
       updatedAt:now,
       meta:traitPresetMetaFromSavedState(importedState),
       state:importedState
-    }],jewelSettings:jewelImport.present ? jewelImport.settings : null};
-    const result=mergeTraitPresetImport(imported);
+    }],jewelSettings:jewelImport.present ? jewelImport.settings : null,unitBoard:{
+      schemaVersion:TRAIT_PRESET_UNIT_BOARD_SCHEMA_VERSION,
+      presets:{[presetId]:normalizeTraitPresetUnitBoardState(null)}
+    }};
+    const result=mergeTraitPresetImport(imported,{preserveExistingUnitBoardOnReplace:true});
     const savedPresetId=result.firstImportedPresetId || result.store.presets.find(item=>item.name===name)?.id || '';
     if(savedPresetId) loadTraitPresetById(savedPresetId,{notifySuccess:false,preserveSharedValues:false});
     else refreshTraitPresetControls('');
