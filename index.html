@@ -384,9 +384,6 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 <div class="basic-info-row manual-resource" data-basic-row="owned-soul"><label for="soul">본인 심연의혼</label><input class="money-input" id="soul" inputmode="numeric" type="text" value="0"/></div>
 <div class="basic-info-row readonly-resource" data-basic-row="used-soul"><label>사용한 심연의혼</label><b id="soulUsedBasicView">0</b></div>
 <div class="basic-info-row readonly-resource" data-basic-row="remain-soul"><label>남은 심연의혼</label><b id="soulRemainBasicView">0</b></div>
-<div class="basic-info-row manual-resource" data-basic-row="coral-shard"><label for="coralShard">코랄의 파편</label><input class="money-input shard-input" id="coralShard" inputmode="numeric" max="9999" min="0" type="text" value="0"/></div>
-<div class="basic-info-row manual-resource" data-basic-row="aiur-shard"><label for="aiurShard">아이어의 파편</label><input class="money-input shard-input" id="aiurShard" inputmode="numeric" max="9999" min="0" type="text" value="0"/></div>
-<div class="basic-info-row manual-resource" data-basic-row="xerus-shard"><label for="xerusShard">제루스의 파편</label><input class="money-input shard-input" id="xerusShard" inputmode="numeric" max="9999" min="0" type="text" value="0"/></div>
 <input id="ep" type="hidden" value="0"/>
 </div>
 <div class="xp-sp-panel basic-info-panel" data-basic-info-side="right">
@@ -404,7 +401,8 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 <div class="basic-info-row" data-basic-row="challenge-tower-floor"><label for="challengeTowerFloor">도전의탑 층</label><input id="challengeTowerFloor" type="text" value="1" inputmode="numeric" min="1" max="90" data-challenge-tower-floor-value="1"/></div>
 <div class="basic-info-row" data-basic-row="solo-mode"><label for="soloMode">개인</label><select id="soloMode"><option selected="" value="ON">ON</option><option value="OFF">OFF</option></select></div>
 <div class="basic-info-row" data-basic-row="coop-mode"><label for="coopMode">협동</label><select id="coopMode"><option selected="" value="OFF">OFF</option><option value="ON">ON</option></select></div>
-<div class="basic-info-row" data-basic-row="coop-players"><label for="coopPlayers">협동 인원수</label><select id="coopPlayers"><option value="2">2</option><option selected="" value="3">3</option></select></div>
+<div class="basic-info-row" data-basic-row="coop-passenger-2-defense-reduce"><label for="coopPassenger2Dr">승객 2P 방어력 감소</label><select id="coopPassenger2Dr"><option selected="" value="0">0</option><option value="15">15</option><option value="25">25</option><option value="50">50</option><option value="60">60</option></select></div>
+<div class="basic-info-row" data-basic-row="coop-passenger-3-defense-reduce"><label for="coopPassenger3Dr">승객 3P 방어력 감소</label><select id="coopPassenger3Dr"><option selected="" value="0">0</option><option value="15">15</option><option value="25">25</option><option value="50">50</option><option value="60">60</option></select></div>
 <div class="basic-info-row" data-basic-row="team"><label for="team">출발 지원 인원수</label><select id="team"><option selected="" value="1">1</option><option value="2">2</option><option value="3">3</option></select></div>
 <div class="basic-info-row dps-min-main-row" data-basic-row="min-dps"><label for="dpsTableMinDpsMain">도전할 최소 DPS</label><input id="dpsTableMinDpsMain" inputmode="decimal" placeholder="예시) 1.0" type="text"/></div>
 <div class="basic-info-row title-td-row" data-basic-row="title-total-damage"><label for="titleTdBonus">타이틀 총 데미지</label><select id="titleTdBonus"><option selected="" value="0">선택 안함</option><option value="2">전문 · +2%</option><option value="4">장인 · +4%</option><option value="6">명장 · +6%</option><option value="8">도인 · +8%</option><option value="10">지존 · +10%</option><option value="12">패왕 · +12%</option><option value="13">패왕+ · +13%</option><option value="14">제왕 · +14%</option><option value="15">제왕+ · +15%</option><option value="16">신황 · +16%</option><option value="17">신황+ · +17%</option></select></div>
@@ -412,8 +410,9 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 <input id="dt" type="hidden" value="ON"/>
 <div class="basic-info-row" data-basic-row="erosion-stack"><label for="erosionStack">침식 스텍</label><input id="erosionStack" data-erosion-value="500" type="text" value="500" inputmode="numeric"/></div>
 <div class="basic-info-row" data-basic-row="erosion-resist"><label for="jewelErosionRes">심연 내성</label><input id="jewelErosionRes" data-erosion-value="30" type="text" value="30" inputmode="numeric"/></div>
-<div class="basic-info-row" data-basic-row="coop-passenger-2-defense-reduce"><label for="coopPassenger2Dr">승객 2P 방어력 감소</label><select id="coopPassenger2Dr"><option selected="" value="0">0</option><option value="15">15</option><option value="25">25</option><option value="50">50</option><option value="60">60</option></select></div>
-<div class="basic-info-row" data-basic-row="coop-passenger-3-defense-reduce"><label for="coopPassenger3Dr">승객 3P 방어력 감소</label><select id="coopPassenger3Dr"><option selected="" value="0">0</option><option value="15">15</option><option value="25">25</option><option value="50">50</option><option value="60">60</option></select></div>
+<div class="basic-info-row manual-resource" data-basic-row="coral-shard"><label for="coralShard">코랄의 파편</label><input class="money-input shard-input" id="coralShard" inputmode="numeric" max="9999" min="0" type="text" value="0"/></div>
+<div class="basic-info-row manual-resource" data-basic-row="aiur-shard"><label for="aiurShard">아이어의 파편</label><input class="money-input shard-input" id="aiurShard" inputmode="numeric" max="9999" min="0" type="text" value="0"/></div>
+<div class="basic-info-row manual-resource" data-basic-row="xerus-shard"><label for="xerusShard">제루스의 파편</label><input class="money-input shard-input" id="xerusShard" inputmode="numeric" max="9999" min="0" type="text" value="0"/></div>
 </div>
 </div>
  </div>
@@ -742,7 +741,6 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 <div class="data-card bus-cut-card">
 <h3 class="bus-cut-title"><span>버스 보드</span></h3>
 <div class="bus-cut-groups">
-<section class="bus-cut-party-group" aria-labelledby="busCutParty2Title"><h4 id="busCutParty2Title">2인</h4><div class="bus-cut-list" id="xpCutRows2"></div></section>
 <section class="bus-cut-party-group" aria-labelledby="busCutParty3Title"><h4 id="busCutParty3Title">3인</h4><div class="bus-cut-list" id="xpCutRows3"></div></section>
 </div>
 </div>

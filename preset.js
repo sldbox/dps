@@ -26,7 +26,7 @@ function isTraitPresetExcludedValueId(id){
 const TRAIT_PRESET_NAME_PLACEHOLDER='예시) 더파300라버스';
 const TRAIT_PRESET_UNSUPPORTED_OLD_MESSAGE='구버전 프리셋은 더 이상 지원하지 않습니다.\n호환 엑셀버전: 5.4392\n엑셀 파일을 다시 불러온 뒤, 새 특성 프리셋을 생성해 주세요.';
 const TRAIT_PRESET_SINGLE_UPDATE_VALUE_IDS=new Set([
-  'diff','penance','round','challengeTowerFloor','soloMode','coopMode','coopPlayers','coopPassenger2Dr','coopPassenger3Dr','team','pbless','spBankApply',
+  'diff','penance','round','challengeTowerFloor','soloMode','coopMode','coopPassenger2Dr','coopPassenger3Dr','team','pbless','spBankApply',
   'overEnhance','repairEnhance','enhanceMaster',
   'prodArtifact','prodNova','prodTeratron','prodAmon','prodAdun','prodKerrigan','prodOvermind','prodNarud',
   'flowerSkill1','flowerSkill2','flowerSkill3',
@@ -268,7 +268,6 @@ function sanitizeSavedValues(values){
   const coopMode=normalizeOnOffValue(out.coopMode,'OFF')==='ON';
   out.soloMode=coopMode ? 'OFF' : 'ON';
   out.coopMode=coopMode ? 'ON' : 'OFF';
-  if(hasOwn(out,'coopPlayers')) out.coopPlayers=normalizeCoopPlayersValue(out.coopPlayers || out.team);
   out.coopPassenger2Dr=normalizeCoopPassengerDefenseReduceValue(out.coopPassenger2Dr);
   out.coopPassenger3Dr=normalizeCoopPassengerDefenseReduceValue(out.coopPassenger3Dr);
   if(hasOwn(out,'team')) out.team=normalizeTeamCountValue(out.team);
@@ -899,7 +898,6 @@ function finalizeTraitPresetStoreForExport(store){
 }
 function traitPresetMetaFromValues(values={}){
   const coopMode=normalizeOnOffValue(values.coopMode,'OFF')==='ON';
-  const players=normalizeCoopPlayersValue(values.coopPlayers || values.team || COOP_PLAYERS_DEFAULT);
   const tower=isTowerDifficulty(values.diff);
   const towerFloor=normalizedTowerFloorString(values.challengeTowerFloor || TOWER_FLOOR_INPUT_MIN);
   return {
@@ -907,11 +905,11 @@ function traitPresetMetaFromValues(values={}){
     penance:String(values.penance || '0'),
     round:String(values.round || '1'),
     challengeTowerFloor:towerFloor,
-    mode:tower ? `${towerFloor}층` : (coopMode ? `협동${players}인` : '개인')
+    mode:tower ? `${towerFloor}층` : (coopMode ? '협동3인' : '개인')
   };
 }
 function traitPresetMetaFromState(){
-  return traitPresetMetaFromValues({diff:vs('diff'),penance:vs('penance'),round:targetRoundStoredValue(),challengeTowerFloor:challengeTowerFloorStoredValue(),coopMode:vs('coopMode'),coopPlayers:vs('coopPlayers'),team:vs('team')});
+  return traitPresetMetaFromValues({diff:vs('diff'),penance:vs('penance'),round:targetRoundStoredValue(),challengeTowerFloor:challengeTowerFloorStoredValue(),coopMode:vs('coopMode'),team:vs('team')});
 }
 function traitPresetMetaFromSavedState(state){
   const values=(state && typeof state==='object' && state.values && typeof state.values==='object') ? state.values : {};

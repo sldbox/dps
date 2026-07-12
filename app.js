@@ -234,22 +234,14 @@ function setCoopModeOptions(value='OFF'){
   syncSelectOptionsBySignature(coop, 'coop-mode-toggle', [{value:'OFF',label:'OFF'},{value:'ON',label:'ON'}]);
   coop.value=normalized;
 }
-function setCoopPlayersOptions(value=COOP_PLAYERS_DEFAULT){
-  const players=$('coopPlayers');
-  if(!players) return;
-  const normalized=normalizeCoopPlayersValue(value);
-  syncSelectOptionsBySignature(players, 'coop-players', ['2','3'].map(playerCount=>({value:playerCount,label:playerCount})));
-  players.value=normalized;
-}
 function syncBattleMode(sourceId=''){
-  const solo=$('soloMode'), coop=$('coopMode'), players=$('coopPlayers');
+  const solo=$('soloMode'), coop=$('coopMode');
   if(!solo || !coop) return;
   setCoopModeOptions(coop.value);
   const sourceValue=sourceId==='soloMode' ? normalizeOnOffValue(solo.value,'ON') : normalizeOnOffValue(coop.value,'OFF');
   const coopOn=sourceId==='soloMode' ? sourceValue!=='ON' : sourceValue==='ON';
   solo.value=coopOn ? 'OFF' : 'ON';
   coop.value=coopOn ? 'ON' : 'OFF';
-  setCoopPlayersOptions(players ? players.value : COOP_PLAYERS_DEFAULT);
   syncPenanceOptions();
   syncTeamSelect();
 }
@@ -259,7 +251,7 @@ function syncTeamSelect(){
   el.value=normalizeTeamCountValue(el.value);
 }
 function resetTeamOnDifficultyChange(){
-  syncBattleMode('coopPlayers');
+  syncBattleMode('coopMode');
   syncTeamSelect();
 }
 function clampEnchantInput(el){
@@ -318,7 +310,7 @@ function currentArtifactDpsResult(){
   if(isTowerDifficulty()){
     return calculateArtifactDpsPreview(TOWER_DIFFICULTY_NAME, 0, challengeTowerFloorStoredValue(), {battleMode:'solo'});
   }
-  return calculateArtifactDpsPreview(diff, v('penance'), targetRoundStoredValue(), {battleMode, coopPlayers:vs('coopPlayers')});
+  return calculateArtifactDpsPreview(diff, v('penance'), targetRoundStoredValue(), {battleMode});
 }
 function renderDpsSummary(s){
   updateDpsContextSummary();
@@ -458,10 +450,10 @@ function renderEnchantPreview(){
 }
 /* 버스 보드: 렌더링 / 행 클릭 피드백 */
 const XP_CUT_DIVISOR_ROWS=[
-  {stage:'1단계', party2:10, party3:6},
-  {stage:'2단계', party2:20, party3:12},
-  {stage:'3단계', party2:30, party3:22},
-  {stage:'4단계', party2:40, party3:30}
+  {stage:'1단계', party3:6},
+  {stage:'2단계', party3:12},
+  {stage:'3단계', party3:22},
+  {stage:'4단계', party3:30}
 ];
 let xpCutRowFeedbackTimer=0;
 let xpCutRowFeedbackCells=[];
@@ -477,7 +469,6 @@ function renderXpCut(){
       return `<button class="bus-cut-row" type="button"><span class="bus-cut-stage">${row.stage}</span><span class="bus-cut-value" data-value="${value}" data-feedback="÷${divisor}배"><span class="bus-cut-text">${value}</span></span></button>`;
     }).join('');
   };
-  renderPartyRows('xpCutRows2','party2');
   renderPartyRows('xpCutRows3','party3');
 }
 function restoreXpCutRowFeedback(){
@@ -675,24 +666,24 @@ function buildDpsTable(round){
     previewOptions:{battleMode:'solo'}
   });
 }
-function buildCoopDpsMatrix(players, round){
+function buildCoopDpsMatrix(round){
   return buildPenanceDpsMatrix({
     difficulties:COOP_DPS_TABLE_DIFFICULTIES,
     penanceMin:COOP_DPS_TABLE_PENANCE_MIN,
     penanceMax:COOP_DPS_TABLE_PENANCE_MAX,
     currentPen:v('penance'),
     round,
-    previewOptions:{battleMode:'coop', coopPlayers:String(players)},
+    previewOptions:{battleMode:'coop'},
     tableClass:'dps-coop-matrix'
   });
 }
 function buildCoopDpsTable(round){
-  return [2,3].map(players=>`
-    <section class="dps-coop-block" aria-label="협동 ${players}인 DPS표">
-      <header class="dps-coop-head"><b>협동 ${players}인</b><span>${round}라운드 · 0~13고행</span></header>
-      <div class="dps-table-scroll dps-coop-scroll">${buildCoopDpsMatrix(players, round)}</div>
+  return `
+    <section class="dps-coop-block" aria-label="협동 3인 DPS표">
+      <header class="dps-coop-head"><b>협동 3인</b><span>${round}라운드 · 0~13고행</span></header>
+      <div class="dps-table-scroll dps-coop-scroll">${buildCoopDpsMatrix(round)}</div>
     </section>
-  `).join('');
+  `;
 }
 function buildDpsTowerTable(){
   const minDps=parseDpsTableMinDps();
@@ -741,7 +732,7 @@ function dpsTablePanelInnerHtml(){
   if(activeDpsTableMode==='tower'){
     tableHtml=`<div class="dps-table-scroll">${buildDpsTowerTable()}</div>`;
   }else if(activeDpsTableMode==='coop'){
-    tableHtml=`<div class="dps-coop-stack">${buildCoopDpsTable(round)}</div>`;
+    tableHtml=buildCoopDpsTable(round);
   }else{
     tableHtml=`<div class="dps-table-scroll">${buildDpsTable(round)}</div>`;
   }
@@ -1283,7 +1274,6 @@ const FIELD_REGISTRY={
   challengeTowerFloor:{kind:'기본 정보',name:'도전의탑 층',compare:true,save:true,excel:'number'},
   soloMode:{kind:'기본 정보',name:'개인',compare:true,save:true,excel:'select'},
   coopMode:{kind:'기본 정보',name:'협동',compare:true,save:true,excel:'select'},
-  coopPlayers:{kind:'기본 정보',name:'협동 인원수',compare:true,save:true,excel:'select'},
   coopPassenger2Dr:{kind:'기본 정보',name:'승객 2P 방어력 감소',compare:true,save:true,excel:'select'},
   coopPassenger3Dr:{kind:'기본 정보',name:'승객 3P 방어력 감소',compare:true,save:true,excel:'select'},
   team:{kind:'기본 정보',name:'출발 지원 인원수',compare:true,save:true,excel:'number'},
@@ -2871,7 +2861,7 @@ function excelStateValue(id, value, options={}){
 }
 function buildExcelState(cells, specCells, zeroCells, sheetName=''){
   const state=makeStateObject();
-  const values={...state.values, soloMode:'ON', coopMode:'OFF', coopPlayers:'', coopPassenger2Dr:'0', coopPassenger3Dr:'0'};
+  const values={...state.values, soloMode:'ON', coopMode:'OFF', coopPassenger2Dr:'0', coopPassenger3Dr:'0'};
   const roundFieldId=excelRoundFieldId(cells,sheetName);
   const assign=(id,value,options={})=>{
     const resolved=excelStateValue(id,value,options);
@@ -4394,9 +4384,6 @@ function bindReactiveInputs(){
     if(RUNE_OPTION_SELECT_ID_SET.has(target.id)) syncExclusiveRuneOptions();
     if(target.id==='soloMode' || target.id==='coopMode'){
       syncBattleMode(target.id);
-    }
-    if(target.id==='coopPlayers'){
-      syncBattleMode('coopPlayers');
     }
     if(isDpsBaseUnitQuantityInput(target)){
       normalizeDpsBaseUnitQuantityInput(target);

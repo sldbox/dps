@@ -319,7 +319,7 @@ body.month-rune-modal-open:is(.is-dps-mode-solo,.is-dps-mode-coop,.is-dps-mode-t
 .month-rune-modal.is-modal-dps .dps-table-body{flex:0 1 auto;max-height:calc(100vh - 118px);}
 .month-rune-modal.is-modal-dps .dps-table-mode-panel{flex:0 1 auto;max-height:calc(100vh - 134px);}
 .month-rune-modal.is-modal-dps .dps-table-scroll{flex:0 1 auto;max-height:calc(100vh - 134px);overflow:auto;}
-.month-rune-modal.is-modal-dps .dps-coop-stack{flex:0 1 auto;max-height:calc(100vh - 210px);overflow:auto;}
+.month-rune-modal.is-modal-dps .dps-coop-panel{flex:0 1 auto;max-height:calc(100vh - 134px);}
 .dps-table-panel{display:flex;flex-direction:column;min-height:0;height:100%;background:transparent;border:0;border-radius:0;margin:0;overflow:hidden;}
 .dps-table-panel:not(.dps-table-mode-panel){border-color:transparent;box-shadow:none;}
 .dps-table-mode-panel{flex:1 1 auto;background:transparent;border:0;border-radius:0;box-shadow:none;gap:8px;}
@@ -364,14 +364,12 @@ body.month-rune-modal-open:is(.is-dps-mode-solo,.is-dps-mode-coop,.is-dps-mode-t
 .dps-round-matrix th, .dps-round-matrix td{padding:3px 3px;height:24px;letter-spacing:-.03em;}
 .dps-round-matrix thead th{white-space:nowrap;word-break:keep-all;overflow:visible;text-overflow:clip;line-height:1.05;}
 .dps-round-matrix thead th:first-child, .dps-round-matrix tbody th{width:42px;min-width:42px;max-width:42px;}
-.dps-coop-panel{display:flex;flex:1 1 auto;flex-direction:column;min-height:0;overflow:hidden;}
-.dps-coop-stack{display:flex;flex:1 1 auto;flex-direction:column;gap:10px;min-height:0;height:100%;max-height:100%;padding:0;overflow-x:hidden;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior-y:contain;touch-action:pan-x pan-y;scrollbar-width:none;-ms-overflow-style:none;}
-.dps-coop-block{flex:0 0 auto;min-width:0;border:0;border-radius:0;overflow:hidden;background:transparent;box-shadow:none;}
-.dps-coop-block + .dps-coop-block{margin-top:0;}
+.dps-coop-panel{display:flex;flex:0 1 auto;flex-direction:column;min-height:0;overflow:hidden;}
+.dps-coop-block{display:flex;flex:0 1 auto;flex-direction:column;min-width:0;max-height:100%;border:0;border-radius:0;overflow:hidden;background:transparent;box-shadow:none;}
 .dps-coop-head{position:sticky;top:0;z-index:55;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 10px;border-bottom:1px solid var(--color-slate-200);background:var(--color-white);color:var(--color-slate-700);}
 .dps-coop-head b{font-size:calc(13px * var(--app-font-scale));font-weight:1000;}
 .dps-coop-head span{font-size:calc(11px * var(--app-font-scale));font-weight:800;opacity:.88;}
-.dps-coop-scroll{height:auto;max-height:none;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain;touch-action:pan-x pan-y;scrollbar-width:none;-ms-overflow-style:none;}
+.dps-coop-scroll{flex:0 1 auto;height:auto;max-height:calc(100vh - 169px);overflow-x:auto;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;touch-action:pan-x pan-y;scrollbar-width:none;-ms-overflow-style:none;}
 .dps-coop-matrix{min-width:1280px;}
 .dps-matrix td.dps-risk-cell .dps-tower-enemy, .dps-matrix td.dps-risk-cell .dps-tower-enemy-item em, .dps-matrix td.dps-risk-cell .dps-tower-enemy-item b{color:var(--on-dark);}
 .dps-min-main-row label{justify-content:center;text-align:center;}
@@ -530,7 +528,7 @@ input:not([type="hidden"]):not([type="checkbox"]):not([type="radio"]):not([type=
 .col-left .sg, .col-left .sg.xp-sp-card, .col-left .sg.rune-spec, .col-mid .stat-dps-card, .col-left .bus-cut-card, .col-left .final-damage-card, .trait-board-panel .trait-group{overflow:hidden;}
 .col-left .sg > .sg-title, .col-mid .stat-dps-card > .section-title, .col-right .dps-base-unit-panel > .section-title, .col-left .bus-cut-card > h3, .col-left .final-damage-card > h3, .trait-group h4{display:flex;align-items:center;justify-content:space-between;gap:8px;background:var(--section-head-bg);border:0;border-radius:0;color:var(--section-head-text);box-shadow:none;font-size:calc(13px * var(--app-font-scale));font-weight:900;line-height:1;letter-spacing:0;text-transform:none;opacity:1;}
 #sp, #xp, #bxp, #rp, #soul, #autoEpView, #epRemainBasicView, #rpRemainBasicView, #soulRemainBasicView{text-align:center;justify-content:center;text-align-last:center;}
-#diff, #round, #soloMode, #coopMode, #coopPlayers, #team, #pbless, #penance, #titleTdBonus, #dpsTableMinDpsMain, #erosionStack, #jewelErosionRes{text-align:center;text-align-last:center;justify-content:center;}
+#diff, #round, #soloMode, #coopMode, #team, #pbless, #penance, #titleTdBonus, #dpsTableMinDpsMain, #erosionStack, #jewelErosionRes{text-align:center;text-align-last:center;justify-content:center;}
 .col-mid .stat-dps-card, .col-left .bus-cut-card, .col-left .final-damage-card{padding:0 0 10px;margin-bottom:10px;background:transparent;border:0;border-radius:0;box-shadow:none;}
 .col-mid .stat-dps-card{border:0;}
 .col-mid .stat-dps-card .stat-grid{background:transparent;border:0;box-shadow:none;border-radius:0;}
@@ -568,7 +566,7 @@ body:not(.is-tabbed) .col-left, body:not(.is-tabbed) .col-mid, body:not(.is-tabb
 .col-left .sg > .sg-title > *{background:transparent;border:0;border-radius:0;padding:0;color:var(--on-dark);}
 .trait-tools .mini-btn{height:30px;min-height:30px;padding:0 10px;font-size:calc(11.5px * var(--app-font-scale));font-weight:900;line-height:1;}
 .xp-sp-card input:not([type="hidden"]), .xp-sp-card select, .rune-spec input, .rune-spec select, .clean-rune-card input, .clean-rune-card select, .additional-row input, .additional-row b, .enchant-combined-row input, .enchant-combined-row b, .clean-rune-card .enchant-combined-row input, .clean-rune-card .enchant-combined-row b{text-align:center;text-align-last:center;justify-content:center;}
-#sp, #xp, #bxp, #rp, #soul, #diff, #round, #soloMode, #coopMode, #coopPlayers, #team, #pbless, #penance, #titleTdBonus, #skillRound, #dpsTableMinDpsMain, #erosionStack, #jewelErosionRes{background:var(--role-interactive-bg, #10233d);border-color:var(--role-interactive-bd, #3c6fb6);color:var(--color-slate-900);}
+#sp, #xp, #bxp, #rp, #soul, #diff, #round, #soloMode, #coopMode, #team, #pbless, #penance, #titleTdBonus, #skillRound, #dpsTableMinDpsMain, #erosionStack, #jewelErosionRes{background:var(--role-interactive-bg, #10233d);border-color:var(--role-interactive-bd, #3c6fb6);color:var(--color-slate-900);}
 .col-left .ir label, .rune-stat-row label, .rune-option-grid label, .additional-row label, .mini-ir:not(.unit-enhance-option-row) label{min-height:31px;height:31px;display:flex;align-items:center;justify-content:center;text-align:center;text-align-last:center;padding:0 9px;font-size:calc(11.5px * var(--app-font-scale));font-weight:900;line-height:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;box-sizing:border-box;}
 .additional-help{min-height:0;display:inline-flex;align-items:center;justify-content:flex-start;text-align:left;padding:0;font-size:calc(10.5px * var(--app-font-scale));line-height:1.2;color:var(--color-slate-500);font-weight:800;white-space:normal;word-break:keep-all;}
 .rune-spec .rune-panel-title, .clean-rune-card .rune-panel-title, .clean-rune-card .enchant-combined .rune-panel-title, .enchant-combined .rune-panel-title{min-height:22px;height:22px;display:flex;align-items:center;justify-content:flex-start;margin:0 0 8px;padding:0;background:transparent;border:0;border-top:0;border-bottom:0;box-shadow:none;font-size:calc(12.5px * var(--app-font-scale));font-weight:900;line-height:1;color:#cfe0ff;}
@@ -593,7 +591,7 @@ body.is-mobile .month-rune-modal.is-modal-dps{width:calc(100vw - 8px);height:aut
 body.is-mobile .month-rune-modal.is-modal-dps .month-rune-body{max-height:calc(var(--mobile-vh, 100vh) - 72px);}
 body.is-mobile .month-rune-modal.is-modal-dps .dps-table-inline-panel{max-height:calc(var(--mobile-vh, 100vh) - 88px);}
 body.is-mobile .month-rune-modal.is-modal-dps .dps-table-body{max-height:calc(var(--mobile-vh, 100vh) - 104px);}
-body.is-mobile .month-rune-modal.is-modal-dps .dps-table-mode-panel, body.is-mobile .month-rune-modal.is-modal-dps .dps-table-scroll, body.is-mobile .month-rune-modal.is-modal-dps .dps-coop-stack{max-height:calc(var(--mobile-vh, 100vh) - 120px);}
+body.is-mobile .month-rune-modal.is-modal-dps .dps-table-mode-panel, body.is-mobile .month-rune-modal.is-modal-dps .dps-table-scroll, body.is-mobile .month-rune-modal.is-modal-dps .dps-coop-panel{max-height:calc(var(--mobile-vh, 100vh) - 120px);}
 body.is-mobile .month-rune-modal.is-modal-dps.is-dps-mode-tower{--tower-floor-w:40px;--tower-row-h:58px;--tower-value-font:11.2px;--tower-enemy-font:8.4px;--tower-enemy-gap:3px;--tower-visible-rows:9;}
 body.is-mobile .month-rune-modal.is-modal-dps .dps-tower-panel .dps-table-scroll{max-height:calc(27px + (var(--tower-row-h) * var(--tower-visible-rows)));}
 body.is-mobile .month-rune-modal.is-modal-dps .dps-tower-panel .dps-tower-matrix td{padding:4px 5px;}
@@ -652,22 +650,21 @@ body.is-mobile .month-rune-modal.is-modal-dps .dps-tower-panel .dps-tower-block{
 body.is-mobile .month-rune-modal.is-modal-dps .dps-tower-panel .dps-tower-matrix{width:100%;min-width:100%;table-layout:fixed;}
 body.is-mobile .month-rune-modal.is-modal-dps .dps-tower-panel .dps-tower-enemy{display:flex;align-items:center;justify-content:center;gap:var(--tower-enemy-gap);font-size:calc(var(--tower-enemy-font) * var(--app-font-scale));line-height:1.1;white-space:nowrap;}
 body.is-mobile .month-rune-modal.is-modal-dps .dps-tower-panel .dps-tower-enemy-item{gap:2px;justify-content:center;white-space:nowrap;}
-body.is-mobile .dps-coop-stack{height:100%;max-height:100%;padding:0;gap:10px;overflow-y:auto;}
-body.is-mobile .dps-coop-scroll{width:100%;max-width:100%;overflow-x:auto;overflow-y:hidden;}
+body.is-mobile .dps-coop-scroll{width:100%;max-width:100%;max-height:calc(var(--mobile-vh, 100vh) - 155px);overflow:auto;}
 body.is-tablet .month-rune-modal{width:min(980px,calc(100vw - 16px));height:auto;max-height:calc(100vh - 16px);margin:8px auto;}
 body.is-tablet .month-rune-modal.is-modal-compare{width:min(980px,calc(100vw - 20px));height:calc(100vh - 20px);max-height:calc(100vh - 20px);margin:10px auto;}
 body.is-tablet .month-rune-modal.is-modal-dps{width:calc(100vw - 8px);height:auto;max-height:calc(100vh - 12px);margin:6px auto;}
 body.is-tablet .month-rune-modal.is-modal-dps .month-rune-body{max-height:calc(100vh - 78px);}
 body.is-tablet .month-rune-modal.is-modal-dps .dps-table-inline-panel{max-height:calc(100vh - 94px);}
 body.is-tablet .month-rune-modal.is-modal-dps .dps-table-body{max-height:calc(100vh - 110px);}
-body.is-tablet .month-rune-modal.is-modal-dps .dps-table-mode-panel, body.is-tablet .month-rune-modal.is-modal-dps .dps-table-scroll, body.is-tablet .month-rune-modal.is-modal-dps .dps-coop-stack{max-height:calc(100vh - 126px);}
+body.is-tablet .month-rune-modal.is-modal-dps .dps-table-mode-panel, body.is-tablet .month-rune-modal.is-modal-dps .dps-table-scroll, body.is-tablet .month-rune-modal.is-modal-dps .dps-coop-panel{max-height:calc(100vh - 126px);}
 body.is-pc-portrait .dps-tower-grid, body.is-tablet .dps-tower-grid{grid-template-columns:repeat(3,minmax(0,1fr));}
 body.is-tablet .month-rune-grid{grid-template-columns:repeat(2,minmax(0,1fr));}
 body.is-tablet .jewel-grid{grid-template-columns:repeat(3,minmax(0,1fr));}
 body.is-tablet .month-rune-head{gap:8px;padding:10px 54px 10px 10px;}
 /* ===== 04. 버스 보드 / 데미지보드 ===== */
 .bus-cut-card{overflow:hidden;}
-.bus-cut-groups{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;padding:0 10px;}
+.bus-cut-groups{display:grid;grid-template-columns:minmax(0,1fr);gap:10px;padding:0 10px;}
 .bus-cut-party-group{min-width:0;display:grid;gap:5px;align-content:start;}
 .bus-cut-party-group > h4{display:flex;align-items:center;justify-content:center;height:28px;min-height:28px;margin:0;border:1px solid var(--field-label-bd,#30435f);border-left-color:var(--field-label-accent,#425b7e);border-radius:8px;background:var(--field-label-bg,var(--role-label-bg,#172235));color:var(--field-label-text,var(--color-text-main));font-size:calc(11.5px * var(--app-font-scale));font-weight:900;line-height:1;}
 .bus-cut-list{display:grid;gap:4px;min-width:0;}

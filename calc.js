@@ -73,7 +73,6 @@ function normalizeRuneChoiceValues(values={}){
 }
 
 const POWER_BLESS_ALL_OPTIONS=[0,20,30,40,60,90];
-const COOP_PLAYERS_DEFAULT='3';
 const COOP_PASSENGER_DEFENSE_REDUCE_OPTIONS=[0,15,25,50,60];
 const EROSION_CONTROL_DEFAULTS={erosionStack:'500',jewelErosionRes:'30'};
 const EROSION_CONTROL_IDS=new Set(Object.keys(EROSION_CONTROL_DEFAULTS));
@@ -82,10 +81,6 @@ const COOP_PENANCE_MAX=13;
 function normalizeOnOffValue(value, fallback='OFF'){
   const text=String(value??'').trim().toUpperCase();
   return text==='ON' ? 'ON' : text==='OFF' ? 'OFF' : fallback;
-}
-function normalizeCoopPlayersValue(value, fallback=COOP_PLAYERS_DEFAULT){
-  const text=String(value??'').trim();
-  return text==='3' ? '3' : text==='2' ? '2' : fallback;
 }
 function normalizeCoopPassengerDefenseReduceValue(value){
   const n=Math.round(Number(String(value ?? '').replace(/,/g,'').trim()));
@@ -144,8 +139,7 @@ const BASE_DISPLAY_STATS={ad:5, as:5, cri:5};
 function effectiveXpValue(){return Math.max(1, v('xp'));}
 function isCoopMode(){return normalizeOnOffValue(vs('coopMode'),'OFF')==='ON';}
 function isCoopActive(diffName=vs('diff')){return isCoopMode() && isCoopAllowedDifficulty(diffName);}
-function coopPlayerCount(){return Number(normalizeCoopPlayersValue(vs('coopPlayers')));}
-function battleEnemyCountMultiplier(diffName=vs('diff')){return isCoopActive(diffName) ? coopPlayerCount() : 1;}
+function battleEnemyCountMultiplier(diffName=vs('diff')){return isCoopActive(diffName) ? 3 : 1;}
 function currentPenanceMax(){return isCoopActive() ? COOP_PENANCE_MAX : SOLO_PENANCE_MAX;}
 function shouldIgnorePenanceForDifficulty(diffName=vs('diff')){
   const name=difficultyName(diffName);
@@ -382,11 +376,8 @@ function coopPassengerTargetEffects(player){
   };
 }
 function coopPassengerTargetEffectsList(){
-  const playerCount=battleEnemyCountMultiplier();
-  if(playerCount<=1) return [];
-  const targets=[coopPassengerTargetEffects(2)];
-  if(playerCount>=3) targets.push(coopPassengerTargetEffects(3));
-  return targets;
+  if(!isCoopActive()) return [];
+  return [coopPassengerTargetEffects(2), coopPassengerTargetEffects(3)];
 }
 function enemyDurabilityRemain(enemyData, displayHR, displaySR){
   const hp=enemyData?.hp || 0;
@@ -1453,7 +1444,7 @@ function calculateArtifactDpsRaw(stats=computeStatsRaw()){
     round:ctx.targetRound
   };
 }
-const ARTIFACT_DPS_PREVIEW_IDS=['diff','penance','round','challengeTowerFloor','soloMode','coopMode','coopPlayers','coopPassenger2Dr','coopPassenger3Dr','team','prodArtifact','pbless',...EROSION_CONTROL_IDS];
+const ARTIFACT_DPS_PREVIEW_IDS=['diff','penance','round','challengeTowerFloor','soloMode','coopMode','coopPassenger2Dr','coopPassenger3Dr','team','prodArtifact','pbless',...EROSION_CONTROL_IDS];
 function capturePreviewElementStates(ids){
   return ids.map(id=>{
     const el=$(id);
@@ -1502,25 +1493,15 @@ function applyPreviewRoundState(round, roundEl, towerFloorEl){
     towerFloorEl.dataset.challengeTowerFloorValue=normalizedTowerFloor;
   }
 }
-function applyPreviewBattleModeState({battleMode, coopPlayers, soloEl, coopEl, coopPlayersEl, teamEl, signaturePrefix}){
+function applyPreviewBattleModeState({battleMode, soloEl, coopEl, teamEl, signaturePrefix}){
   const coopActive=battleMode==='coop';
-  const players=normalizeCoopPlayersValue(coopPlayers);
   if(soloEl) soloEl.value=coopActive ? 'OFF' : 'ON';
   if(coopEl){
     setSelectOptions(coopEl, [{value:'OFF',label:'OFF',selected:!coopActive},{value:'ON',label:'ON',selected:coopActive}]);
     coopEl.dataset.optionSignature=`${signaturePrefix}:coop-mode-toggle`;
     coopEl.value=coopActive ? 'ON' : 'OFF';
   }
-  if(coopPlayersEl){
-    setSelectOptions(coopPlayersEl, ['2','3'].map(playerCount=>({
-      value:playerCount,
-      label:playerCount,
-      selected:coopActive && playerCount===players
-    })));
-    coopPlayersEl.dataset.optionSignature=`${signaturePrefix}:coop-players`;
-    coopPlayersEl.value=coopActive ? players : normalizeCoopPlayersValue(coopPlayersEl.value);
-  }
-  if(coopActive && teamEl) teamEl.value=players;
+  if(coopActive && teamEl) teamEl.value='3';
 }
 function syncErosionControlElements(){
   EROSION_CONTROL_IDS.forEach(id=>{
@@ -1541,7 +1522,6 @@ function previewControlElements(){
     towerFloorEl:$('challengeTowerFloor'),
     soloEl:$('soloMode'),
     coopEl:$('coopMode'),
-    coopPlayersEl:$('coopPlayers'),
     teamEl:$('team')
   };
 }
@@ -1554,10 +1534,8 @@ function prepareDpsPreviewControls(diffName, penanceLevel, round, options={}, si
   syncErosionControlElements();
   applyPreviewBattleModeState({
     battleMode,
-    coopPlayers:options.coopPlayers,
     soloEl:controls.soloEl,
     coopEl:controls.coopEl,
-    coopPlayersEl:controls.coopPlayersEl,
     teamEl:controls.teamEl,
     signaturePrefix
   });
@@ -1824,7 +1802,7 @@ function updateDpsContextSummary(){
 
 
 /* ===== 09. DPS표 미리보기 계산 ===== */
-const DPS_PREVIEW_IDS=['diff','penance','round','challengeTowerFloor','soloMode','coopMode','coopPlayers','team','pbless',...EROSION_CONTROL_IDS];
+const DPS_PREVIEW_IDS=['diff','penance','round','challengeTowerFloor','soloMode','coopMode','team','pbless',...EROSION_CONTROL_IDS];
 function computeDpsPreview(diffName, penanceLevel, round, options={}){
   const saved=capturePreviewElementStates(DPS_PREVIEW_IDS);
   try{
@@ -2381,7 +2359,6 @@ window.DPS_CALC=Object.freeze({
   normalizeRuneChoiceValue,
   normalizeRuneChoiceValues,
   normalizeOnOffValue,
-  normalizeCoopPlayersValue,
   normalizeTeamCountValue,
   normalizePenanceValue,
   normalizePowerBlessRawValue,
@@ -2437,7 +2414,6 @@ window.DPS_CALC=Object.freeze({
   effectiveXpValue,
   isCoopMode,
   isCoopActive,
-  coopPlayerCount,
   battleEnemyCountMultiplier,
   currentPenanceMax,
   shouldIgnorePenanceForDifficulty,
