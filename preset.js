@@ -25,13 +25,27 @@ function isTraitPresetExcludedValueId(id){
 }
 const TRAIT_PRESET_NAME_PLACEHOLDER='예시) 더파300라버스';
 const TRAIT_PRESET_UNSUPPORTED_OLD_MESSAGE='구버전 프리셋은 더 이상 지원하지 않습니다.\n호환 엑셀버전: 5.4392\n엑셀 파일을 다시 불러온 뒤, 새 특성 프리셋을 생성해 주세요.';
-const TRAIT_PRESET_SYNC_EXCLUDED_VALUE_IDS=new Set([
+const TRAIT_PRESET_SINGLE_UPDATE_VALUE_IDS=new Set([
   'diff','penance','round','challengeTowerFloor','soloMode','coopMode','coopPlayers','coopPassenger2Dr','coopPassenger3Dr','team','pbless','spBankApply',
   'overEnhance','repairEnhance','enhanceMaster',
   'prodArtifact','prodNova','prodTeratron','prodAmon','prodAdun','prodKerrigan','prodOvermind','prodNarud',
   'flowerSkill1','flowerSkill2','flowerSkill3',
   'traitLimitAD','traitLimitAS','traitLimitCRI','traitLimitCD','traitLimitMC','traitLimitDR','traitLimitTD','traitLimitUA','traitLimitMultiTarget','traitLimitInfinite'
 ]);
+const TRAIT_PRESET_UPDATE_SCOPE_KIND_ORDER=Object.freeze([
+  '기본 정보','룬효과 버프','룬정보','에디셔널','인챈트 레벨 / 결과','특성 보드','특성 투자 제한','더제로 승단 정보','성소 보드','쥬얼 설정','유닛 보드'
+]);
+const TRAIT_PRESET_UPDATE_SCOPE_HIDDEN_VALUE_IDS=new Set(['enchantCode']);
+const TRAIT_PRESET_UPDATE_SCOPE_EXTRA_GROUPS=Object.freeze({
+  shared:Object.freeze([
+    Object.freeze({kind:'더제로 승단 정보',names:Object.freeze(['계산'])}),
+    Object.freeze({kind:'쥬얼 설정',names:Object.freeze(['일반 쥬얼','전설·신화 쥬얼'])})
+  ]),
+  single:Object.freeze([
+    Object.freeze({kind:'특성 보드',names:Object.freeze(['투자수'])}),
+    Object.freeze({kind:'유닛 보드',names:Object.freeze(['유닛 정보','수량','강화 기대값','한계 돌파','전설·신화 쥬얼','일반 쥬얼 선택 슬롯','슬롯 확장','공허의 힘'])})
+  ])
+});
 function isTraitPresetFileType(type){
   return type===TRAIT_PRESET_FILE_TYPE;
 }
@@ -1214,6 +1228,81 @@ function loadTraitPresetById(id,options={}){
 function loadTraitPreset(){
   return loadTraitPresetById(selectedTraitPresetId(),{preserveSharedValues:false});
 }
+function traitPresetUpdateScopeGroups(scope){
+  const normalizedScope=scope==='single' ? 'single' : 'shared';
+  const isSingle=normalizedScope==='single';
+  const grouped=new Map();
+  const entries=Object.entries(FIELD_REGISTRY);
+  if(isSingle){
+    const order=new Map([...TRAIT_PRESET_SINGLE_UPDATE_VALUE_IDS].map((id,index)=>[id,index]));
+    entries.sort(([a],[b])=>(order.get(a) ?? Number.MAX_SAFE_INTEGER)-(order.get(b) ?? Number.MAX_SAFE_INTEGER));
+  }
+  entries.forEach(([id,field])=>{
+    if(!field?.save || TRAIT_PRESET_UPDATE_SCOPE_HIDDEN_VALUE_IDS.has(id) || isTraitPresetExcludedValueId(id)) return;
+    if(TRAIT_PRESET_SINGLE_UPDATE_VALUE_IDS.has(id)!==isSingle) return;
+    const kind=String(field.kind || '기타');
+    const name=String(field.name || id);
+    const names=grouped.get(kind) || [];
+    if(!names.includes(name)) names.push(name);
+    grouped.set(kind,names);
+  });
+  (TRAIT_PRESET_UPDATE_SCOPE_EXTRA_GROUPS[normalizedScope] || []).forEach(group=>{
+    const names=grouped.get(group.kind) || [];
+    group.names.forEach(name=>{ if(!names.includes(name)) names.push(name); });
+    grouped.set(group.kind,names);
+  });
+  return [...grouped.entries()]
+    .map(([kind,names])=>({kind,names}))
+    .sort((a,b)=>{
+      const aIndex=TRAIT_PRESET_UPDATE_SCOPE_KIND_ORDER.indexOf(a.kind);
+      const bIndex=TRAIT_PRESET_UPDATE_SCOPE_KIND_ORDER.indexOf(b.kind);
+      return (aIndex<0 ? Number.MAX_SAFE_INTEGER : aIndex)-(bIndex<0 ? Number.MAX_SAFE_INTEGER : bIndex);
+    });
+}
+function traitPresetUpdateScopeGroupHtml(group){
+  const items=group.names.map(name=>`<li>${escapeHtml(name)}</li>`).join('');
+  return `<section class="trait-preset-update-scope-group"><h5>${escapeHtml(group.kind)}</h5><ul>${items}</ul></section>`;
+}
+function renderTraitPresetUpdateScope(scope='shared'){
+  const normalizedScope=scope==='single' ? 'single' : 'shared';
+  const list=document.querySelector(`[data-trait-preset-update-scope-list="${normalizedScope}"]`);
+  if(!list) return false;
+  list.innerHTML=traitPresetUpdateScopeGroups(normalizedScope).map(traitPresetUpdateScopeGroupHtml).join('');
+  return true;
+}
+function setTraitPresetUpdateScopeView(scope, options={}){
+  const normalizedScope=scope==='single' ? 'single' : 'shared';
+  qsa('[data-trait-preset-update-scope-tab]').forEach(tab=>{
+    const active=tab.dataset.traitPresetUpdateScopeTab===normalizedScope;
+    tab.setAttribute('aria-selected',active ? 'true' : 'false');
+    tab.tabIndex=active ? 0 : -1;
+    if(active && options.focus) tab.focus();
+  });
+  qsa('[data-trait-preset-update-scope-panel]').forEach(panel=>{
+    panel.hidden=panel.dataset.traitPresetUpdateScopePanel!==normalizedScope;
+  });
+  renderTraitPresetUpdateScope(normalizedScope);
+  return normalizedScope;
+}
+function renderTraitPresetUpdateScopePopover(){
+  return setTraitPresetUpdateScopeView('shared');
+}
+function setTraitPresetUpdateScopePopoverOpen(open, options={}){
+  const toggle=$('traitPresetUpdateScopeBtn');
+  const popover=$('traitPresetUpdateScopePopover');
+  if(!toggle || !popover) return false;
+  const next=!!open;
+  if(next) setTraitPresetUpdateScopeView('shared');
+  popover.hidden=!next;
+  toggle.setAttribute('aria-expanded',next ? 'true' : 'false');
+  toggle.closest('.trait-preset-title')?.classList.toggle('is-update-scope-open',next);
+  if(!next && options.restoreFocus) toggle.focus();
+  return next;
+}
+function toggleTraitPresetUpdateScopePopover(){
+  const popover=$('traitPresetUpdateScopePopover');
+  return setTraitPresetUpdateScopePopoverOpen(!!popover?.hidden);
+}
 function stableTraitPresetValue(value){
   if(value && typeof value==='object'){
     const normalize=input=>{
@@ -1232,7 +1321,7 @@ function buildSyncedTraitPresetState(baseState, targetState, now){
   const target=normalizeTraitPresetState(targetState);
   if(!base || !target) return null;
   const values={...base.values};
-  TRAIT_PRESET_SYNC_EXCLUDED_VALUE_IDS.forEach(id=>{
+  TRAIT_PRESET_SINGLE_UPDATE_VALUE_IDS.forEach(id=>{
     if(hasOwn(target.values,id)) values[id]=target.values[id];
     else delete values[id];
   });
@@ -1251,7 +1340,7 @@ function buildSyncedTraitPresetState(baseState, targetState, now){
 function hasTraitPresetValueChanges(previous, current, options={}){
   const ids=new Set([...Object.keys(previous.values || {}), ...Object.keys(current.values || {})]);
   for(const id of ids){
-    if(options.ignoreSyncExcluded && TRAIT_PRESET_SYNC_EXCLUDED_VALUE_IDS.has(id)) continue;
+    if(options.ignoreSyncExcluded && TRAIT_PRESET_SINGLE_UPDATE_VALUE_IDS.has(id)) continue;
     if(stableTraitPresetValue(previous.values?.[id])!==stableTraitPresetValue(current.values?.[id])) return true;
   }
   return false;
@@ -1939,6 +2028,29 @@ function bindTraitPresetEvents(){
     if(e.target?.id==='traitPresetExcelName') e.target.dataset.autofill='0';
   });
   document.addEventListener('click',e=>{
+    const updateScopeToggle=e.target.closest('[data-trait-preset-update-scope-toggle]');
+    if(updateScopeToggle){
+      e.preventDefault();
+      e.stopPropagation();
+      toggleTraitPresetUpdateScopePopover();
+      return;
+    }
+    if(e.target.closest('[data-trait-preset-update-scope-close]')){
+      e.preventDefault();
+      setTraitPresetUpdateScopePopoverOpen(false,{restoreFocus:true});
+      return;
+    }
+    const updateScopeTab=e.target.closest('[data-trait-preset-update-scope-tab]');
+    if(updateScopeTab){
+      e.preventDefault();
+      e.stopPropagation();
+      setTraitPresetUpdateScopeView(updateScopeTab.dataset.traitPresetUpdateScopeTab);
+      return;
+    }
+    const updateScopePopover=$('traitPresetUpdateScopePopover');
+    if(updateScopePopover && !updateScopePopover.hidden && !e.target.closest('#traitPresetUpdateScopePopover')){
+      setTraitPresetUpdateScopePopoverOpen(false);
+    }
     if(e.target.closest('[data-trait-preset-excel-close]')) closeTraitPresetExcelImportModal();
     if(e.target.closest('[data-trait-preset-excel-save]')) saveSelectedExcelSheetAsTraitPreset();
     if(e.target.closest('[data-trait-preset-export-close]')) closeTraitPresetExportModal();
@@ -1949,7 +2061,15 @@ function bindTraitPresetEvents(){
     }
   });
   document.addEventListener('keydown',e=>{
+    const updateScopeTab=e.target.closest?.('[data-trait-preset-update-scope-tab]');
+    if(updateScopeTab && ['ArrowLeft','ArrowRight','Home','End'].includes(e.key)){
+      e.preventDefault();
+      const scope=(e.key==='ArrowLeft' || e.key==='Home') ? 'shared' : 'single';
+      setTraitPresetUpdateScopeView(scope,{focus:true});
+      return;
+    }
     if(e.key==='Escape'){
+      if(!$('traitPresetUpdateScopePopover')?.hidden) setTraitPresetUpdateScopePopoverOpen(false,{restoreFocus:true});
       if($('traitPresetExcelImportModal')?.classList.contains('is-open')) closeTraitPresetExcelImportModal();
       if($('traitPresetExportModal')?.classList.contains('is-open')) closeTraitPresetExportModal();
     }
@@ -1966,6 +2086,7 @@ window.DpsPreset=Object.freeze({
   init:function(){
     refreshTraitPresetControls();
     restoreTraitPresetStatus();
+    renderTraitPresetUpdateScopePopover();
   },
   bindEvents:bindTraitPresetEvents,
   refresh:refreshTraitPresetControls,
