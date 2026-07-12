@@ -1091,37 +1091,39 @@ function dpsBaseUnitRequiredDurability(enemyData,displayHR,displaySR){
 function dpsBaseUnitPlayerCount(diffName=vs('diff')){
   return isCoopActive(diffName) ? 3 : 1;
 }
-function dpsBaseUnitAverageDefenseMultiplier(enemyArmor,ownDefenseReduce,dmgReduce,diffName=vs('diff')){
-  const ownDefenseReduceValue=Number(ownDefenseReduce);
-  const ownMultiplier=dps0(
-    1,
-    enemyArmor,
-    Number.isFinite(ownDefenseReduceValue) ? ownDefenseReduceValue : 0,
-    0,
-    dmgReduce
-  );
-  const playerCount=dpsBaseUnitPlayerCount(diffName);
-  if(playerCount===1) return ownMultiplier;
-  const passengerTotal=[2,3].reduce((sum,player)=>{
-    const target=coopPassengerTargetEffects(player);
-    return sum+dps0(1,enemyArmor,target.defenseReduce,0,dmgReduce);
-  },0);
-  return (ownMultiplier+passengerTotal)/playerCount;
+function dpsBaseUnitTargetProfiles({enemyData,defenseReduce,displayHR,displaySR,diffName=vs('diff')}){
+  const count=Math.max(0,Number(enemyData?.count)||0);
+  const profiles=[{
+    player:1,
+    count,
+    defenseReduce:Number(defenseReduce)||0,
+    hpReduce:Number(displayHR)||0,
+    shieldReduce:Number(displaySR)||0
+  }];
+  if(dpsBaseUnitPlayerCount(diffName)>1){
+    profiles.push(
+      {player:2,count,defenseReduce:coopPassengerDefenseReduceValue('coopPassenger2Dr'),hpReduce:0,shieldReduce:0},
+      {player:3,count,defenseReduce:coopPassengerDefenseReduceValue('coopPassenger3Dr'),hpReduce:0,shieldReduce:0}
+    );
+  }
+  return profiles.map(profile=>({
+    ...profile,
+    durability:dpsBaseUnitRequiredDurability(enemyData,profile.hpReduce,profile.shieldReduce)
+  }));
 }
 function dpsBaseUnitRequiredDps({enemyData,defenseReduce,dmgReduce,round,displayHR,displaySR,diffName=vs('diff')}){
-  const playerCount=dpsBaseUnitPlayerCount(diffName);
-  const count=Math.max(0,Number(enemyData?.count)||0)*playerCount;
-  const durability=dpsBaseUnitRequiredDurability(enemyData,displayHR,displaySR);
-  const defenseMultiplier=dpsBaseUnitAverageDefenseMultiplier(
-    Number(enemyData?.armor)||0,
-    defenseReduce,
-    dmgReduce,
-    diffName
-  );
   const clearTime=enemyRoundTime(round,diffName);
+  const enemyArmor=Math.max(0,Number(enemyData?.armor)||0);
   const protectionFactor=dpsBaseUnitEnemyProtectionFactor(diffName);
-  if(count<=0 || defenseMultiplier<=0 || clearTime<=0) return 0;
-  return count*durability/defenseMultiplier/clearTime/protectionFactor;
+  const profiles=dpsBaseUnitTargetProfiles({enemyData,defenseReduce,displayHR,displaySR,diffName});
+  if(clearTime<=0 || protectionFactor<=0) return 0;
+  const requiredWork=profiles.reduce((sum,profile)=>{
+    if(profile.count<=0 || profile.durability<=0) return sum;
+    const defenseMultiplier=dps0(1,enemyArmor,profile.defenseReduce,0,dmgReduce);
+    if(defenseMultiplier<=0) return sum;
+    return sum+(profile.count*profile.durability)/(defenseMultiplier*protectionFactor);
+  },0);
+  return requiredWork/clearTime;
 }
 /* ----- 07-3. 유닛별 강화·공속·최종 DPS ----- */
 const DPS_BASE_UNIT_LIMIT_BREAK_STATS=Object.freeze([
