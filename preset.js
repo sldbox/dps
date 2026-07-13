@@ -724,6 +724,7 @@ function traitPresetExportButtonText(status, store){
 }
 function renderTraitPresetStatus(status, store){
   const needsExport=store.presets.length>0 && status.updatedPresetIds.length>0;
+  window.Animation?.setPresetAttention({needsExport,needsImport:store.presets.length===0});
   const label=traitPresetExportButtonText(status, store);
   qsa('[data-action="exportTraitPresets"]').forEach(btn=>{
     btn.textContent=label;
@@ -783,12 +784,13 @@ function notifyStorageAction(message, type='ok', options={}){
   if(type==='ok' && options.statusAction && !options.skipHeaderStatus){
     updateTraitPresetStatus({lastAction:options.statusAction},{persist:true});
   }
+  if(options.animationAction) window.Animation?.notifyPreset(options.animationAction,{message:options.animationMessage || message,type});
   showToast(message, type);
 }
 function notifyTraitPresetExportComplete(){
   clearTraitPresetUpdatedStatus('export',{keepPending:true});
   refreshTraitPresetControls(selectedTraitPresetId());
-  showToast('특성 프리셋 내보내기 완료', 'ok');
+  notifyStorageAction('특성 프리셋 내보내기 완료','ok',{animationAction:'export',skipHeaderStatus:true});
 }
 function saveState(options={}){
   const silent=!!options.silent;
@@ -1170,11 +1172,11 @@ function saveTraitPreset(){
     rememberTraitPresetSelection(id);
     refreshTraitPresetControls(id);
     resetTraitPresetNameInput();
-    notifyStorageAction(index>=0 ? `프리셋 덮어쓰기 완료: ${name}` : `프리셋 저장 완료: ${name}`,'ok',{statusAction:'save'});
+    notifyStorageAction(index>=0 ? `프리셋 덮어쓰기 완료: ${name}` : `프리셋 저장 완료: ${name}`,'ok',{statusAction:'save',animationAction:'save'});
     return true;
   }catch(e){
     logAppError('[trait preset save failed]',e);
-    notifyStorageAction(e?.message || '프리셋 저장 실패','err');
+    notifyStorageAction(e?.message || '프리셋 저장 실패','err',{animationAction:'error'});
     return false;
   }
 }
@@ -1207,11 +1209,11 @@ function loadTraitPresetById(id,options={}){
     });
     rememberTraitPresetSelection(id);
     refreshTraitPresetControls(id);
-    if(options.notifySuccess!==false) notifyStorageAction(`프리셋 로드 완료: ${preset.name}`,'ok',{statusAction:'load'});
+    if(options.notifySuccess!==false) notifyStorageAction(`프리셋 로드 완료: ${preset.name}`,'ok',{statusAction:'load',animationAction:'load'});
     return true;
   }catch(e){
     logAppError('[trait preset load failed]',e);
-    notifyStorageAction(e?.message || '프리셋 로드 실패','err');
+    notifyStorageAction(e?.message || '프리셋 로드 실패','err',{animationAction:'error'});
     return false;
   }
 }
@@ -1382,6 +1384,7 @@ function traitPresetUpdateStatus(store=loadTraitPresetStore()){
 }
 function renderTraitPresetUpdateStatus(store){
   const status=traitPresetUpdateStatus(store);
+  window.Animation?.setPresetAttention({needsUpdate:status.needsUpdate});
   qsa('[data-action="updateTraitPreset"]').forEach(btn=>{
     btn.textContent=status.needsUpdate ? '업데이트 필요' : '프리셋 업데이트';
     btn.classList.toggle('is-update-needed',status.needsUpdate);
@@ -1417,6 +1420,9 @@ function updateTraitPreset(){
       return false;
     }
     const syncSharedValues=stateChanged && hasSharedTraitPresetChanges(preset.state,currentState);
+    const sharedOnlyState=stateChanged ? buildSyncedTraitPresetState(currentState,preset.state,now) : null;
+    const singleUpdateChanged=unitBoardChanged || Boolean(stateChanged && sharedOnlyState && hasTraitPresetStateChanges(sharedOnlyState,currentState));
+    const sharedUpdateChanged=syncSharedValues || jewelChanged;
     const updatedIds=[];
     store.presets=store.presets.map((item,index)=>{
       if(index!==selectedIndex && !syncSharedValues) return item;
@@ -1437,11 +1443,18 @@ function updateTraitPreset(){
     updateTraitPresetStatus({pendingJewelSettings:false,pendingUnitBoardPresetIds:[]},{persist:true});
     rememberTraitPresetSelection(id);
     refreshTraitPresetControls(id);
-    notifyStorageAction(`프리셋 업데이트 완료: ${preset.name}`,'ok',{skipHeaderStatus:true});
+    const animationMessage=sharedUpdateChanged && singleUpdateChanged
+      ? `전체 대상은 모든 프리셋에, 단일 대상은 “${preset.name}”에 반영했어!`
+      : sharedUpdateChanged
+        ? '전체 업데이트 대상을 모든 프리셋에 반영했어!'
+        : singleUpdateChanged
+          ? `단일 업데이트 대상을 “${preset.name}”에 반영했어!`
+          : `“${preset.name}” 프리셋을 업데이트했어!`;
+    notifyStorageAction(`프리셋 업데이트 완료: ${preset.name}`,'ok',{skipHeaderStatus:true,animationAction:'update',animationMessage});
     return true;
   }catch(e){
     logAppError('[trait preset update failed]',e);
-    notifyStorageAction(e?.message || '프리셋 업데이트 실패','err');
+    notifyStorageAction(e?.message || '프리셋 업데이트 실패','err',{animationAction:'error'});
     return false;
   }
 }
@@ -1462,11 +1475,11 @@ function renameTraitPreset(){
     store=saveTraitPresetStore(store);
     rememberTraitPresetSelection(id);
     refreshTraitPresetControls(id);
-    notifyStorageAction(`프리셋 이름 변경 완료: ${next}`,'ok',{statusAction:'save'});
+    notifyStorageAction(`프리셋 이름 변경 완료: ${next}`,'ok',{statusAction:'save',animationAction:'rename'});
     return true;
   }catch(e){
     logAppError('[trait preset rename failed]',e);
-    notifyStorageAction(e?.message || '프리셋 이름 변경 실패','err');
+    notifyStorageAction(e?.message || '프리셋 이름 변경 실패','err',{animationAction:'error'});
     return false;
   }
 }
@@ -1483,11 +1496,11 @@ function deleteTraitPreset(){
       saveTraitPresetStore(nextStore);
       rememberTraitPresetSelection('');
       refreshTraitPresetControls();
-      notifyStorageAction(`프리셋 삭제 완료: ${preset.name}`,'ok',{statusAction:'delete'});
+      notifyStorageAction(`프리셋 삭제 완료: ${preset.name}`,'ok',{statusAction:'delete',animationAction:'list-change'});
       return true;
     }catch(e){
       logAppError('[trait preset delete failed]',e);
-      notifyStorageAction(e?.message || '프리셋 삭제 실패','err');
+      notifyStorageAction(e?.message || '프리셋 삭제 실패','err',{animationAction:'error'});
       return false;
     }
   });
@@ -1624,7 +1637,7 @@ function downloadTraitPresetExport(customName=''){
     return true;
   }catch(e){
     logAppError('[trait preset export failed]',e);
-    notifyStorageAction(e?.message || '특성 프리셋 내보내기 실패','err');
+    notifyStorageAction(e?.message || '특성 프리셋 내보내기 실패','err',{animationAction:'error'});
     return false;
   }finally{
     window.setTimeout(()=>{
@@ -1774,7 +1787,7 @@ function importExcelJewelsToCurrentPreset(workbook){
     renderTraitPresetUpdateStatus();
     closeTraitPresetExcelImportModal();
     const suffix=staged.needsUpdate ? ' · 프리셋 업데이트 필요' : ' · 기존 데이터와 동일';
-    notifyStorageAction(`쥬얼 데이터 가져오기 완료 · 전설/신화 ${jewelImport.recognizedLegendary}개 · 일반 ${jewelImport.normalCount}개${suffix}`,'ok',{statusAction:'import'});
+    notifyStorageAction(`쥬얼 데이터 가져오기 완료 · 전설/신화 ${jewelImport.recognizedLegendary}개 · 일반 ${jewelImport.normalCount}개${suffix}`,'ok',{statusAction:'import',animationAction:'import'});
     return true;
   }catch(e){
     try{
@@ -1783,7 +1796,7 @@ function importExcelJewelsToCurrentPreset(workbook){
       syncDpsBaseUnitControl();
     }catch(rollbackError){ logAppError('[trait preset Excel jewel rollback failed]',rollbackError); }
     logAppError('[trait preset Excel jewel import failed]',e);
-    notifyStorageAction(e?.message || '쥬얼 데이터 가져오기 실패','err');
+    notifyStorageAction(e?.message || '쥬얼 데이터 가져오기 실패','err',{animationAction:'error'});
     return false;
   }
 }
@@ -1822,11 +1835,11 @@ function saveSelectedExcelSheetAsTraitPreset(){
     if(savedPresetId) loadTraitPresetById(savedPresetId,{notifySuccess:false,preserveSharedValues:false});
     else refreshTraitPresetControls('');
     closeTraitPresetExcelImportModal();
-    notifyStorageAction(result.replaced ? `엑셀 프리셋 갱신 및 로드 완료: ${name}` : `엑셀 프리셋 저장 및 로드 완료: ${name}`,'ok',{statusAction:'import'});
+    notifyStorageAction(result.replaced ? `엑셀 프리셋 갱신 및 로드 완료: ${name}` : `엑셀 프리셋 저장 및 로드 완료: ${name}`,'ok',{statusAction:'import',animationAction:'import'});
     return true;
   }catch(e){
     logAppError('[trait preset excel import failed]',e);
-    notifyStorageAction(e?.message || '엑셀 프리셋 저장 실패','err');
+    notifyStorageAction(e?.message || '엑셀 프리셋 저장 실패','err',{animationAction:'error'});
     return false;
   }
 }
@@ -1847,12 +1860,12 @@ async function importTraitPresetFile(file){
     const loadId=result.firstImportedPresetId || '';
     if(loadId) loadTraitPresetById(loadId,{notifySuccess:false,preserveSharedValues:false});
     else refreshTraitPresetControls('');
-    notifyStorageAction(`프리셋 가져오기 및 로드 완료 · 추가 ${result.added} / 갱신 ${result.replaced}`,'ok',{statusAction:'import'});
+    notifyStorageAction(`프리셋 가져오기 및 로드 완료 · 추가 ${result.added} / 갱신 ${result.replaced}`,'ok',{statusAction:'import',animationAction:'import'});
     return true;
   }catch(e){
     logAppError('[trait preset import failed]',e);
     if(isUnsupportedOldTraitPresetError(e)) showUnsupportedOldTraitPresetToast();
-    else notifyStorageAction(e?.message || '특성 프리셋 가져오기 실패','err');
+    else notifyStorageAction(e?.message || '특성 프리셋 가져오기 실패','err',{animationAction:'error'});
     return false;
   }
 }
@@ -2016,7 +2029,10 @@ function compareTraitPreset(){
 }
 function bindTraitPresetEvents(){
   document.addEventListener('change',e=>{
-    if(e.target?.id==='traitPresetSelect') loadTraitPresetById(e.target.value,{preserveSharedValues:false});
+    if(e.target?.id==='traitPresetSelect'){
+      window.Animation?.notifyPreset('select');
+      loadTraitPresetById(e.target.value,{preserveSharedValues:false});
+    }
     if(e.target?.id==='traitPresetImportFile' && e.target.files?.[0]){
       const file=e.target.files[0];
       importTraitPresetFile(file).finally(()=>{ e.target.value=''; });

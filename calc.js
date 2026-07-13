@@ -1167,9 +1167,9 @@ function dpsBaseUnitPrivateAd(unit, quantity, jewelStats=dpsBaseUnitJewelStats(u
 }
 function dpsBaseUnitAttackRate(unit, context){
   const weaponSpeed=Number(unit?.weaponSpeed) || 0;
-  const targetCount=Number(unit?.targetCount) || 0;
+  const targetsPerAttack=Number(unit?.targetCount) || 0;
   const attackCount=Number(unit?.attackCount) || 0;
-  if(weaponSpeed<=0 || targetCount<=0 || attackCount<=0) return {rate:0,cooldown:0};
+  if(weaponSpeed<=0 || targetsPerAttack<=0 || attackCount<=0) return {rate:0,cooldown:0,targetsPerAttack:0};
   const limitBreak=dpsBaseUnitLimitBreakStats(unit);
   const difficultySlow=Math.max(0.000001,1-(Number(context?.difficultyAs)||0)/100);
   const ua=Math.max(0.000001,Number(context?.ua)||1);
@@ -1186,7 +1186,8 @@ function dpsBaseUnitAttackRate(unit, context){
   const limitMultiplier=Math.max(0.000001,difficultySlow*ua*dt*privateUa);
   const limitCooldown=asLimit>0 ? asLimit/limitMultiplier : 0;
   const cooldown=Math.max(0.0625,adjustedCooldown,limitCooldown);
-  return {rate:targetCount*attackCount/Math.max(0.000001,cooldown),cooldown};
+  const rate=attackCount/Math.max(0.000001,cooldown);
+  return {rate,cooldown,targetsPerAttack};
 }
 function dpsBaseUnitSingleDpsParts(unit,context,jewelStats,jewelName=''){
   const limitBreak=dpsBaseUnitLimitBreakStats(unit);
@@ -1201,8 +1202,13 @@ function dpsBaseUnitSingleDpsParts(unit,context,jewelStats,jewelName=''){
   const pierceDps0=dps0(1,context.enemyArmor,context.M12,unitExcelPierce,100);
   const armorPierceMultiplier=noPierceDps0>0 ? pierceDps0/noPierceDps0 : 1;
   const uniqueDpsMultiplier=1+(Number(unit?.dpsMultiplier)||0);
-  const rawM19=context.weaponAttack*adTdMultiplier*critMultiplier*attackRate.rate*armorPierceMultiplier*uniqueDpsMultiplier;
-  return {rawM19,AB3:armorPierceMultiplier,AB4:adTdMultiplier,AB5:critMultiplier,AB6:attackRate.rate,excelPierce:unitExcelPierce,raceCritBonus,finalCooldown:attackRate.cooldown,jewelName,jewelStats};
+  const singleTargetRawM19=context.weaponAttack*adTdMultiplier*critMultiplier*attackRate.rate*armorPierceMultiplier*uniqueDpsMultiplier;
+  const rawM19=singleTargetRawM19*attackRate.targetsPerAttack;
+  return {
+    rawM19,singleTargetRawM19,AB3:armorPierceMultiplier,AB4:adTdMultiplier,AB5:critMultiplier,AB6:attackRate.rate,
+    excelPierce:unitExcelPierce,raceCritBonus,finalCooldown:attackRate.cooldown,targetsPerAttack:attackRate.targetsPerAttack,
+    jewelName,jewelStats
+  };
 }
 
 function dpsBaseUnitArtifactConfig(){
@@ -1393,6 +1399,7 @@ function computeStatsRaw(){
     const context={basePierceBonus,rpPierce,unitPierceBonus,totalQuantity:quantityMultiplier,globalAd:M4-unitADBonus,M11,M8,M10,M9,M16,M17,M18,M7,M13,dt,flowerAttackSpeed:upperStats.actualAs,difficultyAs:diff.as,enemyArmor:enemyData.armor,M12:M12_dr,targetRound,weaponAttack};
     const groupResults=groups.map(group=>({...group,...dpsBaseUnitSingleDpsParts(unit,context,group.stats,group.type==='named' ? group.name : '')}));
     const unitRawM19=groupResults.reduce((sum,group)=>sum+group.rawM19*group.count,0);
+    const unitSingleTargetRawM19=groupResults.reduce((sum,group)=>sum+group.singleTargetRawM19*group.count,0);
     const baseParts=dpsBaseUnitSingleDpsParts(unit,context,dpsJewelFinalStats(''),'');
     const displayParts=groupResults[0] || baseParts;
     const unitTargetEffects={defenseReduce:M12_dr,pierce:baseParts.excelPierce,hpReduce:displayHR,shieldReduce:displaySR};
@@ -1403,8 +1410,12 @@ function computeStatsRaw(){
       AB6:displayParts.AB6,
       rawM19:unitRawM19,
       M19:Math.round(unitRawM19),
+      singleTargetRawM19:unitSingleTargetRawM19,
+      singleTargetM19:Math.round(unitSingleTargetRawM19),
       baseRawM19:baseParts.rawM19,
       baseM19:Math.round(baseParts.rawM19),
+      baseSingleTargetRawM19:baseParts.singleTargetRawM19,
+      baseSingleTargetM19:Math.round(baseParts.singleTargetRawM19),
       excelPierce:baseParts.excelPierce,
       unitPierceBonus,
       ownDurability:targetDurabilityRemain(enemyData,unitTargetEffects),
@@ -1418,6 +1429,8 @@ function computeStatsRaw(){
       voidPower:dpsBaseUnitVoidPowerOn(unit),
       raceCritBonus:displayParts.raceCritBonus,
       finalCooldown:displayParts.finalCooldown,
+      attacksPerSecond:displayParts.AB6,
+      targetsPerAttack:displayParts.targetsPerAttack,
       ...unitMeta
     };
   });

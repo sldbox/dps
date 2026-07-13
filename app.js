@@ -322,7 +322,7 @@ function updateBattleBoards(s,displayDps,unitHidden=false){
   const artifactUnitSelected=selectedIds.includes('artifactUnit');
   const artifactPrimarySelected=unitSlots[0]==='artifactUnit';
   const artifactResult=Array.isArray(info?.results) ? info.results.find(result=>result?.unitId==='artifactUnit') : null;
-  window.Battle?.update({
+  window.Animation?.updateBattle({
     dps:Number(displayDps),
     requiredDps:Number(info?.requiredDps),
     achievementRate:Number(info?.achievementRate),
@@ -1991,7 +1991,7 @@ function dpsBaseUnitSlotHtml(unitId, slotIndex, slots){
   const pierce=result ? dpsBaseUnitPercentText(result.excelPierce) : (unit ? (dpsBaseUnitIsArtifact(unit) ? '0%' : dpsBaseUnitPercentText(dpsBaseUnitBoardBasePierce + dpsBaseUnitPierceBonus(unit))) : '—');
   const dps=result ? dpsBaseUnitDpsText(result) : '—';
   const field=(fieldLabel,fieldClass,content)=>`<div class="dps-base-unit-field ${fieldClass}"><span class="dps-base-unit-field-label">${fieldLabel}</span>${content}</div>`;
-  const entry=`<div class="dps-base-unit-entry dps-base-unit-slot${empty ? ' is-empty' : ''}${unit && dpsBaseUnitHasQuantity(unit) ? ' has-quantity' : ' is-fixed'}" data-dps-base-unit-slot-row="${slotIndex}">${field('유닛명','dps-base-unit-name-field',selectControl)}${field('공격력','dps-base-unit-attack-field',`<span class="dps-base-unit-board-cell dps-base-unit-board-attack">${escapeHtml(attack)}</span>`)}${field('방어력 관통','dps-base-unit-pierce-field',`<span class="dps-base-unit-board-cell dps-base-unit-board-pierce">${escapeHtml(pierce)}</span>`)}${field('DPS','dps-base-unit-dps-field',`<b class="dps-base-unit-board-cell dps-base-unit-board-dps">${escapeHtml(dps)}</b>`)}${field('수량','dps-base-unit-quantity-field',`<div class="dps-base-unit-board-cell dps-base-unit-board-quantity">${dpsBaseUnitQuantityControlHtml(unit,slotIndex)}</div>`)}</div>`;
+  const entry=`<div class="dps-base-unit-entry dps-base-unit-slot${empty ? ' is-empty' : ''}${unit && dpsBaseUnitHasQuantity(unit) ? ' has-quantity' : ' is-fixed'}" data-dps-base-unit-slot-row="${slotIndex}">${field('유닛명','dps-base-unit-name-field',selectControl)}${field('공격력','dps-base-unit-attack-field',`<span class="dps-base-unit-board-cell dps-base-unit-board-attack">${escapeHtml(attack)}</span>`)}${field('방어력 관통','dps-base-unit-pierce-field',`<span class="dps-base-unit-board-cell dps-base-unit-board-pierce">${escapeHtml(pierce)}</span>`)}${field(unit && dpsBaseUnitIsArtifact(unit)?'파장 총 DPS':'총 DPS','dps-base-unit-dps-field',`<b class="dps-base-unit-board-cell dps-base-unit-board-dps">${escapeHtml(dps)}</b>`)}${field('수량','dps-base-unit-quantity-field',`<div class="dps-base-unit-board-cell dps-base-unit-board-quantity">${dpsBaseUnitQuantityControlHtml(unit,slotIndex)}</div>`)}</div>`;
   return `<div class="dps-base-unit-card${empty?' is-empty':''}">${entry}${dpsBaseUnitSettingsHtml(unit,slotIndex)}</div>`;
 }
 function dpsBaseUnitSlotsHtml(slots){
@@ -3068,7 +3068,7 @@ function traitPresetUnitBoardUnitItems(unitState,boardState,result,expandedIds){
   const items=[
     ['유닛명',dpsBaseUnitLabel(unit || unitState.unitId)],
     ['방어력 관통',result ? dpsBaseUnitPercentText(result.excelPierce) : '—'],
-    ['DPS',result ? dpsBaseUnitDpsText(result) : '—'],
+    [dpsBaseUnitIsArtifact(unit)?'파장 총 DPS':'총 DPS',result ? dpsBaseUnitDpsText(result) : '—'],
     ['수량',quantity],
     ['강화 기대값',Number(unitState.enhanceExpected)||0]
   ];
@@ -4510,7 +4510,7 @@ function bindAppEvents(){
   ].forEach(fn=>fn());
 }
 function initApp(){
-  window.Battle?.init();
+  window.Animation?.init();
   loadFontScale();
   renderZeroScoreCalculatorRows();
   bindAppEvents();
