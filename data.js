@@ -289,8 +289,8 @@ window.MONTHLY_RUNE_INFO=MONTHLY_RUNE_INFO;
 /* ===== 06. 유닛 보드 데이터 ===== */
 /* ----- 06-1. 종족·등급·라운드 상성 ----- */
 const DPS_BASE_UNIT_ALL_ID='all';
-const DPS_BASE_UNIT_RACE_ORDER=Object.freeze(['테바','테메','프바','프메','저그','중립','혼종']);
-const DPS_BASE_UNIT_GRADE_ORDER=Object.freeze(['슈퍼히든','히든','레전드']);
+const DPS_BASE_UNIT_RACE_ORDER=Object.freeze(['특수','테바','테메','프바','프메','저그','중립','혼종']);
+const DPS_BASE_UNIT_GRADE_ORDER=Object.freeze(['특수','슈퍼히든','히든','레전드']);
 const DPS_BASE_UNIT_RACE_CRIT_BONUS=Object.freeze({
   테바:Object.freeze([0,0,-0.25,0.35,0]),
   테메:Object.freeze([0.35,0,0,0,-0.25]),
@@ -309,6 +309,7 @@ const DPS_BASE_UNIT_RACE_CRIT_BONUS=Object.freeze({
 });
 /* ----- 06-2. 최신 Excel unit_data 기반 유닛 전투 데이터 ----- */
 const DPS_BASE_UNITS=Object.freeze([
+  Object.freeze({id:'artifactUnit',label:'유물',grade:'특수',kind:'artifact',raceGroup:'특수',productionUnit:true,quantityEnabled:false,armorPierceBonus:0,critFormula:'방사'}),
   Object.freeze({id:'prodNova',label:'비밀 작전 노바',grade:'슈퍼히든',raceGroup:'테바',upgradeRace:'테란 바이오닉',productionUnit:true,weaponSpeed:0.63,asLimit:0,targetCount:1,attackCount:2,armorPierceBonus:20,critFormula:'일반',weaponAttack:1112.00,weaponAttackTiers:Object.freeze([1112.00,1223.31,1345.76]),attackSpeedMultiplier:0.133}),
   Object.freeze({id:'prodTeratron',label:'테라트론',grade:'슈퍼히든',raceGroup:'테메',upgradeRace:'테란 메카닉',productionUnit:true,weaponSpeed:0.5,asLimit:0,targetCount:1,attackCount:1,armorPierceBonus:20,critFormula:'일반',weaponAttack:1819.65,weaponAttackTiers:Object.freeze([1819.65,2001.79,2202.17])}),
   Object.freeze({id:'prodAmon',label:'아몬',grade:'슈퍼히든',raceGroup:'프바',upgradeRace:'플토 바이오닉',productionUnit:true,weaponSpeed:0.5,asLimit:0,targetCount:1,attackCount:2,armorPierceBonus:15,critFormula:'일반',weaponAttack:1819.65,weaponAttackTiers:Object.freeze([1819.65,2001.79,2202.17])}),
@@ -336,7 +337,15 @@ const DPS_BASE_UNITS=Object.freeze([
 /* ===== 07. 유물 DPS 계산 고정 데이터 ===== */
 const ARTIFACT_DPS_CONFIG=Object.freeze({
   energyRegenTraitRow:79,
-  energyRegenRate:2.5
+  energyRegenRate:2.5,
+  unitId:'artifactUnit',
+  baseWeaponAttack:500,
+  baseWaveCooldown:4,
+  minimumWaveInterval:0.001,
+  waveTargetCount:30,
+  baseRaceUpgradeLevel:120,
+  raceUpgradeAttackPerLevel:2.5,
+  upgradeRaces:Object.freeze(['테란 바이오닉','테란 메카닉','플토 바이오닉','플토 메카닉','저그','중립'])
 });
 
 /* ===== 08. 고정 데이터 공개 API ===== */

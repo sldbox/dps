@@ -387,9 +387,9 @@ function normalizeTraitPresetUnitBoardState(value){
       slot,
       quantity,
       enhanceExpected:Number(normalizeDpsBaseUnitEnhanceValue(item.enhanceExpected ?? item.reinforceExpected ?? item.enhance ?? 0))||0,
-      limitBreak:Number(normalizeDpsBaseUnitLimitBreakValue(item.limitBreak ?? 0))||0,
-      voidPower:normalizeDpsBaseUnitVoidPowerValue(item.voidPower),
-      legendaryMythicJewel:normalizeDpsJewelName(item.legendaryMythicJewel ?? item.jewel ?? '')
+      limitBreak:dpsBaseUnitSupportsLimitBreak(unit) ? Number(normalizeDpsBaseUnitLimitBreakValue(item.limitBreak ?? 0))||0 : 0,
+      voidPower:dpsBaseUnitSupportsVoidPower(unit) ? normalizeDpsBaseUnitVoidPowerValue(item.voidPower) : 'OFF',
+      legendaryMythicJewel:dpsBaseUnitSupportsJewels(unit) ? normalizeDpsJewelName(item.legendaryMythicJewel ?? item.jewel ?? '') : ''
     });
   });
   units.sort((a,b)=>a.slot-b.slot);
@@ -427,9 +427,9 @@ function captureTraitPresetUnitBoardState(){
       slot,
       quantity:dpsBaseUnitHasQuantity(unit) ? Number(normalizeDpsBaseUnitQuantityValue(dpsBaseUnitQuantityInput(unit)?.value || 1)) : 1,
       enhanceExpected:Number(normalizeDpsBaseUnitEnhanceValue(dpsBaseUnitEnhanceInput(unit)?.value || 0))||0,
-      limitBreak:Number(normalizeDpsBaseUnitLimitBreakValue(dpsBaseUnitLimitBreakInput(unit)?.value || 0))||0,
-      voidPower:normalizeDpsBaseUnitVoidPowerValue(dpsBaseUnitVoidPowerInput(unit)?.value),
-      legendaryMythicJewel:normalizeDpsJewelName(dpsBaseUnitJewelInput(unit)?.value)
+      limitBreak:dpsBaseUnitSupportsLimitBreak(unit) ? Number(normalizeDpsBaseUnitLimitBreakValue(dpsBaseUnitLimitBreakInput(unit)?.value || 0))||0 : 0,
+      voidPower:dpsBaseUnitSupportsVoidPower(unit) ? normalizeDpsBaseUnitVoidPowerValue(dpsBaseUnitVoidPowerInput(unit)?.value) : 'OFF',
+      legendaryMythicJewel:dpsBaseUnitSupportsJewels(unit) ? normalizeDpsJewelName(dpsBaseUnitJewelInput(unit)?.value) : ''
     };
   }).filter(Boolean);
   const selectedIds=new Set(units.map(item=>item.unitId));

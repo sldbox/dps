@@ -312,6 +312,37 @@ function currentArtifactDpsResult(){
   }
   return calculateArtifactDpsPreview(diff, v('penance'), targetRoundStoredValue(), {battleMode});
 }
+function updateBattleBoards(s,displayDps,unitHidden=false){
+  const info=s?.dpsBaseUnit;
+  const enemy=s?.enemyData || {};
+  const enemyRound=Math.max(0,Number(enemy.round)||0);
+  const unitSlots=currentDpsBaseUnitSlots();
+  const selectedIds=unitSlots.filter(Boolean);
+  const selectedUnitCount=selectedIds.length;
+  const artifactUnitSelected=selectedIds.includes('artifactUnit');
+  const artifactPrimarySelected=unitSlots[0]==='artifactUnit';
+  const artifactResult=Array.isArray(info?.results) ? info.results.find(result=>result?.unitId==='artifactUnit') : null;
+  window.Battle?.update({
+    dps:Number(displayDps),
+    requiredDps:Number(info?.requiredDps),
+    achievementRate:Number(info?.achievementRate),
+    coop:isCoopMode(),
+    battleType:battleDataModeKeyForDifficulty(vs('diff')),
+    unitHidden,
+    selectedUnitCount,
+    enemyCount:enemyRoundDisplayCount(enemyRound),
+    enemyHp:Number(enemy.hp),
+    enemyShield:Number(enemy.shield),
+    enemyArmor:Number(enemy.armor),
+    defenseReduce2:coopPassengerDefenseReduceValue('coopPassenger2Dr'),
+    defenseReduce3:coopPassengerDefenseReduceValue('coopPassenger3Dr'),
+    artifactDpsEnabled:isArtifactDpsViewEnabled(),
+    artifactUnitSelected,
+    artifactPrimarySelected,
+    artifactAttackRate:Number(artifactResult?.artifactAttackRate)||0,
+    artifactWaveInterval:Number(artifactResult?.artifactWaveInterval)||0
+  });
+}
 function renderDpsSummary(s){
   updateDpsContextSummary();
   syncDpsBaseUnitControl();
@@ -320,6 +351,7 @@ function renderDpsSummary(s){
   if(shouldHideDpsForRound()){
     setText('dpsVal', '—');
     renderDpsBaseUnitSummary(s,true);
+    updateBattleBoards(s,NaN,true);
     syncDpsMinDpsInputs();
     updateDpsRiskViews(NaN);
     if(isDpsTableOpen()) renderDpsTablePanelContent();
@@ -329,6 +361,7 @@ function renderDpsSummary(s){
   const displayDps=artifactView ? artifactResult.dps : s.M19;
   setText('dpsVal', Number.isFinite(displayDps) ? displayDps.toFixed(2) : '—');
   renderDpsBaseUnitSummary(s,false);
+  updateBattleBoards(s,displayDps,false);
   syncDpsMinDpsInputs();
   updateDpsRiskViews(displayDps);
   if(isDpsTableOpen()) renderDpsTablePanelContent();
@@ -343,6 +376,8 @@ const STAT_COMPARE_ROWS=[
   ['MC', s=>fmt(s.M10,0), s=>fmt(s.M10,0)],
   ['TD', s=>fmt(s.rawTD,1), s=>fmt(s.M11,2)],
   ['DR', s=>fmt(s.M12,0), s=>fmt(s.actualM12,0)],
+  ['DR2P', ()=>fmt(coopPassengerDefenseReduceValue('coopPassenger2Dr'),0), ()=>fmt(coopPassengerDefenseReduceValue('coopPassenger2Dr'),0)],
+  ['DR3P', ()=>fmt(coopPassengerDefenseReduceValue('coopPassenger3Dr'),0), ()=>fmt(coopPassengerDefenseReduceValue('coopPassenger3Dr'),0)],
   ['PIERCE', s=>`${fmt(s.excelPierce,0)}%`, s=>`${fmt(s.excelPierce,0)}%`],
   ['UA', s=>fmt(s.displayUA,4), s=>fmt(s.M13,4)],
   ['SR', s=>fmt(s.displaySR,2), s=>fmt(s.actualSR ?? s.displaySR,2)],
@@ -353,6 +388,8 @@ const STAT_COMPARE_ROWS=[
 ];
 function renderStatSummary(s){
   const artifactView=isArtifactDpsViewEnabled();
+  const coopActive=isCoopActive();
+  qsa('[data-coop-stat-row]').forEach(row=>{ row.hidden=!coopActive; });
   STAT_COMPARE_ROWS.forEach(([key,display,actual])=>{
     const displayText=artifactView && key==='PIERCE' ? '0%' : display(s);
     const actualText=artifactView && key==='PIERCE' ? '0%' : actual(s);
@@ -1369,18 +1406,19 @@ function dpsBaseUnitQuantityFieldEntries(){
   ]);
 }
 function dpsBaseUnitSettingFieldEntries(){
-  return dpsBaseUnitList().flatMap(unit=>[
-    [dpsBaseUnitEnhanceInputId(unit),{kind:'유닛 보드',name:`${unit.label || unit.id} 강화 기대값`,compare:true,save:true}],
-    [dpsBaseUnitLimitBreakInputId(unit),{kind:'유닛 보드',name:`${unit.label || unit.id} 한계 돌파`,compare:true,save:true}],
-    [dpsBaseUnitJewelInputId(unit),{kind:'유닛 보드',name:`${unit.label || unit.id} 전설·신화 쥬얼`,compare:true,save:true}],
-    [dpsBaseUnitVoidPowerInputId(unit),{kind:'유닛 보드',name:`${unit.label || unit.id} 공허의 힘`,compare:true,save:true}]
-  ]);
+  return dpsBaseUnitList().flatMap(unit=>{
+    const entries=[[dpsBaseUnitEnhanceInputId(unit),{kind:'유닛 보드',name:`${unit.label || unit.id} 강화 기대값`,compare:true,save:true}]];
+    if(dpsBaseUnitSupportsLimitBreak(unit)) entries.push([dpsBaseUnitLimitBreakInputId(unit),{kind:'유닛 보드',name:`${unit.label || unit.id} 한계 돌파`,compare:true,save:true}]);
+    if(dpsBaseUnitSupportsJewels(unit)) entries.push([dpsBaseUnitJewelInputId(unit),{kind:'유닛 보드',name:`${unit.label || unit.id} 전설·신화 쥬얼`,compare:true,save:true}]);
+    if(dpsBaseUnitSupportsVoidPower(unit)) entries.push([dpsBaseUnitVoidPowerInputId(unit),{kind:'유닛 보드',name:`${unit.label || unit.id} 공허의 힘`,compare:true,save:true}]);
+    return entries;
+  });
 }
 Object.assign(FIELD_REGISTRY, Object.fromEntries([...dpsBaseUnitQuantityFieldEntries(),...dpsBaseUnitSettingFieldEntries()]));
 const DPS_BASE_UNIT_ENHANCE_IDS=new Set(dpsBaseUnitList().map(dpsBaseUnitEnhanceInputId));
-const DPS_BASE_UNIT_LIMIT_BREAK_IDS=new Set(dpsBaseUnitList().map(dpsBaseUnitLimitBreakInputId));
-const DPS_BASE_UNIT_JEWEL_IDS=new Set(dpsBaseUnitList().map(dpsBaseUnitJewelInputId));
-const DPS_BASE_UNIT_VOID_POWER_IDS=new Set(dpsBaseUnitList().map(dpsBaseUnitVoidPowerInputId));
+const DPS_BASE_UNIT_LIMIT_BREAK_IDS=new Set(dpsBaseUnitList().filter(dpsBaseUnitSupportsLimitBreak).map(dpsBaseUnitLimitBreakInputId));
+const DPS_BASE_UNIT_JEWEL_IDS=new Set(dpsBaseUnitList().filter(dpsBaseUnitSupportsJewels).map(dpsBaseUnitJewelInputId));
+const DPS_BASE_UNIT_VOID_POWER_IDS=new Set(dpsBaseUnitList().filter(dpsBaseUnitSupportsVoidPower).map(dpsBaseUnitVoidPowerInputId));
 const fieldEntriesByFlag=flag=>Object.entries(FIELD_REGISTRY).filter(([,field])=>field[flag]).map(([id])=>id);
 const EXCEL_NUMERIC_INPUT_IDS=new Set(Object.entries(FIELD_REGISTRY).filter(([,field])=>field.excel==='number').map(([id])=>id));
 const EXCEL_SELECT_INPUT_IDS=new Set(Object.entries(FIELD_REGISTRY).filter(([,field])=>field.excel==='select').map(([id])=>id));
@@ -1482,23 +1520,27 @@ let dpsBaseUnitBoardBasePierce=10;
 function dpsBaseUnitResultDisplay(unitId){
   return dpsBaseUnitResultDisplayMap.get(String(unitId || '')) || null;
 }
-/* ----- 06-3-2. 유닛 보드 표시값 포맷 ----- */
+function setDpsBaseUnitResultDisplayMap(results){
+  dpsBaseUnitResultDisplayMap=new Map((Array.isArray(results) ? results : []).map(item=>[String(item?.unitId || ''),item]).filter(([id])=>id));
+}
+/* ----- 06-3-2. 유닛 보드 표시값 포맷 / 결과 요약 ----- */
 function dpsBaseUnitPercentText(value){
   const num=Number(value);
   if(!Number.isFinite(num)) return '—';
   const fixed=Number.isInteger(num) ? String(num) : num.toFixed(1).replace(/\.0$/, '');
   return `${fixed}%`;
 }
+function dpsBaseUnitTruncatedCompactAmount(value,divisor,digits){
+  const factor=10**digits;
+  const amount=Math.trunc((value/divisor)*factor)/factor;
+  return amount.toLocaleString('ko-KR',{minimumFractionDigits:0,maximumFractionDigits:digits});
+}
 function dpsBaseUnitKoreanNumber(value,smallDecimals=false){
   const number=Number(value);
   if(!Number.isFinite(number)) return '—';
   const sign=number<0 ? '-' : '';
   const absolute=Math.abs(number);
-  if(absolute>=100000000){
-    const eok=Math.floor(absolute/100000000);
-    const man=Math.floor((absolute%100000000)/10000);
-    return `${sign}${eok.toLocaleString('ko-KR')}억${man ? ` ${man.toLocaleString('ko-KR')}만` : ''}`;
-  }
+  if(absolute>=100000000) return `${sign}${dpsBaseUnitTruncatedCompactAmount(absolute,100000000,2)}억`;
   if(absolute>=10000) return `${sign}${Math.floor(absolute/10000).toLocaleString('ko-KR')}만`;
   if(smallDecimals && absolute<1000) return `${sign}${absolute.toFixed(2)}`;
   return `${sign}${Math.round(absolute).toLocaleString('ko-KR')}`;
@@ -1506,8 +1548,63 @@ function dpsBaseUnitKoreanNumber(value,smallDecimals=false){
 function dpsBaseUnitDpsText(item){
   return dpsBaseUnitKoreanNumber(item?.M19,true);
 }
-function setDpsBaseUnitResultDisplayMap(results){
-  dpsBaseUnitResultDisplayMap=new Map((Array.isArray(results) ? results : []).map(item=>[String(item?.unitId || ''),item]).filter(([id])=>id));
+function dpsBaseUnitAttackText(item){
+  const value=Number(item?.weaponAttack);
+  if(!Number.isFinite(value)) return '—';
+  return value.toLocaleString('ko-KR',{minimumFractionDigits:0,maximumFractionDigits:2});
+}
+function dpsBaseUnitSummaryNumber(value){
+  const number=Number(value);
+  if(!Number.isFinite(number)) return '—';
+  const sign=number<0 ? '-' : '';
+  const absolute=Math.abs(number);
+  const compact=(divisor,suffix,digits)=>`${sign}${dpsBaseUnitTruncatedCompactAmount(absolute,divisor,digits)}${suffix}`;
+  if(absolute>=1000000000000) return compact(1000000000000,'조',2);
+  if(absolute>=100000000) return compact(100000000,'억',2);
+  if(absolute>=10000) return `${sign}${Math.round(absolute/10000).toLocaleString('ko-KR')}만`;
+  return `${sign}${Math.round(absolute).toLocaleString('ko-KR')}`;
+}
+function dpsBaseUnitSummaryMarkup(text){
+  const value=String(text??'—');
+  const match=value.match(/^(.*?)(조|억|만|%)$/);
+  if(!match) return `<span class="dps-num-main">${value}</span>`;
+  return `<span class="dps-num-main">${match[1]}<span class="dps-num-unit">${match[2]}</span></span>`;
+}
+function dpsBaseUnitAchievementPercent(value){
+  const number=Math.max(0,Number(value));
+  return Number.isFinite(number) ? Math.trunc(number) : null;
+}
+function dpsBaseUnitAchievementText(value){
+  const percent=dpsBaseUnitAchievementPercent(value);
+  return percent===null ? '—' : `${percent.toLocaleString('ko-KR')}%`;
+}
+function dpsBaseUnitAchievementState(value){
+  const percent=dpsBaseUnitAchievementPercent(value);
+  if(percent===null || percent<100) return {label:'달성률 부족',status:'부족'};
+  if(percent===100) return {label:'달성률 달성',status:'달성'};
+  return {label:'달성률 초과',status:'초과'};
+}
+function renderDpsBaseUnitSummary(s,hidden=false){
+  const el=$('dpsBaseUnitSummary');
+  if(!el) return;
+  const info=s?.dpsBaseUnit;
+  const results=Array.isArray(info?.results) ? info.results : [];
+  const rpPierce=Number(info?.rpPierce)||0;
+  const basePierce=Number(info?.basePierceBonus)||0;
+  dpsBaseUnitBoardBasePierce=basePierce+rpPierce;
+  setDpsBaseUnitResultDisplayMap(hidden ? [] : results);
+  syncDpsBaseUnitControl();
+  const requiredDps=Number(info?.requiredDps);
+  if(hidden || !Number.isFinite(requiredDps) || requiredDps<=0){
+    el.hidden=true;
+    el.innerHTML='';
+    return;
+  }
+  const expectedDps=Math.max(0,Number(info?.expectedDps)||0);
+  const achievementRate=Math.max(0,Number(info?.achievementRate)||0);
+  const achievementState=dpsBaseUnitAchievementState(achievementRate);
+  el.innerHTML=`<div class="dps-base-unit-summary-row"><div class="dps-base-unit-summary-item"><span class="dps-lbl">클리어 기준</span><b class="dps-num">${dpsBaseUnitSummaryMarkup(dpsBaseUnitSummaryNumber(requiredDps))}</b></div><div class="dps-base-unit-summary-item"><span class="dps-lbl">클리어 기대값</span><b class="dps-num">${dpsBaseUnitSummaryMarkup(dpsBaseUnitSummaryNumber(expectedDps))}</b></div><div class="dps-base-unit-summary-item"><span class="dps-lbl">${achievementState.label}</span><b class="dps-num">${dpsBaseUnitSummaryMarkup(dpsBaseUnitAchievementText(achievementRate))}</b></div></div>`;
+  el.hidden=false;
 }
 function appendDpsBaseUnitStoreInput(store,id,value,dataName,unitId){
   if($(id)) return $(id);
@@ -1525,9 +1622,9 @@ function ensureDpsBaseUnitStore(){
   dpsBaseUnitList().forEach(unit=>{
     if(dpsBaseUnitHasQuantity(unit)) appendDpsBaseUnitStoreInput(store,dpsBaseUnitQuantityInputId(unit),'0','data-dps-base-unit-quantity-store',unit.id);
     appendDpsBaseUnitStoreInput(store,dpsBaseUnitEnhanceInputId(unit),'0','data-dps-base-unit-enhance-store',unit.id);
-    appendDpsBaseUnitStoreInput(store,dpsBaseUnitLimitBreakInputId(unit),'0','data-dps-base-unit-limit-break-store',unit.id);
-    appendDpsBaseUnitStoreInput(store,dpsBaseUnitJewelInputId(unit),'','data-dps-base-unit-jewel-store',unit.id);
-    appendDpsBaseUnitStoreInput(store,dpsBaseUnitVoidPowerInputId(unit),'OFF','data-dps-base-unit-void-power-store',unit.id);
+    if(dpsBaseUnitSupportsLimitBreak(unit)) appendDpsBaseUnitStoreInput(store,dpsBaseUnitLimitBreakInputId(unit),'0','data-dps-base-unit-limit-break-store',unit.id);
+    if(dpsBaseUnitSupportsJewels(unit)) appendDpsBaseUnitStoreInput(store,dpsBaseUnitJewelInputId(unit),'','data-dps-base-unit-jewel-store',unit.id);
+    if(dpsBaseUnitSupportsVoidPower(unit)) appendDpsBaseUnitStoreInput(store,dpsBaseUnitVoidPowerInputId(unit),'OFF','data-dps-base-unit-void-power-store',unit.id);
   });
 }
 function dpsBaseUnitQuantityInput(unit){
@@ -1798,7 +1895,7 @@ function dpsBaseUnitVoidPowerAvailable(selectedIds=null){
 }
 function dpsBaseUnitVoidPowerCost(unitOrId){
   const unit=typeof unitOrId==='string' ? dpsBaseUnitById(unitOrId) : unitOrId;
-  if(!unit) return 0;
+  if(!unit || !dpsBaseUnitSupportsVoidPower(unit)) return 0;
   return dpsBaseUnitHasQuantity(unit) ? Math.max(0,Number(dpsBaseUnitQuantityText(unit))||0) : 1;
 }
 function dpsBaseUnitVoidPowerUsage(excludedUnitId=''){
@@ -1806,6 +1903,7 @@ function dpsBaseUnitVoidPowerUsage(excludedUnitId=''){
   return currentDpsBaseUnitSlots().filter(Boolean).reduce((sum,unitId)=>{
     if(unitId===excluded || unitId==='prodNarud') return sum;
     const unit=dpsBaseUnitById(unitId);
+    if(!dpsBaseUnitSupportsVoidPower(unit)) return sum;
     const input=dpsBaseUnitVoidPowerInput(unit);
     return normalizeDpsBaseUnitVoidPowerValue(input?.value)==='ON' ? sum+dpsBaseUnitVoidPowerCost(unit) : sum;
   },0);
@@ -1813,7 +1911,7 @@ function dpsBaseUnitVoidPowerUsage(excludedUnitId=''){
 function enforceDpsBaseUnitVoidPowerQuantity(unitOrId){
   const unit=typeof unitOrId==='string' ? dpsBaseUnitById(unitOrId) : unitOrId;
   const input=dpsBaseUnitVoidPowerInput(unit);
-  if(!unit || normalizeDpsBaseUnitVoidPowerValue(input?.value)!=='ON') return false;
+  if(!unit || !dpsBaseUnitSupportsVoidPower(unit) || normalizeDpsBaseUnitVoidPowerValue(input?.value)!=='ON') return false;
   if(unit.id!=='prodNarud' && dpsBaseUnitVoidPowerUsage(unit.id)+dpsBaseUnitVoidPowerCost(unit)<=dpsBaseUnitVoidPowerLimit()) return false;
   input.value='OFF';
   return true;
@@ -1825,7 +1923,7 @@ function sanitizeDpsBaseUnitVoidPowerAvailability(selectedIds=null){
   currentDpsBaseUnitSlots().filter(Boolean).forEach(unitId=>{
     const unit=dpsBaseUnitById(unitId);
     const input=dpsBaseUnitVoidPowerInput(unit);
-    if(!input || normalizeDpsBaseUnitVoidPowerValue(input.value)!=='ON') return;
+    if(!dpsBaseUnitSupportsVoidPower(unit) || !input || normalizeDpsBaseUnitVoidPowerValue(input.value)!=='ON') return;
     const cost=dpsBaseUnitVoidPowerCost(unit);
     if(!available || unitId==='prodNarud' || used+cost>limit) input.value='OFF';
     else used+=cost;
@@ -1844,6 +1942,11 @@ function dpsBaseUnitSettingsHtml(unit,slotIndex){
   const unitId=escapeHtml(unit.id);
   const label=escapeHtml(dpsBaseUnitLabel(unit));
   const enhance=normalizeDpsBaseUnitEnhanceValue(dpsBaseUnitEnhanceInput(unit)?.value,0);
+  if(dpsBaseUnitIsArtifact(unit)){
+    const unavailable='<option value="" selected>사용 불가</option>';
+    const disabledActions=`<div class="dps-base-unit-action-buttons"><div class="dps-base-unit-void-power-control"><span class="dps-base-unit-void-power-usage">—</span><button class="ui-choice-btn dps-base-unit-option-btn" id="dpsBaseUnitSlotVoidPower${slotIndex+1}" type="button" aria-label="${label} 공허의 힘 사용 불가" disabled>공허의 힘</button></div><button class="ui-choice-btn dps-base-unit-option-btn dps-base-unit-slot-expansion-btn" type="button" aria-label="${label} 일반 쥬얼 선택 슬롯 사용 불가" disabled>슬롯 확장</button></div>`;
+    return `<div class="dps-base-unit-settings is-artifact" data-dps-base-unit-settings="${unitId}"><label class="dps-base-unit-setting dps-base-unit-enhance-setting"><span>강화 기대값</span><input class="dps-base-unit-setting-input" id="dpsBaseUnitSlotEnhance${slotIndex+1}" data-dps-base-unit-slot-enhance="${unitId}" type="text" inputmode="decimal" min="0" max="1000" value="${escapeHtml(enhance)}" aria-label="${label} 강화 기대값"/></label><label class="dps-base-unit-setting is-disabled"><span>한계 돌파</span><select class="dps-base-unit-setting-select" id="dpsBaseUnitSlotLimitBreak${slotIndex+1}" aria-label="${label} 한계 돌파 사용 불가" disabled>${unavailable}</select></label><label class="dps-base-unit-setting is-disabled"><span>전설·신화 쥬얼</span><select class="dps-base-unit-setting-select" id="dpsBaseUnitSlotJewel${slotIndex+1}" aria-label="${label} 전설·신화 쥬얼 사용 불가" disabled>${unavailable}</select></label>${disabledActions}</div>`;
+  }
   const limitBreak=normalizeDpsBaseUnitLimitBreakValue(dpsBaseUnitLimitBreakInput(unit)?.value);
   const jewelName=normalizeDpsJewelName(dpsBaseUnitJewelInput(unit)?.value);
   const voidPowerAvailable=dpsBaseUnitVoidPowerAvailable();
@@ -1882,11 +1985,13 @@ function dpsBaseUnitSlotHtml(unitId, slotIndex, slots){
   const unit=dpsBaseUnitById(unitId);
   const empty=!unit;
   const selectId=`dpsBaseUnitSlot${slotIndex+1}`;
-  const select=`<div class="dps-base-unit-select-wrap"><button class="ui-icon-btn dps-base-unit-clear-btn" data-dps-base-unit-clear-slot="${slotIndex}" type="button" aria-label="유닛 선택 해제"${empty?' disabled':''}>×</button><select class="dps-base-unit-select" id="${selectId}" data-dps-base-unit-slot="${slotIndex}" aria-label="유닛 선택">${dpsBaseUnitSelectOptionsHtml(unitId,slots)}</select></div>`;
-  const pierce=unit ? dpsBaseUnitPercentText(dpsBaseUnitBoardBasePierce + dpsBaseUnitPierceBonus(unit)) : '—';
+  const selectControl=`<div class="dps-base-unit-select-wrap"><button class="ui-icon-btn dps-base-unit-clear-btn" data-dps-base-unit-clear-slot="${slotIndex}" type="button" aria-label="유닛 선택 해제"${empty?' disabled':''}>×</button><select class="dps-base-unit-select" id="${selectId}" data-dps-base-unit-slot="${slotIndex}" aria-label="유닛 선택">${dpsBaseUnitSelectOptionsHtml(unitId,slots)}</select></div>`;
   const result=unit ? dpsBaseUnitResultDisplay(unit.id) : null;
+  const attack=result ? dpsBaseUnitAttackText(result) : '—';
+  const pierce=result ? dpsBaseUnitPercentText(result.excelPierce) : (unit ? (dpsBaseUnitIsArtifact(unit) ? '0%' : dpsBaseUnitPercentText(dpsBaseUnitBoardBasePierce + dpsBaseUnitPierceBonus(unit))) : '—');
   const dps=result ? dpsBaseUnitDpsText(result) : '—';
-  const entry=`<div class="dps-base-unit-entry dps-base-unit-slot${empty ? ' is-empty' : ''}${unit && dpsBaseUnitHasQuantity(unit) ? ' has-quantity' : ' is-fixed'}" data-dps-base-unit-slot-row="${slotIndex}">${select}<span class="dps-base-unit-board-pierce">${escapeHtml(pierce)}</span><b class="dps-base-unit-board-dps">${escapeHtml(dps)}</b>${dpsBaseUnitQuantityControlHtml(unit,slotIndex)}</div>`;
+  const field=(fieldLabel,fieldClass,content)=>`<div class="dps-base-unit-field ${fieldClass}"><span class="dps-base-unit-field-label">${fieldLabel}</span>${content}</div>`;
+  const entry=`<div class="dps-base-unit-entry dps-base-unit-slot${empty ? ' is-empty' : ''}${unit && dpsBaseUnitHasQuantity(unit) ? ' has-quantity' : ' is-fixed'}" data-dps-base-unit-slot-row="${slotIndex}">${field('유닛명','dps-base-unit-name-field',selectControl)}${field('공격력','dps-base-unit-attack-field',`<span class="dps-base-unit-board-cell dps-base-unit-board-attack">${escapeHtml(attack)}</span>`)}${field('방어력 관통','dps-base-unit-pierce-field',`<span class="dps-base-unit-board-cell dps-base-unit-board-pierce">${escapeHtml(pierce)}</span>`)}${field('DPS','dps-base-unit-dps-field',`<b class="dps-base-unit-board-cell dps-base-unit-board-dps">${escapeHtml(dps)}</b>`)}${field('수량','dps-base-unit-quantity-field',`<div class="dps-base-unit-board-cell dps-base-unit-board-quantity">${dpsBaseUnitQuantityControlHtml(unit,slotIndex)}</div>`)}</div>`;
   return `<div class="dps-base-unit-card${empty?' is-empty':''}">${entry}${dpsBaseUnitSettingsHtml(unit,slotIndex)}</div>`;
 }
 function dpsBaseUnitSlotsHtml(slots){
@@ -1965,7 +2070,7 @@ function syncDpsBaseUnitLimitBreakControl(select){
 }
 function toggleDpsBaseUnitVoidPower(unitId){
   const unit=dpsBaseUnitById(unitId);
-  if(!unit || unit.id==='prodNarud' || !dpsBaseUnitVoidPowerAvailable()){
+  if(!unit || !dpsBaseUnitSupportsVoidPower(unit) || unit.id==='prodNarud' || !dpsBaseUnitVoidPowerAvailable()){
     const store=dpsBaseUnitVoidPowerInput(unit);
     if(store) store.value='OFF';
     sanitizeDpsBaseUnitVoidPowerAvailability();
@@ -1979,12 +2084,21 @@ function toggleDpsBaseUnitVoidPower(unitId){
   syncDpsBaseUnitControl();
   return next;
 }
+function ensureArtifactProductionBuffForUnitSelection(selectedIds){
+  const ids=Array.isArray(selectedIds) ? selectedIds : dpsBaseUnitSelectionIds(selectedIds);
+  if(!ids.includes('artifactUnit')) return false;
+  const artifact=$('prodArtifact');
+  if(!artifact || artifact.checked) return false;
+  artifact.checked=true;
+  return true;
+}
 function setDpsBaseUnitStoredValue(value, notify=true, options={}){
   const input=$('dpsBaseUnits');
   const slotInput=$('dpsBaseUnitSlots');
   if(!input || !slotInput) return;
   const initialIds=dpsBaseUnitSelectionIds(normalizeDpsBaseUnitsValue(value));
   const selectedIds=initialIds.slice(0,dpsBaseUnitSelectionLimit());
+  ensureArtifactProductionBuffForUnitSelection(selectedIds);
   const requestedSlots=options.slots ? normalizeDpsBaseUnitSlotValues(options.slots) : currentDpsBaseUnitSlots();
   const slots=reconcileDpsBaseUnitSlots(requestedSlots,selectedIds);
   const normalized=normalizeDpsBaseUnitsValue(slots.filter(Boolean));
@@ -2045,6 +2159,7 @@ function syncDpsBaseUnitControl(){
   const slotInput=$('dpsBaseUnitSlots');
   if(!input || !slotInput) return;
   const selectedIds=dpsBaseUnitSelectionIds(normalizeDpsBaseUnitsValue(input.value || ''));
+  ensureArtifactProductionBuffForUnitSelection(selectedIds);
   sanitizeDpsBaseUnitVoidPowerAvailability(selectedIds);
   const rawSlots=String(slotInput.value || '');
   let slots=rawSlots ? normalizeDpsBaseUnitSlotValues(rawSlots) : compactDpsBaseUnitSlots(selectedIds);
@@ -2163,45 +2278,6 @@ function bindDpsBaseUnitControlEvents(){
     const limitBreak=e.target?.closest?.('[data-dps-base-unit-slot-limit-break]');
     if(limitBreak?.closest?.('[data-dps-base-unit-control]')) syncDpsBaseUnitLimitBreakControl(limitBreak);
   }, true);
-}
-function dpsBaseUnitSummaryNumber(value){
-  return dpsBaseUnitKoreanNumber(value,false);
-}
-function dpsBaseUnitAchievementPercent(value){
-  const number=Math.max(0,Number(value));
-  return Number.isFinite(number) ? Math.trunc(number) : null;
-}
-function dpsBaseUnitAchievementText(value){
-  const percent=dpsBaseUnitAchievementPercent(value);
-  return percent===null ? '—' : `${percent.toLocaleString('ko-KR')}%`;
-}
-function dpsBaseUnitAchievementState(value){
-  const percent=dpsBaseUnitAchievementPercent(value);
-  if(percent===null || percent<100) return {label:'달성률 부족',status:'부족'};
-  if(percent===100) return {label:'달성률 달성',status:'달성'};
-  return {label:'달성률 초과',status:'초과'};
-}
-function renderDpsBaseUnitSummary(s,hidden=false){
-  const el=$('dpsBaseUnitSummary');
-  if(!el) return;
-  const info=s?.dpsBaseUnit;
-  const results=Array.isArray(info?.results) ? info.results : [];
-  const rpPierce=Number(info?.rpPierce)||0;
-  const basePierce=Number(info?.basePierceBonus)||0;
-  dpsBaseUnitBoardBasePierce=basePierce+rpPierce;
-  setDpsBaseUnitResultDisplayMap(hidden ? [] : results);
-  syncDpsBaseUnitControl();
-  const requiredDps=Number(info?.requiredDps);
-  if(hidden || !Number.isFinite(requiredDps) || requiredDps<=0){
-    el.hidden=true;
-    el.innerHTML='';
-    return;
-  }
-  const expectedDps=Math.max(0,Number(info?.expectedDps)||0);
-  const achievementRate=Math.max(0,Number(info?.achievementRate)||0);
-  const achievementState=dpsBaseUnitAchievementState(achievementRate);
-  el.innerHTML=`<div class="dps-base-unit-summary-item"><span>클리어 기준</span><b>${dpsBaseUnitSummaryNumber(requiredDps)}</b></div><div class="dps-base-unit-summary-item"><span>클리어 기대값</span><b>${dpsBaseUnitSummaryNumber(expectedDps)}</b></div><div class="dps-base-unit-summary-item"><span>달성률 <em class="dps-base-unit-achievement-status">${achievementState.status}</em></span><b>${dpsBaseUnitAchievementText(achievementRate)}</b></div>`;
-  el.hidden=false;
 }
 /* ----- 06-4. 엑셀·저장파일 비교 / 적용 ----- */
 const ENCHANT_COMPARE_ITEMS=[['enchAD','공격력'],['enchCRI','크리티컬 확률'],['enchUA','유닛 가속'],['enchTD','총 데미지'],['enchSR','실드 감소'],['enchHR','체력 감소']];
@@ -2994,23 +3070,24 @@ function traitPresetUnitBoardUnitItems(unitState,boardState,result,expandedIds){
     ['방어력 관통',result ? dpsBaseUnitPercentText(result.excelPierce) : '—'],
     ['DPS',result ? dpsBaseUnitDpsText(result) : '—'],
     ['수량',quantity],
-    ['강화 기대값',Number(unitState.enhanceExpected)||0],
-    ['한계 돌파',Number(unitState.limitBreak)||0],
-    ['전설·신화 쥬얼',legendary || '없음']
+    ['강화 기대값',Number(unitState.enhanceExpected)||0]
   ];
-  if(normal.length) normal.forEach((name,index)=>items.push([`일반 쥬얼 ${index+1}기`,name]));
-  else items.push(['일반 쥬얼','없음']);
+  if(dpsBaseUnitSupportsLimitBreak(unit)) items.push(['한계 돌파',Number(unitState.limitBreak)||0]);
+  if(dpsBaseUnitSupportsJewels(unit)){
+    items.push(['전설·신화 쥬얼',legendary || '없음']);
+    if(normal.length) normal.forEach((name,index)=>items.push([`일반 쥬얼 ${index+1}기`,name]));
+    else items.push(['일반 쥬얼','없음']);
+  }
   if(dpsBaseUnitAllowsNormalJewels(unit)) items.push(['슬롯 확장',expandedIds.has(unitState.unitId)?'ON':'OFF']);
-  items.push(
-    ['공허의 힘',normalizeDpsBaseUnitVoidPowerValue(unitState.voidPower)],
-    ['미장착 수량',unequipped]
-  );
+  if(dpsBaseUnitSupportsVoidPower(unit)) items.push(['공허의 힘',normalizeDpsBaseUnitVoidPowerValue(unitState.voidPower)]);
+  if(!dpsBaseUnitIsArtifact(unit)) items.push(['미장착 수량',unequipped]);
   return items;
 }
 function traitPresetUnitBoardVoidPowerUsage(value){
   const state=normalizeTraitPresetUnitBoardState(value);
   const used=state.units.reduce((sum,item)=>{
-    if(item.unitId==='prodNarud' || normalizeDpsBaseUnitVoidPowerValue(item.voidPower)!=='ON') return sum;
+    const unit=dpsBaseUnitById(item.unitId);
+    if(!dpsBaseUnitSupportsVoidPower(unit) || item.unitId==='prodNarud' || normalizeDpsBaseUnitVoidPowerValue(item.voidPower)!=='ON') return sum;
     return sum+Math.max(1,Number(item.quantity)||1);
   },0);
   return Math.min(dpsBaseUnitVoidPowerLimit(),used);
@@ -4433,6 +4510,7 @@ function bindAppEvents(){
   ].forEach(fn=>fn());
 }
 function initApp(){
+  window.Battle?.init();
   loadFontScale();
   renderZeroScoreCalculatorRows();
   bindAppEvents();

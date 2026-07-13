@@ -464,8 +464,11 @@ function enemyRoundTime(round, diffName=vs('diff')){
   const finalTime=base + eternalExtra + enemyRoundTimeBonus(diffName);
   return Math.max(1,Math.round(finalTime*10)/10);
 }
-function battleModeLabel(){return isCoopMode() ? '협동' : '개인';}
-function dpsContextModeLabel(diffName=vs('diff')){return `${battleModeLabel()}/${enemyDisplayModeLabel(diffName)}`;}
+function battleModeLabel(diffName=vs('diff')){return isCoopActive(diffName) ? '협동' : '개인';}
+function dpsContextModeLabel(diffName=vs('diff')){
+  const players=isCoopActive(diffName) ? '/3인' : '';
+  return `${battleModeLabel(diffName)}/${enemyDisplayModeLabel(diffName)}${players}`;
+}
 function enemyDataFromTables(mode, round, options={}){
   const r=Number(round) || 0;
   const armorRow=lookupFloor(mode.armorTable, r);
@@ -719,6 +722,13 @@ function dpsBaseUnitList(){
 function dpsBaseUnitById(id){
   return dpsBaseUnitList().find(unit=>unit.id===id) || null;
 }
+function dpsBaseUnitIsArtifact(unitOrId){
+  const unit=typeof unitOrId==='string' ? dpsBaseUnitById(unitOrId) : unitOrId;
+  return unit?.kind==='artifact';
+}
+function dpsBaseUnitSupportsLimitBreak(unitOrId){return !!dpsBaseUnitById(typeof unitOrId==='string' ? unitOrId : unitOrId?.id) && !dpsBaseUnitIsArtifact(unitOrId);}
+function dpsBaseUnitSupportsJewels(unitOrId){return !!dpsBaseUnitById(typeof unitOrId==='string' ? unitOrId : unitOrId?.id) && !dpsBaseUnitIsArtifact(unitOrId);}
+function dpsBaseUnitSupportsVoidPower(unitOrId){return !!dpsBaseUnitById(typeof unitOrId==='string' ? unitOrId : unitOrId?.id) && !dpsBaseUnitIsArtifact(unitOrId);}
 function dpsBaseUnitAllId(){
   return window.DPS_DATA?.DPS_BASE_UNIT_ALL_ID || 'all';
 }
@@ -730,7 +740,7 @@ function dpsBaseUnitLabel(unitOrId){
   return unit?.label || String(unitOrId || '');
 }
 function dpsBaseUnitGradeOrder(){
-  return Array.isArray(window.DPS_DATA?.DPS_BASE_UNIT_GRADE_ORDER) ? window.DPS_DATA.DPS_BASE_UNIT_GRADE_ORDER : ['슈퍼히든','히든','레전드'];
+  return Array.isArray(window.DPS_DATA?.DPS_BASE_UNIT_GRADE_ORDER) ? window.DPS_DATA.DPS_BASE_UNIT_GRADE_ORDER : ['특수','슈퍼히든','히든','레전드'];
 }
 function dpsBaseUnitRaceOrder(){
   return Array.isArray(window.DPS_DATA?.DPS_BASE_UNIT_RACE_ORDER) ? window.DPS_DATA.DPS_BASE_UNIT_RACE_ORDER : ['테바','테메','프바','프메','저그','중립','혼종'];
@@ -755,9 +765,13 @@ function dpsBaseUnitQuantityIds(){
   return dpsBaseUnitList().filter(dpsBaseUnitHasQuantity).map(unit=>dpsBaseUnitQuantityInputId(unit));
 }
 function dpsBaseUnitSettingIds(){
-  return dpsBaseUnitList().flatMap(unit=>[
-    dpsBaseUnitEnhanceInputId(unit),dpsBaseUnitLimitBreakInputId(unit),dpsBaseUnitJewelInputId(unit),dpsBaseUnitVoidPowerInputId(unit)
-  ]);
+  return dpsBaseUnitList().flatMap(unit=>{
+    const ids=[dpsBaseUnitEnhanceInputId(unit)];
+    if(dpsBaseUnitSupportsLimitBreak(unit)) ids.push(dpsBaseUnitLimitBreakInputId(unit));
+    if(dpsBaseUnitSupportsJewels(unit)) ids.push(dpsBaseUnitJewelInputId(unit));
+    if(dpsBaseUnitSupportsVoidPower(unit)) ids.push(dpsBaseUnitVoidPowerInputId(unit));
+    return ids;
+  });
 }
 function dpsJewelNames(){
   return Array.isArray(window.DPS_DATA?.DPS_JEWEL_NAMES) ? window.DPS_DATA.DPS_JEWEL_NAMES : [];
@@ -856,7 +870,7 @@ function dpsNormalJewelFinalStats(name,settings=dpsNormalJewelSettingsObject()){
 }
 function dpsBaseUnitAllowsNormalJewels(unitOrId){
   const unit=typeof unitOrId==='string' ? dpsBaseUnitById(unitOrId) : unitOrId;
-  return !!unit && unit.grade!=='슈퍼히든';
+  return !!unit && !dpsBaseUnitIsArtifact(unit) && unit.grade!=='슈퍼히든';
 }
 function normalizeDpsNormalJewelAssignments(value,unitOrder=[]){
   let source=value;
@@ -908,6 +922,7 @@ function dpsBaseUnitNormalJewelNames(unitOrId){
   return (assignments[unit.id] || []).slice(0,dpsBaseUnitNormalJewelSlotCount(unit)).map(normalizeDpsNormalJewelName);
 }
 function dpsBaseUnitJewelName(unitOrId){
+  if(!dpsBaseUnitSupportsJewels(unitOrId)) return '';
   const el=typeof $==='function' ? $(dpsBaseUnitJewelInputId(unitOrId)) : null;
   return normalizeDpsJewelName(el?.value || '');
 }
@@ -956,6 +971,7 @@ function dpsBaseUnitEnhanceValue(unitOrId){
   return Number(normalizeDpsBaseUnitEnhanceValue(el?.value, 0));
 }
 function dpsBaseUnitLimitBreakValue(unitOrId){
+  if(!dpsBaseUnitSupportsLimitBreak(unitOrId)) return 0;
   const el=typeof $==='function' ? $(dpsBaseUnitLimitBreakInputId(unitOrId)) : null;
   return Number(normalizeDpsBaseUnitLimitBreakValue(el?.value));
 }
@@ -967,7 +983,7 @@ function dpsBaseUnitVoidPowerEnabledIds(){
   selectedIds.forEach(unitId=>{
     const unit=dpsBaseUnitById(unitId);
     const el=typeof $==='function' ? $(dpsBaseUnitVoidPowerInputId(unit)) : null;
-    if(!unit || unit.id==='prodNarud' || normalizeDpsBaseUnitVoidPowerValue(el?.value)!=='ON') return;
+    if(!unit || !dpsBaseUnitSupportsVoidPower(unit) || unit.id==='prodNarud' || normalizeDpsBaseUnitVoidPowerValue(el?.value)!=='ON') return;
     const cost=dpsBaseUnitHasQuantity(unit) ? Math.max(0,dpsBaseUnitQuantity(unit)) : 1;
     if(used+cost>dpsBaseUnitVoidPowerLimit()) return;
     used+=cost;
@@ -977,7 +993,7 @@ function dpsBaseUnitVoidPowerEnabledIds(){
 }
 function dpsBaseUnitVoidPowerOn(unitOrId){
   const unit=typeof unitOrId==='string' ? dpsBaseUnitById(unitOrId) : unitOrId;
-  return !!unit && dpsBaseUnitVoidPowerEnabledIds().has(unit.id);
+  return !!unit && dpsBaseUnitSupportsVoidPower(unit) && dpsBaseUnitVoidPowerEnabledIds().has(unit.id);
 }
 function dpsBaseUnitIdSet(){
   return new Set(dpsBaseUnitList().map(unit=>unit.id));
@@ -992,7 +1008,7 @@ function normalizeDpsBaseUnitsValue(value){
     const id=String(item ?? '').trim();
     if(!id || ids.includes(id) || ids.length>=limit) return;
     if(id===allId){
-      dpsBaseUnitList().slice(0,limit).forEach(unit=>{
+      dpsBaseUnitList().filter(unit=>!dpsBaseUnitIsArtifact(unit)).slice(0,limit).forEach(unit=>{
         if(!ids.includes(unit.id)) ids.push(unit.id);
       });
       return;
@@ -1012,7 +1028,7 @@ function dpsBaseUnitStorageValue(){
 function selectedDpsBaseUnits(value=dpsBaseUnitStorageValue()){
   const ids=dpsBaseUnitSelectionIds(value);
   const units=dpsBaseUnitList();
-  if(ids.includes(dpsBaseUnitAllId())) return units.slice();
+  if(ids.includes(dpsBaseUnitAllId())) return units.filter(unit=>!dpsBaseUnitIsArtifact(unit));
   const idSet=new Set(ids);
   return units.filter(unit=>idSet.has(unit.id));
 }
@@ -1188,6 +1204,51 @@ function dpsBaseUnitSingleDpsParts(unit,context,jewelStats,jewelName=''){
   const rawM19=context.weaponAttack*adTdMultiplier*critMultiplier*attackRate.rate*armorPierceMultiplier*uniqueDpsMultiplier;
   return {rawM19,AB3:armorPierceMultiplier,AB4:adTdMultiplier,AB5:critMultiplier,AB6:attackRate.rate,excelPierce:unitExcelPierce,raceCritBonus,finalCooldown:attackRate.cooldown,jewelName,jewelStats};
 }
+
+function dpsBaseUnitArtifactConfig(){
+  return window.DPS_DATA?.ARTIFACT_DPS_CONFIG || {};
+}
+function dpsBaseUnitArtifactRaceUpgradeLevel(){
+  const config=dpsBaseUnitArtifactConfig();
+  const races=Array.isArray(config.upgradeRaces) ? config.upgradeRaces : ['테란 바이오닉','테란 메카닉','플토 바이오닉','플토 메카닉','저그','중립'];
+  const base=Math.max(0,Number(config.baseRaceUpgradeLevel)||120);
+  return base+races.reduce((sum,race)=>sum+dpsBaseUnitSingleRaceUpgradeLevel(race),0);
+}
+function dpsBaseUnitArtifactWeaponStats(displayAP){
+  const config=dpsBaseUnitArtifactConfig();
+  const baseWeaponAttack=Math.max(0,Number(config.baseWeaponAttack)||500);
+  const apBonus=Math.floor(Math.max(0,Number(displayAP)||0)/10);
+  const raceUpgradeLevel=dpsBaseUnitArtifactRaceUpgradeLevel();
+  const raceUpgradeAttack=raceUpgradeLevel*Math.max(0,Number(config.raceUpgradeAttackPerLevel)||2.5);
+  const enhance=dpsBaseUnitEnhanceValue(config.unitId || 'artifactUnit');
+  const weaponAttack=baseWeaponAttack+apBonus+raceUpgradeAttack;
+  return {baseWeaponAttack,apBonus,raceUpgradeLevel,raceUpgradeAttack,enhance,weaponAttack};
+}
+function dpsBaseUnitArtifactWaveTiming(context){
+  const config=dpsBaseUnitArtifactConfig();
+  const baseCooldown=Math.max(0.001,Number(config.baseWaveCooldown)||4);
+  const minimumInterval=Math.max(0.001,Number(config.minimumWaveInterval)||0.001);
+  const accelerationSeconds=Math.max(0,Number(context?.M13)||0);
+  const interval=Math.max(minimumInterval,baseCooldown-accelerationSeconds);
+  const waveCount=interval<1 ? Math.max(1,Math.round(1/interval)) : 1;
+  return {rate:waveCount,cooldown:interval,interval,waveCount,baseCooldown,accelerationSeconds};
+}
+function dpsBaseUnitArtifactDpsParts(unit,context){
+  const config=dpsBaseUnitArtifactConfig();
+  const enhance=dpsBaseUnitEnhanceValue(unit);
+  const adTdMultiplier=(1+((Number(context.globalAd)||0)+enhance)/100)*(Number(context.M11)||0)/100;
+  const critMultiplier=dps2(context.M8,context.M10,context.M9,context.M16,context.M17,context.M18,1);
+  const timing=dpsBaseUnitArtifactWaveTiming(context);
+  const targetCount=Math.max(1,Math.round(Number(config.waveTargetCount)||30));
+  const perWaveDamage=context.weaponAttack*adTdMultiplier*critMultiplier;
+  const rawM19=perWaveDamage*targetCount*timing.rate;
+  return {
+    rawM19,perWaveDamage,AB3:1,AB4:adTdMultiplier,AB5:critMultiplier,AB6:timing.rate,excelPierce:0,
+    raceCritBonus:0,finalCooldown:timing.interval,jewelName:'',jewelStats:dpsJewelFinalStats(''),
+    artifactWaveInterval:timing.interval,artifactWaveCount:timing.waveCount,artifactTargetCount:targetCount,
+    artifactAcceleration:timing.accelerationSeconds
+  };
+}
 /* ----- 07-4. 메인 스탯 및 DPS 산출 ----- */
 function computeStatsRaw(){
   const autoEP=syncAutoEP();
@@ -1219,6 +1280,8 @@ function computeStatsRaw(){
   const gradeTD=enchantAt(3).td;
   const cd50opt=optionStats.cd;
   const additionalStats=effectiveAdditionalStats();
+  const rawDisplayAP = sumStat('AP') + (optionStats.ap||0) + specialRune.ap + additionalStats.ap;
+  const displayAP = cappedDisplayAp(rawDisplayAP);
   const AP9 = BASE_DISPLAY_STATS.ad + sumStat('AD') + v('rAD') + optionStats.ad + upperStats.ad + ascVlookup3 + reinf + v('rModAD')
             + v('pbless') + shareAD + xpStat.ad + enchantAt(0).ad + epBuff
             + growthGraduationAttackBonus() + additionalStats.ad;
@@ -1284,6 +1347,29 @@ function computeStatsRaw(){
   const dpsBaseUnitSelection=dpsBaseUnitStorageValue();
   const dpsBaseUnits=selectedDpsBaseUnits(dpsBaseUnitSelection);
   const dpsBaseUnitResults=dpsBaseUnits.map(unit=>{
+    if(dpsBaseUnitIsArtifact(unit)){
+      const artifactWeapon=dpsBaseUnitArtifactWeaponStats(displayAP);
+      const context={
+        globalAd:M4,M11,M8,M10,M9,M16,M17,M18,M13,dt,difficultyAs:diff.as,roundTime,
+        enemyArmor:enemyData.armor,M12:M12_dr,targetRound,weaponAttack:artifactWeapon.weaponAttack
+      };
+      const parts=dpsBaseUnitArtifactDpsParts(unit,context);
+      const unitTargetEffects={defenseReduce:M12_dr,pierce:0,hpReduce:displayHR,shieldReduce:displaySR};
+      return {
+        AB3:parts.AB3,AB4:parts.AB4,AB5:parts.AB5,AB6:parts.AB6,
+        rawM19:parts.rawM19,M19:Math.round(parts.rawM19),baseRawM19:parts.rawM19,baseM19:Math.round(parts.rawM19),
+        excelPierce:0,unitPierceBonus:0,ownDurability:targetDurabilityRemain(enemyData,unitTargetEffects),
+        actualM12:actualDrWithPierce(M12_dr,0),enhance:artifactWeapon.enhance,limitBreak:0,jewelName:'',
+        jewelStats:dpsJewelFinalStats(''),normalJewelNames:[],jewelGroups:[],voidPower:false,raceCritBonus:0,
+        finalCooldown:parts.finalCooldown,artifactAttackRate:parts.AB6,artifactWaveInterval:parts.artifactWaveInterval,
+        artifactWaveCount:parts.artifactWaveCount,artifactTargetCount:parts.artifactTargetCount,
+        artifactAcceleration:parts.artifactAcceleration,perWaveDamage:parts.perWaveDamage,
+        unitId:unit.id,kind:'artifact',quantity:1,baseWeaponAttack:artifactWeapon.baseWeaponAttack,
+        weaponAttack:artifactWeapon.weaponAttack,weaponUpgradeLevel:artifactWeapon.raceUpgradeLevel,
+        artifactApBonus:artifactWeapon.apBonus,artifactRaceUpgradeAttack:artifactWeapon.raceUpgradeAttack,
+        weaponSpeed:0,asLimit:0,targetCount:0,attackCount:0
+      };
+    }
     const baseWeaponAttack=nonNegativeNumber(unit.weaponAttack);
     const weaponAttack=dpsBaseUnitWeaponAttack(unit);
     const unitPierceBonus=dpsBaseUnitPierceBonus(unit);
@@ -1376,8 +1462,6 @@ function computeStatsRaw(){
     if(SOUL_ROWS.has(row)) soulU+=cumCost(row);
   });
   const displayAD = Math.round(AP9 * (1 + rawTD/100));
-  const rawDisplayAP = sumStat('AP') + (optionStats.ap||0) + specialRune.ap + additionalStats.ap;
-  const displayAP = Math.min(535, rawDisplayAP);
   const displayAPS = displayAP;
   const displayAPU = displayAP;
   const actualAPU = rawDisplayAP + (unitEnhanceStats().value || 0) + (on('flowerSkill1') ? 40 : 0)
@@ -1579,6 +1663,13 @@ function getSpecialRuneStats(optionStats={tdRuneMul:1}){
   const harmony=v('rHarmony');
   const tdRuneMul=optionStats.tdRuneMul || 1;
   return { ap:v('rAP'), td:(v('rTD') + harmony) * tdRuneMul, ua:v('rUA') + harmony };
+}
+function maximumDisplayAp(){
+  const finalRuneApBonus=vs('runeChoiceType')==='ap' ? Math.min(45,Math.max(0,v('runeChoiceValue'))) : 0;
+  return 535+finalRuneApBonus;
+}
+function cappedDisplayAp(rawValue){
+  return Math.min(maximumDisplayAp(),Math.max(0,Number(rawValue)||0));
 }
 function rpCost(row,n){
   n=Math.max(0,Math.min(TMAX[row]||999,Math.round(n||0)));
@@ -1795,8 +1886,7 @@ function updateDpsContextSummary(){
     dpsContextMode:ctx.mode,
     dpsContextDiff:ctx.diff,
     dpsContextPenance:ctx.penanceShort,
-    dpsContextRound:ctx.roundShort,
-    dpsBaseUnitMode:`모드 : ${ctx.mode}${isCoopActive() ? ' · 3인' : ''}`
+    dpsContextRound:ctx.roundShort
   });
 }
 
@@ -2358,6 +2448,8 @@ window.DPS_CALC=Object.freeze({
   normalizeRuneChoiceType,
   normalizeRuneChoiceValue,
   normalizeRuneChoiceValues,
+  maximumDisplayAp,
+  cappedDisplayAp,
   normalizeOnOffValue,
   normalizeTeamCountValue,
   normalizePenanceValue,
@@ -2372,6 +2464,10 @@ window.DPS_CALC=Object.freeze({
   normalizeDpsTableMinDpsValue,
   dpsBaseUnitList,
   dpsBaseUnitById,
+  dpsBaseUnitIsArtifact,
+  dpsBaseUnitSupportsLimitBreak,
+  dpsBaseUnitSupportsJewels,
+  dpsBaseUnitSupportsVoidPower,
   dpsBaseUnitAllId,
   dpsBaseUnitSelectionLimit,
   dpsBaseUnitLabel,
