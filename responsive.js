@@ -134,7 +134,7 @@
     const tabs = Array.from(state.tabs?.querySelectorAll('.mobile-section-tab') || []);
     const currentIndex = tabs.indexOf(document.activeElement);
     if (currentIndex < 0) return;
-    let nextIndex = currentIndex;
+    let nextIndex;
     if (event.key === 'ArrowRight' || event.key === 'ArrowDown') nextIndex = (currentIndex + 1) % tabs.length;
     else if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') nextIndex = (currentIndex - 1 + tabs.length) % tabs.length;
     else if (event.key === 'Home') nextIndex = 0;
@@ -246,9 +246,6 @@
       else updateMobileOffsets();
     });
   }
-  function runResponsiveRefresh() {
-    applyMode();
-  }
   function clearResumeSchedule() {
     if (state.resumeRaf) cancelAnimationFrame(state.resumeRaf);
     state.resumeRaf = 0;
@@ -259,12 +256,12 @@
     clearResumeSchedule();
     state.resumeRaf = requestAnimationFrame(() => {
       state.resumeRaf = 0;
-      runResponsiveRefresh();
+      applyMode();
     });
     state.resumeTimers = [
-      setTimeout(runResponsiveRefresh, 80),
+      setTimeout(applyMode, 80),
       setTimeout(() => {
-        runResponsiveRefresh();
+        applyMode();
         state.resumeTimers = [];
       }, 320)
     ];
@@ -277,12 +274,12 @@
   }
 
   function initializeResponsiveLayout() {
-    runResponsiveRefresh();
+    applyMode();
     bindInputAutoSelect();
     markResponsiveReady();
   }
   window.dpsSyncResponsiveLayout = function(){
-    runResponsiveRefresh();
+    applyMode();
     requestAnimationFrame(updateMobileOffsets);
     markResponsiveReady();
   };

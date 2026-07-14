@@ -481,7 +481,7 @@ function applyTraitPresetUnitBoardState(value,options={}){
     if(voidPower) voidPower.value=normalizeDpsBaseUnitVoidPowerValue(item.voidPower);
   });
   if(options.resetArtifactView!==false) setArtifactDpsViewEnabled(false);
-  setDpsBaseUnitStoredValue(slots.filter(Boolean),false,{slots,preserveQuantities:true});
+  setDpsBaseUnitStoredValue(slots.filter(Boolean),false,{slots});
   syncDpsBaseUnitControl();
   if(options.recalculate!==false) recalc();
   return state;
@@ -637,7 +637,7 @@ function resetToFactoryState(){
   applyStateObject(storageState.factoryState);
 }
 function safeJsonParse(raw){
-  const text=String(raw??'').replace(/^﻿/,'').trim();
+  const text=String(raw??'').replace(/^\uFEFF/,'').trim();
   const attempts=[text];
   const first=text.indexOf('{'), last=text.lastIndexOf('}');
   if(first>=0 && last>first) attempts.push(text.slice(first,last+1));
@@ -1542,7 +1542,7 @@ function makeTraitPresetFileName(customName=''){
   const cleaned=String(customName ?? '')
     .replace(/\.[Tt][Xx][Tt]$/,'')
     .replace(/[\\/:*?"<>|]/g,'_')
-    .replace(/[\u0000-\u001f\u007f]/g,'')
+    .replace(/\p{Cc}/gu,'')
     .replace(/\s+/g,' ')
     .trim()
     .replace(/[. ]+$/,'')
@@ -1758,25 +1758,18 @@ function syncTraitPresetExcelImportMode(){
   if(saveButton) saveButton.textContent=jewelMode ? '쥬얼 데이터만 가져오기' : '선택 시트 프리셋 저장';
 }
 function importExcelJewelsToCurrentPreset(workbook){
-  const previousJewelSettings=captureTraitPresetJewelSettings();
   try{
-    const jewelImport=readExcelJewelSettings(workbook);
-    if(!jewelImport.present || !jewelImport.settings) throw new Error('선택한 엑셀파일에 쥬얼 시트가 없습니다.');
-    applyExcelJewelSettings(jewelImport);
-    const saved=saveState({silent:true});
-    if(saved===false) throw new Error('쥬얼값은 적용했지만 브라우저 저장에 실패했습니다. 저장공간/권한을 확인하세요.');
-    const staged=stageTraitPresetJewelSettings(jewelImport.settings);
+    const {jewelImport,staged}=applyExcelJewelImport(
+      workbook,
+      '쥬얼값은 적용했지만 브라우저 저장에 실패했습니다. 저장공간/권한을 확인하세요.',
+      '[trait preset Excel jewel rollback failed]'
+    );
     renderTraitPresetUpdateStatus();
     closeTraitPresetExcelImportModal();
     const suffix=staged.needsUpdate ? ' · 프리셋 업데이트 필요' : ' · 기존 데이터와 동일';
     notifyStorageAction(`쥬얼 데이터 가져오기 완료 · 전설/신화 ${jewelImport.recognizedLegendary}개${suffix}`,'ok',{statusAction:'import',animationAction:'import'});
     return true;
   }catch(e){
-    try{
-      applyTraitPresetJewelSettings(previousJewelSettings);
-      sanitizeDpsJewelSelections();
-      syncDpsBaseUnitControl();
-    }catch(rollbackError){ rememberAppIssue('error','[trait preset Excel jewel rollback failed]',rollbackError); }
     rememberAppIssue('error','[trait preset Excel jewel import failed]',e);
     notifyStorageAction(e?.message || '쥬얼 데이터 가져오기 실패','err',{animationAction:'error'});
     return false;
@@ -1963,8 +1956,7 @@ function applySelectedTraitPreset(){
     notifyStorageAction(`비교 프리셋 값 적용 완료: ${appliedName}`,'ok',{statusAction:'load'});
   }catch(e){
     try{ applyStateObject(previousState); }catch(rollbackError){ rememberAppIssue('error','[trait preset compare rollback failed]', rollbackError); }
-    compareState.restoreState=null;
-    compareState.applied=false;
+    clearCompareRestoreState(false);
     rememberAppIssue('error','[trait preset compare apply failed]',e);
     showToast(e?.message||String(e),'err');
     updateCompareActionButtons();

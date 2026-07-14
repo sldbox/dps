@@ -380,7 +380,7 @@
     ];
     let result=svg;
     parts.forEach(part=>{result=result.replace(part,'');});
-    return result.replace(/  <g transform="translate\(127 98\) rotate\(-22\)">[\s\S]*?  <\/g>/,'');
+    return result.replace(/ {2}<g transform="translate\(127 98\) rotate\(-22\)">[\s\S]*? {2}<\/g>/,'');
   }
   function createAimHeroSvg(svg){
     const base=heroSvgWithoutPose(svg);

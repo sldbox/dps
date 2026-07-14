@@ -1044,9 +1044,6 @@ function dpsBaseUnitRequiredDurability(enemyData,displayHR,displaySR){
   const weightedShieldReduce=Math.max(0,Number(displaySR)||0)*shieldRatio;
   return Math.max(1,total*(1-(weightedHpReduce+weightedShieldReduce)/100));
 }
-function dpsBaseUnitPlayerCount(diffName=vs('diff')){
-  return isCoopActive(diffName) ? 3 : 1;
-}
 function dpsBaseUnitTargetProfiles({enemyData,defenseReduce,displayHR,displaySR,diffName=vs('diff')}){
   const count=Math.max(0,Number(enemyData?.count)||0);
   const profiles=[{
@@ -1056,7 +1053,7 @@ function dpsBaseUnitTargetProfiles({enemyData,defenseReduce,displayHR,displaySR,
     hpReduce:Number(displayHR)||0,
     shieldReduce:Number(displaySR)||0
   }];
-  if(dpsBaseUnitPlayerCount(diffName)>1){
+  if(battleEnemyCountMultiplier(diffName)>1){
     profiles.push(
       {player:2,count,defenseReduce:coopPassengerDefenseReduceValue('coopPassenger2Dr'),hpReduce:0,shieldReduce:0},
       {player:3,count,defenseReduce:coopPassengerDefenseReduceValue('coopPassenger3Dr'),hpReduce:0,shieldReduce:0}
@@ -1196,7 +1193,7 @@ function dpsBaseUnitArtifactDpsParts(unit,context){
   const adTdMultiplier=(1+((Number(context.globalAd)||0)+enhance)/100)*(Number(context.M11)||0)/100;
   const critMultiplier=dps2(context.M8,context.M10,context.M9,context.M16,context.M17,context.M18,1);
   const timing=dpsBaseUnitArtifactWaveTiming(context);
-  const targetCount=Math.max(1,Math.round(Number(config.waveTargetCount)||30));
+  const targetCount=Math.max(1,Math.round(Number(config.waveTargetCount)||50));
   const perWaveDamage=context.weaponAttack*adTdMultiplier*critMultiplier;
   const rawM19=perWaveDamage*targetCount*timing.rate;
   return {

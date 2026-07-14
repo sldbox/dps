@@ -778,20 +778,14 @@ function renderDpsTableTabs(){
     `;
   }).join('');
 }
-function dpsTableRound(){
-  return normalizedRoundNumber(targetRoundStoredValue());
-}
 function dpsTablePanelInnerHtml(){
-  const round=dpsTableRound();
+  const round=normalizedRoundNumber(targetRoundStoredValue());
   syncDpsMinDpsInputs();
-  let tableHtml='';
-  if(activeDpsTableMode==='tower'){
-    tableHtml=`<div class="dps-table-scroll">${buildDpsTowerTable()}</div>`;
-  }else if(activeDpsTableMode==='coop'){
-    tableHtml=buildCoopDpsTable(round);
-  }else{
-    tableHtml=`<div class="dps-table-scroll">${buildDpsTable(round)}</div>`;
-  }
+  const tableHtml=activeDpsTableMode==='tower'
+    ? `<div class="dps-table-scroll">${buildDpsTowerTable()}</div>`
+    : activeDpsTableMode==='coop'
+      ? buildCoopDpsTable(round)
+      : `<div class="dps-table-scroll">${buildDpsTable(round)}</div>`;
   const modeClass=activeDpsTableMode==='tower' ? 'dps-tower-panel' : (activeDpsTableMode==='coop' ? 'dps-coop-panel' : 'dps-solo-panel');
   return `<section class="dps-table-panel dps-table-mode-panel ${modeClass}">${tableHtml}</section>`;
 }
@@ -1118,6 +1112,23 @@ function applyExcelJewelSettings(jewelImport){
   sanitizeDpsJewelSelections();
   syncDpsBaseUnitControl();
   return true;
+}
+function applyExcelJewelImport(workbook,saveError,rollbackLabel){
+  const previousJewelSettings=captureTraitPresetJewelSettings();
+  try{
+    const jewelImport=readExcelJewelSettings(workbook);
+    if(!jewelImport.present || !jewelImport.settings) throw new Error('선택한 엑셀파일에 쥬얼 시트가 없습니다.');
+    applyExcelJewelSettings(jewelImport);
+    if(saveState({silent:true})===false) throw new Error(saveError);
+    return {jewelImport,previousJewelSettings,staged:stageTraitPresetJewelSettings(jewelImport.settings)};
+  }catch(error){
+    try{
+      applyTraitPresetJewelSettings(previousJewelSettings);
+      sanitizeDpsJewelSelections();
+      syncDpsBaseUnitControl();
+    }catch(rollbackError){ rememberAppIssue('error',rollbackLabel,rollbackError); }
+    throw error;
+  }
 }
 
 function excelCompareNumberValue(value){
@@ -1672,9 +1683,8 @@ function dpsBaseUnitJewelSelectionOrder(){
 function dpsBaseUnitJewelOwnerKey(unitId,extraIndex=-1){
   return extraIndex>=0 ? `${unitId}:extra:${extraIndex}` : `${unitId}:primary`;
 }
-function dpsBaseUnitExtraSettingsStore(){return $('dpsBaseUnitExtraSettings');}
 function setDpsBaseUnitExtraSettings(value){
-  const store=dpsBaseUnitExtraSettingsStore();
+  const store=$('dpsBaseUnitExtraSettings');
   const normalized=normalizeDpsBaseUnitExtraSettings(value);
   if(store) store.value=serializeDpsBaseUnitExtraSettings(normalized);
   return normalized;
@@ -1896,16 +1906,14 @@ function dpsBaseUnitSlotHtml(unitId, slotIndex, slots){
 function dpsBaseUnitSlotsHtml(slots){
   return slots.map((unitId,index)=>dpsBaseUnitSlotHtml(unitId,index,slots)).join('');
 }
-function syncDpsBaseUnitQuantitiesForSelection(selectedIds, options={}){
+function syncDpsBaseUnitQuantitiesForSelection(selectedIds){
   const selected=new Set(selectedIds || []);
   dpsBaseUnitList().forEach(unit=>{
     if(!dpsBaseUnitHasQuantity(unit)) return;
     const input=dpsBaseUnitStoreInput('quantity',unit);
     if(!input) return;
     const current=normalizeDpsBaseUnitQuantityValue(input.value || 0);
-    let next=current;
-    if(selected.has(unit.id)) next=(options.preserveQuantities && Number(current)>0) ? current : (Number(current)>0 ? current : '1');
-    else next='0';
+    const next=selected.has(unit.id) ? (Number(current)>0 ? current : '1') : '0';
     if(input.value!==next) input.value=next;
   });
 }
@@ -1942,7 +1950,7 @@ function syncDpsBaseUnitSelectionFromQuantities(notify=true){
     .filter(unit=>dpsBaseUnitHasQuantity(unit) && Number(dpsBaseUnitQuantityText(unit))>0)
     .map(unit=>unit.id);
   const ids=[...fixedIds, ...quantityIds].filter((id,index,list)=>list.indexOf(id)===index).slice(0,dpsBaseUnitSelectionLimit());
-  setDpsBaseUnitStoredValue(ids, notify, {preserveQuantities:true});
+  setDpsBaseUnitStoredValue(ids, notify);
 }
 function isDpsBaseUnitQuantityInput(target){
   return !!target?.matches?.('[data-dps-base-unit-quantity-store],[data-dps-base-unit-slot-quantity]');
@@ -2003,7 +2011,7 @@ function setDpsBaseUnitStoredValue(value, notify=true, options={}){
   const normalized=normalizeDpsBaseUnitsValue(slots.filter(Boolean));
   input.value=normalized;
   slotInput.value=serializeDpsBaseUnitSlots(slots);
-  syncDpsBaseUnitQuantitiesForSelection(slots.filter(Boolean), options);
+  syncDpsBaseUnitQuantitiesForSelection(slots.filter(Boolean));
   syncDpsBaseUnitControl();
   if(notify){
     input.dispatchEvent(new Event('input',{bubbles:true}));
@@ -2022,7 +2030,7 @@ function changeDpsBaseUnitSlot(slotIndex, unitId){
   slots[index]=next;
   if(previous && previous!==next && dpsBaseUnitHasQuantity(previous) && !slots.includes(previous)) setDpsBaseUnitQuantity(previous,0);
   if(next && dpsBaseUnitHasQuantity(next)) setDpsBaseUnitQuantity(next,Math.max(1,Number(dpsBaseUnitQuantityText(next))||1));
-  setDpsBaseUnitStoredValue(slots.filter(Boolean),true,{slots,preserveQuantities:true});
+  setDpsBaseUnitStoredValue(slots.filter(Boolean),true,{slots});
 }
 function captureDpsBaseUnitViewState(stack){
   if(!stack) return {focus:null};
@@ -2075,7 +2083,7 @@ function syncDpsBaseUnitControl(){
   const normalized=normalizeDpsBaseUnitsValue(slots.filter(Boolean));
   input.value=normalized;
   slotInput.value=serializeDpsBaseUnitSlots(slots);
-  syncDpsBaseUnitQuantitiesForSelection(slots.filter(Boolean),{preserveQuantities:true});
+  syncDpsBaseUnitQuantitiesForSelection(slots.filter(Boolean));
   normalizeAllDpsBaseUnitQuantityInputs();
   const stack=$('dpsBaseUnitSlotStack');
   if(stack){
@@ -2550,9 +2558,7 @@ function clearCompareTargetSelection(){
   compareState.sourceType=null;
   compareState.lastResult=null;
   compareState.activeFilter='all';
-  compareState.restoreState=null;
-  compareState.restoreJewelSettings=null;
-  compareState.applied=false;
+  clearCompareRestoreState(false);
   compareState.selectedSheetName='';
   const targetFile=$('excelCompareFile');
   const targetSelect=$('excelCompareSheet');
@@ -2685,12 +2691,12 @@ function updateCompareActionButtons(){
   if(restore) restore.disabled=!(compareState.restoreState || compareState.restoreJewelSettings);
   updateCompareTargetFileAccess();
 }
-function clearCompareRestoreState(){
+function clearCompareRestoreState(updateButtons=true){
   compareState.restoreState=null;
   compareState.restoreJewelSettings=null;
   compareState.restoreTraitPresetStatus=null;
   compareState.applied=false;
-  updateCompareActionButtons();
+  if(updateButtons) updateCompareActionButtons();
 }
 function restoreComparisonCurrentState(){
   if(!compareState.restoreState && !compareState.restoreJewelSettings) return;
@@ -2707,10 +2713,7 @@ function restoreComparisonCurrentState(){
     const saved=saveState({silent:true});
     if(saved===false) throw new Error('현재값은 복원했지만 브라우저 저장에 실패했습니다. 저장공간/권한을 확인하세요.');
     if(restoreTraitPresetStatus) saveTraitPresetStatusData(restoreTraitPresetStatus);
-    compareState.restoreState=null;
-    compareState.restoreJewelSettings=null;
-    compareState.restoreTraitPresetStatus=null;
-    compareState.applied=false;
+    clearCompareRestoreState(false);
     if(compareState.sourceType==='json' && compareState.backupState) renderJsonComparison(compareState.backupState);
     else if(compareState.sourceType==='traitPreset'){ hydrateCompareControls(); compareSelectedTraitPreset({preserveRestore:true}); }
     else if(compareState.sourceType==='excel'){ hydrateCompareControls(); compareSelectedExcelSheet({preserveRestore:true}); }
@@ -3146,19 +3149,17 @@ function applySelectedComparison(){
 }
 function applySelectedExcelJewelsOnly(){
   if(!compareState.workbook || compareState.applied || compareState.sourceType!=='excel') return false;
-  const previousJewelSettings=captureTraitPresetJewelSettings();
   const previousTraitPresetStatus=loadTraitPresetStatusData();
   try{
-    const jewelImport=readExcelJewelSettings(compareState.workbook);
-    if(!jewelImport.present || !jewelImport.settings) throw new Error('선택한 엑셀파일에 쥬얼 시트가 없습니다.');
-    applyExcelJewelSettings(jewelImport);
-    const saved=saveState({silent:true});
-    if(saved===false) throw new Error('쥬얼값은 적용했지만 브라우저 저장에 실패했습니다. 저장공간/권한을 확인하세요.');
+    const {jewelImport,previousJewelSettings,staged}=applyExcelJewelImport(
+      compareState.workbook,
+      '쥬얼값은 적용했지만 브라우저 저장에 실패했습니다. 저장공간/권한을 확인하세요.',
+      '[Excel jewel-only rollback failed]'
+    );
     compareState.restoreState=null;
     compareState.restoreJewelSettings=previousJewelSettings;
     compareState.restoreTraitPresetStatus=previousTraitPresetStatus;
     compareState.applied=true;
-    const staged=stageTraitPresetJewelSettings(jewelImport.settings);
     compareSelectedExcelSheet({preserveRestore:true});
     updateCompareActionButtons();
     renderTraitPresetUpdateStatus();
@@ -3166,14 +3167,7 @@ function applySelectedExcelJewelsOnly(){
     notifyStorageAction(`쥬얼 데이터 적용 완료 · 전설/신화 ${jewelImport.recognizedLegendary}개${suffix}`,'ok',{statusAction:'import'});
     return true;
   }catch(e){
-    try{
-      applyTraitPresetJewelSettings(previousJewelSettings);
-      sanitizeDpsJewelSelections();
-      syncDpsBaseUnitControl();
-    }catch(rollbackError){ rememberAppIssue('error','[Excel jewel-only rollback failed]',rollbackError); }
-    compareState.restoreJewelSettings=null;
-    compareState.restoreTraitPresetStatus=null;
-    compareState.applied=false;
+    clearCompareRestoreState(false);
     rememberAppIssue('error','[Excel jewel-only apply failed]',e);
     showToast(e?.message || String(e),'err');
     updateCompareActionButtons();
@@ -3194,8 +3188,7 @@ function applySelectedJsonBackup(){
     notifyStorageAction('현재 입력값에 적용 완료','ok',{statusAction:'load'});
   }catch(e){
     try{ applyStateObject(previousState); }catch(rollbackError){ rememberAppIssue('error','[backup apply rollback failed]', rollbackError); }
-    compareState.restoreState=null;
-    compareState.applied=false;
+    clearCompareRestoreState(false);
     rememberAppIssue('error','[backup apply failed]',e);
     showToast(e?.message||String(e),'err');
     updateCompareActionButtons();
@@ -3241,10 +3234,7 @@ function applySelectedExcelSheet(){
       sanitizeDpsJewelSelections();
       syncDpsBaseUnitControl();
     }catch(rollbackError){ rememberAppIssue('error','[Excel apply rollback failed]', rollbackError); }
-    compareState.restoreState=null;
-    compareState.restoreJewelSettings=null;
-    compareState.restoreTraitPresetStatus=null;
-    compareState.applied=false;
+    clearCompareRestoreState(false);
     rememberAppIssue('error','[Excel apply failed]',e);
     showToast(e?.message||String(e),'err');
     updateCompareActionButtons();
@@ -3750,15 +3740,15 @@ function renderTraitEfficiencyItem(cand,idx){
 function renderTraitEfficiencyTop5(){
   const body=$('traitEfficiencyTop5Body');
   if(!body) return;
-  let list=[];
-  try{ list=buildTraitEfficiencyRecommendations(5); }catch(e){
+  try{
+    const list=buildTraitEfficiencyRecommendations(5);
+    body.innerHTML=list.length
+      ? list.map(renderTraitEfficiencyItem).join('')
+      : '<div class="trait-efficiency-empty">현재 적용 가능한 추천 항목이 없습니다.</div>';
+  }catch(e){
     rememberAppIssue('error','[trait top5 failed]', e);
     body.innerHTML='<div class="trait-efficiency-empty">추천 항목 계산 실패</div>';
-    return;
   }
-  body.innerHTML=list.length
-    ? list.map(renderTraitEfficiencyItem).join('')
-    : '<div class="trait-efficiency-empty">현재 적용 가능한 추천 항목이 없습니다.</div>';
 }
 function applyTraitEfficiencyTop(trigger){
   const rank=Math.max(0, Math.round(+trigger?.dataset?.rank||0));
@@ -3955,14 +3945,7 @@ function buildZeroScoreCompareRows(zeroCells){
     rows.push(compareZeroTextRow(`${name} 목표 명예`,zeroHonorDisplay(normalizeZeroHonorValue(zeroCells[`F${row}`])),zeroHonorDisplay(web.targetHonor||'')));
     rows.push(compareZeroNumberRow('더제로 승단 정보',`${name} 목표 추가점수`,zeroCells[`G${row}`],webCalc.score));
   });
-  const comboExcel={
-    type:'towerCombo',
-    current:String(Math.max(0,Math.min(90,Math.round(excelNumber(zeroCells.B27) ?? 0)))),
-    target:String(Math.max(0,Math.min(90,Math.round(excelNumber(zeroCells.C27) ?? 0)))),
-    honorCurrent:String(Math.max(0,Math.min(90,Math.round(excelNumber(zeroCells.B28) ?? 0)))),
-    honorTarget:String(Math.max(0,Math.min(90,Math.round(excelNumber(zeroCells.C28) ?? 0)))),
-    star:false,currentHonor:'0',targetHonor:'0'
-  };
+  const comboExcel=zeroTowerComboFromRows(zeroScoreStateFromExcel(zeroCells).rows);
   const comboWeb=zeroTowerComboFromRows(webState.rows);
   addZeroTowerComboCompareRows(rows,'도전의탑',comboExcel,comboWeb);
   const webSummary=zeroScoreSummaryFromState(webState);
@@ -4021,66 +4004,30 @@ function updateZeroRankHighlights(currentRank, targetRank){
 }
 function updateZeroScoreCalculator(){
   const calc=qs('.zero-score-calc');
-  if(!calc) return;
-  let total=0;
-  let currentTotal=0;
-  calc.querySelectorAll('.zero-calc-row').forEach(row=>{
-    const type=row.dataset.rowType || 'penance';
-    const current=row.querySelector('.zero-calc-current')?.value;
-    const target=row.querySelector('.zero-calc-target')?.value;
-    let currentScore=0;
-    let targetScore=0;
-    let score=0;
-    if(type==='penance'){
-      const cur=zeroScoreNumber(current,0,20);
-      const tar=zeroScoreNumber(target,0,20);
-      const star=row.querySelector('.zero-star-toggle.active') ? 2 : 0;
-      const currentHonor=normalizeZeroHonorValue(row.querySelector('.zero-current-honor')?.value || '');
-      const targetHonor=normalizeZeroHonorValue(row.querySelector('.zero-target-honor')?.value || '');
-      const currentPenanceScore=zeroPenanceScore(cur);
-      const targetPenanceScore=zeroPenanceScore(tar);
-      const currentHonorScore=zeroHonorScore(currentHonor);
-      const targetHonorScore=zeroHonorScore(targetHonor);
-      currentScore=currentPenanceScore+currentHonorScore+star;
-      targetScore=targetPenanceScore+targetHonorScore;
-      score=Math.max(0,targetPenanceScore-currentPenanceScore)+Math.max(0,targetHonorScore-currentHonorScore);
-    }else if(type==='tower'){
-      currentScore=zeroTowerScore(current);
-      targetScore=zeroTowerScore(target);
-      score=Math.max(0, targetScore-currentScore);
-    }else if(type==='honorTower'){
-      currentScore=zeroHonorTowerScore(current);
-      targetScore=zeroHonorTowerScore(target);
-      score=Math.max(0, targetScore-currentScore);
-    }else if(type==='towerCombo'){
-      const honorCurrent=row.querySelector('.zero-tower-honor-current')?.value;
-      const honorTarget=row.querySelector('.zero-tower-honor-target')?.value;
-      const towerCurrentScore=zeroTowerScore(current);
-      const towerTargetScore=zeroTowerScore(target);
-      const honorCurrentScore=zeroHonorTowerScore(honorCurrent);
-      const honorTargetScore=zeroHonorTowerScore(honorTarget);
-      currentScore=towerCurrentScore+honorCurrentScore;
-      targetScore=towerTargetScore+honorTargetScore;
-      score=Math.max(0, towerTargetScore-towerCurrentScore)+Math.max(0, honorTargetScore-honorCurrentScore);
-    }
-    currentTotal+=currentScore;
-    total+=score;
+  const state=collectZeroScoreState();
+  if(!calc || !state) return;
+  let currentTotal=0, total=0;
+  calc.querySelectorAll('.zero-calc-row').forEach((row,index)=>{
+    const result=zeroScoreRowCalculation(state.rows[index]);
+    currentTotal+=result.currentScore;
+    total+=result.score;
     const out=row.querySelector('.zero-row-score');
-    if(out) out.textContent=String(score);
+    if(out) out.textContent=String(result.score);
   });
   const targetScore=currentTotal+total;
-  const currentEl=calc.querySelector('.zero-current-score');
-  const totalEl=calc.querySelector('.zero-total-add');
-  const targetEl=calc.querySelector('.zero-target-score');
-  const currentRankEl=calc.querySelector('.zero-current-rank');
-  const targetRankEl=calc.querySelector('.zero-target-rank');
   const currentRank=zeroRankName(currentTotal);
   const targetRank=zeroRankName(targetScore);
-  if(currentEl) currentEl.textContent=String(currentTotal);
-  if(totalEl) totalEl.textContent=String(total);
-  if(targetEl) targetEl.textContent=String(targetScore);
-  if(currentRankEl) currentRankEl.textContent=currentRank;
-  if(targetRankEl) targetRankEl.textContent=targetRank;
+  const values=[
+    ['.zero-current-score',currentTotal],
+    ['.zero-total-add',total],
+    ['.zero-target-score',targetScore],
+    ['.zero-current-rank',currentRank],
+    ['.zero-target-rank',targetRank]
+  ];
+  values.forEach(([selector,value])=>{
+    const element=calc.querySelector(selector);
+    if(element) element.textContent=String(value);
+  });
   updateZeroRankHighlights(currentRank,targetRank);
 }
 function collectZeroScoreState(){
