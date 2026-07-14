@@ -1,11 +1,10 @@
-/* ===== style.css | DPS 웹앱 전체 스타일 ===== */
 
-/* ===== 00. 변수 및 기본 설정 ===== */
+/* 기본 토큰 */
 :root{--app-font-scale:1;--font-main:"Pretendard","Malgun Gothic","Apple SD Gothic Neo",sans-serif;--bd:#26364d;--panel-shadow:0 12px 30px rgba(0,0,0,.26);--ui-sub:#a7b6c8;--ui-line2:#344966;--ui-line-soft:#223148;--ui-shadow-soft:0 10px 28px rgba(0,0,0,.22);--ui-unified-card:#111a28;--ui-unified-head:#172438;--ui-unified-line:#2d3f59;--ui-unified-line-strong:#425775;--ui-unified-blue:var(--btn-action-bg);--ui-unified-text:#e6edf7;--ui-unified-muted:#94a3b8;--ui-unified-shadow:0 12px 28px rgba(0,0,0,.22);--subhead-text:#cfe0ff;--btn-action-bg:#2563eb;--btn-action-border:#60a5fa;--btn-action-border-hover:#93c5fd;--btn-action-text:#f8fbff;--btn-action-shadow:0 2px 0 rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.12);--ui-button-bg:linear-gradient(180deg,#10233d 0%,#111a28 100%);--ui-button-hover-bg:linear-gradient(180deg,#132f54 0%,#172438 100%);--ui-button-border:#60a5fa;--ui-button-hover-border:#93c5fd;--ui-button-text:#d7e6ff;--ui-button-hover-text:#f8fbff;--ui-button-shadow:0 2px 0 rgba(0,0,0,.28),0 4px 8px rgba(0,0,0,.20),inset 0 1px 0 rgba(255,255,255,.08);--ui-button-active-bg:var(--btn-action-bg);--ui-button-active-border:var(--btn-action-border-hover);--ui-button-active-text:var(--btn-action-text);--ui-button-active-shadow:var(--btn-action-shadow);--tone-info-bg:#0c203a;--tone-info-bg-hover:#102b4c;--tone-info-border:#4f8bd6;--tone-info-border-hover:#7aa7ff;--tone-info-text:#b8d7ff;--tone-info-text-hover:#e8f2ff;--tone-warn-bg:#241b0a;--tone-warn-bg-hover:#33260e;--tone-warn-border:#d99030;--tone-warn-border-hover:#f6c77a;--tone-warn-text:#f6c77a;--tone-warn-text-hover:#fff1c2;--tone-success-bg:#0d2a24;--tone-success-bg-hover:#11382f;--tone-success-border:#34a07a;--tone-success-border-hover:#5ee0ad;--tone-success-text:#9de6cb;--tone-success-text-hover:#d8fff0;--ui-button-common-pad-x:10px;--ui-button-common-font:calc(11.5px * var(--app-font-scale));--ui-button-gap:4px;--ui-action-button-h:36px;--ui-choice-button-h:31px;--ui-tab-button-h:32px;--ui-toggle-button-h:28px;--ui-step-button-h:30px;--ui-toolbar-button-h:30px;--ui-icon-button-size:30px;--ui-field-border:var(--ui-button-border);--ui-field-hover-border:var(--ui-button-hover-border);--ui-field-focus-border:var(--ui-button-hover-border);--ui-field-focus-shadow:var(--ui-focus);--ui-input:#0d1522;--ui-label:#172235;--field-label-bg:#172235;--field-label-bd:#30435f;--field-label-accent:#425b7e;--field-label-text:#d7e4f3;--result-table-label-bg:#172438;--result-table-value-bg:#101927;--result-table-line:#2b3b55;--result-table-text:#d7e6ff;--section-head-text:#f8fbff;--role-label-bg:#172235;--role-interactive-bg:#10233d;--role-interactive-bd:var(--ui-field-current-border,var(--ui-field-border));--role-readonly-bg:transparent;--role-readonly-bd:#3a4c66;--ui-focus:0 0 0 3px rgba(122,167,255,.22);--dps-card-head-h:40px;--dps-card-head-text:var(--section-head-text, #f8fbff);--ui-bg:#080d15;--ui-panel:#111a28;--ui-line:#26364d;--ui-line-strong:#3a4d67;--ui-accent:#7aa7ff;--ui-text:#e6edf7;--ui-radius:15px;--ui-control-radius:9px;--ui-shadow:0 14px 34px rgba(0,0,0,.25),0 1px 0 rgba(255,255,255,.03);--section-head-h:40px;--section-head-bg:linear-gradient(135deg,#162235 0%,#1d2c44 58%,#263b5a 100%);--section-head-bd:#344967;--dps-card-head-bg:var(--section-head-bg);--dps-card-head-bd:var(--section-head-bd);--color-white:#111a28;--color-slate-50:#0d1522;--color-slate-200:#26364d;--color-slate-300:#3a4d67;--color-slate-400:#8394aa;--color-slate-500:#95a6bd;--color-slate-600:#aebdd1;--color-slate-700:#cad7e6;--color-slate-900:#eef4fb;--color-gray-900:#050915;--color-text-main:#e6edf7;--color-blue-50:#10233d;--color-blue-100:#1a3560;--color-blue-200:#2d5a9d;--color-blue-300:#4f83d8;--color-blue-600:#7aa7ff;--color-blue-700:#a9c8ff;--color-accent:#7aa7ff;--color-amber-line:#a9742b;--color-orange-50:#24190c;--color-orange-200:#8a5f25;--color-orange-800:#f0b66b;--on-dark:#f8fbff;}
 *{box-sizing:border-box;margin:0;padding:0;scrollbar-width:none;-ms-overflow-style:none;}
 *::-webkit-scrollbar{width:0;height:0;display:none;}
 body{font-family:var(--font-main);font-size:calc(13px * var(--app-font-scale));line-height:1.55;min-height:100vh;overflow:hidden;letter-spacing:-.01em;}
-/* ===== 01. 앱 프레임 / 3열 레이아웃 / 기본 카드 ===== */
+/* 앱 프레임·카드 */
 .wrap{grid-template-columns:minmax(0,40fr) minmax(0,20fr) minmax(0,40fr);max-width:none;margin:0;display:grid;height:100vh;width:100vw;overflow:hidden;gap:0;}
 .hdr{display:flex;align-items:center;gap:12px;grid-column:1/-1;grid-row:1;height:52px;z-index:5;}
 .hdr h1{font-size:calc(15px * var(--app-font-scale));font-weight:900;letter-spacing:-.2px;color:#e6edf7;}
@@ -58,7 +57,7 @@ body{font-family:var(--font-main);font-size:calc(13px * var(--app-font-scale));l
 .trait-tools .mini-btn{cursor:pointer;min-width:max-content;}
 .trait-title{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .trait-tools{display:flex;gap:4px;flex:0 0 auto;}
-/* ===== 02. 좌측 입력 패널 / 룬·인첸트·강화 ===== */
+/* 입력·룬·강화 */
 .col-left .sg-title, .month-rune-selects{grid-template-columns:repeat(3,minmax(0,1fr));display:grid;gap:8px;}
 .mini-ir{display:grid;grid-template-columns:1fr;}
 .mini-ir label{color:var(--color-slate-600);}
@@ -251,7 +250,7 @@ body.is-tablet .clean-rune-card .enchant-result-value, body.is-pc-portrait .clea
 .title-td-row label, .dps-min-main-row label{height:32px;min-height:32px;line-height:1.05;}
 .title-td-row select, .dps-min-main-row input{height:32px;min-height:32px;align-self:center;}
 .title-td-row label{white-space:nowrap;font-size:calc(11px * var(--app-font-scale));}
-/* ===== 03. 이달룬 / 쥬얼 / DPS표 / 비교 패널 ===== */
+/* 룬·쥬얼·DPS표·비교 */
 .month-rune-modal-open{overflow:hidden;}
 .month-rune-modal-shell{position:fixed;inset:0;z-index:10020;display:none;align-items:center;justify-content:center;padding:18px;}
 .month-rune-modal-shell.is-open{display:flex;}
@@ -663,7 +662,7 @@ body.is-pc-portrait .dps-tower-grid, body.is-tablet .dps-tower-grid{grid-templat
 body.is-tablet .month-rune-grid{grid-template-columns:repeat(2,minmax(0,1fr));}
 body.is-tablet .jewel-grid{grid-template-columns:repeat(3,minmax(0,1fr));}
 body.is-tablet .month-rune-head{gap:8px;padding:10px 54px 10px 10px;}
-/* ===== 04. 버스 보드 / 데미지보드 ===== */
+/* 버스·데미지 보드 */
 .bus-cut-card{overflow:hidden;}
 .bus-cut-groups{display:grid;grid-template-columns:minmax(0,1fr);gap:10px;padding:0 10px;}
 .bus-cut-party-group{min-width:0;display:grid;gap:5px;align-content:start;}
@@ -703,15 +702,15 @@ body.is-mobile .bus-cut-stage,body.is-mobile .bus-cut-value{height:30px;min-heig
 .skill-damage-list td:nth-child(3){display:none;}
 .skill-damage-title{overflow:visible;}
 .damage-board-title{display:flex;align-items:center;justify-content:space-between;gap:8px;}
-.damage-board-heading{min-width:0;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;color:#f2e9e8;text-shadow:0 1px 0 rgba(0,0,0,.55);}
+.damage-board-heading{min-width:0;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;color:inherit;text-shadow:inherit;}
 body.is-mobile .damage-board-title{gap:6px;}
 .artifact-dps-switch-wrap{display:inline-flex;align-items:center;gap:7px;margin-left:auto;white-space:nowrap;}
-.artifact-dps-switch-label{color:#e6d7d6;font-size:calc(11px * var(--app-font-scale));font-weight:900;line-height:1;}
-.artifact-dps-switch{position:relative;display:inline-grid;grid-template-columns:1fr 1fr;align-items:center;width:72px;height:26px;padding:2px;border:1px solid #66565e;border-radius:999px;background:#151217;color:#a89ca2;font-size:calc(9.5px * var(--app-font-scale));font-weight:900;line-height:1;box-sizing:border-box;cursor:pointer;box-shadow:inset 0 1px 4px rgba(0,0,0,.46);}
-.artifact-dps-switch i{position:absolute;left:3px;top:3px;width:32px;height:18px;border-radius:999px;background:#50454b;box-shadow:0 1px 4px rgba(0,0,0,.38);transition:left .16s ease,background .16s ease;}
+.artifact-dps-switch-label{color:var(--section-head-text,#f8fbff);font-size:calc(11px * var(--app-font-scale));font-weight:900;line-height:1;}
+.artifact-dps-switch{position:relative;display:inline-grid;grid-template-columns:1fr 1fr;align-items:center;width:72px;height:26px;padding:2px;border:1px solid var(--ui-button-border);border-radius:999px;background:#0d1522;color:#94a3b8;font-size:calc(9.5px * var(--app-font-scale));font-weight:900;line-height:1;box-sizing:border-box;cursor:pointer;box-shadow:inset 0 1px 4px rgba(0,0,0,.35);}
+.artifact-dps-switch i{position:absolute;left:3px;top:3px;width:32px;height:18px;border-radius:999px;background:#425b7e;box-shadow:0 1px 4px rgba(0,0,0,.32);transition:left .16s ease,background .16s ease;}
 .artifact-dps-switch-text{position:relative;z-index:1;display:flex;align-items:center;justify-content:center;height:100%;}
-.artifact-dps-switch.is-active{border-color:#b05a70;background:#2a151e;color:#fff0f3;}
-.artifact-dps-switch.is-active i{left:35px;background:#9b294c;}
+.artifact-dps-switch.is-active{border-color:var(--ui-button-active-border);background:#10233d;color:var(--ui-button-active-text);}
+.artifact-dps-switch.is-active i{left:35px;background:var(--btn-action-bg);}
 body .skill-damage-title,
 body .skill-list-head,
 body .skill-damage-list th,
@@ -735,7 +734,7 @@ body.is-mobile .artifact-dps-switch-label{font-size:calc(10px * var(--app-font-s
 body.is-mobile .artifact-dps-switch{width:66px;height:24px;font-size:calc(9px * var(--app-font-scale));}
 body.is-mobile .artifact-dps-switch i{width:29px;height:16px;}
 body.is-mobile .artifact-dps-switch.is-active i{left:32px;}
-/* ===== 05. 중앙 스탯 비교 / 우측 특성 컨트롤 ===== */
+/* 스탯·특성 */
 .stat-compare-grid{border:0;background:transparent;}
 .stat-compare-grid .stat-row{align-items:stretch;border:0;border-bottom:0;background:transparent;}
 .stat-compare-grid .stat-row:last-child{border-bottom:0;}
@@ -749,7 +748,7 @@ body.is-mobile .artifact-dps-switch.is-active i{left:32px;}
 body:not(.is-mobile) .trait-board-panel .trait-dashboard-tools{margin:10px 0 12px;}
 body:not(.is-mobile) .trait-board-panel .tp-body{padding-top:10px;}
 body:not(.is-mobile) .trait-board-panel .trait-group{margin-bottom:10px;}
-/* ===== 06. 공통 시각 토큰·버튼·입력 상호작용 ===== */
+/* 공통 컴포넌트 */
 .toast-root{position:fixed;right:max(18px,env(safe-area-inset-right));bottom:max(18px,env(safe-area-inset-bottom));z-index:99999;display:flex;flex-direction:column;align-items:flex-end;gap:10px;pointer-events:none;max-width:min(420px,calc(100vw - 32px));}
 .toast{box-sizing:border-box;min-width:240px;max-width:min(420px,calc(100vw - 32px));padding:12px 14px;border:1px solid #cbd5e1;border-radius:14px;background:#f8fbff;color:#0f172a;box-shadow:0 14px 36px rgba(0,0,0,.34),0 0 0 1px rgba(255,255,255,.35) inset;font-size:14px;font-weight:900;line-height:1.45;white-space:pre-line;opacity:0;transform:translateY(8px);transition:opacity .18s ease,transform .18s ease;overflow-wrap:anywhere;text-shadow:none;}
 .toast.show{opacity:1;transform:translateY(0);}
@@ -809,7 +808,7 @@ body.is-tabbed .col-work{background:var(--ui-bg);}
 body.is-tabbed .col-work.is-mobile-arranged > .col-left, body.is-tabbed .col-work.is-mobile-arranged > .col-mid, body.is-tabbed .col-work.is-mobile-arranged > .col-right{display:none;}
 body.is-mobile input:not([type="hidden"]), body.is-mobile select, body.is-mobile .btn, body.is-mobile .seg-btns button{min-height:34px;}
 }
-/* ===== 07. 반응형 프레임·공통 카드·헤더 정렬 ===== */
+/* 반응형 프레임 */
 .col-left > .sg{margin-bottom:12px;}
 .col-left > .sg:last-child{margin-bottom:0;}
 .col-left > .xp-sp-card, .col-left > .unit-enhance-card{display:block;width:100%;border:0;border-radius:0;background:transparent;box-shadow:none;overflow:visible;}
@@ -932,7 +931,7 @@ body.is-tabbed .mobile-page input[type="hidden"]{display:none;}
 .trait-dashboard-tools{width:100%;margin:10px 0 0;box-shadow:none;}
 body.is-mobile #optTier, body.is-mobile #utilOptTier{text-align:center;text-align-last:center;justify-content:center;}
 body.is-tabbed .trait-dashboard-tools{margin-top:8px;}
-/* ===== 08. 좌측 입력·버프 반응형 세부 ===== */
+
 body.is-tablet .stat-dps-card .stat-compare-grid{display:block;width:100%;max-width:100%;border:0;border-radius:0;background:transparent;overflow:visible;}
 body.is-tablet .stat-dps-card .stat-compare-grid .stat-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));align-items:stretch;width:100%;height:28px;min-height:28px;margin:0;padding:0;border:0;border-bottom:0;background:transparent;overflow:hidden;}
 body.is-tablet .stat-dps-card .stat-compare-grid .stat-row:last-child{border-bottom:0;}
@@ -977,7 +976,7 @@ body.is-tablet label, body.is-tablet .rune-stat-row label, body.is-tablet .rune-
 body.is-tablet input:not([type="hidden"]), body.is-tablet select, body.is-tablet textarea, body.is-tablet .enchant-combined-row b, body.is-tablet .additional-row b{min-height:31px;border-width:1px;border-style:solid;border-radius:8px;font-weight:900;box-shadow:none;}
 body.is-tablet .ui-action-btn, body.is-tablet .ui-choice-btn, body.is-tablet .ui-tab-btn, body.is-tablet .ui-toggle-btn, body.is-tablet .ui-step-btn, body.is-tablet .ui-toolbar-btn, body.is-tablet .ui-icon-btn, body.is-tablet .btn, body.is-tablet .seg-btns button, body.is-tablet .mini-btn, body.is-tablet .trait-group .tr-ctrl button{font-weight:900;border-width:1px;}
 body.is-tablet .unit-enhance-card .buff-choice-item{font-weight:900;border-width:1px;}
-/* ===== 09. 최종 테마 역할 토큰·상태 표현 ===== */
+/* 테마·상태 */
 body .col-left > .sg.unit-enhance-card.spec-unit-enhance{display:block;width:100%;padding:0 0 12px;overflow:visible;background:transparent;border:0;border-radius:0;box-shadow:none;}
 body .col-left > .sg.unit-enhance-card.spec-unit-enhance > .sg-title{width:auto;margin:0 0 10px;background:var(--section-head-bg, #b8d2ff);border:0;border-radius:var(--ui-radius, 14px) var(--ui-radius, 14px) 0 0;color:var(--on-dark);}
 body .col-left .sg > .sg-title, body .col-left .sg.xp-sp-card > .sg-title, body .col-mid .stat-dps-card > .section-title, body .col-right .dps-base-unit-panel > .section-title, body .col-left .bus-cut-card > h3, body .col-left .final-damage-card > h3, body .trait-group > h4, body.is-tabbed .mobile-page > .sg > .sg-title, body.is-tabbed .mobile-page > .data-card > .section-title, body.is-tabbed .mobile-page > .data-card > h3:not(.zero-rank-title), body.is-tabbed .mobile-page .zero-rank-title, body.is-tabbed .mobile-page .optimizer-head, body.is-tabbed .mobile-page .trait-subgroup-title, body.is-mobile .mobile-page > .sg.rune-spec.clean-rune-card > .sg-title{height:40px;min-height:40px;max-height:40px;padding-top:0;padding-bottom:0;box-sizing:border-box;font-weight:900;line-height:1;}
@@ -1025,7 +1024,7 @@ body.is-tabbed .mobile-page > .sg, body.is-tabbed .mobile-page > .data-card{bord
 body.is-tabbed .col-work{padding:9px;gap:9px;}
 body.is-tabbed .mobile-page > .sg, body.is-tabbed .mobile-page > .data-card{border-radius:0;}
 }
-/* ===== 10. 우측 특성 보드 / 자원·강화 세부 ===== */
+/* 특성 세부 */
 body .trait-board-panel, body:not(.is-mobile) .trait-board-panel, body.is-tabbed .mobile-page > .trait-board-panel{display:grid;grid-template-columns:1fr;gap:10px;width:100%;margin:0;padding:0;overflow:visible;}
 body .trait-board-panel::before, body .trait-board-panel::after{content:none;display:none;}
 body:not(.is-mobile) .clean-rune-card .enchant-combined .enchant-result-label > span{display:flex;align-items:center;justify-content:center;height:31px;min-width:0;padding:0 7px;border-radius:8px;font-size:calc(11.5px * var(--app-font-scale));font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
@@ -1080,7 +1079,6 @@ body .dps-matrix tbody tr.dps-current-row > th{position:sticky;left:0;z-index:45
 body .dps-matrix tbody tr td.dps-current-cell.dps-risk-cell{background:#d85c72;color:var(--on-dark);border-color:#dbeafe;text-shadow:none;box-shadow:inset 0 0 0 3px #dbeafe,0 0 0 1px rgba(219,234,254,.72),0 0 12px rgba(96,165,250,.5);}
 body .dps-matrix tbody tr td.dps-risk-cell{background:#d85c72;color:var(--on-dark);border-color:#7f1d2d;font-weight:1000;text-shadow:none;box-shadow:inset 0 0 0 2px #7f1d2d;}
 body .col-left .sg > .sg-title, body .col-mid .stat-dps-card > .section-title, body .col-right .dps-base-unit-panel > .section-title, body .col-left .bus-cut-card > h3, body .col-left .final-damage-card > h3, body .trait-group > h4, body.is-tabbed .mobile-page > .sg > .sg-title, body.is-tabbed .mobile-page > .data-card > .section-title, body.is-tabbed .mobile-page > .data-card > h3:not(.zero-rank-title), body.is-tabbed .mobile-page .trait-group > h4, body.is-tabbed .mobile-page .zero-rank-title, body.is-tabbed .mobile-page .optimizer-head, body.is-tabbed .mobile-page .trait-subgroup-title{border:0;background:var(--section-head-bg);color:var(--on-dark);box-shadow:none;}
-body .col-mid .stat-dps-card > .section-title.damage-board-title{height:40px;min-height:40px;max-height:40px;margin:0 0 10px;padding:0 14px;border:0;border-bottom:1px solid #62414a;border-radius:calc(var(--ui-radius, 15px) - 1px) calc(var(--ui-radius, 15px) - 1px) 0 0;background:linear-gradient(180deg,#302932,#1b181e);color:#f2e9e8;box-shadow:inset 0 -1px 0 rgba(176,102,95,.18),inset 0 1px 0 rgba(255,255,255,.035);text-shadow:0 1px 0 rgba(0,0,0,.55);}
 body .trait-group > h4 > .trait-title, body .col-left .sg > .sg-title > span:first-child, body .col-left .bus-cut-card > h3 > span:first-child, body .col-left .final-damage-card > h3 > span:first-child{color:var(--on-dark);}
 body .trait-group > h4 .trait-title{color:var(--on-dark);}
 .excel-compare-version{display:inline-flex;align-items:center;justify-content:center;margin:0 2px;padding:1px 7px;border:1px solid #d99030;border-radius:999px;background:var(--color-white);color:var(--color-orange-800);font-weight:900;line-height:1.2;}
@@ -1235,7 +1233,6 @@ body .xp-sp-card .basic-info-row > b, body .xp-sp-card .basic-info-row.readonly-
 
 body .dps-base-unit-panel{display:grid;grid-template-columns:1fr;gap:7px;width:100%;margin:0;padding:0 0 10px;border:0;border-radius:0;background:transparent;box-shadow:none;box-sizing:border-box;}
 body .dps-base-unit-panel-title>span:first-child{flex:0 0 auto;min-width:0;color:var(--section-head-text);white-space:nowrap;}
-body .dps-base-unit-panel-standard{min-width:0;margin-left:auto;color:#dbeafe;font-size:calc(9.5px * var(--app-font-scale));font-weight:900;line-height:1;letter-spacing:0;text-align:right;white-space:nowrap;}
 body .dps-base-unit-summary{display:grid;grid-template-columns:minmax(0,1fr);min-width:0;width:100%;margin:0 0 8px;padding:8px 8px 11px;background:transparent;box-sizing:border-box;}
 body .dps-base-unit-summary[hidden]{display:none;}
 body .dps-base-unit-summary-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));align-items:stretch;gap:6px;min-width:0;width:100%;}
@@ -1249,7 +1246,6 @@ body .dps-jewel-config-controls{display:grid;grid-template-columns:minmax(0,1fr)
 body .dps-jewel-config-buttons{display:grid;grid-template-columns:minmax(0,1fr);gap:6px;min-width:0;width:100%;}
 body .dps-base-unit-board-head, body .dps-jewel-config-button{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;min-width:0;height:40px;min-height:40px;max-height:40px;margin:0 0 10px;padding:0 14px;border:0;border-radius:calc(var(--ui-radius,15px) - 1px) calc(var(--ui-radius,15px) - 1px) 0 0;background:var(--section-head-bg);color:var(--on-dark);font-family:inherit;font-size:calc(13px * var(--app-font-scale));font-weight:900;line-height:1;letter-spacing:0;text-align:left;text-shadow:0 1px 1px rgba(8,28,65,.2);box-shadow:none;box-sizing:border-box;}
 body .dps-base-unit-board-head>span:first-child{flex:0 0 auto;white-space:nowrap;}
-body .dps-base-unit-board-head .dps-base-unit-panel-standard{flex:0 1 auto;margin-left:auto;color:#dbeafe;text-align:right;}
 body .dps-jewel-config-button{cursor:pointer;}
 body .dps-jewel-config-button::after{content:"＋";flex:0 0 auto;margin-left:auto;color:var(--dps-card-head-text,var(--on-dark));font-size:calc(13px * var(--app-font-scale));}
 body .dps-jewel-config-button[aria-expanded="true"]::after{content:"−";}
@@ -1319,7 +1315,6 @@ body .dps-base-unit-normal-jewel-grid span{display:block;width:100%;color:#dbeaf
 body .dps-base-unit-normal-jewel-grid select{width:100%;min-width:0;height:31px;min-height:31px;padding:0 18px 0 5px;border:1px solid var(--role-interactive-bd);border-radius:var(--ui-control-radius);background:var(--role-interactive-bg);color:var(--color-text-main);font-size:calc(9.8px * var(--app-font-scale));font-weight:900;line-height:1;text-align:center;text-align-last:center;box-sizing:border-box;}
 body.is-mobile .dps-base-unit-panel, body.is-narrow-mobile .dps-base-unit-panel{gap:6px;padding:0;margin-top:8px;}
 body.is-mobile .dps-base-unit-panel-title, body.is-narrow-mobile .dps-base-unit-panel-title{height:var(--dps-card-head-h);min-height:var(--dps-card-head-h);font-size:calc(12px * var(--app-font-scale));}
-body.is-mobile .dps-base-unit-panel-standard, body.is-narrow-mobile .dps-base-unit-panel-standard{max-width:68%;font-size:calc(8.4px * var(--app-font-scale));line-height:1.15;white-space:normal;}
 body.is-mobile .dps-base-unit-summary, body.is-narrow-mobile .dps-base-unit-summary{padding:5px 3px 8px;}
 body.is-mobile .dps-base-unit-summary-row, body.is-narrow-mobile .dps-base-unit-summary-row{grid-template-columns:repeat(3,minmax(0,1fr));gap:3px;}
 body.is-mobile .dps-base-unit-summary-item, body.is-narrow-mobile .dps-base-unit-summary-item{grid-template-rows:12px minmax(0,1fr);gap:3px;height:60px;min-height:60px;}
@@ -1357,7 +1352,7 @@ body.is-mobile .xp-sp-card .basic-info-row > label, body.is-mobile .xp-sp-card .
 body.is-mobile .trait-limit-grid, body.is-narrow-mobile .trait-limit-grid{grid-template-columns:1fr;gap:5px;overflow:visible;}
 body.is-mobile .trait-limit-grid label, body.is-narrow-mobile .trait-limit-grid label{grid-template-columns:minmax(104px,.95fr) minmax(0,1.05fr);width:100%;height:32px;min-height:32px;gap:5px;}
 body.is-mobile .trait-limit-grid label span, body.is-mobile .trait-limit-grid input, body.is-mobile .trait-limit-grid select, body.is-narrow-mobile .trait-limit-grid label span, body.is-narrow-mobile .trait-limit-grid input, body.is-narrow-mobile .trait-limit-grid select{height:32px;min-height:32px;font-size:calc(9.8px * var(--app-font-scale));}
-/* ===== 11. 더제로 승단 / 특성 확장 패널 ===== */
+/* 더제로 승단·확장 패널 */
 .zero-rank-card, .col-left .zero-rank-card{padding:0 0 12px;margin-bottom:10px;background:transparent;border:0;border-radius:0;box-shadow:none;overflow:visible;}
 .col-left > .bus-cut-card, .col-left > .final-damage-card{margin-bottom:10px;}
 .col-left .zero-rank-card > h3{height:var(--section-head-h);min-height:var(--section-head-h);}
@@ -1490,7 +1485,7 @@ body.is-mobile .zero-calc-table .zero-star-toggle:disabled{border-color:var(--ro
 .zero-calc-table .zero-honor-input{width:100%;max-width:none;height:28px;min-height:28px;box-sizing:border-box;border:1px solid var(--role-interactive-bd);border-radius:var(--ui-control-radius);background:var(--role-interactive-bg,#10233d);background-image:none;color:#cfe0ff;font-family:Consolas,monospace;font-weight:1000;text-align:center;text-transform:uppercase;padding:0 6px;margin:0;font-size:calc(10.5px * var(--app-font-scale));line-height:28px;box-shadow:inset 0 1px 2px rgba(32,57,91,.035);text-shadow:none;}
 .zero-calc-table .zero-honor-input::placeholder{color:#5b6b82;font-size:calc(9px * var(--app-font-scale));text-transform:none;}
 .zero-calc-table .zero-honor-input:focus{--ui-field-current-border:var(--ui-field-focus-border);outline:none;background:var(--role-interactive-bg);box-shadow:var(--ui-field-focus-shadow);}
-/* ===== 12. 공통 입력·라벨 정렬 / 헤더 메뉴 / 모바일 참고 패널 ===== */
+/* 공통 정렬·모바일 */
 body .xp-sp-card .basic-info-row > label,
 body .trait-limit-grid label span,
 body .clean-rune-card .rune-stat-row > label,

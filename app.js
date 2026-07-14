@@ -1,12 +1,6 @@
-/* ===== app.js | 화면 상태·렌더링·이벤트·파일 연동 ===== */
 
-/* ===== 00. DOM 헬퍼 ===== */
-const $=id=>document.getElementById(id);
-const qs=selector=>document.querySelector(selector);
-const qsa=selector=>document.querySelectorAll(selector);
-
-/* ===== 01. 설정 / 전역 상태 ===== */
-var DPS_CONFIG={
+/* 설정·공통 상태 */
+const DPS_CONFIG={
   storage:{
     version:(window.DPS_BUILD_VERSION || 'dev'),
     scope:'browser_local',
@@ -44,7 +38,9 @@ var DPS_CONFIG={
   }
 };
 
-window.DPS_CONFIG=DPS_CONFIG;
+const $=id=>document.getElementById(id);
+const qs=selector=>document.querySelector(selector);
+const qsa=selector=>document.querySelectorAll(selector);
 
 const INV={};
 TRAITS.forEach(t=>{INV[t[0]]=0;});
@@ -53,12 +49,10 @@ const AUTO_INVEST_EXCLUDED_ROWS=new Set([45,87]);
 const ENCHANT_INPUT_IDS=['enchAD','enchCRI','enchUA','enchTD','enchSR','enchHR'];
 const ENCHANT_INPUT_ID_SET=new Set(ENCHANT_INPUT_IDS);
 
-/* ===== 02. 공통 UI / 입력값 유틸 ===== */
-function rememberAppIssue(kind, label, error){
+/* 공통 UI·입력 유틸 */
+function rememberAppIssue(kind,label,error){
   window.DPS_LAST_ISSUE={kind,label,error,time:Date.now()};
 }
-function logAppError(label, error){rememberAppIssue('error', label, error);}
-function logAppWarn(label, error){rememberAppIssue('warn', label, error);}
 function alertApp(message){
   alert(message);
 }
@@ -75,9 +69,14 @@ function showToast(message, type='ok', durationMs){
       root.setAttribute('aria-live','polite');
       document.body.appendChild(root);
     }
+    const text=String(message ?? '').trim();
+    if(!text) return;
+    const toastKey=`${type}:${text}`;
+    if(Array.from(root.children).some(item=>item.dataset.toastKey===toastKey)) return;
+    while(root.children.length>=4) root.firstElementChild?.remove();
     const el=document.createElement('div');
-    const text=String(message ?? '');
     el.className='toast '+type;
+    el.dataset.toastKey=toastKey;
     el.textContent=text;
     root.appendChild(el);
     requestAnimationFrame(()=>el.classList.add('show'));
@@ -91,6 +90,28 @@ function showToast(message, type='ok', durationMs){
     rememberAppIssue('warn','showToast',error);
   }
 }
+let pendingConfirmAction=null;
+function requestConfirmAction(key,message,run){
+  const now=Date.now();
+  const delay=DPS_CONFIG.ui.confirmDelayMs || 1600;
+  if(pendingConfirmAction && pendingConfirmAction.key===key && now<pendingConfirmAction.until){
+    const timer=pendingConfirmAction.timer;
+    pendingConfirmAction=null;
+    if(timer) clearTimeout(timer);
+    return run();
+  }
+  if(pendingConfirmAction && pendingConfirmAction.timer) clearTimeout(pendingConfirmAction.timer);
+  showToast(message,'warn');
+  pendingConfirmAction={
+    key,
+    until:now+delay,
+    timer:setTimeout(()=>{
+      if(pendingConfirmAction && pendingConfirmAction.key===key) pendingConfirmAction=null;
+    }, delay)
+  };
+  return false;
+}
+
 function v(id){
   const el=$(id); if(!el) return 0;
   if(id==='round') return normalizedRoundNumber(targetRoundStoredValue());
@@ -149,7 +170,7 @@ function setTextMap(map){
 }
 const RUNE_CHOICE_TARGETS=[['ap','rAP'],['ua','rUA'],['td','rTD'],['harmony','rHarmony']];
 
-/* ===== 03. 입력 / 선택 컨트롤 동기화 ===== */
+/* 입력·화면 동기화 */
 function renderEnemyData(data){
   if(!data) return;
   setText('enemyArmorQuick', fullNumber(data.armor));
@@ -177,7 +198,7 @@ function setSelectButton(id,value){
   el.value=value;
   syncSelectButtons();
   requestAppUpdate();
-  scheduleAutoSaveToast();
+  scheduleAutoSave();
 }
 function syncSelectButtons(){
   qsa('.seg-btns[data-target]').forEach(group=>{
@@ -303,7 +324,7 @@ function formatAllMoneyInputs(){
     if(el) el.value=normalizeDecimalDisplayValue(el.value);
   });
 }
-/* ===== 04. 메인 화면 렌더링 / 재계산 ===== */
+
 function currentArtifactDpsResult(){
   const diff=vs('diff');
   const battleMode=isCoopMode() ? 'coop' : 'solo';
@@ -336,7 +357,6 @@ function updateBattleBoards(s,displayDps,unitHidden=false){
     enemyArmor:Number(enemy.armor),
     defenseReduce2:coopPassengerDefenseReduceValue('coopPassenger2Dr'),
     defenseReduce3:coopPassengerDefenseReduceValue('coopPassenger3Dr'),
-    artifactDpsEnabled:isArtifactDpsViewEnabled(),
     artifactUnitSelected,
     artifactPrimarySelected,
     artifactAttackRate:Number(artifactResult?.artifactAttackRate)||0,
@@ -463,7 +483,7 @@ function recalc(){
     syncPreCalculationViews();
     withArtifactDpsViewBuffApplied(()=>renderCalculatedViews(computeStatsRaw()));
     saveState({silent:true});
-  }catch(e){logAppError('recalc',e);}
+  }catch(e){rememberAppIssue('error','recalc',e);}
 }
 function renderEnhanceSummary(){
   const e=unitEnhanceStats();
@@ -485,7 +505,7 @@ function renderEnchantPreview(){
     if(out) out.textContent=val;
   });
 }
-/* 버스 보드: 렌더링 / 행 클릭 피드백 */
+
 const XP_CUT_DIVISOR_ROWS=[
   {stage:'1단계', party3:6},
   {stage:'2단계', party3:12},
@@ -546,7 +566,7 @@ function bindBusCutEvents(){
     if(e.key==='Enter' || e.key===' ') activateXpCutRowFeedback(e.target,e);
   });
 }
-/* 스펙 보드: 유물 DPS 표시 상태 */
+
 function isArtifactDpsViewEnabled(){
   const toggle=$('artifactDpsViewToggle');
   return toggle?.getAttribute('aria-checked')==='true';
@@ -598,7 +618,7 @@ function requestAppUpdate(){
   if(appUpdateTimer) clearTimeout(appUpdateTimer);
   appUpdateTimer=setTimeout(()=>{appUpdateTimer=0; recalc();}, DPS_CONFIG.ui.updateDelay);
 }
-/* ===== 05. 모달 패널 콘텐츠 / 비교·DPS표·이달룬·쥬얼 ===== */
+/* 모달·비교·DPS표 */
 const DPS_TABLE_DIFFICULTIES=DPS_CONFIG.dpsTable.difficulties;
 const COOP_DPS_TABLE_DIFFICULTIES=DPS_TABLE_DIFFICULTIES.slice(0, DPS_TABLE_DIFFICULTIES.indexOf('Hall Of Fame') + 1);
 const COOP_DPS_TABLE_PENANCE_MIN=0;
@@ -632,7 +652,7 @@ function setDpsTableMinDps(value, options={}){
   if(isDpsTableOpen()) renderDpsTablePanelContent();
   if(!storageState.isLoading){
     saveState({silent:true});
-    scheduleAutoSaveToast();
+    scheduleAutoSave();
   }
 }
 function parseDpsTableMinDps(){
@@ -655,7 +675,7 @@ function updateDpsRiskViews(currentDps){
   card.classList.toggle('is-dps-risk', isRisk);
   if(badge) badge.setAttribute('aria-hidden', String(!isRisk));
 }
-/* DPS표: 기본/유물 DPS 상태별 표기값 */
+
 function dpsTablePreviewValue(diff, penance, round, options={}){
   if(isArtifactDpsViewEnabled()) return calculateArtifactDpsPreview(diff, penance, round, options).dps;
   return computeDpsPreview(diff, penance, round, options);
@@ -724,7 +744,6 @@ function buildCoopDpsTable(round){
 }
 function buildDpsTowerTable(){
   const minDps=parseDpsTableMinDps();
-  const currentDiff=vs('diff');
   const currentFloor=normalizedTowerFloorNumber(challengeTowerFloorStoredValue());
   const tower=DPS_CONFIG.dpsTable.tower || {};
   const range={ min:Math.max(1, Math.round(tower.minFloor || 1)), max:Math.max(1, Math.round(tower.maxFloor || 90)) };
@@ -926,24 +945,13 @@ function renderMonthRunePanelContent(info){
   const noteHtml=noteText ? `<div class="month-rune-note">${escapeHtml(noteText)}</div>` : '';
   return `${noteHtml}<div class="month-rune-grid">${content}</div>`;
 }
-function renderMonthRunePanel(info){
-  return `
-    <section class="month-rune-panel is-active" data-month-rune-panel="runes" role="tabpanel" aria-labelledby="monthRuneTitle">
-      ${renderMonthRunePanelContent(info)}
-    </section>
-  `;
-}
 function renderJewelPanelContent(items){
   const list=Array.isArray(items)?items:[];
   const content=list.length ? list.map(renderJewelCard).join('') : '<div class="month-rune-empty">쥬얼 데이터가 없습니다.</div>';
   return `<div class="jewel-grid">${content}</div>`;
 }
-function renderJewelPanel(items){
-  return `
-    <section class="month-rune-panel" data-month-rune-panel="jewels" role="tabpanel" aria-labelledby="monthRuneTitle" hidden>
-      ${renderJewelPanelContent(items)}
-    </section>
-  `;
+function renderMonthRuneModalPanel(name,content,active=false){
+  return `<section class="month-rune-panel${active?' is-active':''}" data-month-rune-panel="${name}" role="tabpanel" aria-labelledby="monthRuneTitle"${active?'':' hidden'}>${content}</section>`;
 }
 function syncComparePanelAfterRender(){
   hydrateCompareControls();
@@ -953,9 +961,8 @@ function syncComparePanelAfterRender(){
   else if(compareState.workbook && compareState.sourceType==='excel') compareSelectedExcelSheet({preserveRestore:true});
   else updateCompareActionButtons();
 }
-/* ===== 06. 파일 파서·필드 레지스트리·유닛 보드·분석 화면 ===== */
+/* 파일·유닛 보드·분석 */
 
-/* ----- 06-1. 비교 상태 / XLSX 저수준 파서 ----- */
 const compareState={workbook:null,backupState:null,traitPresetBundle:null,baseTraitPresetBundle:null,baseFileRejected:false,sourceType:null,lastResult:null,activeFilter:'all',restoreState:null,restoreJewelSettings:null,restoreTraitPresetStatus:null,applied:false,selectedSheetName:'',baseTraitPresetId:''};
 function resetCompareState(){Object.assign(compareState,{workbook:null,backupState:null,traitPresetBundle:null,baseFileRejected:false,sourceType:null,lastResult:null,activeFilter:'all',restoreState:null,restoreJewelSettings:null,restoreTraitPresetStatus:null,applied:false,selectedSheetName:'',baseTraitPresetId:''});}
 const EXCEL_COMPARE_STATS=[
@@ -1294,7 +1301,7 @@ function webControlDisplay(id){
   if(el.type==='checkbox') return el.checked?'ON':'OFF';
   return String(el.value??'');
 }
-/* ----- 06-2. 저장·비교 필드 레지스트리 ----- */
+
 const EXCEL_TITLE_BONUS_MAP={'패왕':'12','패왕+':'13','제왕':'14','제왕+':'15','신황':'16','신황+':'17'};
 const EXCEL_RUNE_TYPE_MAP={'AP':'ap','UA':'ua','TD':'td','TD&UA':'harmony','TD＆UA':'harmony','마법공격력':'ap','마법 공격력':'ap','유닛가속':'ua','유닛 가속':'ua','총데미지':'td','총 데미지':'td','총데미지&유닛가속':'harmony','총 데미지 & 유닛 가속':'harmony','총뎀가속':'harmony'};
 const FIELD_REGISTRY={
@@ -1397,8 +1404,7 @@ const FIELD_REGISTRY={
   unitGrade:{kind:'룬효과 버프',name:'유닛 등급',compare:true},
   unitLevel:{kind:'룬효과 버프',name:'유닛 레벨',compare:true},
 };
-/* ----- 06-3. 유닛 보드 상태 / 렌더링 / 선택 동기화 ----- */
-/* ----- 06-3-1. 저장 필드 / 선택 상태 ----- */
+
 function dpsBaseUnitQuantityFieldEntries(){
   return dpsBaseUnitList().filter(dpsBaseUnitHasQuantity).map(unit=>[
     dpsBaseUnitQuantityInputId(unit),
@@ -1408,17 +1414,20 @@ function dpsBaseUnitQuantityFieldEntries(){
 function dpsBaseUnitSettingFieldEntries(){
   return dpsBaseUnitList().flatMap(unit=>{
     const entries=[[dpsBaseUnitEnhanceInputId(unit),{kind:'유닛 보드',name:`${unit.label || unit.id} 강화 기대값`,compare:true,save:true}]];
-    if(dpsBaseUnitSupportsLimitBreak(unit)) entries.push([dpsBaseUnitLimitBreakInputId(unit),{kind:'유닛 보드',name:`${unit.label || unit.id} 한계 돌파`,compare:true,save:true}]);
-    if(dpsBaseUnitSupportsJewels(unit)) entries.push([dpsBaseUnitJewelInputId(unit),{kind:'유닛 보드',name:`${unit.label || unit.id} 전설·신화 쥬얼`,compare:true,save:true}]);
-    if(dpsBaseUnitSupportsVoidPower(unit)) entries.push([dpsBaseUnitVoidPowerInputId(unit),{kind:'유닛 보드',name:`${unit.label || unit.id} 공허의 힘`,compare:true,save:true}]);
+    if(dpsBaseUnitSupportsAdvancedOptions(unit)) entries.push(
+      [dpsBaseUnitLimitBreakInputId(unit),{kind:'유닛 보드',name:`${unit.label || unit.id} 한계 돌파`,compare:true,save:true}],
+      [dpsBaseUnitJewelInputId(unit),{kind:'유닛 보드',name:`${unit.label || unit.id} 전설·신화 쥬얼`,compare:true,save:true}],
+      [dpsBaseUnitVoidPowerInputId(unit),{kind:'유닛 보드',name:`${unit.label || unit.id} 공허의 힘`,compare:true,save:true}]
+    );
     return entries;
   });
 }
 Object.assign(FIELD_REGISTRY, Object.fromEntries([...dpsBaseUnitQuantityFieldEntries(),...dpsBaseUnitSettingFieldEntries()]));
 const DPS_BASE_UNIT_ENHANCE_IDS=new Set(dpsBaseUnitList().map(dpsBaseUnitEnhanceInputId));
-const DPS_BASE_UNIT_LIMIT_BREAK_IDS=new Set(dpsBaseUnitList().filter(dpsBaseUnitSupportsLimitBreak).map(dpsBaseUnitLimitBreakInputId));
-const DPS_BASE_UNIT_JEWEL_IDS=new Set(dpsBaseUnitList().filter(dpsBaseUnitSupportsJewels).map(dpsBaseUnitJewelInputId));
-const DPS_BASE_UNIT_VOID_POWER_IDS=new Set(dpsBaseUnitList().filter(dpsBaseUnitSupportsVoidPower).map(dpsBaseUnitVoidPowerInputId));
+const DPS_BASE_UNIT_ADVANCED_OPTION_UNITS=dpsBaseUnitList().filter(dpsBaseUnitSupportsAdvancedOptions);
+const DPS_BASE_UNIT_LIMIT_BREAK_IDS=new Set(DPS_BASE_UNIT_ADVANCED_OPTION_UNITS.map(dpsBaseUnitLimitBreakInputId));
+const DPS_BASE_UNIT_JEWEL_IDS=new Set(DPS_BASE_UNIT_ADVANCED_OPTION_UNITS.map(dpsBaseUnitJewelInputId));
+const DPS_BASE_UNIT_VOID_POWER_IDS=new Set(DPS_BASE_UNIT_ADVANCED_OPTION_UNITS.map(dpsBaseUnitVoidPowerInputId));
 const fieldEntriesByFlag=flag=>Object.entries(FIELD_REGISTRY).filter(([,field])=>field[flag]).map(([id])=>id);
 const EXCEL_NUMERIC_INPUT_IDS=new Set(Object.entries(FIELD_REGISTRY).filter(([,field])=>field.excel==='number').map(([id])=>id));
 const EXCEL_SELECT_INPUT_IDS=new Set(Object.entries(FIELD_REGISTRY).filter(([,field])=>field.excel==='select').map(([id])=>id));
@@ -1509,10 +1518,9 @@ function sortedDpsBaseUnits(){
   const units=dpsBaseUnitList();
   const gradeOrder=dpsBaseUnitGradeOrder();
   const raceOrder=dpsBaseUnitRaceOrder();
-  const gradeIndex=grade=>{ const index=gradeOrder.indexOf(grade); return index<0 ? gradeOrder.length : index; };
-  const raceIndex=race=>{ const index=raceOrder.indexOf(race); return index<0 ? raceOrder.length : index; };
+  const orderIndex=(order,value)=>{ const index=order.indexOf(value); return index<0 ? order.length : index; };
   return units.slice().sort((a,b)=>
-    gradeIndex(a.grade)-gradeIndex(b.grade) || raceIndex(a.raceGroup)-raceIndex(b.raceGroup) || units.indexOf(a)-units.indexOf(b)
+    orderIndex(gradeOrder,a.grade)-orderIndex(gradeOrder,b.grade) || orderIndex(raceOrder,a.raceGroup)-orderIndex(raceOrder,b.raceGroup) || units.indexOf(a)-units.indexOf(b)
   );
 }
 let dpsBaseUnitResultDisplayMap=new Map();
@@ -1523,7 +1531,7 @@ function dpsBaseUnitResultDisplay(unitId){
 function setDpsBaseUnitResultDisplayMap(results){
   dpsBaseUnitResultDisplayMap=new Map((Array.isArray(results) ? results : []).map(item=>[String(item?.unitId || ''),item]).filter(([id])=>id));
 }
-/* ----- 06-3-2. 유닛 보드 표시값 포맷 / 결과 요약 ----- */
+
 function dpsBaseUnitPercentText(value){
   const num=Number(value);
   if(!Number.isFinite(num)) return '—';
@@ -1622,39 +1630,33 @@ function ensureDpsBaseUnitStore(){
   dpsBaseUnitList().forEach(unit=>{
     if(dpsBaseUnitHasQuantity(unit)) appendDpsBaseUnitStoreInput(store,dpsBaseUnitQuantityInputId(unit),'0','data-dps-base-unit-quantity-store',unit.id);
     appendDpsBaseUnitStoreInput(store,dpsBaseUnitEnhanceInputId(unit),'0','data-dps-base-unit-enhance-store',unit.id);
-    if(dpsBaseUnitSupportsLimitBreak(unit)) appendDpsBaseUnitStoreInput(store,dpsBaseUnitLimitBreakInputId(unit),'0','data-dps-base-unit-limit-break-store',unit.id);
-    if(dpsBaseUnitSupportsJewels(unit)) appendDpsBaseUnitStoreInput(store,dpsBaseUnitJewelInputId(unit),'','data-dps-base-unit-jewel-store',unit.id);
-    if(dpsBaseUnitSupportsVoidPower(unit)) appendDpsBaseUnitStoreInput(store,dpsBaseUnitVoidPowerInputId(unit),'OFF','data-dps-base-unit-void-power-store',unit.id);
+    if(dpsBaseUnitSupportsAdvancedOptions(unit)){
+      appendDpsBaseUnitStoreInput(store,dpsBaseUnitLimitBreakInputId(unit),'0','data-dps-base-unit-limit-break-store',unit.id);
+      appendDpsBaseUnitStoreInput(store,dpsBaseUnitJewelInputId(unit),'','data-dps-base-unit-jewel-store',unit.id);
+      appendDpsBaseUnitStoreInput(store,dpsBaseUnitVoidPowerInputId(unit),'OFF','data-dps-base-unit-void-power-store',unit.id);
+    }
   });
 }
-function dpsBaseUnitQuantityInput(unit){
+const DPS_BASE_UNIT_INPUT_ID_RESOLVERS=Object.freeze({
+  quantity:dpsBaseUnitQuantityInputId,
+  enhance:dpsBaseUnitEnhanceInputId,
+  limitBreak:dpsBaseUnitLimitBreakInputId,
+  jewel:dpsBaseUnitJewelInputId,
+  voidPower:dpsBaseUnitVoidPowerInputId
+});
+function dpsBaseUnitStoreInput(field,unit){
   ensureDpsBaseUnitStore();
-  return $(dpsBaseUnitQuantityInputId(unit));
-}
-function dpsBaseUnitEnhanceInput(unit){
-  ensureDpsBaseUnitStore();
-  return $(dpsBaseUnitEnhanceInputId(unit));
-}
-function dpsBaseUnitLimitBreakInput(unit){
-  ensureDpsBaseUnitStore();
-  return $(dpsBaseUnitLimitBreakInputId(unit));
-}
-function dpsBaseUnitJewelInput(unit){
-  ensureDpsBaseUnitStore();
-  return $(dpsBaseUnitJewelInputId(unit));
-}
-function dpsBaseUnitVoidPowerInput(unit){
-  ensureDpsBaseUnitStore();
-  return $(dpsBaseUnitVoidPowerInputId(unit));
+  const inputId=DPS_BASE_UNIT_INPUT_ID_RESOLVERS[field];
+  return inputId ? $(inputId(unit)) : null;
 }
 function dpsBaseUnitQuantityText(unit){
-  return dpsBaseUnitHasQuantity(unit) ? normalizeDpsBaseUnitQuantityValue(dpsBaseUnitQuantityInput(unit)?.value || 0) : '1';
+  return dpsBaseUnitHasQuantity(unit) ? normalizeDpsBaseUnitQuantityValue(dpsBaseUnitStoreInput('quantity',unit)?.value || 0) : '1';
 }
 function dpsBaseUnitQuantityControlHtml(unit, slotIndex){
   if(!unit) return '<span class="dps-base-unit-fixed-qty is-auto-value">—</span>';
   if(!dpsBaseUnitHasQuantity(unit)) return '<span class="dps-base-unit-fixed-qty is-auto-value">1</span>';
   const limit=dpsBaseUnitQuantityLimit();
-  const value=normalizeDpsBaseUnitQuantityValue(dpsBaseUnitQuantityInput(unit)?.value || 0);
+  const value=normalizeDpsBaseUnitQuantityValue(dpsBaseUnitStoreInput('quantity',unit)?.value || 0);
   const label=escapeHtml(dpsBaseUnitLabel(unit.id));
   return `<div class="dps-base-unit-qty-control" data-dps-base-unit-qty-control="${escapeHtml(unit.id)}"><button class="ui-choice-btn dps-base-unit-qty-btn" data-dps-base-unit-qty-delta="-1" data-dps-base-unit-id="${escapeHtml(unit.id)}" type="button" aria-label="${label} 수량 감소">−</button><input class="dps-base-unit-qty-input" id="dpsBaseUnitSlotQty${slotIndex+1}" data-dps-base-unit-slot-quantity="${escapeHtml(unit.id)}" inputmode="numeric" type="text" min="0" max="${limit}" value="${escapeHtml(value)}" aria-label="${label} 수량"/><button class="ui-choice-btn dps-base-unit-qty-btn" data-dps-base-unit-qty-delta="1" data-dps-base-unit-id="${escapeHtml(unit.id)}" type="button" aria-label="${label} 수량 증가">+</button></div>`;
 }
@@ -1668,16 +1670,6 @@ function dpsJewelConfigCardHtml(name,settings){
   const field=(key,label,suffix='')=>`<label class="dps-jewel-field"><span>${label}</span><select data-dps-jewel-name="${escapeHtml(name)}" data-dps-jewel-field="${key}" aria-label="${escapeHtml(name)} ${label}">${dpsJewelOptionHtml(options[key],input[key],suffix)}</select></label>`;
   const gradeClass=finalStats.mythic==='Y'?'is-mythic':'is-legendary';
   return `<article class="dps-jewel-card"><header><b>${escapeHtml(name)}</b><em class="${gradeClass}">${finalStats.mythic==='Y'?'신화':'전설'}</em></header><div class="dps-jewel-fields">${field('ad','공격력')}${field('as','공격속도')}${field('td','총데미지')}${field('ua','가속','%')}${field('enhance','강화')}${field('mythic','신화')}</div><p>최종 <b>${escapeHtml(finalStats.ad)} / ${escapeHtml(finalStats.as)} / ${escapeHtml(finalStats.td)} / ${escapeHtml(finalStats.ua)}%</b></p></article>`;
-}
-function renderDpsJewelConfigGrid(){
-  const grid=$('dpsJewelConfigGrid');
-  const store=$('dpsJewelSettings');
-  if(!grid || !store) return;
-  const settings=normalizeDpsJewelSettings(store.value || '{}');
-  const normalized=serializeDpsJewelSettings(settings);
-  if(store.value!==normalized) store.value=normalized;
-  const html=dpsJewelNames().map(name=>dpsJewelConfigCardHtml(name,settings)).join('');
-  if(grid.innerHTML!==html) grid.innerHTML=html;
 }
 function updateDpsJewelConfig(select){
   const store=$('dpsJewelSettings');
@@ -1698,15 +1690,19 @@ function dpsNormalJewelConfigCardHtml(name,settings){
   const field=(key,label,suffix='')=>`<label class="dps-jewel-field"><span>${label}</span><select data-dps-normal-jewel-name="${escapeHtml(name)}" data-dps-normal-jewel-field="${key}" aria-label="${escapeHtml(name)} ${label}">${dpsJewelOptionHtml(options[key],input[key],suffix)}</select></label>`;
   return `<article class="dps-jewel-card dps-normal-jewel-card"><header><b>${escapeHtml(name)}</b><em class="is-normal">일반</em></header><div class="dps-jewel-fields">${field('ad','공격력')}${field('as','공격속도')}${field('td','총데미지')}${field('ua','가속','%')}</div><p>최종 <b>${escapeHtml(finalStats.ad)} / ${escapeHtml(finalStats.as)} / ${escapeHtml(finalStats.td)} / ${escapeHtml(finalStats.ua)}%</b></p></article>`;
 }
-function renderDpsNormalJewelConfigGrid(){
-  const grid=$('dpsNormalJewelConfigGrid');
-  const store=$('dpsNormalJewelSettings');
+function renderJewelConfigGrid({gridId,storeId,normalizeSettings,serializeSettings,names,renderCard}){
+  const grid=$(gridId);
+  const store=$(storeId);
   if(!grid || !store) return;
-  const settings=normalizeDpsNormalJewelSettings(store.value || '{}');
-  const normalized=serializeDpsNormalJewelSettings(settings);
+  const settings=normalizeSettings(store.value || '{}');
+  const normalized=serializeSettings(settings);
   if(store.value!==normalized) store.value=normalized;
-  const html=dpsNormalJewelNames().map(name=>dpsNormalJewelConfigCardHtml(name,settings)).join('');
+  const html=names().map(name=>renderCard(name,settings)).join('');
   if(grid.innerHTML!==html) grid.innerHTML=html;
+}
+function renderDpsJewelConfigGrids(){
+  renderJewelConfigGrid({gridId:'dpsJewelConfigGrid',storeId:'dpsJewelSettings',normalizeSettings:normalizeDpsJewelSettings,serializeSettings:serializeDpsJewelSettings,names:dpsJewelNames,renderCard:dpsJewelConfigCardHtml});
+  renderJewelConfigGrid({gridId:'dpsNormalJewelConfigGrid',storeId:'dpsNormalJewelSettings',normalizeSettings:normalizeDpsNormalJewelSettings,serializeSettings:serializeDpsNormalJewelSettings,names:dpsNormalJewelNames,renderCard:dpsNormalJewelConfigCardHtml});
 }
 function toggleDpsJewelConfigPanel(){
   const controls=document.querySelector('[data-dps-jewel-config-controls]');
@@ -1739,12 +1735,9 @@ function dpsNormalJewelSettingIsActive(value){
   const setting=normalizeDpsNormalJewelSetting(value);
   return ['ad','as','td','ua'].some(key=>Number(setting[key])>0);
 }
-function activeDpsJewelNames(settings=dpsJewelSettingsObject()){
-  return dpsJewelNames().filter(name=>dpsJewelSettingIsActive(settings?.[name]));
-}
-function activeDpsNormalJewelNames(settings=dpsNormalJewelSettingsObject()){
-  return dpsNormalJewelNames().filter(name=>dpsNormalJewelSettingIsActive(settings?.[name]));
-}
+function activeJewelNames(names,settings,isActive){return names.filter(name=>isActive(settings?.[name]));}
+function activeDpsJewelNames(settings=dpsJewelSettingsObject()){return activeJewelNames(dpsJewelNames(),settings,dpsJewelSettingIsActive);}
+function activeDpsNormalJewelNames(settings=dpsNormalJewelSettingsObject()){return activeJewelNames(dpsNormalJewelNames(),settings,dpsNormalJewelSettingIsActive);}
 function dpsBaseUnitJewelSelectionOrder(){
   const selected=currentDpsBaseUnitSlots().filter(Boolean);
   const selectedSet=new Set(selected);
@@ -1757,7 +1750,7 @@ function sanitizeDpsJewelSelections(){
   const usedLegendary=new Set();
   let changed=false;
   unitOrder.forEach(unitId=>{
-    const input=dpsBaseUnitJewelInput(unitId);
+    const input=dpsBaseUnitStoreInput('jewel',unitId);
     const name=normalizeDpsJewelName(input?.value || '');
     if(!name) return;
     if(!activeLegendary.has(name) || usedLegendary.has(name)){
@@ -1787,7 +1780,7 @@ function sanitizeDpsJewelSelections(){
 function dpsLegendaryJewelActiveUsage(){
   const usage=new Map();
   currentDpsBaseUnitSlots().filter(Boolean).forEach(unitId=>{
-    const name=normalizeDpsJewelName(dpsBaseUnitJewelInput(unitId)?.value || '');
+    const name=normalizeDpsJewelName(dpsBaseUnitStoreInput('jewel',unitId)?.value || '');
     if(name && !usage.has(name)) usage.set(name,unitId);
   });
   return usage;
@@ -1859,7 +1852,7 @@ function updateDpsBaseUnitNormalJewelAssignment(select){
   const activeQuantity=dpsBaseUnitHasQuantity(unit) ? Math.max(0,dpsBaseUnitQuantity(unit)) : 1;
   const activeEquipped=values.slice(0,activeQuantity).filter(Boolean).length;
   if(dpsBaseUnitJewelName(unit) && activeQuantity>0 && activeEquipped>=activeQuantity){
-    const namedStore=dpsBaseUnitJewelInput(unit);
+    const namedStore=dpsBaseUnitStoreInput('jewel',unit);
     if(namedStore) namedStore.value='';
   }
   syncDpsBaseUnitControl();
@@ -1871,10 +1864,10 @@ function updateDpsBaseUnitJewelAssignment(select){
   const next=normalizeDpsJewelName(select.value);
   dpsBaseUnitList().forEach(otherUnit=>{
     if(otherUnit.id===unitId) return;
-    const otherInput=dpsBaseUnitJewelInput(otherUnit);
+    const otherInput=dpsBaseUnitStoreInput('jewel',otherUnit);
     if(next && normalizeDpsJewelName(otherInput?.value || '')===next) otherInput.value='';
   });
-  const store=dpsBaseUnitJewelInput(unit);
+  const store=dpsBaseUnitStoreInput('jewel',unit);
   if(store) store.value=next;
   if(next) trimDpsBaseUnitNormalJewelAssignments(unit,dpsBaseUnitNormalJewelCapacity(unit));
   syncDpsBaseUnitControl();
@@ -1895,7 +1888,7 @@ function dpsBaseUnitVoidPowerAvailable(selectedIds=null){
 }
 function dpsBaseUnitVoidPowerCost(unitOrId){
   const unit=typeof unitOrId==='string' ? dpsBaseUnitById(unitOrId) : unitOrId;
-  if(!unit || !dpsBaseUnitSupportsVoidPower(unit)) return 0;
+  if(!unit || !dpsBaseUnitSupportsAdvancedOptions(unit)) return 0;
   return dpsBaseUnitHasQuantity(unit) ? Math.max(0,Number(dpsBaseUnitQuantityText(unit))||0) : 1;
 }
 function dpsBaseUnitVoidPowerUsage(excludedUnitId=''){
@@ -1903,15 +1896,15 @@ function dpsBaseUnitVoidPowerUsage(excludedUnitId=''){
   return currentDpsBaseUnitSlots().filter(Boolean).reduce((sum,unitId)=>{
     if(unitId===excluded || unitId==='prodNarud') return sum;
     const unit=dpsBaseUnitById(unitId);
-    if(!dpsBaseUnitSupportsVoidPower(unit)) return sum;
-    const input=dpsBaseUnitVoidPowerInput(unit);
+    if(!dpsBaseUnitSupportsAdvancedOptions(unit)) return sum;
+    const input=dpsBaseUnitStoreInput('voidPower',unit);
     return normalizeDpsBaseUnitVoidPowerValue(input?.value)==='ON' ? sum+dpsBaseUnitVoidPowerCost(unit) : sum;
   },0);
 }
 function enforceDpsBaseUnitVoidPowerQuantity(unitOrId){
   const unit=typeof unitOrId==='string' ? dpsBaseUnitById(unitOrId) : unitOrId;
-  const input=dpsBaseUnitVoidPowerInput(unit);
-  if(!unit || !dpsBaseUnitSupportsVoidPower(unit) || normalizeDpsBaseUnitVoidPowerValue(input?.value)!=='ON') return false;
+  const input=dpsBaseUnitStoreInput('voidPower',unit);
+  if(!unit || !dpsBaseUnitSupportsAdvancedOptions(unit) || normalizeDpsBaseUnitVoidPowerValue(input?.value)!=='ON') return false;
   if(unit.id!=='prodNarud' && dpsBaseUnitVoidPowerUsage(unit.id)+dpsBaseUnitVoidPowerCost(unit)<=dpsBaseUnitVoidPowerLimit()) return false;
   input.value='OFF';
   return true;
@@ -1922,36 +1915,36 @@ function sanitizeDpsBaseUnitVoidPowerAvailability(selectedIds=null){
   let used=0;
   currentDpsBaseUnitSlots().filter(Boolean).forEach(unitId=>{
     const unit=dpsBaseUnitById(unitId);
-    const input=dpsBaseUnitVoidPowerInput(unit);
-    if(!dpsBaseUnitSupportsVoidPower(unit) || !input || normalizeDpsBaseUnitVoidPowerValue(input.value)!=='ON') return;
+    const input=dpsBaseUnitStoreInput('voidPower',unit);
+    if(!dpsBaseUnitSupportsAdvancedOptions(unit) || !input || normalizeDpsBaseUnitVoidPowerValue(input.value)!=='ON') return;
     const cost=dpsBaseUnitVoidPowerCost(unit);
     if(!available || unitId==='prodNarud' || used+cost>limit) input.value='OFF';
     else used+=cost;
   });
   if(!available){
     dpsBaseUnitList().forEach(unit=>{
-      const input=dpsBaseUnitVoidPowerInput(unit);
+      const input=dpsBaseUnitStoreInput('voidPower',unit);
       if(input && normalizeDpsBaseUnitVoidPowerValue(input.value)!=='OFF') input.value='OFF';
     });
   }
   return available;
 }
-/* ----- 06-3-3. 유닛 행 / 설정 UI 렌더링 ----- */
+
 function dpsBaseUnitSettingsHtml(unit,slotIndex){
   if(!unit) return '';
   const unitId=escapeHtml(unit.id);
   const label=escapeHtml(dpsBaseUnitLabel(unit));
-  const enhance=normalizeDpsBaseUnitEnhanceValue(dpsBaseUnitEnhanceInput(unit)?.value,0);
+  const enhance=normalizeDpsBaseUnitEnhanceValue(dpsBaseUnitStoreInput('enhance',unit)?.value,0);
   if(dpsBaseUnitIsArtifact(unit)){
     const unavailable='<option value="" selected>사용 불가</option>';
     const disabledActions=`<div class="dps-base-unit-action-buttons"><div class="dps-base-unit-void-power-control"><span class="dps-base-unit-void-power-usage">—</span><button class="ui-choice-btn dps-base-unit-option-btn" id="dpsBaseUnitSlotVoidPower${slotIndex+1}" type="button" aria-label="${label} 공허의 힘 사용 불가" disabled>공허의 힘</button></div><button class="ui-choice-btn dps-base-unit-option-btn dps-base-unit-slot-expansion-btn" type="button" aria-label="${label} 일반 쥬얼 선택 슬롯 사용 불가" disabled>슬롯 확장</button></div>`;
     return `<div class="dps-base-unit-settings is-artifact" data-dps-base-unit-settings="${unitId}"><label class="dps-base-unit-setting dps-base-unit-enhance-setting"><span>강화 기대값</span><input class="dps-base-unit-setting-input" id="dpsBaseUnitSlotEnhance${slotIndex+1}" data-dps-base-unit-slot-enhance="${unitId}" type="text" inputmode="decimal" min="0" max="1000" value="${escapeHtml(enhance)}" aria-label="${label} 강화 기대값"/></label><label class="dps-base-unit-setting is-disabled"><span>한계 돌파</span><select class="dps-base-unit-setting-select" id="dpsBaseUnitSlotLimitBreak${slotIndex+1}" aria-label="${label} 한계 돌파 사용 불가" disabled>${unavailable}</select></label><label class="dps-base-unit-setting is-disabled"><span>전설·신화 쥬얼</span><select class="dps-base-unit-setting-select" id="dpsBaseUnitSlotJewel${slotIndex+1}" aria-label="${label} 전설·신화 쥬얼 사용 불가" disabled>${unavailable}</select></label>${disabledActions}</div>`;
   }
-  const limitBreak=normalizeDpsBaseUnitLimitBreakValue(dpsBaseUnitLimitBreakInput(unit)?.value);
-  const jewelName=normalizeDpsJewelName(dpsBaseUnitJewelInput(unit)?.value);
+  const limitBreak=normalizeDpsBaseUnitLimitBreakValue(dpsBaseUnitStoreInput('limitBreak',unit)?.value);
+  const jewelName=normalizeDpsJewelName(dpsBaseUnitStoreInput('jewel',unit)?.value);
   const voidPowerAvailable=dpsBaseUnitVoidPowerAvailable();
   const voidPowerEligible=unit.id!=='prodNarud';
-  const voidPower=voidPowerAvailable && voidPowerEligible ? normalizeDpsBaseUnitVoidPowerValue(dpsBaseUnitVoidPowerInput(unit)?.value) : 'OFF';
+  const voidPower=voidPowerAvailable && voidPowerEligible ? normalizeDpsBaseUnitVoidPowerValue(dpsBaseUnitStoreInput('voidPower',unit)?.value) : 'OFF';
   const voidPowerUsage=dpsBaseUnitVoidPowerUsage();
   const voidPowerLimit=dpsBaseUnitVoidPowerLimit();
   const voidPowerCanEnable=voidPowerAvailable && voidPowerEligible && (voidPower==='ON' || voidPowerUsage+dpsBaseUnitVoidPowerCost(unit)<=voidPowerLimit);
@@ -2001,7 +1994,7 @@ function syncDpsBaseUnitQuantitiesForSelection(selectedIds, options={}){
   const selected=new Set(selectedIds || []);
   dpsBaseUnitList().forEach(unit=>{
     if(!dpsBaseUnitHasQuantity(unit)) return;
-    const input=dpsBaseUnitQuantityInput(unit);
+    const input=dpsBaseUnitStoreInput('quantity',unit);
     if(!input) return;
     const current=normalizeDpsBaseUnitQuantityValue(input.value || 0);
     let next=current;
@@ -2016,7 +2009,7 @@ function normalizeDpsBaseUnitQuantityInput(input){
   if(input.value!==next) input.value=next;
   const unitId=input.getAttribute?.('data-dps-base-unit-slot-quantity') || '';
   if(unitId){
-    const storeInput=dpsBaseUnitQuantityInput(unitId);
+    const storeInput=dpsBaseUnitStoreInput('quantity',unitId);
     if(storeInput && storeInput.value!==next) storeInput.value=next;
     enforceDpsBaseUnitVoidPowerQuantity(unitId);
   }
@@ -2025,13 +2018,13 @@ function normalizeDpsBaseUnitQuantityInput(input){
 function normalizeAllDpsBaseUnitQuantityInputs(){
   ensureDpsBaseUnitStore();
   dpsBaseUnitList().forEach(unit=>{
-    if(dpsBaseUnitHasQuantity(unit)) normalizeDpsBaseUnitQuantityInput(dpsBaseUnitQuantityInput(unit));
+    if(dpsBaseUnitHasQuantity(unit)) normalizeDpsBaseUnitQuantityInput(dpsBaseUnitStoreInput('quantity',unit));
   });
 }
 function setDpsBaseUnitQuantity(unitId, value){
   const unit=dpsBaseUnitById(unitId);
   if(!unit || !dpsBaseUnitHasQuantity(unit)) return '0';
-  const input=dpsBaseUnitQuantityInput(unit);
+  const input=dpsBaseUnitStoreInput('quantity',unit);
   if(!input) return '0';
   input.value=normalizeDpsBaseUnitQuantityValue(value);
   enforceDpsBaseUnitVoidPowerQuantity(unit);
@@ -2052,7 +2045,7 @@ function syncDpsBaseUnitEnhanceControl(input,commit=false){
   const unitId=input?.getAttribute?.('data-dps-base-unit-slot-enhance') || '';
   const unit=dpsBaseUnitById(unitId);
   if(!unit) return '0';
-  const store=dpsBaseUnitEnhanceInput(unit);
+  const store=dpsBaseUnitStoreInput('enhance',unit);
   const next=normalizeDpsBaseUnitEnhanceValue(input.value,0);
   if(store) store.value=next;
   if(commit) input.value=next;
@@ -2063,20 +2056,20 @@ function syncDpsBaseUnitLimitBreakControl(select){
   const unit=dpsBaseUnitById(unitId);
   if(!unit) return '0';
   const next=normalizeDpsBaseUnitLimitBreakValue(select.value);
-  const store=dpsBaseUnitLimitBreakInput(unit);
+  const store=dpsBaseUnitStoreInput('limitBreak',unit);
   if(store) store.value=next;
   if(select.value!==next) select.value=next;
   return next;
 }
 function toggleDpsBaseUnitVoidPower(unitId){
   const unit=dpsBaseUnitById(unitId);
-  if(!unit || !dpsBaseUnitSupportsVoidPower(unit) || unit.id==='prodNarud' || !dpsBaseUnitVoidPowerAvailable()){
-    const store=dpsBaseUnitVoidPowerInput(unit);
+  if(!unit || !dpsBaseUnitSupportsAdvancedOptions(unit) || unit.id==='prodNarud' || !dpsBaseUnitVoidPowerAvailable()){
+    const store=dpsBaseUnitStoreInput('voidPower',unit);
     if(store) store.value='OFF';
     sanitizeDpsBaseUnitVoidPowerAvailability();
     return 'OFF';
   }
-  const store=dpsBaseUnitVoidPowerInput(unit);
+  const store=dpsBaseUnitStoreInput('voidPower',unit);
   const current=normalizeDpsBaseUnitVoidPowerValue(store?.value);
   const next=current==='ON' ? 'OFF' : 'ON';
   if(next==='ON' && dpsBaseUnitVoidPowerUsage(unit.id)+dpsBaseUnitVoidPowerCost(unit)>dpsBaseUnitVoidPowerLimit()) return 'OFF';
@@ -2153,8 +2146,7 @@ function restoreDpsBaseUnitViewState(stack,state){
 function syncDpsBaseUnitControl(){
   ensureDpsBaseUnitStore();
   sanitizeDpsJewelSelections();
-  renderDpsJewelConfigGrid();
-  renderDpsNormalJewelConfigGrid();
+  renderDpsJewelConfigGrids();
   const input=$('dpsBaseUnits');
   const slotInput=$('dpsBaseUnitSlots');
   if(!input || !slotInput) return;
@@ -2188,7 +2180,7 @@ function adjustDpsBaseUnitQuantity(unitId, delta){
   setDpsBaseUnitQuantity(unitId, current + Number(delta || 0));
   syncDpsBaseUnitSelectionFromQuantities(true);
 }
-/* ----- 06-3-4. 유닛 보드 입력 이벤트 ----- */
+
 function bindDpsBaseUnitControlEvents(){
   if(document.documentElement.dataset.dpsBaseUnitControlBound==='1') return;
   document.documentElement.dataset.dpsBaseUnitControlBound='1';
@@ -2204,7 +2196,7 @@ function bindDpsBaseUnitControlEvents(){
       e.preventDefault();
       changeDpsBaseUnitSlot(clearUnit.getAttribute('data-dps-base-unit-clear-slot'),'');
       requestAppUpdate();
-      scheduleAutoSaveToast();
+      scheduleAutoSave();
       return;
     }
     const qtyBtn=e.target?.closest?.('[data-dps-base-unit-qty-delta]');
@@ -2212,7 +2204,7 @@ function bindDpsBaseUnitControlEvents(){
       e.preventDefault();
       adjustDpsBaseUnitQuantity(qtyBtn.getAttribute('data-dps-base-unit-id') || '', qtyBtn.getAttribute('data-dps-base-unit-qty-delta'));
       requestAppUpdate();
-      scheduleAutoSaveToast();
+      scheduleAutoSave();
       return;
     }
     const voidToggle=e.target?.closest?.('[data-dps-base-unit-void-power-toggle]');
@@ -2220,14 +2212,14 @@ function bindDpsBaseUnitControlEvents(){
       e.preventDefault();
       toggleDpsBaseUnitVoidPower(voidToggle.getAttribute('data-dps-base-unit-void-power-toggle') || '');
       requestAppUpdate();
-      scheduleAutoSaveToast();
+      scheduleAutoSave();
       return;
     }
     const slotExpansion=e.target?.closest?.('[data-dps-base-unit-slot-expansion-toggle]');
     if(!slotExpansion?.closest?.('[data-dps-base-unit-control]')) return;
     e.preventDefault();
     toggleDpsBaseUnitSlotExpansion(slotExpansion.getAttribute('data-dps-base-unit-slot-expansion-toggle') || '');
-    scheduleAutoSaveToast();
+    scheduleAutoSave();
   }, true);
   document.addEventListener('input', e=>{
     const input=e.target?.closest?.('[data-dps-base-unit-slot-enhance]');
@@ -2244,42 +2236,42 @@ function bindDpsBaseUnitControlEvents(){
     if(enhance?.closest?.('[data-dps-base-unit-control]')){
       syncDpsBaseUnitEnhanceControl(enhance,true);
       requestAppUpdate();
-      scheduleAutoSaveToast();
+      scheduleAutoSave();
       return;
     }
     const jewelConfig=e.target?.closest?.('[data-dps-jewel-field]');
     if(jewelConfig?.closest?.('[data-dps-jewel-config]')){
       updateDpsJewelConfig(jewelConfig);
       requestAppUpdate();
-      scheduleAutoSaveToast();
+      scheduleAutoSave();
       return;
     }
     const normalJewelConfig=e.target?.closest?.('[data-dps-normal-jewel-field]');
     if(normalJewelConfig?.closest?.('[data-dps-normal-jewel-config]')){
       updateDpsNormalJewelConfig(normalJewelConfig);
       requestAppUpdate();
-      scheduleAutoSaveToast();
+      scheduleAutoSave();
       return;
     }
     const normalJewelAssignment=e.target?.closest?.('[data-dps-base-unit-normal-jewel]');
     if(normalJewelAssignment?.closest?.('[data-dps-base-unit-control]')){
       updateDpsBaseUnitNormalJewelAssignment(normalJewelAssignment);
       requestAppUpdate();
-      scheduleAutoSaveToast();
+      scheduleAutoSave();
       return;
     }
     const unitJewel=e.target?.closest?.('[data-dps-base-unit-slot-jewel]');
     if(unitJewel?.closest?.('[data-dps-base-unit-control]')){
       updateDpsBaseUnitJewelAssignment(unitJewel);
       requestAppUpdate();
-      scheduleAutoSaveToast();
+      scheduleAutoSave();
       return;
     }
     const limitBreak=e.target?.closest?.('[data-dps-base-unit-slot-limit-break]');
     if(limitBreak?.closest?.('[data-dps-base-unit-control]')) syncDpsBaseUnitLimitBreakControl(limitBreak);
   }, true);
 }
-/* ----- 06-4. 엑셀·저장파일 비교 / 적용 ----- */
+
 const ENCHANT_COMPARE_ITEMS=[['enchAD','공격력'],['enchCRI','크리티컬 확률'],['enchUA','유닛 가속'],['enchTD','총 데미지'],['enchSR','실드 감소'],['enchHR','체력 감소']];
 const LATEST_SPEC_ADDITIONAL_STRUCTURE_MESSAGE='불러온 엑셀파일은 5.4392 버전과 구조가 달라 프리셋 분석 기능을 사용할 수 없습니다.';
 const LATEST_SPEC_ADDITIONAL_LABELS=[['Q36','AD'],['Q37','AS'],['Q38','CD'],['Q39','CRI'],['Q40','AP'],['Q41','TD'],['Q42','UA']];
@@ -2481,25 +2473,11 @@ function normalizedCompareJewelSettings(value){
     normalJewels:normalizeDpsNormalJewelSettings(source.normalJewels || source.normal || source.normalJewelSettings || {})
   };
 }
-function legendaryJewelCompareItems(value){
-  const setting=normalizeDpsJewelSetting(value);
-  return [
-    ['공격력',setting.ad],
-    ['공격속도',setting.as],
-    ['총데미지',setting.td],
-    ['가속',`${setting.ua}%`],
-    ['강화',setting.enhance],
-    ['신화',setting.mythic]
-  ];
-}
-function normalJewelCompareItems(value){
-  const setting=normalizeDpsNormalJewelSetting(value);
-  return [
-    ['공격력',setting.ad],
-    ['공격속도',setting.as],
-    ['총데미지',setting.td],
-    ['가속',`${setting.ua}%`]
-  ];
+function jewelCompareItems(value,normal=false){
+  const setting=normal ? normalizeDpsNormalJewelSetting(value) : normalizeDpsJewelSetting(value);
+  const items=[['공격력',setting.ad],['공격속도',setting.as],['총데미지',setting.td],['가속',`${setting.ua}%`]];
+  if(!normal) items.push(['강화',setting.enhance],['신화',setting.mythic]);
+  return items;
 }
 function buildExcelJewelRows(jewelImport,currentValue){
   if(!jewelImport?.present){
@@ -2510,13 +2488,13 @@ function buildExcelJewelRows(jewelImport,currentValue){
   const rows=[];
   dpsJewelNames().forEach(name=>rows.push(buildCompareDetailRow(
     '쥬얼 설정',name,
-    legendaryJewelCompareItems(change.legendaryMythicJewels[name]),
-    legendaryJewelCompareItems(current.legendaryMythicJewels[name])
+    jewelCompareItems(change.legendaryMythicJewels[name]),
+    jewelCompareItems(current.legendaryMythicJewels[name])
   )));
   dpsNormalJewelNames().forEach(name=>rows.push(buildCompareDetailRow(
     '쥬얼 설정',name,
-    normalJewelCompareItems(change.normalJewels[name]),
-    normalJewelCompareItems(current.normalJewels[name])
+    jewelCompareItems(change.normalJewels[name],true),
+    jewelCompareItems(current.normalJewels[name],true)
   )));
   if(jewelImport.overflowRows?.length){
     rows.push(buildCompareTextRow('쥬얼 설정','일반 쥬얼 초과 행',jewelImport.overflowRows.join(', '),'없음'));
@@ -2536,13 +2514,13 @@ function buildTraitPresetJewelCompareRows(changeValue,currentValue){
   )];
   dpsNormalJewelNames().forEach(name=>rows.push(buildCompareDetailRow(
     '쥬얼 설정',name,
-    normalJewelCompareItems(change.normalJewels[name]),
-    normalJewelCompareItems(current.normalJewels[name])
+    jewelCompareItems(change.normalJewels[name],true),
+    jewelCompareItems(current.normalJewels[name],true)
   )));
   dpsJewelNames().forEach(name=>rows.push(buildCompareDetailRow(
     '쥬얼 설정',`전설·신화 쥬얼 · ${name}`,
-    legendaryJewelCompareItems(change.legendaryMythicJewels[name]),
-    legendaryJewelCompareItems(current.legendaryMythicJewels[name])
+    jewelCompareItems(change.legendaryMythicJewels[name]),
+    jewelCompareItems(current.legendaryMythicJewels[name])
   )));
   return rows;
 }
@@ -2854,7 +2832,7 @@ function restoreComparisonCurrentState(){
     renderTraitPresetUpdateStatus();
     notifyStorageAction('현재값 복원 완료','ok',{statusAction:'load'});
   }catch(e){
-    logAppError('[compare restore failed]',e);
+    rememberAppIssue('error','[compare restore failed]',e);
     showToast(e?.message||String(e),'err');
   }
 }
@@ -3065,6 +3043,7 @@ function traitPresetUnitBoardUnitItems(unitState,boardState,result,expandedIds){
   const legendary=normalizeDpsJewelName(unitState.legendaryMythicJewel);
   const equipped=(legendary?1:0)+normal.length;
   const unequipped=Math.max(0,quantity-equipped);
+  const supportsAdvancedOptions=dpsBaseUnitSupportsAdvancedOptions(unit);
   const items=[
     ['유닛명',dpsBaseUnitLabel(unit || unitState.unitId)],
     ['방어력 관통',result ? dpsBaseUnitPercentText(result.excelPierce) : '—'],
@@ -3072,14 +3051,13 @@ function traitPresetUnitBoardUnitItems(unitState,boardState,result,expandedIds){
     ['수량',quantity],
     ['강화 기대값',Number(unitState.enhanceExpected)||0]
   ];
-  if(dpsBaseUnitSupportsLimitBreak(unit)) items.push(['한계 돌파',Number(unitState.limitBreak)||0]);
-  if(dpsBaseUnitSupportsJewels(unit)){
-    items.push(['전설·신화 쥬얼',legendary || '없음']);
+  if(supportsAdvancedOptions){
+    items.push(['한계 돌파',Number(unitState.limitBreak)||0],['전설·신화 쥬얼',legendary || '없음']);
     if(normal.length) normal.forEach((name,index)=>items.push([`일반 쥬얼 ${index+1}기`,name]));
     else items.push(['일반 쥬얼','없음']);
+    items.push(['공허의 힘',normalizeDpsBaseUnitVoidPowerValue(unitState.voidPower)]);
   }
   if(dpsBaseUnitAllowsNormalJewels(unit)) items.push(['슬롯 확장',expandedIds.has(unitState.unitId)?'ON':'OFF']);
-  if(dpsBaseUnitSupportsVoidPower(unit)) items.push(['공허의 힘',normalizeDpsBaseUnitVoidPowerValue(unitState.voidPower)]);
   if(!dpsBaseUnitIsArtifact(unit)) items.push(['미장착 수량',unequipped]);
   return items;
 }
@@ -3087,7 +3065,7 @@ function traitPresetUnitBoardVoidPowerUsage(value){
   const state=normalizeTraitPresetUnitBoardState(value);
   const used=state.units.reduce((sum,item)=>{
     const unit=dpsBaseUnitById(item.unitId);
-    if(!dpsBaseUnitSupportsVoidPower(unit) || item.unitId==='prodNarud' || normalizeDpsBaseUnitVoidPowerValue(item.voidPower)!=='ON') return sum;
+    if(!dpsBaseUnitSupportsAdvancedOptions(unit) || item.unitId==='prodNarud' || normalizeDpsBaseUnitVoidPowerValue(item.voidPower)!=='ON') return sum;
     return sum+Math.max(1,Number(item.quantity)||1);
   },0);
   return Math.min(dpsBaseUnitVoidPowerLimit(),used);
@@ -3304,11 +3282,11 @@ function applySelectedExcelJewelsOnly(){
       applyTraitPresetJewelSettings(previousJewelSettings);
       sanitizeDpsJewelSelections();
       syncDpsBaseUnitControl();
-    }catch(rollbackError){ logAppError('[Excel jewel-only rollback failed]',rollbackError); }
+    }catch(rollbackError){ rememberAppIssue('error','[Excel jewel-only rollback failed]',rollbackError); }
     compareState.restoreJewelSettings=null;
     compareState.restoreTraitPresetStatus=null;
     compareState.applied=false;
-    logAppError('[Excel jewel-only apply failed]',e);
+    rememberAppIssue('error','[Excel jewel-only apply failed]',e);
     showToast(e?.message || String(e),'err');
     updateCompareActionButtons();
     return false;
@@ -3327,10 +3305,10 @@ function applySelectedJsonBackup(){
     updateCompareActionButtons();
     notifyStorageAction('현재 입력값에 적용 완료','ok',{statusAction:'load'});
   }catch(e){
-    try{ applyStateObject(previousState); }catch(rollbackError){ logAppError('[backup apply rollback failed]', rollbackError); }
+    try{ applyStateObject(previousState); }catch(rollbackError){ rememberAppIssue('error','[backup apply rollback failed]', rollbackError); }
     compareState.restoreState=null;
     compareState.applied=false;
-    logAppError('[backup apply failed]',e);
+    rememberAppIssue('error','[backup apply failed]',e);
     showToast(e?.message||String(e),'err');
     updateCompareActionButtons();
   }
@@ -3374,12 +3352,12 @@ function applySelectedExcelSheet(){
       applyTraitPresetJewelSettings(previousJewelSettings);
       sanitizeDpsJewelSelections();
       syncDpsBaseUnitControl();
-    }catch(rollbackError){ logAppError('[Excel apply rollback failed]', rollbackError); }
+    }catch(rollbackError){ rememberAppIssue('error','[Excel apply rollback failed]', rollbackError); }
     compareState.restoreState=null;
     compareState.restoreJewelSettings=null;
     compareState.restoreTraitPresetStatus=null;
     compareState.applied=false;
-    logAppError('[Excel apply failed]',e);
+    rememberAppIssue('error','[Excel apply failed]',e);
     showToast(e?.message||String(e),'err');
     updateCompareActionButtons();
   }
@@ -3431,7 +3409,7 @@ function compareSelectedExcelSheet(options={}){
     renderExcelComparison(buildExcelComparisonForSelectedBase(cells,specCells,zeroCells,compareState.workbook.fileName,sheetName,jewelImport));
     updateCompareActionButtons();
   }catch(e){
-    logAppError('[Excel compare failed]',e);
+    rememberAppIssue('error','[Excel compare failed]',e);
     setCompareError(e?.message||String(e));
   }
 }
@@ -3508,7 +3486,7 @@ async function handleBaseCompareFile(file){
     else updateCompareActionButtons();
     showToast(`기준 파일 로드 완료: ${file?.name || '기준 파일'}`,'ok');
   }catch(e){
-    logAppError('[compare base file failed]',e);
+    rememberAppIssue('error','[compare base file failed]',e);
     if(isUnsupportedOldTraitPresetError(e)) showUnsupportedOldTraitPresetToast();
     rejectCompareBaseFile(e?.message||String(e));
   }
@@ -3566,7 +3544,7 @@ async function handleExcelCompareFile(file){
   }catch(e){
     resetCompareState();
     hydrateCompareControls();
-    logAppError('[compare file failed]',e);
+    rememberAppIssue('error','[compare file failed]',e);
     if(isUnsupportedOldTraitPresetError(e)) showUnsupportedOldTraitPresetToast();
     const apply=$('excelCompareApplyBtn');
     const reset=$('excelCompareResetBtn');
@@ -3606,7 +3584,7 @@ function bindExcelCompareEvents(){
       else if(compareState.sourceType==='json' && compareState.backupState){
         try{ renderJsonComparison(compareState.backupState,{useSelectedBase:true}); updateCompareActionButtons(); }
         catch(err){
-          logAppError('[JSON compare base change failed]',err);
+          rememberAppIssue('error','[JSON compare base change failed]',err);
           const body=$('excelCompareBody');
           if(body) body.innerHTML=`<div class="excel-compare-error">${escapeHtml(err?.message||String(err))}</div>`;
           updateCompareActionButtons();
@@ -3617,7 +3595,7 @@ function bindExcelCompareEvents(){
   });
   document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeCompareInfo(); });
 }
-/* ===== 07. 특성 보드 / 투자 조작 / 최적화 ===== */
+/* 특성 보드 */
 const INFINITE_TRAIT_TIER='무한∞';
 const TIERS=['루키','비기너','아마추어','프로','엑스퍼트','마스터','디바인','더원1','더원2',INFINITE_TRAIT_TIER,'EP특성','RP특성','심연특성'];
 function updateTraits(){
@@ -3712,7 +3690,7 @@ function adjustTraitBy(row,d,step=1){
       if(addOneIfAffordable(row)) applied++;
       else break;
     }
-    if(applied===0) showToast('보유 재화가 부족합니다','err');
+    if(applied===0) showToast('보유 재화가 부족합니다','warn');
   }else{
     const next=Math.max(0,before-step);
     applied=before-next;
@@ -3720,7 +3698,7 @@ function adjustTraitBy(row,d,step=1){
   }
   if(applied>0){
     recalc();
-    scheduleAutoSaveToast();
+    scheduleAutoSave();
     return true;
   }
   return false;
@@ -3771,9 +3749,9 @@ function setInv(row,val){
   if(isNaN(val)||val<0) val=0;
   const wanted=Math.round(val);
   const applied=setRowToAffordableValue(row,wanted);
-  if(applied<wanted) showToast('보유 재화 한도까지만 입력되었습니다','err');
+  if(applied<wanted) showToast('보유 재화 한도까지만 입력되었습니다','warn');
   recalc();
-  scheduleAutoSaveToast();
+  scheduleAutoSave();
 }
 function adjMax(row){
   try{
@@ -3781,11 +3759,11 @@ function adjMax(row){
     const before=INV[row]||0;
     fillRowToBudget(row);
     recalc();
-    scheduleAutoSaveToast();
-    showToast((INV[row]||0)>before?'가능한 만큼 MAX 적용':'보유 재화가 부족합니다',(INV[row]||0)>before?'ok':'err');
+    scheduleAutoSave();
+    if((INV[row]||0)<=before) showToast('보유 재화가 부족합니다','warn');
     return (INV[row]||0)>before;
   }catch(e){
-    logAppError('[adjMax failed]', e);
+    rememberAppIssue('error','[adjMax failed]', e);
     return false;
   }
 }
@@ -3796,8 +3774,7 @@ function masterTier(tier){
     fillRowToBudget(row);
   });
   recalc();
-  scheduleAutoSaveToast();
-  showToast('보유 재화 한도 내 구간 마스터 완료','ok');
+  scheduleAutoSave();
 }
 function resetTier(tier){
   TRAITS.forEach(t=>{
@@ -3807,8 +3784,7 @@ function resetTier(tier){
   });
   if(116 in INV) INV[116]=1;
   recalc();
-  scheduleAutoSaveToast();
-  showToast('구간 초기화 완료','ok');
+  scheduleAutoSave();
 }
 const UTILITY_OPT_TYPES=new Set(['유틸','경험치','AP','RA']);
 const UTILITY_OPT_TIERS=['루키','비기너','아마추어','프로','엑스퍼트','마스터','디바인','더원1','더원2'];
@@ -3826,7 +3802,7 @@ function utilityRowsOrNotify(){
   const maxTierIndex=idx>=0 ? idx : UTILITY_OPT_TIERS.indexOf('더원2');
   const rows=TRAITS.filter(t=>isUtilityOptimizationTrait(t, maxTierIndex)).map(t=>t[0]);
   if(rows.length) return rows;
-  showToast('선택 범위에 유틸 특성이 없습니다','err');
+  showToast('선택 범위에 유틸 특성이 없습니다','warn');
   return null;
 }
 function optimizeUtility(){
@@ -3839,8 +3815,8 @@ function optimizeUtility(){
     if((INV[row]||0)!==before) changed++;
   });
   recalc();
-  scheduleAutoSaveToast();
-  showToast(changed ? '유틸 마스터 완료' : '보유 재화가 부족하거나 이미 최대입니다', changed ? 'ok' : 'err');
+  scheduleAutoSave();
+  if(!changed) showToast('보유 재화가 부족하거나 이미 최대입니다','warn');
   return changed>0;
 }
 function isSpAttackClearTrait(t){
@@ -3865,12 +3841,12 @@ function clearTraitInvestmentsBy(predicate){
   });
   if(116 in INV) INV[116]=1;
   recalc();
-  scheduleAutoSaveToast();
+  scheduleAutoSave();
   return changed;
 }
 function clearUtility(){
   const changed=clearTraitInvestmentsBy(isSpUtilityClearTrait);
-  showToast(changed ? '유틸 초기화 완료 · 사용한 SP (유틸) 0' : '초기화할 유틸 특성이 없습니다', changed ? 'ok' : 'err');
+  if(!changed) showToast('초기화할 유틸 특성이 없습니다','warn');
   return changed>0;
 }
 function renderTraitEfficiencyItem(cand,idx){
@@ -3888,7 +3864,7 @@ function renderTraitEfficiencyTop5(){
   if(!body) return;
   let list=[];
   try{ list=buildTraitEfficiencyRecommendations(5); }catch(e){
-    logAppError('[trait top5 failed]', e);
+    rememberAppIssue('error','[trait top5 failed]', e);
     body.innerHTML='<div class="trait-efficiency-empty">추천 항목 계산 실패</div>';
     return;
   }
@@ -3900,13 +3876,13 @@ function applyTraitEfficiencyTop(trigger){
   const rank=Math.max(0, Math.round(+trigger?.dataset?.rank||0));
   const cand=buildTraitEfficiencyRecommendations(5)[rank];
   if(!cand){
-    showToast('적용할 추천 항목이 없습니다','err');
+    showToast('적용할 추천 항목이 없습니다','warn');
     return false;
   }
   const currentCost=cand.changes.reduce((sum,[row,add])=>sum+traitOptimizationDeltaCost(row,add),0);
   const rem=traitOptimizationRemaining(cand.kind);
   if(!Number.isFinite(currentCost) || currentCost<=0 || currentCost>rem){
-    showToast('보유 재화가 부족합니다','err');
+    showToast('보유 재화가 부족합니다','warn');
     renderTraitEfficiencyTop5();
     return false;
   }
@@ -3914,22 +3890,21 @@ function applyTraitEfficiencyTop(trigger){
     INV[row]=Math.min(TMAX[row]||999,(INV[row]||0)+add);
   }
   recalc();
-  scheduleAutoSaveToast();
-  showToast(`${cand.label} ${traitRecommendationInvestText(cand)} 적용 완료`,'ok');
+  scheduleAutoSave();
   return true;
 }
 function clearAll(){
   try{
     const changed=clearTraitInvestmentsBy(isSpAttackClearTrait);
-    showToast(changed ? '특성 초기화 완료 · 사용한 SP (공격) 0' : '초기화할 공격 특성이 없습니다', changed ? 'ok' : 'err');
+    if(!changed) showToast('초기화할 공격 특성이 없습니다','warn');
     return changed>0;
   }catch(e){
-    logAppError('[clearAll failed]', e);
+    rememberAppIssue('error','[clearAll failed]', e);
     alertApp('특성 초기화 실패: '+(e && e.message ? e.message : e));
     return false;
   }
 }
-/* ===== 08. 화면 제어 / 글자 크기 / 확인 작업 ===== */
+/* 화면 설정 */
 function isFontScaleLockedViewport(){
   const w=window.innerWidth || document.documentElement.clientWidth || 0;
   const h=window.innerHeight || document.documentElement.clientHeight || 0;
@@ -3955,7 +3930,7 @@ function applyFontScale(scale, options={}){
   const next=Math.max(min, Math.min(max, Number(scale)||DPS_CONFIG.ui.fontScaleDefault));
   document.documentElement.style.setProperty('--app-font-scale', next.toFixed(2));
   if(label) label.textContent=Math.round(next*100)+'%';
-  try{ localStorage.setItem(DPS_CONFIG.storage.fontKey, String(next)); }catch(error){ logAppWarn('글씨 크기 저장', error); }
+  try{ localStorage.setItem(DPS_CONFIG.storage.fontKey, String(next)); }catch(error){ rememberAppIssue('warn','글씨 크기 저장', error); }
   if(!options.silent) notifyStorageAction('글씨 크기 '+Math.round(next*100)+'% 저장 완료', 'ok');
   return true;
 }
@@ -3965,7 +3940,7 @@ function loadFontScale(){
     const saved=parseFloat(localStorage.getItem(DPS_CONFIG.storage.fontKey)||'');
     if(Number.isFinite(saved)) scale=saved;
   }catch(error){
-    logAppWarn('글씨 크기 불러오기', error);
+    rememberAppIssue('warn','글씨 크기 불러오기', error);
   }
   applyFontScale(scale, {silent:true});
 }
@@ -4000,29 +3975,8 @@ function bindAppTitleVersion(){
     }
   });
 }
-let pendingConfirmAction=null;
-function requestConfirmAction(key,message,run){
-  const now=Date.now();
-  const delay=DPS_CONFIG.ui.confirmDelayMs || 1600;
-  if(pendingConfirmAction && pendingConfirmAction.key===key && now<pendingConfirmAction.until){
-    const timer=pendingConfirmAction.timer;
-    pendingConfirmAction=null;
-    if(timer) clearTimeout(timer);
-    return run();
-  }
-  if(pendingConfirmAction && pendingConfirmAction.timer) clearTimeout(pendingConfirmAction.timer);
-  showToast(message,'warn');
-  pendingConfirmAction={
-    key,
-    until:now+delay,
-    timer:setTimeout(()=>{
-      if(pendingConfirmAction && pendingConfirmAction.key===key) pendingConfirmAction=null;
-    }, delay)
-  };
-  return false;
-}
-/* ===== 09. 더제로 승단 계산기 ===== */
-/* 더제로 승단: 엑셀/저장파일 비교 상태 변환 */
+/* 더제로 승단 */
+
 const ZERO_EXCEL_PENANCE_ROWS=[
   'Practice','Very Easy','Easy','Normal','Hard','Very Hard','Hell','Inferno','Lunatic','Holic','Epic','Ultimate','Impossible','The Final'
 ].map((name,index)=>({name,row:13+index}));
@@ -4056,15 +4010,14 @@ function renderZeroScoreCalculatorRows(){
   rows.innerHTML=ZERO_EXCEL_PENANCE_ROWS.map(({name})=>buildZeroPenanceCalcRow(name)).join('') + buildZeroTowerCalcRow();
   rows.dataset.rendered='1';
 }
-/* 더제로 승단: 점수 계산 공통 */
-/* 더제로 승단 점수 계산은 calc.js에서 로드된다. */
+
 function compareZeroTextRow(name, changeValue, currentValue){
   return buildCompareTextRow('더제로 승단 정보',name,changeValue,currentValue);
 }
 function compareZeroNumberRow(kind,name,changeValue,currentValue){
   return buildCompareNumberRow(kind,name,changeValue,currentValue,0.0001);
 }
-/* 더제로 승단: 저장파일/프리셋 분석 행 생성 */
+
 function addZeroPenanceCompareRows(rows,name,change={},current={}){
   const currentCalc=zeroScoreRowCalculation(current);
   const changeCalc=zeroScoreRowCalculation(change);
@@ -4297,7 +4250,7 @@ function commitZeroScoreChange(){
   updateZeroScoreCalculator();
   if(!isStorageLocked()){
     saveState({silent:true});
-    scheduleAutoSaveToast();
+    scheduleAutoSave();
   }
 }
 function toggleZeroScoreStar(trigger){
@@ -4333,7 +4286,7 @@ function setZeroRankTab(trigger){
     setClassState(panel, 'active', panel.dataset.zeroRankPanel===key);
   });
 }
-/* ===== 10. 공통 이벤트 바인딩 / 앱 초기화 ===== */
+/* 이벤트·초기화 */
 let appEventsBound=false;
 function setDisclosureOpen(toggle, panel, open){
   if(!toggle || !panel) return false;
@@ -4475,7 +4428,7 @@ function bindReactiveInputs(){
     cancelAnimationFrame(raf);
     raf=requestAnimationFrame(()=>{
       requestAppUpdate();
-      scheduleAutoSaveToast();
+      scheduleAutoSave();
     });
   };
   document.addEventListener('input', e=>schedule(e.target), true);
@@ -4528,7 +4481,7 @@ function initApp(){
 function markAppReady(){
   try{
     if(typeof window.dpsSyncResponsiveLayout === 'function') window.dpsSyncResponsiveLayout();
-  }catch(error){ logAppWarn('반응형 레이아웃 동기화', error); }
+  }catch(error){ rememberAppIssue('warn','반응형 레이아웃 동기화', error); }
   if(typeof window.dpsMarkAppReady==='function'){
     window.dpsMarkAppReady();
     return;
@@ -4537,7 +4490,7 @@ function markAppReady(){
   try{
     const boot=$('dpsBootScreen');
     if(boot) boot.setAttribute('aria-hidden','true');
-  }catch(error){ logAppWarn('부팅 화면 숨김', error); }
+  }catch(error){ rememberAppIssue('warn','부팅 화면 숨김', error); }
 }
 function markAppError(code, error){
   if(typeof window.dpsShowBootError==='function') window.dpsShowBootError(code, error);

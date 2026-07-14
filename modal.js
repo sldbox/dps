@@ -1,6 +1,5 @@
-/* ===== modal.js | 모달 공통 API ===== */
 
-/* ===== 00. 공통 모달 API ===== */
+/* 공통 모달 */
 const modalById = id => document.getElementById(id);
 
 (() => {
@@ -31,10 +30,6 @@ const modalById = id => document.getElementById(id);
     return modal;
   }
 
-  function isOpen(id) {
-    return !!modalById(id)?.classList.contains('is-open');
-  }
-
   function syncModeClasses(dialog, modes, activeMode = '') {
     const variants = Array.isArray(modes) ? modes : [];
     variants.forEach(mode => {
@@ -46,11 +41,10 @@ const modalById = id => document.getElementById(id);
     document.body?.classList.add(`is-dps-mode-${activeMode}`);
   }
 
-  window.DpsModal = Object.freeze({ createShell, setOpen, isOpen, syncModeClasses });
+  window.DpsModal = Object.freeze({ createShell, setOpen, syncModeClasses });
 })();
 
-
-/* ===== 01. 분석 / DPS표 / 룬·쥬얼 모달 ===== */
+/* 분석·DPS표·룬·쥬얼 */
 const MONTH_RUNE_MODAL_TITLES={
   compare:'프리셋 분석',
   runes:'이달의 룬',
@@ -143,8 +137,8 @@ function createMonthRuneModal(){
       </header>
       <div class="month-rune-body">
         <section class="month-rune-panel is-active" data-month-rune-panel="compare" role="tabpanel" aria-labelledby="monthRuneTitle">${buildCompareApplyPanel()}</section>
-        ${renderMonthRunePanel(info)}
-        ${renderJewelPanel(jewels)}
+        ${renderMonthRuneModalPanel('runes',renderMonthRunePanelContent(info))}
+        ${renderMonthRuneModalPanel('jewels',renderJewelPanelContent(jewels))}
         ${renderDpsTablePanel()}
       </div>
     </section>`);

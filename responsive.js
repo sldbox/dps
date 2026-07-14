@@ -1,9 +1,7 @@
-/* ===== responsive.js | 반응형 레이아웃 / 모바일·태블릿 탭 재배치 ===== */
-/* PC·태블릿·모바일 모드를 판정하고, 태블릿·모바일에서 주요 카드를 탭 페이지로 재배치한다. */
 
 (() => {
   'use strict';
-  /* ===== 00. 내부 헬퍼 / 레이아웃 상태 ===== */
+  /* 상태·헬퍼 */
   const qs = (selector) => document.querySelector(selector);
   const qsa = (selector) => Array.from(document.querySelectorAll(selector));
   const MODES = ['is-pc-landscape', 'is-pc-portrait', 'is-tablet', 'is-mobile', 'is-portrait-view', 'is-mobile-device', 'is-tablet-device', 'is-narrow-mobile', 'is-tabbed'];
@@ -24,7 +22,7 @@
     activeKey: null,
     resumeTimers: []
   };
-  /* ===== 01. 뷰포트 판정 / CSS 변수 동기화 ===== */
+  /* 뷰포트 판정 */
   function getViewportSize() {
     const root = document.documentElement;
     return {
@@ -85,7 +83,7 @@
     syncTabbedLayout();
     updateMobileOffsets();
   }
-  /* ===== 02. 태블릿·모바일 탭 페이지 구성 / 원위치 복원 ===== */
+  /* 탭 레이아웃 */
   function rememberPosition(el) {
     if (!el || state.restore.has(el)) return;
     const marker = document.createComment(`mobile-restore:${el.className || el.tagName}`);
@@ -218,7 +216,7 @@
       restoreDesktop();
     }
   }
-  /* ===== 03. 입력 편의 / 자동 선택 ===== */
+
   function isTextInput(el) {
     if (!el || el.disabled || el.readOnly) return false;
     if (el.tagName === 'TEXTAREA') return true;
@@ -236,7 +234,7 @@
       });
     });
   }
-  /* ===== 04. resize/orientation 갱신 ===== */
+  /* 갱신·초기화 */
   function scheduleApply() {
     if (state.raf) cancelAnimationFrame(state.raf);
     state.raf = requestAnimationFrame(() => {
@@ -265,7 +263,7 @@
       window.dpsMarkResponsiveLayoutReady();
     }
   }
-  /* ===== 05. 초기화 / 공개 refresh API ===== */
+
   function init() {
     runResponsiveRefresh();
     bindInputAutoSelect();

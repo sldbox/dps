@@ -3,23 +3,23 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="google-site-verification" content="RTuDWbMdnKgbpRpl05eXh9epFwWRSxju4NOl8OtjMsI" />
-<!-- 00. 빌드 버전 / 캐시 무효화 / 원격 이미지 경로 -->
+
 <script>
-window.APP_VERSION = "2607140100";
-window.DPS_BUILD_VERSION = "2607140100";
+window.APP_VERSION = "267140000";
+window.DPS_BUILD_VERSION = "267140000";
 window.DPS_PREVIEW_FRESH = new URLSearchParams(window.location.search).get('fresh') || '';
 window.DPS_ASSET_VERSIONS = {
-  "data.js": "2607140100",
-  "calc.js": "2607140100",
-  "app.js": "2607140100",
-  "preset.js": "2607140100",
-  "modal.js": "2607140100",
-  "responsive.js": "2607140100",
-  "style.css": "2607140100",
-  "animation.css": "2607140100",
-  "animation.js": "2607140100",
-  "icon.png": "2607140100",
-  "logo.png": "2607140100"
+  "data.js": "267140000",
+  "calc.js": "267140000",
+  "app.js": "267140000",
+  "preset.js": "267140000",
+  "modal.js": "267140000",
+  "responsive.js": "267140000",
+  "style.css": "267140000",
+  "animation.css": "267140000",
+  "animation.js": "267140000",
+  "icon.png": "267140000",
+  "logo.png": "267140000"
 };
 window.dpsAssetVersion = function(key){
   var versions = window.DPS_ASSET_VERSIONS || {};
@@ -84,13 +84,12 @@ document.addEventListener('visibilitychange', function(){
 setInterval(window.dpsCheckIndexUpdate, 180000);
 </script>
 
-
 <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/>
 <meta content="no-cache, no-store, must-revalidate" http-equiv="Cache-Control"/>
 <meta content="no-cache" http-equiv="Pragma"/>
 <meta content="0" http-equiv="Expires"/>
 <title>개복디 특성 계산기</title>
-<!-- 01. 초기 로딩 화면: JS 로드 전 화면 깜빡임 방지 -->
+
 <style>
 html.dps-booting body{margin:0;background:#080d15;color:#e6edf7;overflow:hidden}
 html.dps-booting .wrap{visibility:hidden}
@@ -106,7 +105,7 @@ html.dps-boot-error #dpsBootScreen .boot-card{border-color:#7f1d2d;background:#2
 html.dps-boot-error #dpsBootScreen .boot-title{color:#ff9aaa}
 html:not(.dps-booting) #dpsBootScreen{display:none}
 </style>
-<!-- 02. 부팅 오류 화면 / 클립보드 보조 -->
+
 <script>
 (function(){
   function copyTextFallback(text){
@@ -194,18 +193,18 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 <meta content="https://sldbox.github.io/dps/" property="og:url"/>
 <meta content="개복디 특성 계산기" property="og:title"/>
 <meta content="특성 투자, 재화 사용량, 표기 스탯, 총데미지, DPS를 한 번에 계산할 수 있는 개복디 전용 계산기입니다." property="og:description"/>
-<meta content="https://sldbox.github.io/dps/logo.png?v=2607140100" property="og:image"/>
-<meta content="https://sldbox.github.io/dps/logo.png?v=2607140100" property="og:image:secure_url"/>
+<meta content="https://sldbox.github.io/dps/logo.png?v=267140000" property="og:image"/>
+<meta content="https://sldbox.github.io/dps/logo.png?v=267140000" property="og:image:secure_url"/>
 <meta content="image/png" property="og:image:type"/>
 <meta content="개복디 특성 계산기 로고" property="og:image:alt"/>
 <meta content="summary_large_image" name="twitter:card"/>
 <meta content="개복디 특성 계산기" name="twitter:title"/>
 <meta content="특성 투자, 재화 사용량, 표기 스탯, 총데미지, DPS를 한 번에 계산할 수 있는 개복디 전용 계산기입니다." name="twitter:description"/>
-<meta content="https://sldbox.github.io/dps/logo.png?v=2607140100" name="twitter:image"/>
+<meta content="https://sldbox.github.io/dps/logo.png?v=267140000" name="twitter:image"/>
 <meta content="개복디 특성 계산기 로고" name="twitter:image:alt"/>
 <link href="https://cdn.jsdelivr.net" rel="preconnect"/>
 <link crossorigin="" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" rel="stylesheet"/>
-<!-- 02-1. 동적 아이콘 / 스타일시트 경로 정리 -->
+
 <script>
 (function(){
   var assetUrl = window.dpsAssetUrl;
@@ -243,7 +242,7 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 </script>
 </head>
 <body>
-<!-- 02-2. 초기 레이아웃 클래스 선적용 / 부팅 화면 -->
+
 <script>
 (function(){
   var root=document.documentElement;
@@ -266,7 +265,6 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 </script>
 <div id="dpsBootScreen" aria-live="polite"><div class="boot-card"><div class="boot-title">특성 계산기 적용 중</div><div class="boot-desc">최신 빌드와 스타일을 불러오는 중입니다.</div></div></div>
 <div class="wrap">
-<!-- 03. 앱 헤더: 자료 바로가기 / 메뉴 / 글씨 크기 -->
 <div class="hdr app-header">
 <div class="hdr-brand">
 <div aria-label="DPS 로고" class="hdr-logo">DPS</div>
@@ -312,13 +310,12 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 </div>
 </div>
 </div>
-<!-- 04. 앱 본문: 좌측 기본 정보 / 중앙 스펙 보드 / 우측 유닛 보드 -->
 <div class="col-work">
-<!-- 04-1. 좌측 메인 설정 패널 -->
+
 <div class="col-left">
 <div class="trait-standalone-panel trait-preset-panel" aria-label="특성 프리셋">
 <div class="trait-preset-title trait-subgroup-title">
-<span class="trait-preset-heading">특성 프리셋</span>
+<span class="trait-preset-heading">특성 프리셋<span class="preset-notice-bubble" id="presetNoticeBubble" role="status" aria-live="polite" aria-atomic="true" hidden><span data-preset-notice-message></span></span></span>
 <div class="trait-preset-header-actions">
 <button class="btn subtle ui-action-btn trait-preset-update-scope-btn" id="traitPresetUpdateScopeBtn" type="button" data-trait-preset-update-scope-toggle aria-expanded="false" aria-controls="traitPresetUpdateScopePopover">업데이트 대상</button>
 <button class="btn subtle danger ui-action-btn trait-preset-reset-btn" data-action="resetAllTraitPresetState" id="traitPresetResetAllBtn" type="button">전체 초기화</button>
@@ -363,94 +360,6 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 <button class="btn subtle tone-export ui-action-btn" data-action="exportTraitPresets" type="button">내보내기</button>
 <button class="btn subtle danger ui-action-btn" data-action="deleteTraitPreset" type="button">프리셋 삭제</button>
 </div>
-<section class="preset-cat-board" id="presetCatBoard" data-preset-cat-mode="idle" data-preset-cat-pose="resting" aria-label="특성 프리셋 상태를 알려주는 고양이 방">
-<div class="preset-cat-room">
-<div class="preset-cat-window" aria-hidden="true"><span class="preset-cat-sky"></span><span class="preset-cat-cloud cloud-a"></span><span class="preset-cat-cloud cloud-b"></span><span class="preset-cat-tree"></span><span class="preset-cat-window-frame frame-v"></span><span class="preset-cat-window-frame frame-h"></span></div>
-<div class="preset-cat-shelf" aria-hidden="true"><span class="preset-cat-book book-a"></span><span class="preset-cat-book book-b"></span><span class="preset-cat-vase"></span></div>
-<div class="preset-cat-door" aria-hidden="true"><span class="preset-cat-door-panel"></span><span class="preset-cat-door-knob"></span><span class="preset-cat-package"></span></div>
-<div class="preset-cat-tower" aria-hidden="true"><span class="preset-cat-tower-top"></span><span class="preset-cat-tower-post post-a"></span><span class="preset-cat-tower-post post-b"></span><span class="preset-cat-tower-box"></span></div>
-<div class="preset-cat-rug" aria-hidden="true"></div>
-<div class="preset-cat-bed" aria-hidden="true"><span></span></div>
-<div class="preset-cat-bowls" aria-hidden="true"><span class="food"></span><span class="water"></span></div>
-<div class="preset-cat-toy" aria-hidden="true"><span></span></div>
-<div class="preset-cat-anchor" data-preset-cat>
-<div class="preset-cat-bubble" id="presetCatBubble" role="status" aria-live="polite" aria-atomic="true" hidden><span data-preset-cat-message></span></div>
-<div class="preset-cat-actor" aria-hidden="true">
-<svg class="preset-cat-svg" viewBox="0 0 118 86" focusable="false" aria-hidden="true">
-<defs>
-<linearGradient id="presetCatFurGradient" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f3bd78"></stop><stop offset=".54" stop-color="#dc9251"></stop><stop offset="1" stop-color="#bd6d3b"></stop></linearGradient>
-<linearGradient id="presetCatFurShade" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#d78346"></stop><stop offset="1" stop-color="#a95532"></stop></linearGradient>
-<linearGradient id="presetCatCreamGradient" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff9e9"></stop><stop offset="1" stop-color="#f1d8b9"></stop></linearGradient>
-<radialGradient id="presetCatEyeGradient" cx="42%" cy="35%" r="70%"><stop offset="0" stop-color="#f8d86b"></stop><stop offset=".6" stop-color="#c8952d"></stop><stop offset="1" stop-color="#7d5a1d"></stop></radialGradient>
-</defs>
-<ellipse class="preset-cat-shadow" cx="61" cy="78" rx="39" ry="5.5"></ellipse>
-<g class="preset-cat-tail">
-<path class="preset-cat-tail-outline" d="M83 61 C108 65 115 43 101 29 C96 24 89 27 90 34 C91 40 100 43 99 50 C98 57 91 59 85 57"></path>
-<path class="preset-cat-tail-fill" d="M83 61 C108 65 115 43 101 29 C96 24 89 27 90 34 C91 40 100 43 99 50 C98 57 91 59 85 57"></path>
-<path class="preset-cat-tail-stripe stripe-tail-a" d="M100 31 Q95 34 91 37"></path>
-<path class="preset-cat-tail-stripe stripe-tail-b" d="M104 39 Q99 42 94 44"></path>
-<path class="preset-cat-tail-stripe stripe-tail-c" d="M104 49 Q99 50 95 50"></path>
-<path class="preset-cat-tail-tip" d="M99 28 C95 25 90 28 90 34 C90 35 90 36 91 37"></path>
-</g>
-<g class="preset-cat-body-group">
-<path class="preset-cat-leg leg-back-far" d="M76 56 C80 60 82 68 80 75 L94 75 C96 70 93 60 89 54 Z"></path>
-<path class="preset-cat-leg leg-front-far" d="M45 54 C47 61 46 68 47 75 L59 75 C61 69 58 60 57 53 Z"></path>
-<path class="preset-cat-body" d="M34 45 C44 31 71 28 88 39 C101 47 101 62 89 70 C77 79 52 79 36 69 C26 63 25 52 34 45 Z"></path>
-<path class="preset-cat-body-shadow" d="M61 33 C78 32 94 41 95 53 C96 64 84 72 70 74 C81 66 82 51 75 42 C71 37 66 35 61 33 Z"></path>
-<ellipse class="preset-cat-haunch" cx="82" cy="55" rx="16" ry="17"></ellipse>
-<path class="preset-cat-belly-highlight" d="M39 49 C46 42 60 39 68 43 C60 47 56 57 58 69 C48 69 38 64 35 58 C33 54 35 51 39 49 Z"></path>
-<path class="preset-cat-leg leg-back" d="M74 57 C79 61 80 69 77 75 L92 75 C94 70 90 61 87 55 Z"></path>
-<path class="preset-cat-leg leg-front" d="M34 52 C36 61 34 69 36 75 L50 75 C52 69 48 59 48 51 Z"></path>
-<path class="preset-cat-paw-patch paw-back" d="M78 70 H93 Q95 74 91 76 H78 Q75 74 78 70 Z"></path>
-<path class="preset-cat-paw-patch paw-front" d="M35 70 H50 Q52 74 48 76 H35 Q32 74 35 70 Z"></path>
-<path class="preset-cat-paw-toes toes-back" d="M83 72 V75 M88 72 V75"></path>
-<path class="preset-cat-paw-toes toes-front" d="M40 72 V75 M45 72 V75"></path>
-<path class="preset-cat-chest" d="M31 45 C37 40 45 42 49 49 C52 55 49 65 43 70 C37 69 31 65 29 59 C27 54 27 49 31 45 Z"></path>
-<path class="preset-cat-shoulder-highlight" d="M42 39 C49 34 58 32 66 34 C59 36 53 41 51 48 C47 45 44 42 42 39 Z"></path>
-<path class="preset-cat-body-stripe stripe-body-a" d="M62 34 Q58 40 61 45"></path>
-<path class="preset-cat-body-stripe stripe-body-b" d="M72 35 Q67 42 70 48"></path>
-<path class="preset-cat-body-stripe stripe-body-c" d="M83 39 Q78 45 80 50"></path>
-<path class="preset-cat-body-stripe stripe-haunch-a" d="M88 47 Q83 51 84 57"></path>
-<path class="preset-cat-body-stripe stripe-haunch-b" d="M91 55 Q86 58 87 63"></path>
-</g>
-<g class="preset-cat-head-group">
-<path class="preset-cat-head" d="M18 44 C11 37 12 27 18 20 L17 5 L34 14 C41 10 51 10 59 15 L73 7 L70 25 C74 35 69 45 60 51 C48 59 28 56 18 44 Z"></path>
-<path class="preset-cat-head-shadow" d="M56 14 L72 8 L69 25 C73 35 68 45 59 51 C53 55 46 57 39 56 C54 50 61 38 60 27 C60 22 58 18 56 14 Z"></path>
-<path class="preset-cat-ear-inner ear-left" d="M21 11 L32 17 L21 23 Z"></path>
-<path class="preset-cat-ear-inner ear-right" d="M68 12 L59 19 L68 23 Z"></path>
-<path class="preset-cat-ear-highlight ear-left-highlight" d="M23 13 L29 17 L23 19 Z"></path>
-<path class="preset-cat-ear-highlight ear-right-highlight" d="M66 14 L61 18 L66 20 Z"></path>
-<path class="preset-cat-face-patch" d="M24 30 C28 21 39 18 47 21 C55 19 64 25 65 34 C66 44 57 51 46 53 C34 54 23 49 21 40 C20 36 21 33 24 30 Z"></path>
-<path class="preset-cat-cheek-fur cheek-left" d="M23 36 L16 39 L23 42 L18 47 L29 47 Z"></path>
-<path class="preset-cat-cheek-fur cheek-right" d="M64 36 L72 39 L65 42 L70 47 L59 47 Z"></path>
-<ellipse class="preset-cat-muzzle muzzle-left" cx="38" cy="42" rx="9" ry="7"></ellipse>
-<ellipse class="preset-cat-muzzle muzzle-right" cx="51" cy="42" rx="9" ry="7"></ellipse>
-<path class="preset-cat-chin" d="M39 47 Q45 52 51 47 Q50 53 45 54 Q40 53 39 47 Z"></path>
-<path class="preset-cat-forehead-stripe stripe-forehead-left" d="M34 18 Q35 24 39 27"></path>
-<path class="preset-cat-forehead-stripe stripe-forehead-center" d="M45 16 V26"></path>
-<path class="preset-cat-forehead-stripe stripe-forehead-right" d="M56 18 Q54 24 51 27"></path>
-<path class="preset-cat-brow brow-left" d="M29 29 Q35 26 39 29"></path>
-<path class="preset-cat-brow brow-right" d="M51 29 Q57 26 61 29"></path>
-<g class="preset-cat-eyes">
-<ellipse class="preset-cat-iris iris-left" cx="35" cy="34" rx="5" ry="6"></ellipse>
-<ellipse class="preset-cat-iris iris-right" cx="56" cy="34" rx="5" ry="6"></ellipse>
-<ellipse class="preset-cat-pupil pupil-left" cx="35" cy="34" rx="1.7" ry="4.2"></ellipse>
-<ellipse class="preset-cat-pupil pupil-right" cx="56" cy="34" rx="1.7" ry="4.2"></ellipse>
-<circle class="preset-cat-eye-glint glint-left" cx="33.5" cy="31.8" r="1.1"></circle>
-<circle class="preset-cat-eye-glint glint-right" cx="54.5" cy="31.8" r="1.1"></circle>
-</g>
-<path class="preset-cat-nose" d="M41 41 Q45 38.7 49 41 Q48 45 45 45 Q42 45 41 41 Z"></path>
-<path class="preset-cat-mouth" d="M45 45 Q41 49 37 46 M45 45 Q49 49 53 46"></path>
-<circle class="preset-cat-whisker-dot dot-a" cx="34" cy="42" r=".9"></circle><circle class="preset-cat-whisker-dot dot-b" cx="32" cy="45" r=".8"></circle><circle class="preset-cat-whisker-dot dot-c" cx="56" cy="42" r=".9"></circle><circle class="preset-cat-whisker-dot dot-d" cx="58" cy="45" r=".8"></circle>
-<path class="preset-cat-whiskers whiskers-left" d="M34 43 L15 39 M34 46 L13 46 M35 48 L18 52"></path>
-<path class="preset-cat-whiskers whiskers-right" d="M56 43 L75 39 M56 46 L78 46 M55 48 L72 52"></path>
-</g>
-</svg>
-</div>
-</div>
-</div>
-<div class="preset-cat-board-caption" aria-hidden="true"><span class="preset-cat-caption-dot"></span><span data-preset-cat-caption>쉬는 중</span></div>
-</section>
 <input id="traitPresetImportFile" class="hidden-field" type="file" accept=".txt,.json,.xlsx,.xlsm,application/json,text/plain,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel.sheet.macroEnabled.12"/>
 </div>
 </div>
@@ -852,12 +761,11 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 </div>
 </div>
 </div>
-<!-- 04-2. 중앙 결과 패널: 스펙 보드 -->
+
 <div class="col-mid">
 <div class="data-card stat-dps-card">
 <div class="section-title damage-board-title"><span class="damage-board-heading">스펙 보드</span><div class="artifact-dps-switch-wrap" aria-label="유물 DPS 표시 전환"><span class="artifact-dps-switch-label">유물 DPS</span><button class="artifact-dps-switch" id="artifactDpsViewToggle" type="button" role="switch" aria-checked="false"><span class="artifact-dps-switch-text artifact-dps-switch-off">OFF</span><span class="artifact-dps-switch-text artifact-dps-switch-on">ON</span><i aria-hidden="true"></i></button></div></div>
 <div class="dps-card stat-dps-summary" id="statDpsSummary">
-<div class="battle-stage battle-stage-spec" id="battleSpecStage" aria-label="용사 전투 준비 상태"></div>
 <div class="dps-lbl" id="dpsMainLabel">DPS</div>
 <div class="dps-num" id="dpsVal">—</div>
 <div class="dps-context-summary" id="dpsContextSummary" aria-label="현재 DPS 기준">
@@ -894,13 +802,12 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 
 </div>
 </div>
-<!-- 04-3. 우측 결과 패널: 유닛 보드 -->
+
 <div class="col-right">
-<div class="dps-base-unit-panel" data-dps-base-unit-control><div class="section-title dps-base-unit-panel-title"><span>유닛 보드</span></div><div class="battle-stage battle-stage-unit" id="battleUnitStage" aria-label="마왕과 용사의 전투 상태" hidden></div><div class="dps-base-unit-summary" id="dpsBaseUnitSummary" aria-label="유닛 보드 모드 및 달성 정보" hidden></div><input id="dpsBaseUnits" type="hidden" value=""/><input id="dpsBaseUnitSlots" type="hidden" value=""/><input id="dpsJewelSettings" type="hidden" value="{}"/><input id="dpsNormalJewelSettings" type="hidden" value="{}"/><input id="dpsNormalJewelAssignments" type="hidden" value="{}"/><input id="dpsBaseUnitSlotExpansions" type="hidden" value="[]"/><div class="dps-base-unit-quantity-store" id="dpsBaseUnitQuantityStore" hidden></div><h3 class="dps-base-unit-board-head"><span>유닛 정보</span><span class="dps-base-unit-panel-standard">S등급 · Lv.11 · 2,000킬 · 공격 횟수/대상 수 분리 · 총 DPS 기준</span></h3><div class="dps-base-unit-slot-stack" id="dpsBaseUnitSlotStack" aria-label="유닛 보드"></div><div class="dps-jewel-config-controls" data-dps-jewel-config-controls><div class="dps-jewel-config-buttons"><button class="dps-jewel-config-button" type="button" data-dps-jewel-config-toggle aria-expanded="false" aria-controls="dpsJewelConfigPanel"><span>쥬얼 설정</span></button></div><section class="dps-jewel-config-panel" id="dpsJewelConfigPanel" data-dps-jewel-config hidden><div class="dps-jewel-config-section" data-dps-normal-jewel-config><h3>일반 쥬얼</h3><div class="dps-jewel-config-grid" id="dpsNormalJewelConfigGrid"></div></div><div class="dps-jewel-config-section"><h3>전설·신화 쥬얼</h3><div class="dps-jewel-config-grid" id="dpsJewelConfigGrid"></div></div></section></div></div>
+<div class="dps-base-unit-panel" data-dps-base-unit-control><div class="section-title dps-base-unit-panel-title"><span>유닛 보드</span></div><div class="battle-stage battle-stage-unit" id="battleUnitStage" aria-label="마왕과 용사의 전투 상태" hidden></div><div class="dps-base-unit-summary" id="dpsBaseUnitSummary" aria-label="유닛 보드 모드 및 달성 정보" hidden></div><input id="dpsBaseUnits" type="hidden" value=""/><input id="dpsBaseUnitSlots" type="hidden" value=""/><input id="dpsJewelSettings" type="hidden" value="{}"/><input id="dpsNormalJewelSettings" type="hidden" value="{}"/><input id="dpsNormalJewelAssignments" type="hidden" value="{}"/><input id="dpsBaseUnitSlotExpansions" type="hidden" value="[]"/><div class="dps-base-unit-quantity-store" id="dpsBaseUnitQuantityStore" hidden></div><h3 class="dps-base-unit-board-head"><span>유닛 정보</span></h3><div class="dps-base-unit-slot-stack" id="dpsBaseUnitSlotStack" aria-label="유닛 보드"></div><div class="dps-jewel-config-controls" data-dps-jewel-config-controls><div class="dps-jewel-config-buttons"><button class="dps-jewel-config-button" type="button" data-dps-jewel-config-toggle aria-expanded="false" aria-controls="dpsJewelConfigPanel"><span>쥬얼 설정</span></button></div><section class="dps-jewel-config-panel" id="dpsJewelConfigPanel" data-dps-jewel-config hidden><div class="dps-jewel-config-section" data-dps-normal-jewel-config><h3>일반 쥬얼</h3><div class="dps-jewel-config-grid" id="dpsNormalJewelConfigGrid"></div></div><div class="dps-jewel-config-section"><h3>전설·신화 쥬얼</h3><div class="dps-jewel-config-grid" id="dpsJewelConfigGrid"></div></div></section></div></div>
 </div>
 </div>
 </div>
-<!-- 05. 공통 토스트 / 스크립트 로더 -->
 <div aria-live="polite" class="toast-root" id="toastRoot"></div>
 <script>
 function loadScriptSequence(files, onComplete){
