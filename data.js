@@ -1,4 +1,3 @@
-
 /* 난이도·고행 */
 const DIFF={
   'Practice':    {ad:0,  as:0,  dmg:150},
@@ -272,11 +271,7 @@ const DPS_JEWEL_EFFECTS=Object.freeze({
   '루벨라이트':Object.freeze({legendary:Object.freeze({ad:0,as:0,td:25,ua:25}),mythic:Object.freeze({ad:0,as:0,td:0,ua:0})})
 });
 const DPS_JEWEL_NAMES=Object.freeze(RAW_JEWEL_DATA.map(row=>row[0]));
-const DPS_NORMAL_JEWEL_COUNT=4;
-const DPS_NORMAL_JEWEL_NAMES=Object.freeze(Array.from({length:DPS_NORMAL_JEWEL_COUNT},(_,index)=>`일반 쥬얼 ${index+1}`));
-window.RAW_JEWEL_DATA=RAW_JEWEL_DATA;
 
-window.MONTHLY_RUNE_INFO=MONTHLY_RUNE_INFO;
 
 /* 유닛 보드 */
 
@@ -372,8 +367,6 @@ window.DPS_DATA=Object.freeze({
   DPS_JEWEL_INPUT_OPTIONS,
   DPS_JEWEL_EFFECTS,
   DPS_JEWEL_NAMES,
-  DPS_NORMAL_JEWEL_COUNT,
-  DPS_NORMAL_JEWEL_NAMES,
   DPS_BASE_UNIT_ALL_ID,
   DPS_BASE_UNIT_RACE_ORDER,
   DPS_BASE_UNIT_GRADE_ORDER,

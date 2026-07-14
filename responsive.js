@@ -1,8 +1,6 @@
-
 (() => {
   'use strict';
   /* 상태·헬퍼 */
-  const qs = (selector) => document.querySelector(selector);
   const qsa = (selector) => Array.from(document.querySelectorAll(selector));
   const MODES = ['is-pc-landscape', 'is-pc-portrait', 'is-tablet', 'is-mobile', 'is-portrait-view', 'is-mobile-device', 'is-tablet-device', 'is-narrow-mobile', 'is-tabbed'];
   const TABBED_PAGES = [
@@ -20,6 +18,7 @@
     layoutPortrait: null,
     activeIndex: 0,
     activeKey: null,
+    resumeRaf: 0,
     resumeTimers: []
   };
   /* 뷰포트 판정 */
@@ -41,8 +40,8 @@
     return 'is-pc-landscape';
   }
   function updateMobileOffsets() {
-    const header = qs('.hdr');
-    const tabs = qs('.mobile-section-tabs');
+    const header = document.querySelector('.hdr');
+    const tabs = document.querySelector('.mobile-section-tabs');
     const headerHeight = header ? Math.ceil(header.getBoundingClientRect().height) : 0;
     const tabsHeight = tabs ? Math.ceil(tabs.getBoundingClientRect().height) : 0;
     const { w, h } = getViewportSize();
@@ -91,7 +90,7 @@
     state.restore.set(el, marker);
   }
   function getOrCreatePage(key) {
-    let page = qs(`.mobile-page[data-mobile-page="${key}"]`);
+    let page = document.querySelector(`.mobile-page[data-mobile-page="${key}"]`);
     if (!page) {
       page = document.createElement('div');
       page.className = `mobile-page mobile-page-${key}`;
@@ -175,7 +174,7 @@
     const pages = [];
     const keepKey = state.activeKey || state.pages[state.activeIndex]?.key || 'spec';
     TABBED_PAGES.forEach((config) => {
-      const elements = config.selectors.map(selector => qs(selector)).filter(Boolean);
+      const elements = config.selectors.map(selector => document.querySelector(selector)).filter(Boolean);
       if (!elements.length) return;
       const page = getOrCreatePage(config.key);
       page.textContent = '';
@@ -192,7 +191,7 @@
     colWork.classList.add('is-mobile-arranged');
     state.arrangedTabbed = true;
     const keepIndex = getPageIndexByKey(keepKey);
-    showTabbedPage(keepIndex >= 0 ? keepIndex : state.activeIndex, false, false);
+    showTabbedPage(keepIndex >= 0 ? keepIndex : state.activeIndex);
   }
   function restoreDesktop() {
     if (!state.arrangedTabbed) return;
@@ -201,17 +200,17 @@
     });
     qsa('.mobile-page').forEach(page => page.remove());
     if (state.tabs) state.tabs.remove();
-    qs('.col-work')?.classList.remove('is-mobile-arranged');
+    document.querySelector('.col-work')?.classList.remove('is-mobile-arranged');
     state.tabs = null;
     state.pages = [];
     state.arrangedTabbed = false;
   }
   function syncTabbedLayout() {
-    const colWork = qs('.col-work');
+    const colWork = document.querySelector('.col-work');
     if (!colWork) return;
     if (document.body.classList.contains('is-tabbed')) {
       if (!state.arrangedTabbed) arrangeTabbed(colWork);
-      else showTabbedPage(getPageIndexByKey(state.activeKey), false, false);
+      else showTabbedPage(getPageIndexByKey(state.activeKey));
     } else {
       restoreDesktop();
     }
@@ -250,12 +249,25 @@
   function runResponsiveRefresh() {
     applyMode();
   }
-  function scheduleResumeApply() {
+  function clearResumeSchedule() {
+    if (state.resumeRaf) cancelAnimationFrame(state.resumeRaf);
+    state.resumeRaf = 0;
     state.resumeTimers.forEach(timer => clearTimeout(timer));
     state.resumeTimers = [];
-    requestAnimationFrame(runResponsiveRefresh);
-    state.resumeTimers.push(setTimeout(runResponsiveRefresh, 80));
-    state.resumeTimers.push(setTimeout(runResponsiveRefresh, 320));
+  }
+  function scheduleResumeApply() {
+    clearResumeSchedule();
+    state.resumeRaf = requestAnimationFrame(() => {
+      state.resumeRaf = 0;
+      runResponsiveRefresh();
+    });
+    state.resumeTimers = [
+      setTimeout(runResponsiveRefresh, 80),
+      setTimeout(() => {
+        runResponsiveRefresh();
+        state.resumeTimers = [];
+      }, 320)
+    ];
   }
   function markResponsiveReady() {
     window.__dpsResponsiveLayoutReady = true;
@@ -264,7 +276,7 @@
     }
   }
 
-  function init() {
+  function initializeResponsiveLayout() {
     runResponsiveRefresh();
     bindInputAutoSelect();
     markResponsiveReady();
@@ -275,9 +287,9 @@
     markResponsiveReady();
   };
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init, { once: true });
+    document.addEventListener('DOMContentLoaded', initializeResponsiveLayout, { once: true });
   } else {
-    init();
+    initializeResponsiveLayout();
   }
   window.addEventListener('resize', scheduleApply, { passive: true });
   window.addEventListener('orientationchange', scheduleApply, { passive: true });

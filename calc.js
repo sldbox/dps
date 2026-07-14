@@ -1,5 +1,3 @@
-
-
 /* 공통 계산 유틸 */
 function hasOwn(obj,key){
   return !!obj && Object.prototype.hasOwnProperty.call(obj,key);
@@ -822,100 +820,75 @@ function dpsJewelFinalStats(name,settings=dpsJewelSettingsObject()){
     mythic:input.mythic
   };
 }
-function dpsNormalJewelNames(){
-  const names=window.DPS_DATA?.DPS_NORMAL_JEWEL_NAMES;
-  return Array.isArray(names) ? names : Array.from({length:4},(_,index)=>`일반 쥬얼 ${index+1}`);
-}
-function normalizeDpsNormalJewelName(value){return normalizeJewelName(value,dpsNormalJewelNames());}
-function normalizeDpsNormalJewelSetting(value){
-  const source=value && typeof value==='object' ? value : {};
-  return {
-    ad:normalizeDpsJewelOption('ad',source.ad),
-    as:normalizeDpsJewelOption('as',source.as),
-    td:normalizeDpsJewelOption('td',source.td),
-    ua:normalizeDpsJewelOption('ua',source.ua)
-  };
-}
-function normalizeDpsNormalJewelSettings(value){return normalizeJewelSettings(value,dpsNormalJewelNames(),normalizeDpsNormalJewelSetting);}
-function serializeDpsNormalJewelSettings(value){return serializeJewelSettings(value,normalizeDpsNormalJewelSettings);}
-function dpsNormalJewelSettingsObject(){return jewelSettingsObject('dpsNormalJewelSettings',normalizeDpsNormalJewelSettings);}
-function dpsNormalJewelFinalStats(name,settings=dpsNormalJewelSettingsObject()){
-  const jewelName=normalizeDpsNormalJewelName(name);
-  if(!jewelName) return {name:'',ad:0,as:0,td:0,ua:0,resist:0,mythic:'N',normal:true};
-  const input=normalizeDpsNormalJewelSetting(settings?.[jewelName]);
-  return {name:jewelName,ad:input.ad,as:input.as,td:input.td,ua:input.ua,resist:30,mythic:'N',normal:true};
-}
-function dpsBaseUnitAllowsNormalJewels(unitOrId){
+const DPS_BASE_UNIT_EXTRA_SLOT_COUNT=4;
+function dpsBaseUnitAllowsSlotExpansion(unitOrId){
   const unit=typeof unitOrId==='string' ? dpsBaseUnitById(unitOrId) : unitOrId;
   return !!unit && !dpsBaseUnitIsArtifact(unit) && unit.grade!=='슈퍼히든';
 }
-function normalizeDpsNormalJewelAssignments(value,unitOrder=[]){
+function normalizeDpsBaseUnitExtraSlotSetting(value){
+  const source=value && typeof value==='object' && !Array.isArray(value) ? value : {};
+  return {
+    limitBreak:Number(normalizeDpsBaseUnitLimitBreakValue(source.limitBreak ?? source.limit ?? 0))||0,
+    legendaryMythicJewel:normalizeDpsJewelName(source.legendaryMythicJewel ?? source.jewel ?? '')
+  };
+}
+function normalizeDpsBaseUnitExtraSettings(value){
   let source=value;
   if(typeof source==='string'){
     try{source=JSON.parse(source || '{}');}catch(_error){source={};}
   }
   if(!source || typeof source!=='object' || Array.isArray(source)) source={};
-  const validUnits=new Set(dpsBaseUnitList().filter(dpsBaseUnitAllowsNormalJewels).map(unit=>unit.id));
-  const orderedUnitIds=[
-    ...(Array.isArray(unitOrder) ? unitOrder : []),
-    ...Object.keys(source)
-  ].map(unitId=>String(unitId || '')).filter((unitId,index,list)=>validUnits.has(unitId) && list.indexOf(unitId)===index);
-  const used=new Set();
   const out={};
-  orderedUnitIds.forEach(unitId=>{
-    const items=source[unitId];
-    if(!Array.isArray(items)) return;
-    const normalized=items.slice(0,4).map(value=>{
-      const name=normalizeDpsNormalJewelName(value);
-      if(!name || used.has(name)) return '';
-      used.add(name);
-      return name;
-    });
-    while(normalized.length && !normalized[normalized.length-1]) normalized.pop();
-    if(normalized.length) out[unitId]=normalized;
+  Object.entries(source).forEach(([unitId,raw])=>{
+    const unit=dpsBaseUnitById(unitId);
+    if(!dpsBaseUnitAllowsSlotExpansion(unit)) return;
+    const items=Array.isArray(raw) ? raw : (Array.isArray(raw?.slots) ? raw.slots : []);
+    const slots=Array.from({length:DPS_BASE_UNIT_EXTRA_SLOT_COUNT},(_,index)=>normalizeDpsBaseUnitExtraSlotSetting(items[index]));
+    if(slots.some(item=>item.limitBreak>0 || item.legendaryMythicJewel)) out[unit.id]=slots;
   });
   return out;
 }
-function serializeDpsNormalJewelAssignments(value,unitOrder=[]){return JSON.stringify(normalizeDpsNormalJewelAssignments(value,unitOrder));}
-function dpsNormalJewelAssignmentsObject(){
-  const el=typeof $==='function' ? $('dpsNormalJewelAssignments') : null;
-  return normalizeDpsNormalJewelAssignments(el?.value || '{}');
+function serializeDpsBaseUnitExtraSettings(value){return JSON.stringify(normalizeDpsBaseUnitExtraSettings(value));}
+function dpsBaseUnitExtraSettingsObject(){
+  const el=typeof $==='function' ? $('dpsBaseUnitExtraSettings') : null;
+  return normalizeDpsBaseUnitExtraSettings(el?.value || '{}');
 }
-function dpsBaseUnitNormalJewelSlotCount(unitOrId){
+function dpsBaseUnitExtraSlotSettings(unitOrId){
   const unit=typeof unitOrId==='string' ? dpsBaseUnitById(unitOrId) : unitOrId;
-  if(!dpsBaseUnitAllowsNormalJewels(unit)) return 0;
-  return 4;
-}
-function dpsBaseUnitNormalJewelCapacity(unitOrId){
-  const unit=typeof unitOrId==='string' ? dpsBaseUnitById(unitOrId) : unitOrId;
-  if(!dpsBaseUnitAllowsNormalJewels(unit)) return 0;
-  const quantity=dpsBaseUnitHasQuantity(unit) ? Math.max(0,dpsBaseUnitQuantity(unit)) : 1;
-  return Math.max(0,quantity-(dpsBaseUnitJewelName(unit) ? 1 : 0));
-}
-function dpsBaseUnitNormalJewelNames(unitOrId){
-  const unit=typeof unitOrId==='string' ? dpsBaseUnitById(unitOrId) : unitOrId;
-  if(!dpsBaseUnitAllowsNormalJewels(unit)) return [];
-  const assignments=dpsNormalJewelAssignmentsObject();
-  return (assignments[unit.id] || []).slice(0,dpsBaseUnitNormalJewelSlotCount(unit)).map(normalizeDpsNormalJewelName);
+  const settings=dpsBaseUnitExtraSettingsObject();
+  const items=unit ? settings[unit.id] : null;
+  return Array.from({length:DPS_BASE_UNIT_EXTRA_SLOT_COUNT},(_,index)=>normalizeDpsBaseUnitExtraSlotSetting(items?.[index]));
 }
 function dpsBaseUnitJewelName(unitOrId){
   if(!dpsBaseUnitSupportsAdvancedOptions(unitOrId)) return '';
   const el=typeof $==='function' ? $(dpsBaseUnitJewelInputId(unitOrId)) : null;
   return normalizeDpsJewelName(el?.value || '');
 }
-function dpsBaseUnitJewelGroups(unitOrId,quantityOverride){
+function dpsBaseUnitInstanceGroups(unitOrId,quantityOverride){
   const unit=typeof unitOrId==='string' ? dpsBaseUnitById(unitOrId) : unitOrId;
   if(!unit) return [];
   const quantity=Math.max(1,Number(quantityOverride)||dpsBaseUnitQuantity(unit)||1);
-  const namedJewelName=dpsBaseUnitJewelName(unit);
   const groups=[];
-  if(namedJewelName) groups.push({count:1,name:namedJewelName,stats:dpsJewelFinalStats(namedJewelName),type:'named'});
-  const normalSettings=dpsNormalJewelSettingsObject();
-  dpsBaseUnitNormalJewelNames(unit).filter(Boolean).slice(0,Math.max(0,quantity-groups.length)).forEach(name=>{
-    groups.push({count:1,name,stats:dpsNormalJewelFinalStats(name,normalSettings),type:'normal'});
-  });
+  const addGroup=(unitNumber,limitBreak,jewelName,count=1)=>{
+    const name=normalizeDpsJewelName(jewelName);
+    groups.push({
+      count:Math.max(1,Number(count)||1),
+      unitNumber,
+      limitBreak:Number(normalizeDpsBaseUnitLimitBreakValue(limitBreak))||0,
+      name,
+      stats:dpsJewelFinalStats(name),
+      type:name ? 'named' : 'none'
+    });
+  };
+  addGroup(1,dpsBaseUnitLimitBreakValue(unit),dpsBaseUnitJewelName(unit));
+  const extras=dpsBaseUnitExtraSlotSettings(unit);
+  const extraCount=Math.min(DPS_BASE_UNIT_EXTRA_SLOT_COUNT,Math.max(0,quantity-1));
+  for(let index=0;index<extraCount;index++){
+    const extra=extras[index];
+    addGroup(index+2,extra.limitBreak,extra.legendaryMythicJewel);
+  }
   const bareCount=Math.max(0,quantity-groups.length);
-  if(bareCount>0) groups.push({count:bareCount,name:'',stats:dpsJewelFinalStats(''),type:'none'});
+  if(bareCount>0) addGroup(groups.length+1,0,'',bareCount);
   return groups;
 }
 function dpsBaseUnitJewelStats(unitOrId){
@@ -1114,8 +1087,9 @@ const DPS_BASE_UNIT_LIMIT_BREAK_STATS=Object.freeze([
   Object.freeze({ad:175,ua:10,td:0}),Object.freeze({ad:300,ua:20,td:0}),Object.freeze({ad:500,ua:30,td:0}),
   Object.freeze({ad:500,ua:30,td:20})
 ]);
-function dpsBaseUnitLimitBreakStats(unitOrId){
-  return DPS_BASE_UNIT_LIMIT_BREAK_STATS[dpsBaseUnitLimitBreakValue(unitOrId)] || DPS_BASE_UNIT_LIMIT_BREAK_STATS[0];
+function dpsBaseUnitLimitBreakStats(unitOrId,explicitValue=null){
+  const value=explicitValue===null ? dpsBaseUnitLimitBreakValue(unitOrId) : Number(normalizeDpsBaseUnitLimitBreakValue(explicitValue));
+  return DPS_BASE_UNIT_LIMIT_BREAK_STATS[value] || DPS_BASE_UNIT_LIMIT_BREAK_STATS[0];
 }
 function dpsBaseUnitRaceCritBonus(unit, round){
   const table=window.DPS_DATA?.DPS_BASE_UNIT_RACE_CRIT_BONUS || {};
@@ -1132,8 +1106,8 @@ function dpsBaseUnitUniqueAdBonus(unit,totalQuantity){
   if(Math.max(1,Number(totalQuantity)||1)>quantityLimit) return 0;
   return 30+10*(enhanceStats.septemberPlus ?? 0);
 }
-function dpsBaseUnitPrivateAd(unit, quantity, jewelStats=dpsBaseUnitJewelStats(unit), jewelName=dpsBaseUnitJewelName(unit)){
-  const limitBreak=dpsBaseUnitLimitBreakStats(unit);
+function dpsBaseUnitPrivateAd(unit, quantity, jewelStats=dpsBaseUnitJewelStats(unit), jewelName=dpsBaseUnitJewelName(unit), limitBreakValue=dpsBaseUnitLimitBreakValue(unit)){
+  const limitBreak=dpsBaseUnitLimitBreakStats(unit,limitBreakValue);
   const enhance=dpsBaseUnitEnhanceValue(unit);
   const uniqueBuff=dpsBaseUnitUniqueAdBonus(unit,quantity);
   const duplicatePenalty=Math.max(Math.max(1,Number(quantity)||1)-8,0)*10;
@@ -1146,7 +1120,7 @@ function dpsBaseUnitAttackRate(unit, context){
   const targetsPerAttack=Number(unit?.targetCount) || 0;
   const attackCount=Number(unit?.attackCount) || 0;
   if(weaponSpeed<=0 || targetsPerAttack<=0 || attackCount<=0) return {rate:0,cooldown:0,targetsPerAttack:0};
-  const limitBreak=dpsBaseUnitLimitBreakStats(unit);
+  const limitBreak=dpsBaseUnitLimitBreakStats(unit,context?.limitBreak ?? 0);
   const difficultySlow=Math.max(0.000001,1-(Number(context?.difficultyAs)||0)/100);
   const ua=Math.max(0.000001,Number(context?.ua)||1);
   const dt=Math.max(0.000001,Number(context?.dt)||1);
@@ -1165,15 +1139,15 @@ function dpsBaseUnitAttackRate(unit, context){
   const rate=attackCount/Math.max(0.000001,cooldown);
   return {rate,cooldown,targetsPerAttack};
 }
-function dpsBaseUnitSingleDpsParts(unit,context,jewelStats,jewelName=''){
-  const limitBreak=dpsBaseUnitLimitBreakStats(unit);
+function dpsBaseUnitSingleDpsParts(unit,context,jewelStats,jewelName='',limitBreakValue=0){
+  const limitBreak=dpsBaseUnitLimitBreakStats(unit,limitBreakValue);
   const unitExcelPierce=totalDpsPierce(context.basePierceBonus,context.rpPierce,context.unitPierceBonus);
-  const privateAd=dpsBaseUnitPrivateAd(unit,context.totalQuantity,jewelStats,jewelName);
+  const privateAd=dpsBaseUnitPrivateAd(unit,context.totalQuantity,jewelStats,jewelName,limitBreakValue);
   const adTdMultiplier=(1+(context.globalAd+privateAd)/100)*((context.M11+limitBreak.td+(Number(jewelStats?.td)||0))/100);
   const raceCritBonus=dpsBaseUnitRaceCritBonus(unit,context.targetRound);
   const unitCd=context.M9*(1+raceCritBonus);
   const critMultiplier=dps2(context.M8,context.M10,unitCd,context.M16,context.M17,context.M18,unit?.critFormula==='방사' ? 1 : 0);
-  const attackRate=dpsBaseUnitAttackRate(unit,{attackSpeed:context.M7,flowerAttackSpeed:context.flowerAttackSpeed,difficultyAs:context.difficultyAs,ua:context.M13,dt:context.dt,jewelStats});
+  const attackRate=dpsBaseUnitAttackRate(unit,{attackSpeed:context.M7,flowerAttackSpeed:context.flowerAttackSpeed,difficultyAs:context.difficultyAs,ua:context.M13,dt:context.dt,jewelStats,limitBreak:limitBreakValue});
   const noPierceDps0=dps0(1,context.enemyArmor,context.M12,0,100);
   const pierceDps0=dps0(1,context.enemyArmor,context.M12,unitExcelPierce,100);
   const armorPierceMultiplier=noPierceDps0>0 ? pierceDps0/noPierceDps0 : 1;
@@ -1183,7 +1157,7 @@ function dpsBaseUnitSingleDpsParts(unit,context,jewelStats,jewelName=''){
   return {
     rawM19,singleTargetRawM19,AB3:armorPierceMultiplier,AB4:adTdMultiplier,AB5:critMultiplier,AB6:attackRate.rate,
     excelPierce:unitExcelPierce,raceCritBonus,finalCooldown:attackRate.cooldown,targetsPerAttack:attackRate.targetsPerAttack,
-    jewelName,jewelStats
+    jewelName,jewelStats,limitBreak:Number(normalizeDpsBaseUnitLimitBreakValue(limitBreakValue))||0
   };
 }
 
@@ -1210,10 +1184,11 @@ function dpsBaseUnitArtifactWaveTiming(context){
   const config=dpsBaseUnitArtifactConfig();
   const baseCooldown=Math.max(0.001,Number(config.baseWaveCooldown)||4);
   const minimumInterval=Math.max(0.001,Number(config.minimumWaveInterval)||0.001);
-  const accelerationSeconds=Math.max(0,Number(context?.M13)||0);
-  const interval=Math.max(minimumInterval,baseCooldown-accelerationSeconds);
-  const waveCount=interval<1 ? Math.max(1,Math.round(1/interval)) : 1;
-  return {rate:waveCount,cooldown:interval,interval,waveCount,baseCooldown,accelerationSeconds};
+  const accelerationValue=Number(context?.M13);
+  const accelerationMultiplier=Number.isFinite(accelerationValue) && accelerationValue>0 ? accelerationValue : 1;
+  const interval=Math.max(minimumInterval,baseCooldown/accelerationMultiplier);
+  const waveRate=1/interval;
+  return {rate:waveRate,cooldown:interval,interval,waveCount:waveRate,baseCooldown,accelerationMultiplier};
 }
 function dpsBaseUnitArtifactDpsParts(unit,context){
   const config=dpsBaseUnitArtifactConfig();
@@ -1228,7 +1203,7 @@ function dpsBaseUnitArtifactDpsParts(unit,context){
     rawM19,perWaveDamage,AB3:1,AB4:adTdMultiplier,AB5:critMultiplier,AB6:timing.rate,excelPierce:0,
     raceCritBonus:0,finalCooldown:timing.interval,jewelName:'',jewelStats:dpsJewelFinalStats(''),
     artifactWaveInterval:timing.interval,artifactWaveCount:timing.waveCount,artifactTargetCount:targetCount,
-    artifactAcceleration:timing.accelerationSeconds
+    artifactAcceleration:timing.accelerationMultiplier
   };
 }
 
@@ -1342,7 +1317,7 @@ function computeStatsRaw(){
         rawM19:parts.rawM19,M19:Math.round(parts.rawM19),baseRawM19:parts.rawM19,baseM19:Math.round(parts.rawM19),
         excelPierce:0,unitPierceBonus:0,ownDurability:targetDurabilityRemain(enemyData,unitTargetEffects),
         actualM12:actualDrWithPierce(M12_dr,0),enhance:artifactWeapon.enhance,limitBreak:0,jewelName:'',
-        jewelStats:dpsJewelFinalStats(''),normalJewelNames:[],jewelGroups:[],voidPower:false,raceCritBonus:0,
+        jewelStats:dpsJewelFinalStats(''),jewelGroups:[],voidPower:false,raceCritBonus:0,
         finalCooldown:parts.finalCooldown,artifactAttackRate:parts.AB6,artifactWaveInterval:parts.artifactWaveInterval,
         artifactWaveCount:parts.artifactWaveCount,artifactTargetCount:parts.artifactTargetCount,
         artifactAcceleration:parts.artifactAcceleration,perWaveDamage:parts.perWaveDamage,
@@ -1370,13 +1345,12 @@ function computeStatsRaw(){
     };
     const jewelName=dpsBaseUnitJewelName(unit);
     const jewelStats=dpsJewelFinalStats(jewelName);
-    const groups=dpsBaseUnitJewelGroups(unit,quantityMultiplier);
-    const normalJewelNames=groups.filter(group=>group.type==='normal').map(group=>group.name);
+    const groups=dpsBaseUnitInstanceGroups(unit,quantityMultiplier);
     const context={basePierceBonus,rpPierce,unitPierceBonus,totalQuantity:quantityMultiplier,globalAd:M4-unitADBonus,M11,M8,M10,M9,M16,M17,M18,M7,M13,dt,flowerAttackSpeed:upperStats.actualAs,difficultyAs:diff.as,enemyArmor:enemyData.armor,M12:M12_dr,targetRound,weaponAttack};
-    const groupResults=groups.map(group=>({...group,...dpsBaseUnitSingleDpsParts(unit,context,group.stats,group.type==='named' ? group.name : '')}));
+    const groupResults=groups.map(group=>({...group,...dpsBaseUnitSingleDpsParts(unit,context,group.stats,group.name,group.limitBreak)}));
     const unitRawM19=groupResults.reduce((sum,group)=>sum+group.rawM19*group.count,0);
     const unitSingleTargetRawM19=groupResults.reduce((sum,group)=>sum+group.singleTargetRawM19*group.count,0);
-    const baseParts=dpsBaseUnitSingleDpsParts(unit,context,dpsJewelFinalStats(''),'');
+    const baseParts=dpsBaseUnitSingleDpsParts(unit,context,dpsJewelFinalStats(''),'',0);
     const displayParts=groupResults[0] || baseParts;
     const unitTargetEffects={defenseReduce:M12_dr,pierce:baseParts.excelPierce,hpReduce:displayHR,shieldReduce:displaySR};
     return {
@@ -1400,8 +1374,7 @@ function computeStatsRaw(){
       limitBreak:dpsBaseUnitLimitBreakValue(unit),
       jewelName,
       jewelStats,
-      normalJewelNames,
-      jewelGroups:groupResults.map(group=>({name:group.name,type:group.type,count:group.count,dps:Math.round(group.rawM19*group.count)})),
+      jewelGroups:groupResults.map(group=>({unitNumber:group.unitNumber,name:group.name,type:group.type,limitBreak:group.limitBreak,count:group.count,dps:Math.round(group.rawM19*group.count)})),
       voidPower:dpsBaseUnitVoidPowerOn(unit),
       raceCritBonus:displayParts.raceCritBonus,
       finalCooldown:displayParts.finalCooldown,

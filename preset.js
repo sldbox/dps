@@ -1,4 +1,3 @@
-
 /* 상태 정규화·저장 */
 const STORAGE_VERSION=DPS_CONFIG.storage.version;
 const STORAGE_SCOPE=DPS_CONFIG.storage.scope;
@@ -14,7 +13,7 @@ const TRAIT_PRESET_UNIT_BOARD_SCHEMA_VERSION=2;
 const TRAIT_PRESET_JEWEL_SETTINGS_SCHEMA_VERSION=1;
 // 유닛 보드는 로컬 저장에는 포함하고, 프리셋에서는 파일 하단 전용 구역으로 분리한다.
 const TRAIT_PRESET_EXCLUDED_VALUE_IDS=new Set([
-  'dpsBaseUnits','dpsBaseUnitSlots','dpsJewelSettings','dpsNormalJewelSettings','dpsNormalJewelAssignments','dpsBaseUnitSlotExpansions',
+  'dpsBaseUnits','dpsBaseUnitSlots','dpsJewelSettings','dpsBaseUnitExtraSettings','dpsBaseUnitSlotExpansions',
   ...dpsBaseUnitQuantityIds(),
   ...dpsBaseUnitSettingIds()
 ]);
@@ -37,11 +36,11 @@ const TRAIT_PRESET_UPDATE_SCOPE_HIDDEN_VALUE_IDS=new Set(['enchantCode']);
 const TRAIT_PRESET_UPDATE_SCOPE_EXTRA_GROUPS=Object.freeze({
   shared:Object.freeze([
     Object.freeze({kind:'더제로 승단 정보',names:Object.freeze(['계산'])}),
-    Object.freeze({kind:'쥬얼 설정',names:Object.freeze(['일반 쥬얼','전설·신화 쥬얼'])})
+    Object.freeze({kind:'쥬얼 설정',names:Object.freeze(['전설·신화 쥬얼'])})
   ]),
   single:Object.freeze([
     Object.freeze({kind:'특성 보드',names:Object.freeze(['투자수'])}),
-    Object.freeze({kind:'유닛 보드',names:Object.freeze(['유닛 정보','수량','강화 기대값','한계 돌파','전설·신화 쥬얼','일반 쥬얼 선택 슬롯','슬롯 확장','공허의 힘'])})
+    Object.freeze({kind:'유닛 보드',names:Object.freeze(['유닛 정보','수량','강화 기대값','한계 돌파','전설·신화 쥬얼','추가 유닛 쥬얼 & 한계 돌파','슬롯 확장','공허의 힘'])})
   ])
 });
 function isTraitPresetFileType(type){
@@ -117,8 +116,7 @@ function normalizeStoredElementValue(id, value){
   if(id==='dpsBaseUnits') return normalizeDpsBaseUnitsValue(value);
   if(id==='dpsBaseUnitSlots') return serializeDpsBaseUnitSlots(value);
   if(id==='dpsJewelSettings') return serializeDpsJewelSettings(value);
-  if(id==='dpsNormalJewelSettings') return serializeDpsNormalJewelSettings(value);
-  if(id==='dpsNormalJewelAssignments') return serializeDpsNormalJewelAssignments(value);
+  if(id==='dpsBaseUnitExtraSettings') return serializeDpsBaseUnitExtraSettings(value);
   if(id==='dpsBaseUnitSlotExpansions') return serializeDpsBaseUnitSlotExpansions(value);
   if(dpsBaseUnitQuantityIds().includes(id)) return normalizeDpsBaseUnitQuantityValue(value);
   if(DPS_BASE_UNIT_ENHANCE_IDS.has(id)) return normalizeDpsBaseUnitEnhanceValue(value);
@@ -282,9 +280,8 @@ function sanitizeSavedValues(values){
   out.dpsBaseUnits=normalizeDpsBaseUnitsValue(out.dpsBaseUnits ?? '');
   if(hasOwn(out,'dpsBaseUnitSlots')) out.dpsBaseUnitSlots=serializeDpsBaseUnitSlots(out.dpsBaseUnitSlots);
   if(hasOwn(out,'dpsJewelSettings')) out.dpsJewelSettings=serializeDpsJewelSettings(out.dpsJewelSettings);
-  if(hasOwn(out,'dpsNormalJewelSettings')) out.dpsNormalJewelSettings=serializeDpsNormalJewelSettings(out.dpsNormalJewelSettings);
+  if(hasOwn(out,'dpsBaseUnitExtraSettings')) out.dpsBaseUnitExtraSettings=serializeDpsBaseUnitExtraSettings(out.dpsBaseUnitExtraSettings);
   if(hasOwn(out,'dpsBaseUnitSlotExpansions')) out.dpsBaseUnitSlotExpansions=serializeDpsBaseUnitSlotExpansions(out.dpsBaseUnitSlotExpansions);
-  if(hasOwn(out,'dpsNormalJewelAssignments')) out.dpsNormalJewelAssignments=serializeDpsNormalJewelAssignments(out.dpsNormalJewelAssignments);
   dpsBaseUnitQuantityIds().forEach(id=>{ if(hasOwn(out,id)) out[id]=normalizeDpsBaseUnitQuantityValue(out[id]); });
   DPS_BASE_UNIT_ENHANCE_IDS.forEach(id=>{ if(hasOwn(out,id)) out[id]=normalizeDpsBaseUnitEnhanceValue(out[id]); });
   DPS_BASE_UNIT_LIMIT_BREAK_IDS.forEach(id=>{ if(hasOwn(out,id)) out[id]=normalizeDpsBaseUnitLimitBreakValue(out[id]); });
@@ -391,32 +388,36 @@ function normalizeTraitPresetUnitBoardState(value){
     });
   });
   units.sort((a,b)=>a.slot-b.slot);
-  const usedLegendaryJewels=new Set();
-  units.forEach(item=>{
-    const name=normalizeDpsJewelName(item.legendaryMythicJewel);
-    item.legendaryMythicJewel=name && !usedLegendaryJewels.has(name) ? name : '';
-    if(item.legendaryMythicJewel) usedLegendaryJewels.add(item.legendaryMythicJewel);
-  });
   const unitMap=new Map(units.map(item=>[item.unitId,item]));
   units.forEach(item=>{ if(item.unitId==='prodNarud') item.voidPower='OFF'; });
   if(!unitMap.has('prodNarud')) units.forEach(item=>{ item.voidPower='OFF'; });
   const slotExpansions=normalizeDpsBaseUnitSlotExpansions(source.slotExpansions || source.expandedSlots || [])
     .filter(unitId=>unitMap.has(unitId));
-  const rawAssignments=source.normalJewelAssignments && typeof source.normalJewelAssignments==='object' && !Array.isArray(source.normalJewelAssignments)
-    ? source.normalJewelAssignments
-    : {};
-  const normalizedAssignments=normalizeDpsNormalJewelAssignments(rawAssignments,units.map(item=>item.unitId));
-  const normalJewelAssignments=Object.fromEntries(Object.entries(normalizedAssignments).filter(([unitId])=>unitMap.has(unitId)));
+  const rawExtras=source.additionalUnitSettings || source.extraUnitSettings || source.extraSettings || {};
+  const normalizedExtras=normalizeDpsBaseUnitExtraSettings(rawExtras);
+  const additionalUnitSettings=Object.fromEntries(Object.entries(normalizedExtras).filter(([unitId])=>unitMap.has(unitId)));
+  const usedLegendaryJewels=new Set();
+  units.forEach(item=>{
+    const name=normalizeDpsJewelName(item.legendaryMythicJewel);
+    item.legendaryMythicJewel=name && !usedLegendaryJewels.has(name) ? name : '';
+    if(item.legendaryMythicJewel) usedLegendaryJewels.add(item.legendaryMythicJewel);
+    const extras=additionalUnitSettings[item.unitId];
+    if(!Array.isArray(extras)) return;
+    extras.forEach(extra=>{
+      const extraName=normalizeDpsJewelName(extra.legendaryMythicJewel);
+      extra.legendaryMythicJewel=extraName && !usedLegendaryJewels.has(extraName) ? extraName : '';
+      if(extra.legendaryMythicJewel) usedLegendaryJewels.add(extra.legendaryMythicJewel);
+    });
+  });
   return {
     schemaVersion:TRAIT_PRESET_UNIT_BOARD_SCHEMA_VERSION,
     units,
     slotExpansions,
-    normalJewelAssignments
+    additionalUnitSettings:normalizeDpsBaseUnitExtraSettings(additionalUnitSettings)
   };
 }
 function captureTraitPresetUnitBoardState(){
   ensureDpsBaseUnitStore();
-  const assignments=normalizeDpsNormalJewelAssignments($('dpsNormalJewelAssignments')?.value || '{}',currentDpsBaseUnitSlots());
   const units=currentDpsBaseUnitSlots().map((unitId,slot)=>{
     const unit=dpsBaseUnitById(unitId);
     if(!unit) return null;
@@ -432,19 +433,20 @@ function captureTraitPresetUnitBoardState(){
     };
   }).filter(Boolean);
   const selectedIds=new Set(units.map(item=>item.unitId));
-  const selectedAssignments=Object.fromEntries(Object.entries(assignments).filter(([unitId])=>selectedIds.has(unitId)));
+  const extras=normalizeDpsBaseUnitExtraSettings($('dpsBaseUnitExtraSettings')?.value || '{}');
+  const selectedExtras=Object.fromEntries(Object.entries(extras).filter(([unitId])=>selectedIds.has(unitId)));
   return normalizeTraitPresetUnitBoardState({
     units,
     slotExpansions:dpsBaseUnitSlotExpansionIds().filter(unitId=>selectedIds.has(unitId)),
-    normalJewelAssignments:selectedAssignments
+    additionalUnitSettings:selectedExtras
   });
 }
 function applyTraitPresetUnitBoardState(value,options={}){
   const state=normalizeTraitPresetUnitBoardState(value);
   ensureDpsBaseUnitStore();
-  const assignmentStore=$('dpsNormalJewelAssignments');
+  const extraStore=$('dpsBaseUnitExtraSettings');
   const expansionStore=$('dpsBaseUnitSlotExpansions');
-  if(assignmentStore) assignmentStore.value=serializeDpsNormalJewelAssignments(state.normalJewelAssignments);
+  if(extraStore) extraStore.value=serializeDpsBaseUnitExtraSettings(state.additionalUnitSettings);
   if(expansionStore) expansionStore.value=serializeDpsBaseUnitSlotExpansions(state.slotExpansions);
   dpsBaseUnitList().forEach(unit=>{
     if(dpsBaseUnitHasQuantity(unit)){
@@ -487,27 +489,20 @@ function applyTraitPresetUnitBoardState(value,options={}){
 function normalizeTraitPresetJewelSettings(value){
   if(!value || typeof value!=='object' || Array.isArray(value)) return null;
   const legendarySource=value.legendaryMythicJewels || value.legendaryMythic || value.jewelSettings;
-  const normalSource=value.normalJewels || value.normal || value.normalJewelSettings;
-  if(legendarySource===undefined && normalSource===undefined) return null;
+  if(legendarySource===undefined) return null;
   return {
     schemaVersion:TRAIT_PRESET_JEWEL_SETTINGS_SCHEMA_VERSION,
-    legendaryMythicJewels:normalizeDpsJewelSettings(legendarySource || {}),
-    normalJewels:normalizeDpsNormalJewelSettings(normalSource || {})
+    legendaryMythicJewels:normalizeDpsJewelSettings(legendarySource || {})
   };
 }
 function captureTraitPresetJewelSettings(){
-  return normalizeTraitPresetJewelSettings({
-    legendaryMythicJewels:dpsJewelSettingsObject(),
-    normalJewels:dpsNormalJewelSettingsObject()
-  });
+  return normalizeTraitPresetJewelSettings({legendaryMythicJewels:dpsJewelSettingsObject()});
 }
 function applyTraitPresetJewelSettings(value){
   const settings=normalizeTraitPresetJewelSettings(value);
   if(!settings) return null;
   const legendaryStore=$('dpsJewelSettings');
-  const normalStore=$('dpsNormalJewelSettings');
   if(legendaryStore) legendaryStore.value=serializeDpsJewelSettings(settings.legendaryMythicJewels);
-  if(normalStore) normalStore.value=serializeDpsNormalJewelSettings(settings.normalJewels);
   sanitizeDpsJewelSelections();
   renderDpsJewelConfigGrids();
   return settings;
@@ -536,7 +531,7 @@ function traitPresetUnitBoardState(store,presetId){
 }
 function traitPresetUnitBoardHasValues(value){
   const state=normalizeTraitPresetUnitBoardState(value);
-  return state.units.length>0 || Object.keys(state.normalJewelAssignments).length>0;
+  return state.units.length>0 || Object.keys(state.additionalUnitSettings).length>0;
 }
 function missingTraitPresetUnitBoardIds(store){
   return (store?.presets || []).map(preset=>String(preset.id || '')).filter(id=>id && !traitPresetHasUnitBoard(store,id));
@@ -569,7 +564,7 @@ function resetTraitPresetUnitBoardValues(values){
   DPS_BASE_UNIT_LIMIT_BREAK_IDS.forEach(id=>{ out[id]='0'; });
   DPS_BASE_UNIT_JEWEL_IDS.forEach(id=>{ out[id]=''; });
   DPS_BASE_UNIT_VOID_POWER_IDS.forEach(id=>{ out[id]='OFF'; });
-  out.dpsNormalJewelAssignments='{}';
+  out.dpsBaseUnitExtraSettings='{}';
   return out;
 }
 function mergeTraitPresetWithLocalState(presetState, localState, options={}){
@@ -702,7 +697,7 @@ function traitPresetExportButtonText(status, store){
 }
 function renderTraitPresetStatus(status, store){
   const needsExport=store.presets.length>0 && status.updatedPresetIds.length>0;
-  window.Animation?.setPresetAttention({needsExport,needsImport:store.presets.length===0});
+  window.DpsAnimation?.setPresetAttention({needsExport,needsImport:store.presets.length===0});
   const label=traitPresetExportButtonText(status, store);
   qsa('[data-action="exportTraitPresets"]').forEach(btn=>{
     btn.textContent=label;
@@ -762,7 +757,7 @@ function notifyStorageAction(message, type='ok', options={}){
   if(type==='ok'&&options.statusAction&&!options.skipHeaderStatus){
     updateTraitPresetStatus({lastAction:options.statusAction},{persist:true});
   }
-  if(options.animationAction) window.Animation?.notifyPreset(options.animationAction,{message:options.animationMessage||message});
+  if(options.animationAction) window.DpsAnimation?.notifyPreset(options.animationAction,{message:options.animationMessage||message});
   if(type!=='ok'||options.toast===true) showToast(message,type,options.durationMs);
 }
 let autoSaveTimer=0;
@@ -1380,7 +1375,7 @@ function traitPresetUpdateStatus(store=loadTraitPresetStore()){
 }
 function renderTraitPresetUpdateStatus(store){
   const status=traitPresetUpdateStatus(store);
-  window.Animation?.setPresetAttention({needsUpdate:status.needsUpdate});
+  window.DpsAnimation?.setPresetAttention({needsUpdate:status.needsUpdate});
   qsa('[data-action="updateTraitPreset"]').forEach(btn=>{
     btn.textContent=status.needsUpdate ? '업데이트 필요' : '프리셋 업데이트';
     btn.classList.toggle('is-update-needed',status.needsUpdate);
@@ -1774,7 +1769,7 @@ function importExcelJewelsToCurrentPreset(workbook){
     renderTraitPresetUpdateStatus();
     closeTraitPresetExcelImportModal();
     const suffix=staged.needsUpdate ? ' · 프리셋 업데이트 필요' : ' · 기존 데이터와 동일';
-    notifyStorageAction(`쥬얼 데이터 가져오기 완료 · 전설/신화 ${jewelImport.recognizedLegendary}개 · 일반 ${jewelImport.normalCount}개${suffix}`,'ok',{statusAction:'import',animationAction:'import'});
+    notifyStorageAction(`쥬얼 데이터 가져오기 완료 · 전설/신화 ${jewelImport.recognizedLegendary}개${suffix}`,'ok',{statusAction:'import',animationAction:'import'});
     return true;
   }catch(e){
     try{
@@ -2013,7 +2008,7 @@ function compareTraitPreset(){
 function bindTraitPresetEvents(){
   document.addEventListener('change',e=>{
     if(e.target?.id==='traitPresetSelect'){
-      window.Animation?.notifyPreset('select');
+      window.DpsAnimation?.notifyPreset('select');
       loadTraitPresetById(e.target.value,{preserveSharedValues:false});
     }
     if(e.target?.id==='traitPresetImportFile' && e.target.files?.[0]){
