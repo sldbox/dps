@@ -1119,6 +1119,7 @@ function appendTraitPresetCustomOption(menu, select, option){
   const selected=option.value===select.value;
   item.type='button';
   item.className='trait-preset-custom-option';
+  item.dataset.traitPresetCustomOption='1';
   item.dataset.value=option.value;
   item.setAttribute('role','option');
   item.setAttribute('aria-selected',selected?'true':'false');
