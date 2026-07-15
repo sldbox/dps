@@ -1049,7 +1049,8 @@ const DPS_BASE_UNIT_ENEMY_BUFF_DIFFICULTIES=new Set(['Hell','Inferno','Lunatic',
 const DPS_BASE_UNIT_FIXED_INVULNERABILITY_DIFFICULTIES=new Set(['Hall Of Fame','Abyss road','Deep Abyss']);
 const DPS_BASE_UNIT_INVULNERABILITY_TIME_LOSS=4;
 function dpsBaseUnitShieldOffLocked(diffName=vs('diff')){
-  return DPS_BASE_UNIT_FIXED_INVULNERABILITY_DIFFICULTIES.has(difficultyName(diffName));
+  const name=difficultyName(diffName);
+  return !DPS_BASE_UNIT_ENEMY_BUFF_DIFFICULTIES.has(name) || DPS_BASE_UNIT_FIXED_INVULNERABILITY_DIFFICULTIES.has(name);
 }
 function dpsBaseUnitShieldMasterLocked(){
   return hasRuneOption('shieldImmune');

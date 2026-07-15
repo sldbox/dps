@@ -313,27 +313,30 @@ function sanitizeSavedValues(values){
   return out;
 }
 
-function normalizeSavedState(data){
-  if(!data || typeof data!=='object') return null;
-  const sourceValues=(data.values && typeof data.values==='object') ? data.values : {};
-  const rawValues={...sourceValues};
-  const hasRawValues=Object.keys(rawValues).some(id=>isUserStateValueId(id) || id==='dpsTableMinDps');
-  const values=sanitizeSavedValues(rawValues);
-  const inv=(data.inv && typeof data.inv==='object') ? {...data.inv} : {};
-  syncSpBankPresetState(values, inv);
-  const hasZeroScore=!!(data.zeroScore && Array.isArray(data.zeroScore.rows));
-  if(!hasRawValues && !Object.keys(inv).length && !hasZeroScore) return null;
+function makeNormalizedStateEnvelope(source,values,inv,{requireRawValues=false,requireContent=true}={}){
+  const hasRawValues=Object.keys(source?.values || {}).some(id=>isUserStateValueId(id) || id==='dpsTableMinDps');
+  const hasZeroScore=!!(source?.zeroScore && Array.isArray(source.zeroScore.rows));
+  if(requireRawValues && !hasRawValues && !Object.keys(inv).length && !hasZeroScore) return null;
+  if(requireContent && !Object.keys(values).length && !Object.keys(inv).length && !hasZeroScore) return null;
   return makeStorageEnvelope({
     values,
     inv,
-    zeroScore:data.zeroScore,
-    savedAt:data.savedAt,
+    zeroScore:source.zeroScore,
+    savedAt:source.savedAt,
     schemaVersion:TRAIT_PRESET_SCHEMA_VERSION,
-    storageVersion:data.storageVersion,
-    scope:data.scope,
-    ui:data.ui,
-    clientId:data.clientId
+    storageVersion:source.storageVersion,
+    scope:source.scope,
+    ui:source.ui,
+    clientId:source.clientId
   });
+}
+function normalizeSavedState(data){
+  if(!data || typeof data!=='object') return null;
+  const sourceValues=(data.values && typeof data.values==='object') ? data.values : {};
+  const values=sanitizeSavedValues({...sourceValues});
+  const inv=(data.inv && typeof data.inv==='object') ? {...data.inv} : {};
+  syncSpBankPresetState(values, inv);
+  return makeNormalizedStateEnvelope(data,values,inv,{requireRawValues:true,requireContent:false});
 }
 
 function sanitizeTraitPresetValues(values){
@@ -349,19 +352,7 @@ function normalizeTraitPresetState(data){
   const values=sanitizeTraitPresetValues(normalized.values);
   const inv={...normalized.inv};
   syncSpBankPresetState(values, inv);
-  const hasZeroScore=!!(normalized.zeroScore && Array.isArray(normalized.zeroScore.rows));
-  if(!Object.keys(values).length && !Object.keys(inv).length && !hasZeroScore) return null;
-  return makeStorageEnvelope({
-    values,
-    inv,
-    zeroScore:normalized.zeroScore,
-    savedAt:normalized.savedAt,
-    schemaVersion:TRAIT_PRESET_SCHEMA_VERSION,
-    storageVersion:normalized.storageVersion,
-    scope:normalized.scope,
-    ui:normalized.ui,
-    clientId:normalized.clientId
-  });
+  return makeNormalizedStateEnvelope(normalized,values,inv);
 }
 function makeTraitPresetStateObject(sourceState=makeStateObject()){
   return normalizeTraitPresetState(sourceState);
@@ -1090,6 +1081,111 @@ function traitPresetSelectLabel(preset, updatedIds, categoryKey){
   const suffix=updatedIds.has(preset.id) ? ' · 업데이트됨' : '';
   return `${traitPresetOptionName(preset, categoryKey)}${suffix}`;
 }
+function setTraitPresetNameOption(option, label){
+  option.classList.add('trait-preset-name-option');
+  option.dataset.traitPresetNameOption='1';
+  option.dataset.traitPresetLabel=label;
+  option.textContent=label;
+}
+function traitPresetNameOptionAttrs(label){
+  return ` class="trait-preset-name-option" data-trait-preset-name-option="1" data-trait-preset-label="${escapeHtml(label)}"`;
+}
+function isTraitPresetCustomSelect(target){
+  return target?.matches?.('#traitPresetSelect,#traitPresetUnitCopySourceSelect');
+}
+function traitPresetOptionLabel(option){
+  return option?.dataset?.traitPresetLabel || option?.textContent || option?.label || '';
+}
+function traitPresetCustomSelectFor(select){
+  const next=select?.nextElementSibling;
+  return next?.matches?.(`[data-trait-preset-custom-select="${select.id}"]`) ? next : null;
+}
+function closeTraitPresetCustomSelect(custom){
+  if(!custom) return;
+  custom.classList.remove('is-open');
+  custom.querySelector('[data-trait-preset-custom-button]')?.setAttribute('aria-expanded','false');
+  const menu=custom.querySelector('[data-trait-preset-custom-menu]');
+  if(menu) menu.hidden=true;
+}
+function closeTraitPresetCustomSelects(except=null){
+  qsa('[data-trait-preset-custom-select]').forEach(custom=>{ if(custom!==except) closeTraitPresetCustomSelect(custom); });
+}
+function selectedTraitPresetCustomOption(select){
+  return select?.selectedOptions?.[0] || [...(select?.options || [])].find(option=>option.value===select.value) || null;
+}
+function appendTraitPresetCustomOption(menu, select, option){
+  if(option.hidden) return;
+  const item=document.createElement('button');
+  const selected=option.value===select.value;
+  item.type='button';
+  item.className='trait-preset-custom-option';
+  item.dataset.value=option.value;
+  item.setAttribute('role','option');
+  item.setAttribute('aria-selected',selected?'true':'false');
+  item.disabled=option.disabled;
+  item.classList.toggle('is-selected',selected);
+  const check=document.createElement('span');
+  check.className='trait-preset-custom-check';
+  check.setAttribute('aria-hidden','true');
+  check.textContent=selected ? '✓' : '';
+  const text=document.createElement('span');
+  text.className='trait-preset-custom-option-text';
+  text.textContent=traitPresetOptionLabel(option);
+  item.append(check,text);
+  menu.appendChild(item);
+}
+function renderTraitPresetCustomMenu(custom, select){
+  const menu=custom.querySelector('[data-trait-preset-custom-menu]');
+  if(!menu) return;
+  menu.innerHTML='';
+  [...select.children].forEach(child=>{
+    if(child.tagName==='OPTGROUP'){
+      const group=document.createElement('div');
+      group.className='trait-preset-custom-group';
+      const label=document.createElement('div');
+      label.className='trait-preset-custom-group-label';
+      label.textContent=child.label || '';
+      group.appendChild(label);
+      [...child.children].forEach(option=>appendTraitPresetCustomOption(group,select,option));
+      if(group.querySelector('.trait-preset-custom-option')) menu.appendChild(group);
+      return;
+    }
+    if(child.tagName==='OPTION') appendTraitPresetCustomOption(menu,select,child);
+  });
+  menu.hidden=!custom.classList.contains('is-open');
+}
+function syncTraitPresetCustomSelect(select){
+  if(!isTraitPresetCustomSelect(select)) return;
+  let custom=traitPresetCustomSelectFor(select);
+  if(!custom){
+    custom=document.createElement('div');
+    custom.className='trait-preset-custom-select';
+    custom.dataset.traitPresetCustomSelect=select.id;
+    custom.innerHTML='<button class="trait-preset-custom-button" type="button" data-trait-preset-custom-button aria-haspopup="listbox" aria-expanded="false"><span class="trait-preset-custom-button-text"></span><span class="trait-preset-custom-arrow" aria-hidden="true"></span></button><div class="trait-preset-custom-menu" data-trait-preset-custom-menu role="listbox" hidden></div>';
+    select.insertAdjacentElement('afterend',custom);
+  }
+  select.classList.add('trait-preset-native-select');
+  select.dataset.traitPresetNativeSelect='1';
+  select.tabIndex=-1;
+  select.setAttribute('aria-hidden','true');
+  const button=custom.querySelector('[data-trait-preset-custom-button]');
+  const buttonText=custom.querySelector('.trait-preset-custom-button-text');
+  const selected=selectedTraitPresetCustomOption(select);
+  if(buttonText) buttonText.textContent=traitPresetOptionLabel(selected) || (select.disabled ? '저장된 프리셋 없음' : '프리셋 목록');
+  if(button) button.disabled=select.disabled;
+  custom.classList.toggle('is-disabled',select.disabled);
+  renderTraitPresetCustomMenu(custom,select);
+}
+function openTraitPresetCustomSelect(custom){
+  const select=$(custom?.dataset?.traitPresetCustomSelect || '');
+  if(!select || select.disabled) return;
+  closeTraitPresetCustomSelects(custom);
+  custom.classList.add('is-open');
+  custom.querySelector('[data-trait-preset-custom-button]')?.setAttribute('aria-expanded','true');
+  renderTraitPresetCustomMenu(custom,select);
+  const menu=custom.querySelector('[data-trait-preset-custom-menu]');
+  if(menu) menu.hidden=false;
+}
 function renderTraitPresetSelectOptions(select, store, selected, updatedIds){
   const hasPresets=Array.isArray(store?.presets) && store.presets.length>0;
   select.innerHTML='';
@@ -1108,13 +1204,14 @@ function renderTraitPresetSelectOptions(select, store, selected, updatedIds){
     presets.forEach(preset=>{
       const option=document.createElement('option');
       option.value=preset.id;
-      option.textContent=traitPresetSelectLabel(preset, updatedIds, group.key);
+      setTraitPresetNameOption(option, traitPresetSelectLabel(preset, updatedIds, group.key));
       optgroup.appendChild(option);
     });
     select.appendChild(optgroup);
   });
   select.value=selected || '';
   select.disabled=!hasPresets;
+  syncTraitPresetCustomSelect(select);
 }
 function refreshTraitPresetControls(selectedId){
   const store=loadTraitPresetStore();
@@ -2124,7 +2221,8 @@ function traitPresetUnitCopySourceOptionsHtml(store,sourceId){
   const groups=TRAIT_PRESET_SELECT_GROUPS.map(group=>{
     const options=(buckets[group.key] || []).map(preset=>{
       const selected=preset.id===sourceId ? ' selected' : '';
-      return `<option value="${escapeHtml(preset.id)}"${selected}>${escapeHtml(traitPresetSelectLabel(preset,updatedIds,group.key))}</option>`;
+      const label=traitPresetSelectLabel(preset,updatedIds,group.key);
+      return `<option value="${escapeHtml(preset.id)}"${selected}${traitPresetNameOptionAttrs(label)}>${escapeHtml(label)}</option>`;
     }).join('');
     return options ? `<optgroup label="${escapeHtml(group.label)}">${options}</optgroup>` : '';
   }).join('');
@@ -2309,6 +2407,7 @@ function renderTraitPresetUnitCopyPanel(options={}){
   targets.filter(item=>item.duplicate && !traitPresetUnitCopyAppliedTargetIds.has(item.preset.id)).forEach(item=>checkedIds.delete(item.preset.id));
   if(sourceSelect) sourceSelect.innerHTML=traitPresetUnitCopySourceOptionsHtml(store,sourceId);
   if(sourceSelect) sourceSelect.value=sourceId || '';
+  if(sourceSelect) syncTraitPresetCustomSelect(sourceSelect);
   if(targetList) targetList.innerHTML=traitPresetUnitCopyTargetHtml(targets,store,checkedIds,new Map());
   updateTraitPresetUnitCopyPreview();
 }
@@ -2428,6 +2527,30 @@ function bindTraitPresetEvents(){
     if(e.target?.id==='traitPresetExcelName') e.target.dataset.autofill='0';
   });
   document.addEventListener('click',e=>{
+    const customButton=e.target.closest('[data-trait-preset-custom-button]');
+    if(customButton){
+      e.preventDefault();
+      e.stopPropagation();
+      const custom=customButton.closest('[data-trait-preset-custom-select]');
+      if(custom?.classList.contains('is-open')) closeTraitPresetCustomSelect(custom);
+      else openTraitPresetCustomSelect(custom);
+      return;
+    }
+    const customOption=e.target.closest('[data-trait-preset-custom-option]');
+    if(customOption){
+      e.preventDefault();
+      e.stopPropagation();
+      const custom=customOption.closest('[data-trait-preset-custom-select]');
+      const select=$(custom?.dataset?.traitPresetCustomSelect || '');
+      if(select && !customOption.disabled){
+        select.value=customOption.dataset.value || '';
+        syncTraitPresetCustomSelect(select);
+        closeTraitPresetCustomSelect(custom);
+        select.dispatchEvent(new Event('change',{bubbles:true}));
+      }
+      return;
+    }
+    if(!e.target.closest('[data-trait-preset-custom-select]')) closeTraitPresetCustomSelects();
     const unitJewelOpen=e.target.closest('[data-trait-preset-unit-jewel-open]');
     if(unitJewelOpen){
       e.preventDefault();
@@ -2499,6 +2622,30 @@ function bindTraitPresetEvents(){
     }
   });
   document.addEventListener('keydown',e=>{
+    const customButton=e.target.closest?.('[data-trait-preset-custom-button]');
+    if(customButton && ['Enter',' ','ArrowDown'].includes(e.key)){
+      e.preventDefault();
+      const custom=customButton.closest('[data-trait-preset-custom-select]');
+      openTraitPresetCustomSelect(custom);
+      const current=custom?.querySelector('.trait-preset-custom-option.is-selected:not(:disabled)') || custom?.querySelector('.trait-preset-custom-option:not(:disabled)');
+      current?.focus();
+      return;
+    }
+    const customOption=e.target.closest?.('[data-trait-preset-custom-option]');
+    if(customOption && ['ArrowDown','ArrowUp','Escape'].includes(e.key)){
+      e.preventDefault();
+      const custom=customOption.closest('[data-trait-preset-custom-select]');
+      if(e.key==='Escape'){
+        closeTraitPresetCustomSelect(custom);
+        custom?.querySelector('[data-trait-preset-custom-button]')?.focus();
+        return;
+      }
+      const options=[...custom.querySelectorAll('.trait-preset-custom-option:not(:disabled)')];
+      const index=options.indexOf(customOption);
+      const next=options[index + (e.key==='ArrowDown'?1:-1)] || options[e.key==='ArrowDown'?0:options.length-1];
+      next?.focus();
+      return;
+    }
     const updateScopeTab=e.target.closest?.('[data-trait-preset-update-scope-tab]');
     if(updateScopeTab && ['ArrowLeft','ArrowRight','Home','End'].includes(e.key)){
       e.preventDefault();

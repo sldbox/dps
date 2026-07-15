@@ -52,12 +52,15 @@
     document.body?.classList.add(`is-dps-mode-${activeMode}`);
   }
 
+  function dispatchUnitJewelModalEvent(type,detail){
+    window.dispatchEvent(new CustomEvent(type,detail===undefined ? undefined : {detail}));
+  }
   function openJewelSettings(){
-    try{ window.dispatchEvent(new CustomEvent('dps:unitJewelModalRequest',{detail:{panel:'jewel'}})); }catch{}
+    dispatchUnitJewelModalEvent('dps:unitJewelModalRequest',{panel:'jewel'});
   }
 
   function closeJewelSettings(){
-    try{ window.dispatchEvent(new CustomEvent('dps:unitJewelModalCloseRequest')); }catch{}
+    dispatchUnitJewelModalEvent('dps:unitJewelModalCloseRequest');
   }
 
   /* 분석·DPS표·룬·쥬얼 */

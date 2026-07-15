@@ -584,6 +584,16 @@ function syncArtifactDpsViewSwitch(){
   toggle.classList.toggle('is-active', active);
   toggle.setAttribute('aria-checked', active ? 'true' : 'false');
 }
+function syncOnOffSwitch(toggle,{active=false,disabled=false,label='설정',reason='',containerSelector=''}){
+  if(!toggle) return;
+  toggle.disabled=disabled;
+  toggle.classList.toggle('is-active',active);
+  toggle.setAttribute('aria-checked',active ? 'true' : 'false');
+  toggle.setAttribute('aria-disabled',disabled ? 'true' : 'false');
+  toggle.setAttribute('aria-label',disabled ? `${label} OFF · ${reason}` : `${label} ${active ? 'ON' : 'OFF'}`);
+  toggle.title=reason;
+  if(containerSelector) toggle.closest(containerSelector)?.classList.toggle('is-disabled',disabled);
+}
 function syncSpecDpsSpeedSwitch(){
   const toggle=$('specDpsSpeedModeToggle');
   const input=$('specDpsSpeedMode');
@@ -592,13 +602,7 @@ function syncSpecDpsSpeedSwitch(){
   if(disabled) input.value='OFF';
   const active=!disabled && storedSpeedModeEnabled('specDpsSpeedMode');
   const reason=disabled ? '도전의 탑은 스피드 모드 미지원' : '';
-  toggle.disabled=disabled;
-  toggle.classList.toggle('is-active',active);
-  toggle.setAttribute('aria-checked',active ? 'true' : 'false');
-  toggle.setAttribute('aria-disabled',disabled ? 'true' : 'false');
-  toggle.setAttribute('aria-label',disabled ? `스피드 모드 OFF · ${reason}` : `스피드 모드 ${active ? 'ON' : 'OFF'}`);
-  toggle.title=reason;
-  toggle.closest('.spec-dps-speed-switch-wrap')?.classList.toggle('is-disabled',disabled);
+  syncOnOffSwitch(toggle,{active,disabled,label:'스피드 모드',reason,containerSelector:'.spec-dps-speed-switch-wrap'});
 }
 function toggleSpecDpsSpeedMode(){
   const input=$('specDpsSpeedMode');
@@ -629,13 +633,7 @@ function syncDpsBaseUnitConditionSwitch(toggle){
   const active=!disabled && dpsBaseUnitConditionEnabled(inputId);
   const label=toggle.dataset.dpsBaseUnitConditionLabel || '설정';
   const reason=disabled ? dpsBaseUnitConditionDisabledReason(inputId) : '';
-  toggle.disabled=disabled;
-  toggle.classList.toggle('is-active',active);
-  toggle.setAttribute('aria-checked',active ? 'true' : 'false');
-  toggle.setAttribute('aria-disabled',disabled ? 'true' : 'false');
-  toggle.setAttribute('aria-label',disabled ? `${label} OFF · ${reason}` : `${label} ${active ? 'ON' : 'OFF'}`);
-  toggle.title=reason;
-  toggle.closest('.dps-base-unit-condition-item')?.classList.toggle('is-disabled',disabled);
+  syncOnOffSwitch(toggle,{active,disabled,label,reason,containerSelector:'.dps-base-unit-condition-item'});
 }
 function syncDpsBaseUnitConditionSwitches(){
   qsa('[data-dps-base-unit-condition-toggle]').forEach(syncDpsBaseUnitConditionSwitch);
@@ -1040,46 +1038,113 @@ const EXCEL_COMPARE_STATS=[
   ['MP','멀티 확률','L17','M17',s=>s.M17,s=>s.M17],
   ['MCP','멀티 크리 확률','L18','M18',s=>s.M18,s=>s.M18]
 ];
+const EXCEL_ZIP_LIMITS=Object.freeze({maxEntries:4096,maxEntryBytes:64*1024*1024,maxDecodedBytes:128*1024*1024});
 function readU16(view, offset){ return view.getUint16(offset,true); }
 function readU32(view, offset){ return view.getUint32(offset,true); }
-async function inflateZipEntry(bytes){
+function ensureZipRange(length,offset,size,message){
+  if(!Number.isSafeInteger(offset) || !Number.isSafeInteger(size) || offset<0 || size<0 || offset+size>length) throw new Error(message);
+}
+function normalizeExcelZipPath(target){
+  const raw=String(target || '').replace(/\\/g,'/').trim();
+  if(!raw) return '';
+  const source=raw.startsWith('/') ? raw.slice(1) : `xl/${raw}`;
+  const parts=[];
+  for(const part of source.split('/')){
+    if(!part || part==='.') continue;
+    if(part==='..'){
+      if(!parts.length) return '';
+      parts.pop();
+      continue;
+    }
+    parts.push(part);
+  }
+  return parts.join('/');
+}
+async function inflateZipEntry(bytes,expectedSize=0){
   if(typeof DecompressionStream!=='function') throw new Error('이 브라우저는 XLSM 압축 해제를 지원하지 않습니다.');
   const stream=new Blob([bytes]).stream().pipeThrough(new DecompressionStream('deflate-raw'));
-  return new Uint8Array(await new Response(stream).arrayBuffer());
+  const data=new Uint8Array(await new Response(stream).arrayBuffer());
+  if(expectedSize>0 && data.length!==expectedSize) throw new Error('엑셀파일 압축 데이터 크기가 올바르지 않습니다.');
+  return data;
 }
-async function readZipEntries(file){
+async function readZipDirectory(file){
   const bytes=new Uint8Array(await file.arrayBuffer());
+  if(bytes.length<22) throw new Error('올바른 엑셀파일이 아닙니다.');
   const view=new DataView(bytes.buffer,bytes.byteOffset,bytes.byteLength);
   let eocd=-1;
   for(let i=bytes.length-22;i>=Math.max(0,bytes.length-65557);i--){
-    if(readU32(view,i)===0x06054b50){ eocd=i; break; }
+    if(readU32(view,i)!==0x06054b50) continue;
+    const commentLength=readU16(view,i+20);
+    if(i+22+commentLength===bytes.length){ eocd=i; break; }
   }
   if(eocd<0) throw new Error('올바른 엑셀파일이 아닙니다.');
+  ensureZipRange(bytes.length,eocd,22,'엑셀파일 ZIP 끝 정보를 읽을 수 없습니다.');
+  const diskNumber=readU16(view,eocd+4);
+  const centralDisk=readU16(view,eocd+6);
+  const diskEntryCount=readU16(view,eocd+8);
   const count=readU16(view,eocd+10);
+  const centralSize=readU32(view,eocd+12);
   let pos=readU32(view,eocd+16);
-  const decoder=new TextDecoder();
+  if(diskNumber!==0 || centralDisk!==0 || diskEntryCount!==count) throw new Error('분할 ZIP 형식의 엑셀파일은 지원하지 않습니다.');
+  if(count===0xffff || centralSize===0xffffffff || pos===0xffffffff) throw new Error('ZIP64 형식의 엑셀파일은 지원하지 않습니다.');
+  if(count>EXCEL_ZIP_LIMITS.maxEntries) throw new Error('엑셀파일의 내부 항목 수가 너무 많습니다.');
+  ensureZipRange(bytes.length,pos,centralSize,'엑셀파일 ZIP 목록 위치가 올바르지 않습니다.');
+  if(pos+centralSize>eocd) throw new Error('엑셀파일 ZIP 목록 크기가 올바르지 않습니다.');
+  const decoder=new TextDecoder('utf-8');
   const entries=new Map();
   for(let i=0;i<count;i++){
+    ensureZipRange(bytes.length,pos,46,'엑셀파일 ZIP 목록을 읽을 수 없습니다.');
     if(readU32(view,pos)!==0x02014b50) throw new Error('엑셀파일 ZIP 목록을 읽을 수 없습니다.');
+    const flags=readU16(view,pos+8);
     const method=readU16(view,pos+10);
     const compressedSize=readU32(view,pos+20);
+    const uncompressedSize=readU32(view,pos+24);
     const nameLength=readU16(view,pos+28);
     const extraLength=readU16(view,pos+30);
     const commentLength=readU16(view,pos+32);
     const localOffset=readU32(view,pos+42);
-    const name=decoder.decode(bytes.slice(pos+46,pos+46+nameLength));
+    const recordSize=46+nameLength+extraLength+commentLength;
+    ensureZipRange(bytes.length,pos,recordSize,'엑셀파일 ZIP 항목 정보가 손상되었습니다.');
+    if(flags&1) throw new Error('암호화된 엑셀파일은 지원하지 않습니다.');
+    if(compressedSize>EXCEL_ZIP_LIMITS.maxEntryBytes || uncompressedSize>EXCEL_ZIP_LIMITS.maxEntryBytes) throw new Error('엑셀파일 내부 항목이 너무 큽니다.');
+    const name=decoder.decode(bytes.slice(pos+46,pos+46+nameLength)).replace(/\\/g,'/').replace(/^\/+/, '');
+    ensureZipRange(bytes.length,localOffset,30,'엑셀파일 ZIP 항목 위치가 올바르지 않습니다.');
+    if(readU32(view,localOffset)!==0x04034b50) throw new Error('엑셀파일 ZIP 항목을 읽을 수 없습니다.');
     const localNameLength=readU16(view,localOffset+26);
     const localExtraLength=readU16(view,localOffset+28);
-    const start=localOffset+30+localNameLength+localExtraLength;
-    const compressed=bytes.slice(start,start+compressedSize);
-    let data;
-    if(method===0) data=compressed;
-    else if(method===8) data=await inflateZipEntry(compressed);
-    else throw new Error(`지원하지 않는 엑셀파일 압축 방식입니다. (${method})`);
-    entries.set(name,data);
-    pos+=46+nameLength+extraLength+commentLength;
+    ensureZipRange(bytes.length,localOffset+30,localNameLength+localExtraLength,'엑셀파일 ZIP 항목 정보가 손상되었습니다.');
+    const localName=decoder.decode(bytes.slice(localOffset+30,localOffset+30+localNameLength)).replace(/\\/g,'/').replace(/^\/+/, '');
+    if(localName!==name) throw new Error('엑셀파일 ZIP 항목 이름이 일치하지 않습니다.');
+    const dataOffset=localOffset+30+localNameLength+localExtraLength;
+    ensureZipRange(bytes.length,dataOffset,compressedSize,'엑셀파일 ZIP 압축 데이터가 손상되었습니다.');
+    if(name && !name.endsWith('/')){
+      if(entries.has(name)) throw new Error('엑셀파일 ZIP 항목 이름이 중복되었습니다.');
+      entries.set(name,{method,compressedSize,uncompressedSize,dataOffset});
+    }
+    pos+=recordSize;
   }
-  return entries;
+  if(pos>eocd) throw new Error('엑셀파일 ZIP 목록이 손상되었습니다.');
+  return {bytes,entries,cache:new Map(),decodedBytes:0};
+}
+async function readZipEntry(zip,name,{required=true}={}){
+  if(zip.cache.has(name)) return zip.cache.get(name);
+  const entry=zip.entries.get(name);
+  if(!entry){
+    if(required) throw new Error(`엑셀파일 내부 항목을 찾을 수 없습니다. (${name})`);
+    return null;
+  }
+  const compressed=zip.bytes.slice(entry.dataOffset,entry.dataOffset+entry.compressedSize);
+  let data;
+  if(entry.method===0){
+    data=compressed;
+    if(data.length!==entry.uncompressedSize) throw new Error('엑셀파일 저장 데이터 크기가 올바르지 않습니다.');
+  }else if(entry.method===8) data=await inflateZipEntry(compressed,entry.uncompressedSize);
+  else throw new Error(`지원하지 않는 엑셀파일 압축 방식입니다. (${entry.method})`);
+  if(data.length>EXCEL_ZIP_LIMITS.maxEntryBytes) throw new Error('엑셀파일 내부 항목이 너무 큽니다.');
+  zip.decodedBytes+=data.length;
+  if(zip.decodedBytes>EXCEL_ZIP_LIMITS.maxDecodedBytes) throw new Error('엑셀파일 압축 해제 크기가 너무 큽니다.');
+  zip.cache.set(name,data);
+  return data;
 }
 function parseXml(bytes){
   if(!bytes) throw new Error('엑셀파일 XML을 찾을 수 없습니다.');
@@ -1101,31 +1166,43 @@ function excelCellMap(sheetDoc, sharedStrings){
   return cells;
 }
 async function readExcelWorkbook(file){
-  const zip=await readZipEntries(file);
-  const workbook=parseXml(zip.get('xl/workbook.xml'));
-  const rels=parseXml(zip.get('xl/_rels/workbook.xml.rels'));
+  const zip=await readZipDirectory(file);
+  const [workbookBytes,relsBytes,sharedBytes]=await Promise.all([
+    readZipEntry(zip,'xl/workbook.xml'),
+    readZipEntry(zip,'xl/_rels/workbook.xml.rels'),
+    readZipEntry(zip,'xl/sharedStrings.xml',{required:false})
+  ]);
+  const workbook=parseXml(workbookBytes);
+  const rels=parseXml(relsBytes);
   const relMap={};
   xmlLocalAll(rels,'Relationship').forEach(rel=>{ relMap[rel.getAttribute('Id')]=rel.getAttribute('Target'); });
   const shared=[];
-  if(zip.has('xl/sharedStrings.xml')){
-    const sharedDoc=parseXml(zip.get('xl/sharedStrings.xml'));
+  if(sharedBytes){
+    const sharedDoc=parseXml(sharedBytes);
     xmlLocalAll(sharedDoc,'si').forEach(si=>shared.push(xmlLocalAll(si,'t').map(t=>t.textContent||'').join('')));
   }
   const sheets=xmlLocalAll(workbook,'sheet').map(node=>{
     const name=node.getAttribute('name');
     const relId=node.getAttributeNS('http://schemas.openxmlformats.org/officeDocument/2006/relationships','id') || node.getAttribute('r:id');
-    const target=relMap[relId];
-    const path=target?.startsWith('/') ? target.slice(1) : `xl/${target}`;
+    const path=normalizeExcelZipPath(relMap[relId]);
     return {name,path};
-  }).filter(sheet=>sheet.name&&sheet.path&&zip.has(sheet.path));
+  }).filter(sheet=>sheet.name&&sheet.path&&zip.entries.has(sheet.path));
   if(!sheets.length) throw new Error('비교할 엑셀 시트를 찾을 수 없습니다.');
+  const sheetBytes=new Map();
+  await Promise.all([...new Set(sheets.map(sheet=>sheet.path))].map(async path=>{
+    sheetBytes.set(path,await readZipEntry(zip,path));
+  }));
+  const cellCache=new Map();
   return {
     fileName:file.name,
     sheets,
     getCells(sheetName){
+      if(cellCache.has(sheetName)) return cellCache.get(sheetName);
       const sheet=sheets.find(item=>item.name===sheetName);
       if(!sheet) throw new Error('선택한 시트를 찾을 수 없습니다.');
-      return excelCellMap(parseXml(zip.get(sheet.path)),shared);
+      const cells=excelCellMap(parseXml(sheetBytes.get(sheet.path)),shared);
+      cellCache.set(sheetName,cells);
+      return cells;
     }
   };
 }
