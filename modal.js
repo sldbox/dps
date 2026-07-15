@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  /* 공통 모달 */
+  /* 공통 모달 상태·쉘 */
   const MONTH_RUNE_MODAL_TITLES=Object.freeze({
     compare:'프리셋 분석',
     runes:'이달의 룬',
@@ -53,13 +53,13 @@
     document.body?.classList.add(`is-dps-mode-${activeMode}`);
   }
 
-  /* 쥬얼 설정 */
   function setJewelSettingsButtonExpanded(expanded){
     document.querySelectorAll('[data-dps-jewel-config-open]').forEach(button=>{
       button.setAttribute('aria-expanded',expanded?'true':'false');
     });
   }
 
+  /* 쥬얼 설정 모달 */
   function createJewelSettingsModal(){
     return createShell('dpsJewelSettingsModal','dps-jewel-settings-modal-shell',`
       <div class="dps-jewel-settings-backdrop" data-dps-jewel-config-close="1"></div>
@@ -208,7 +208,7 @@
     syncModeClasses(modal?.querySelector('.month-rune-modal'),DPS_MODAL_MODES);
   }
 
-  /* 통합 이벤트 */
+  /* 통합 이벤트·공개 API */
   function handleDocumentClick(event){
     const target=event.target instanceof Element?event.target:null;
     if(!target) return;

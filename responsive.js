@@ -1,6 +1,7 @@
 (() => {
   'use strict';
-  /* 상태·헬퍼 */
+
+  /* 반응형 상태·측정 헬퍼 */
   const qsa = (selector) => Array.from(document.querySelectorAll(selector));
   const MODES = ['is-pc-landscape', 'is-pc-portrait', 'is-tablet', 'is-mobile', 'is-portrait-view', 'is-mobile-device', 'is-tablet-device', 'is-narrow-mobile', 'is-tabbed'];
   const TABBED_PAGES = [

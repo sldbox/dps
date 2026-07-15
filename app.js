@@ -448,7 +448,7 @@ function renderResourceSummary(s){
   syncSpBankDisplay();
 }
 function syncControlDisplays(){
-  [syncSelectButtons,syncBuffChoiceButtons,syncBattleMode,syncDifficultyTargetControls,syncErosionControlElements,syncPowerBlessOptions,normalizeAllDpsBaseUnitQuantityInputs,formatAllMoneyInputs].forEach(fn=>fn());
+  [syncSelectButtons,syncBuffChoiceButtons,syncBattleMode,syncDifficultyTargetControls,syncErosionControlElements,syncPowerBlessOptions,syncDpsBaseUnitConditionSwitches,normalizeAllDpsBaseUnitQuantityInputs,formatAllMoneyInputs].forEach(fn=>fn());
 }
 function syncSpBankApplyControl(){
   const select=$('spBankApply');
@@ -584,8 +584,71 @@ function syncArtifactDpsViewSwitch(){
   toggle.classList.toggle('is-active', active);
   toggle.setAttribute('aria-checked', active ? 'true' : 'false');
 }
-function setArtifactDpsViewFromSwitch(enabled){
-  setArtifactDpsViewEnabled(enabled);
+function syncSpecDpsSpeedSwitch(){
+  const toggle=$('specDpsSpeedModeToggle');
+  const input=$('specDpsSpeedMode');
+  if(!toggle || !input) return;
+  const disabled=!speedModeSupported();
+  if(disabled) input.value='OFF';
+  const active=!disabled && storedSpeedModeEnabled('specDpsSpeedMode');
+  const reason=disabled ? '도전의 탑은 스피드 모드 미지원' : '';
+  toggle.disabled=disabled;
+  toggle.classList.toggle('is-active',active);
+  toggle.setAttribute('aria-checked',active ? 'true' : 'false');
+  toggle.setAttribute('aria-disabled',disabled ? 'true' : 'false');
+  toggle.setAttribute('aria-label',disabled ? `스피드 모드 OFF · ${reason}` : `스피드 모드 ${active ? 'ON' : 'OFF'}`);
+  toggle.title=reason;
+  toggle.closest('.spec-dps-speed-switch-wrap')?.classList.toggle('is-disabled',disabled);
+}
+function toggleSpecDpsSpeedMode(){
+  const input=$('specDpsSpeedMode');
+  const toggle=$('specDpsSpeedModeToggle');
+  if(!input || toggle?.disabled || !speedModeSupported()) return false;
+  input.value=storedSpeedModeEnabled('specDpsSpeedMode') ? 'OFF' : 'ON';
+  syncSpecDpsSpeedSwitch();
+  requestAppUpdate();
+  scheduleAutoSave();
+  return true;
+}
+/* 유닛 보드 전투 모드·적 방어 효과 스위치 */
+function dpsBaseUnitConditionEnabled(inputId){
+  return storedSpeedModeEnabled(inputId);
+}
+function dpsBaseUnitConditionDisabledReason(inputId){
+  if(inputId==='dpsBaseUnitSpeedMode') return '도전의 탑은 스피드 모드 미지원';
+  if(inputId==='dpsBaseUnitShieldOff') return `${difficultyName(vs('diff'))} 난이도는 무적 제거 불가 · -4초 고정`;
+  if(inputId==='dpsBaseUnitShieldMaster') return '10강 슈퍼쉴드 면역 적용 중';
+  return '';
+}
+function syncDpsBaseUnitConditionSwitch(toggle){
+  if(!toggle) return;
+  const inputId=toggle.dataset.dpsBaseUnitConditionToggle || '';
+  const input=$(inputId);
+  const disabled=dpsBaseUnitConditionLocked(inputId);
+  if(disabled && input) input.value='OFF';
+  const active=!disabled && dpsBaseUnitConditionEnabled(inputId);
+  const label=toggle.dataset.dpsBaseUnitConditionLabel || '설정';
+  const reason=disabled ? dpsBaseUnitConditionDisabledReason(inputId) : '';
+  toggle.disabled=disabled;
+  toggle.classList.toggle('is-active',active);
+  toggle.setAttribute('aria-checked',active ? 'true' : 'false');
+  toggle.setAttribute('aria-disabled',disabled ? 'true' : 'false');
+  toggle.setAttribute('aria-label',disabled ? `${label} OFF · ${reason}` : `${label} ${active ? 'ON' : 'OFF'}`);
+  toggle.title=reason;
+  toggle.closest('.dps-base-unit-condition-item')?.classList.toggle('is-disabled',disabled);
+}
+function syncDpsBaseUnitConditionSwitches(){
+  qsa('[data-dps-base-unit-condition-toggle]').forEach(syncDpsBaseUnitConditionSwitch);
+}
+function toggleDpsBaseUnitCondition(toggle){
+  const inputId=toggle?.dataset?.dpsBaseUnitConditionToggle || '';
+  const input=$(inputId);
+  if(!input || toggle.disabled || dpsBaseUnitConditionLocked(inputId)) return false;
+  input.value=dpsBaseUnitConditionEnabled(inputId) ? 'OFF' : 'ON';
+  syncDpsBaseUnitConditionSwitch(toggle);
+  requestAppUpdate();
+  scheduleAutoSave();
+  return true;
 }
 function withArtifactDpsViewBuffApplied(callback){
   const artifactEl=$('prodArtifact');
@@ -599,6 +662,7 @@ function withArtifactDpsViewBuffApplied(callback){
   }
 }
 function renderDamageBoardView(){
+  syncSpecDpsSpeedSwitch();
   syncArtifactDpsViewSwitch();
   syncDpsTableLabels();
 }
@@ -955,7 +1019,7 @@ function syncComparePanelAfterRender(){
   else if(compareState.workbook && compareState.sourceType==='excel') compareSelectedExcelSheet({preserveRestore:true});
   else updateCompareActionButtons();
 }
-/* 파일·유닛 보드·분석 */
+/* 파일 해석·비교 상태 */
 
 const compareState={workbook:null,backupState:null,traitPresetBundle:null,baseTraitPresetBundle:null,baseFileRejected:false,sourceType:null,lastResult:null,activeFilter:'all',restoreState:null,restoreJewelSettings:null,restoreTraitPresetStatus:null,applied:false,selectedSheetName:'',baseTraitPresetId:''};
 function resetCompareState(){Object.assign(compareState,{workbook:null,backupState:null,traitPresetBundle:null,baseFileRejected:false,sourceType:null,lastResult:null,activeFilter:'all',restoreState:null,restoreJewelSettings:null,restoreTraitPresetStatus:null,applied:false,selectedSheetName:'',baseTraitPresetId:''});}
@@ -1018,6 +1082,7 @@ async function readZipEntries(file){
   return entries;
 }
 function parseXml(bytes){
+  if(!bytes) throw new Error('엑셀파일 XML을 찾을 수 없습니다.');
   const xml=new TextDecoder('utf-8').decode(bytes);
   const doc=new DOMParser().parseFromString(xml,'application/xml');
   if(doc.querySelector('parsererror')) throw new Error('엑셀파일 XML을 해석하지 못했습니다.');
@@ -1300,11 +1365,15 @@ const FIELD_REGISTRY={
   penance:{kind:'기본 정보',name:'고행 단계',compare:true,save:true,excel:'number'},
   titleTdBonus:{kind:'기본 정보',name:'타이틀 총 데미지',compare:true,save:true,excel:'number'},
   dpsTableMinDps:{kind:'기본 정보',name:'도전할 최소 DPS',compare:true,save:true,excel:'number'},
+  specDpsSpeedMode:{kind:'스펙 보드',name:'스피드 모드',compare:true,save:true},
   dpsBaseUnits:{kind:'유닛 보드',name:'유닛 구성',save:true},
   dpsBaseUnitSlots:{kind:'유닛 보드',name:'유닛 선택 위치',save:true},
   dpsJewelSettings:{kind:'쥬얼 설정',name:'전설·신화 쥬얼',save:true},
   dpsBaseUnitExtraSettings:{kind:'유닛 보드',name:'추가 유닛 쥬얼 & 한계 돌파',save:true},
   dpsBaseUnitSlotExpansions:{kind:'유닛 보드',name:'슬롯 확장',save:true},
+  dpsBaseUnitSpeedMode:{kind:'유닛 보드',name:'스피드 모드',compare:true,save:true},
+  dpsBaseUnitShieldOff:{kind:'유닛 보드',name:'적제거 · 쉴드오프',compare:true,save:true},
+  dpsBaseUnitShieldMaster:{kind:'유닛 보드',name:'슈퍼실드 주기변경 · 쉴드마스',compare:true,save:true},
   erosionStack:{kind:'기본 정보',name:'침식 스텍',compare:true,save:true,excel:'number'},
   jewelErosionRes:{kind:'기본 정보',name:'심연 내성',compare:true,save:true,excel:'number'},
   aprRuneNormal:{kind:'룬효과 버프',name:'4월 일반',compare:true,save:true},
@@ -1378,6 +1447,7 @@ const FIELD_REGISTRY={
   unitLevel:{kind:'룬효과 버프',name:'유닛 레벨',compare:true},
 };
 
+/* 유닛 보드 상태·표시 */
 function dpsBaseUnitQuantityFieldEntries(){
   return dpsBaseUnitList().filter(dpsBaseUnitHasQuantity).map(unit=>[
     dpsBaseUnitQuantityInputId(unit),
@@ -1409,7 +1479,7 @@ const USER_STATE_VALUE_IDS=new Set(fieldEntriesByFlag('save'));
 function normalizeDpsBaseUnitSlotExpansions(value){
   let source=value;
   if(typeof source==='string'){
-    try{ source=JSON.parse(source || '[]'); }catch(_error){ source=source.split('|'); }
+    try{ source=JSON.parse(source || '[]'); }catch{ source=source.split('|'); }
   }
   if(!Array.isArray(source)) source=[];
   const valid=new Set(dpsBaseUnitList().filter(dpsBaseUnitAllowsSlotExpansion).map(unit=>unit.id));
@@ -1437,11 +1507,8 @@ function toggleDpsBaseUnitSlotExpansion(unitId){
   syncDpsBaseUnitControl();
   return index<0;
 }
-function dpsBaseUnitValueIds(value=vs('dpsBaseUnits')){
-  return dpsBaseUnitSelectionIds(value);
-}
 function dpsBaseUnitExpandedIds(value=vs('dpsBaseUnits')){
-  return dpsBaseUnitValueIds(value);
+  return dpsBaseUnitSelectionIds(value);
 }
 function dpsBaseUnitGradeLabel(grade){
   return grade || '기타';
@@ -1516,34 +1583,29 @@ function dpsBaseUnitTruncatedCompactAmount(value,divisor,digits){
   const amount=Math.trunc((value/divisor)*factor)/factor;
   return amount.toLocaleString('ko-KR',{minimumFractionDigits:0,maximumFractionDigits:digits});
 }
-function dpsBaseUnitKoreanNumber(value,smallDecimals=false){
+const DPS_BASE_UNIT_SUMMARY_NUMBER_OPTIONS=Object.freeze({trillion:true,roundTenThousands:true});
+function dpsBaseUnitNumberText(value,options={}){
   const number=Number(value);
   if(!Number.isFinite(number)) return '—';
   const sign=number<0 ? '-' : '';
   const absolute=Math.abs(number);
-  if(absolute>=100000000) return `${sign}${dpsBaseUnitTruncatedCompactAmount(absolute,100000000,2)}억`;
-  if(absolute>=10000) return `${sign}${Math.floor(absolute/10000).toLocaleString('ko-KR')}만`;
-  if(smallDecimals && absolute<1000) return `${sign}${absolute.toFixed(2)}`;
+  const compact=(divisor,suffix,digits=2)=>`${sign}${dpsBaseUnitTruncatedCompactAmount(absolute,divisor,digits)}${suffix}`;
+  if(options.trillion && absolute>=1000000000000) return compact(1000000000000,'조');
+  if(absolute>=100000000) return compact(100000000,'억');
+  if(absolute>=10000){
+    const convert=options.roundTenThousands ? Math.round : Math.floor;
+    return `${sign}${convert(absolute/10000).toLocaleString('ko-KR')}만`;
+  }
+  if(options.smallDecimals && absolute<1000) return `${sign}${absolute.toFixed(2)}`;
   return `${sign}${Math.round(absolute).toLocaleString('ko-KR')}`;
 }
 function dpsBaseUnitDpsText(item){
-  return dpsBaseUnitKoreanNumber(item?.M19,true);
+  return dpsBaseUnitNumberText(item?.M19,{smallDecimals:true});
 }
 function dpsBaseUnitAttackText(item){
   const value=Number(item?.weaponAttack);
   if(!Number.isFinite(value)) return '—';
   return value.toLocaleString('ko-KR',{minimumFractionDigits:0,maximumFractionDigits:2});
-}
-function dpsBaseUnitSummaryNumber(value){
-  const number=Number(value);
-  if(!Number.isFinite(number)) return '—';
-  const sign=number<0 ? '-' : '';
-  const absolute=Math.abs(number);
-  const compact=(divisor,suffix,digits)=>`${sign}${dpsBaseUnitTruncatedCompactAmount(absolute,divisor,digits)}${suffix}`;
-  if(absolute>=1000000000000) return compact(1000000000000,'조',2);
-  if(absolute>=100000000) return compact(100000000,'억',2);
-  if(absolute>=10000) return `${sign}${Math.round(absolute/10000).toLocaleString('ko-KR')}만`;
-  return `${sign}${Math.round(absolute).toLocaleString('ko-KR')}`;
 }
 function dpsBaseUnitSummaryMarkup(text){
   const value=String(text??'—');
@@ -1584,7 +1646,7 @@ function renderDpsBaseUnitSummary(s,hidden=false){
   const expectedDps=Math.max(0,Number(info?.expectedDps)||0);
   const achievementRate=Math.max(0,Number(info?.achievementRate)||0);
   const achievementState=dpsBaseUnitAchievementState(achievementRate);
-  el.innerHTML=`<div class="dps-base-unit-summary-row"><div class="dps-base-unit-summary-item"><span class="dps-lbl">클리어 기준</span><b class="dps-num">${dpsBaseUnitSummaryMarkup(dpsBaseUnitSummaryNumber(requiredDps))}</b></div><div class="dps-base-unit-summary-item"><span class="dps-lbl">클리어 기대값</span><b class="dps-num">${dpsBaseUnitSummaryMarkup(dpsBaseUnitSummaryNumber(expectedDps))}</b></div><div class="dps-base-unit-summary-item"><span class="dps-lbl">${achievementState.label}</span><b class="dps-num">${dpsBaseUnitSummaryMarkup(dpsBaseUnitAchievementText(achievementRate))}</b></div></div>`;
+  el.innerHTML=`<div class="dps-base-unit-summary-row"><div class="dps-base-unit-summary-item"><span class="dps-lbl">클리어 기준</span><b class="dps-num">${dpsBaseUnitSummaryMarkup(dpsBaseUnitNumberText(requiredDps,DPS_BASE_UNIT_SUMMARY_NUMBER_OPTIONS))}</b></div><div class="dps-base-unit-summary-item"><span class="dps-lbl">클리어 기대값</span><b class="dps-num">${dpsBaseUnitSummaryMarkup(dpsBaseUnitNumberText(expectedDps,DPS_BASE_UNIT_SUMMARY_NUMBER_OPTIONS))}</b></div><div class="dps-base-unit-summary-item"><span class="dps-lbl">${achievementState.label}</span><b class="dps-num">${dpsBaseUnitSummaryMarkup(dpsBaseUnitAchievementText(achievementRate))}</b></div></div>`;
   el.hidden=false;
 }
 function appendDpsBaseUnitStoreInput(store,id,value,dataName,unitId){
@@ -1676,9 +1738,12 @@ function dpsJewelSettingIsActive(value){
 function activeJewelNames(names,settings,isActive){return names.filter(name=>isActive(settings?.[name]));}
 function activeDpsJewelNames(settings=dpsJewelSettingsObject()){return activeJewelNames(dpsJewelNames(),settings,dpsJewelSettingIsActive);}
 function dpsBaseUnitJewelSelectionOrder(){
-  const selected=currentDpsBaseUnitSlots().filter(Boolean);
-  const selectedSet=new Set(selected);
-  return [...selected,...dpsBaseUnitList().map(unit=>unit.id).filter(unitId=>!selectedSet.has(unitId))];
+  return currentDpsBaseUnitSlots().filter(Boolean);
+}
+function dpsBaseUnitActiveExtraJewelCount(unitOrId){
+  const unit=typeof unitOrId==='string' ? dpsBaseUnitById(unitOrId) : unitOrId;
+  if(!dpsBaseUnitAllowsSlotExpansion(unit)) return 0;
+  return Math.min(DPS_BASE_UNIT_EXTRA_SLOT_COUNT,Math.max(0,dpsBaseUnitQuantity(unit)-1));
 }
 function dpsBaseUnitJewelOwnerKey(unitId,extraIndex=-1){
   return extraIndex>=0 ? `${unitId}:extra:${extraIndex}` : `${unitId}:primary`;
@@ -1695,7 +1760,7 @@ function dpsLegendaryJewelActiveUsage(){
   dpsBaseUnitJewelSelectionOrder().forEach(unitId=>{
     const primary=normalizeDpsJewelName(dpsBaseUnitStoreInput('jewel',unitId)?.value || '');
     if(primary && !usage.has(primary)) usage.set(primary,dpsBaseUnitJewelOwnerKey(unitId));
-    (extras[unitId] || []).forEach((item,index)=>{
+    (extras[unitId] || []).slice(0,dpsBaseUnitActiveExtraJewelCount(unitId)).forEach((item,index)=>{
       const name=normalizeDpsJewelName(item?.legendaryMythicJewel);
       if(name && !usage.has(name)) usage.set(name,dpsBaseUnitJewelOwnerKey(unitId,index));
     });
@@ -1719,7 +1784,7 @@ function sanitizeDpsJewelSelections(){
     }
     const items=extraSettings[unitId];
     if(!Array.isArray(items)) return;
-    items.forEach(item=>{
+    items.slice(0,dpsBaseUnitActiveExtraJewelCount(unitId)).forEach(item=>{
       const name=normalizeDpsJewelName(item.legendaryMythicJewel);
       if(!name) return;
       if(!activeLegendary.has(name) || usedLegendary.has(name)){
@@ -2205,7 +2270,7 @@ function validateTraitPresetExcelSpecAdditionalStructure(workbook){
     const specCells=workbook?.getCells?.('스펙');
     const additionalInfo=inspectSpecAdditionalStructure(specCells || {});
     if(!additionalInfo.valid) throw new Error(additionalInfo.message);
-  }catch(e){
+  }catch{
     throw new Error(LATEST_SPEC_ADDITIONAL_STRUCTURE_MESSAGE);
   }
 }
@@ -2245,6 +2310,31 @@ function applyRuneChoiceState(values, cells){
   values.runeChoiceValue=String(value);
   RUNE_CHOICE_TARGETS.forEach(([kind,id])=>{ values[id]=String(kind===type ? value : 0); });
 }
+/* 엑셀 가져오기·선택 룬 */
+const EXCEL_RUNE_MODIFICATION_COLUMNS=Object.freeze(['C','F','I','L','O']);
+const EXCEL_RUNE_MODIFICATION_ROWS=Object.freeze({
+  upper:Object.freeze({rModAD:19,rModAS:21,rModCD:22,rModCRI:23}),
+  lower:Object.freeze({rModAD:34,rModAS:36,rModCD:37,rModCRI:38})
+});
+function excelSelectedRuneNumber(cells={}){
+  return normalizedIntegerRange(excelNumber(cells.J3),1,10,1);
+}
+function excelSelectedRuneModificationValues(cells,specCells={}){
+  const runeNumber=excelSelectedRuneNumber(cells);
+  const column=EXCEL_RUNE_MODIFICATION_COLUMNS[(runeNumber-1)%5];
+  const rows=runeNumber<=5 ? EXCEL_RUNE_MODIFICATION_ROWS.upper : EXCEL_RUNE_MODIFICATION_ROWS.lower;
+  return Object.fromEntries(Object.entries(rows).map(([id,row])=>[id,specCells[`${column}${row}`]]));
+}
+function isExcelPenanceSheet(sheetName=''){
+  return String(sheetName || '').replace(/\s+/g,'')==='고행';
+}
+function excelUnitBoardSpeedModeValue(cells={},sheetName=''){
+  if(!isExcelPenanceSheet(sheetName)) return undefined;
+  const value=excelText(cells.N76).trim().toUpperCase();
+  if(value==='O' || value==='ON') return 'ON';
+  if(value==='X' || value==='OFF') return 'OFF';
+  return undefined;
+}
 function buildExcelChoiceRow(name, excel, id, options={}){
   const changeValue=options.boolean ? (excelFlag(excel)?'ON':'OFF') : String(excel??'');
   const currentValue=webControlDisplay(id);
@@ -2272,6 +2362,8 @@ function excelRoundFieldName(cells={}, sheetName=''){
 function buildExcelInputSpecs(cells,specCells,sheetName=''){
   const roundFieldId=excelRoundFieldId(cells,sheetName);
   const roundFieldName=excelRoundFieldName(cells,sheetName);
+  const runeMods=excelSelectedRuneModificationValues(cells,specCells);
+  const unitBoardSpeedMode=excelUnitBoardSpeedModeValue(cells,sheetName);
   return [
     ['기본 정보','시작 SP',Math.round(Number(normalizedExcelTotalSpValue(cells))||0),'sp'],
     ['기본 정보','보유 XP',specCells.R20,'xp'],
@@ -2289,16 +2381,17 @@ function buildExcelInputSpecs(cells,specCells,sheetName=''){
     ['기본 정보','침식 스텍',cells.H10,'erosionStack'],
     ['기본 정보','심연 내성',cells.H11,'jewelErosionRes'],
     ['기본 정보','파워 블레스',normalizePowerBlessRawValue(cells.D4),'pbless'],
+    ...(unitBoardSpeedMode===undefined ? [] : [['유닛 보드','스피드 모드',unitBoardSpeedMode,'dpsBaseUnitSpeedMode']]),
     ['룬정보','공격력',cells.J5,'rAD'],
-    ['룬정보','공격력 개조',specCells.C19,'rModAD'],
+    ['룬정보','공격력 개조',runeMods.rModAD,'rModAD'],
     ['룬정보','룬 특수 옵션',EXCEL_RUNE_TYPE_MAP[excelText(cells.I6)]??cells.I6,'runeChoiceType'],
     ['룬정보','룬 특수 옵션',cells.J6,'runeChoiceValue'],
     ['룬정보','공격속도',cells.J7,'rAS'],
-    ['룬정보','공격속도 개조',specCells.C21,'rModAS'],
+    ['룬정보','공격속도 개조',runeMods.rModAS,'rModAS'],
     ['룬정보','크리티컬 데미지',cells.J8,'rCD'],
-    ['룬정보','크리티컬 데미지 개조',specCells.C22,'rModCD'],
+    ['룬정보','크리티컬 데미지 개조',runeMods.rModCD,'rModCD'],
     ['룬정보','크리티컬 확률',cells.J9,'rCRI'],
-    ['룬정보','크리티컬 확률 개조',specCells.C23,'rModCRI'],
+    ['룬정보','크리티컬 확률 개조',runeMods.rModCRI,'rModCRI'],
     ['룬정보','룬 강화 수',cells.J11,'rReinf'],
     ['룬정보','룬 각성',cells.J12,'rAsc'],
     ['룬정보','종족 업그레이드',cells.J13,'raceOpt'],
@@ -2539,7 +2632,7 @@ function hydrateCompareControls(){
   updateCompareTargetFileAccess();
 }
 function compareHasValidBase(){
-  return !!selectedBaseTraitPreset();
+  return !!selectedTraitPresetForComparison('base');
 }
 function updateCompareTargetFileAccess(){
   const input=$('excelCompareFile');
@@ -2670,7 +2763,7 @@ function closeCompareInfo(){
 function compareCanApply(){
   if(compareState.applied) return false;
   if(compareState.sourceType==='json') return !!compareState.backupState;
-  if(compareState.sourceType==='traitPreset') return !!selectedCompareTraitPreset();
+  if(compareState.sourceType==='traitPreset') return !!selectedTraitPresetForComparison('change');
   if(compareState.sourceType==='excel'){
     const sheetName=selectedExcelSheetName();
     return !!(compareState.workbook && sheetName && sheetName!==EXCEL_JEWEL_SHEET_NAME && compareState.lastResult);
@@ -2804,8 +2897,10 @@ function excelStateValue(id, value, options={}){
 }
 function buildExcelState(cells, specCells, zeroCells, sheetName=''){
   const state=makeStateObject();
+  const runeMods=excelSelectedRuneModificationValues(cells,specCells);
   const values={...state.values, soloMode:'ON', coopMode:'OFF', coopPassenger2Dr:'0', coopPassenger3Dr:'0'};
   const roundFieldId=excelRoundFieldId(cells,sheetName);
+  const unitBoardSpeedMode=excelUnitBoardSpeedModeValue(cells,sheetName);
   const assign=(id,value,options={})=>{
     const resolved=excelStateValue(id,value,options);
     if(resolved===undefined) return 0;
@@ -2828,7 +2923,7 @@ function buildExcelState(cells, specCells, zeroCells, sheetName=''){
     ['prodKerrigan',cells.F8],['prodOvermind',cells.F9],['prodNarud',cells.F10],['prodArtifact',cells.F11],
     ['flowerSkill1',cells.F13],['flowerSkill2',cells.F14],['flowerSkill3',cells.F15],
     ['rAD',cells.J5],['rAS',cells.J7],['rCD',cells.J8],['rCRI',cells.J9],
-    ['rModAD',specCells.C19],['rModAS',specCells.C21],['rModCD',specCells.C22],['rModCRI',specCells.C23],
+    ['rModAD',runeMods.rModAD],['rModAS',runeMods.rModAS],['rModCD',runeMods.rModCD],['rModCRI',runeMods.rModCRI],
     ['rReinf',cells.J11],['rAsc',cells.J12],['raceOpt',cells.J13],
     ['opt10',cells.J14],['opt15',cells.J15],['transOpt',cells.J16],
     ['addAD',getSpecAdditionalValue(specCells,'addAD')],['addAS',getSpecAdditionalValue(specCells,'addAS')],
@@ -2836,6 +2931,7 @@ function buildExcelState(cells, specCells, zeroCells, sheetName=''){
     ['addAP',getSpecAdditionalValue(specCells,'addAP')],['addTD',getSpecAdditionalValue(specCells,'addTD')],
     ['addUA',getSpecAdditionalValue(specCells,'addUA')]
   ].forEach(([id,value])=>{ applied+=assign(id,value); });
+  if(unitBoardSpeedMode!==undefined) applied+=assign('dpsBaseUnitSpeedMode',unitBoardSpeedMode);
   if(cells.D4!==undefined && cells.D4!==null && cells.D4!==''){
     values.pbless=normalizePowerBlessRawValue(cells.D4);
     applied++;
@@ -2878,6 +2974,7 @@ function buildExcelState(cells, specCells, zeroCells, sheetName=''){
   return {state:makeStorageEnvelope({...state,values,inv,zeroScore}),applied};
 }
 
+/* JSON·프리셋 비교 */
 function readFileAsText(file){
   return new Promise((resolve,reject)=>{
     const reader=new FileReader();
@@ -2889,7 +2986,9 @@ function readFileAsText(file){
 function isCompareNumericValueId(id){
   return EXCEL_NUMERIC_INPUT_IDS.has(id);
 }
+const NEW_PRESET_ON_OFF_VALUE_IDS=new Set(['specDpsSpeedMode','dpsBaseUnitSpeedMode','dpsBaseUnitShieldOff','dpsBaseUnitShieldMaster']);
 function compareSavedValueDisplay(value,id){
+  if(NEW_PRESET_ON_OFF_VALUE_IDS.has(id) && (value===undefined || value===null || String(value).trim()==='')) return '미저장';
   if(TRAIT_LIMIT_INPUT_IDS.has(id)) return traitLimitDisplayText(value);
   if(id==='spBankApply') return spBankApplyDisplayValue(value);
   if(isCompareNumericValueId(id)) return formatCompareNumber(value);
@@ -2898,13 +2997,17 @@ function compareSavedValueDisplay(value,id){
 function buildSavedValueCompareRows(changeState,currentState,options={}){
   const onlyDiffs=options.onlyDiffs!==false;
   const excludedKinds=new Set(Array.isArray(options.excludeKinds) ? options.excludeKinds : []);
-  const ordered=userStateElementIds();
+  const includedIds=Array.isArray(options.includeIds) ? options.includeIds : null;
+  const ordered=includedIds || userStateElementIds();
   const skipped=new Set(['excelCompareFile','excelCompareSheet','enchantCode','runeChoiceType','runeChoiceValue',...ENCHANT_INPUT_IDS]);
-  const ids=[...new Set([...ordered,'dpsTableMinDps',...Object.keys(currentState.values||{}),...Object.keys(changeState.values||{})])]
+  const sourceIds=includedIds ? ordered : [...ordered,'dpsTableMinDps',...Object.keys(currentState.values||{}),...Object.keys(changeState.values||{})];
+  const ids=[...new Set(sourceIds)]
     .filter(id=>id && !skipped.has(id) && isUserStateValueId(id) && !!COMPARE_VALUE_META[id] && !excludedKinds.has(COMPARE_VALUE_META[id].kind));
   const rows=[];
-  const runeRow=buildRuneChoiceCompareRow('룬정보', changeState.values||{}, currentState.values||{});
-  if(!onlyDiffs || runeRow.status!=='same') rows.push(runeRow);
+  if(options.includeRuneChoice!==false){
+    const runeRow=buildRuneChoiceCompareRow('룬정보', changeState.values||{}, currentState.values||{});
+    if(!onlyDiffs || runeRow.status!=='same') rows.push(runeRow);
+  }
   ids.forEach(id=>{
     const meta=COMPARE_VALUE_META[id];
     const numeric=isCompareNumericValueId(id);
@@ -2967,8 +3070,8 @@ function buildTraitPresetUnitBoardSummaryRows(changeStats,currentStats,changeBoa
   const changeAchievement=dpsBaseUnitAchievementState(changeInfo.achievementRate);
   const currentAchievement=dpsBaseUnitAchievementState(currentInfo.achievementRate);
   return [
-    buildCompareTextRow('유닛 보드','클리어 기준',dpsBaseUnitSummaryNumber(changeInfo.requiredDps),dpsBaseUnitSummaryNumber(currentInfo.requiredDps)),
-    buildCompareTextRow('유닛 보드','클리어 기대값',dpsBaseUnitSummaryNumber(changeInfo.expectedDps),dpsBaseUnitSummaryNumber(currentInfo.expectedDps)),
+    buildCompareTextRow('유닛 보드','클리어 기준',dpsBaseUnitNumberText(changeInfo.requiredDps,DPS_BASE_UNIT_SUMMARY_NUMBER_OPTIONS),dpsBaseUnitNumberText(currentInfo.requiredDps,DPS_BASE_UNIT_SUMMARY_NUMBER_OPTIONS)),
+    buildCompareTextRow('유닛 보드','클리어 기대값',dpsBaseUnitNumberText(changeInfo.expectedDps,DPS_BASE_UNIT_SUMMARY_NUMBER_OPTIONS),dpsBaseUnitNumberText(currentInfo.expectedDps,DPS_BASE_UNIT_SUMMARY_NUMBER_OPTIONS)),
     buildCompareTextRow('유닛 보드','달성률 상태',changeAchievement.label,currentAchievement.label),
     buildCompareTextRow('유닛 보드','달성률',dpsBaseUnitAchievementText(changeInfo.achievementRate),dpsBaseUnitAchievementText(currentInfo.achievementRate)),
     buildCompareTextRow('유닛 보드','공허의 힘 사용량',`${traitPresetUnitBoardVoidPowerUsage(changeBoard)} / ${dpsBaseUnitVoidPowerLimit()}`,`${traitPresetUnitBoardVoidPowerUsage(currentBoard)} / ${dpsBaseUnitVoidPowerLimit()}`)
@@ -3094,12 +3197,14 @@ function buildJsonComparison(changeState,options={}){
     onlyDiffs:false,
     excludeKinds:traitPresetMode ? ['유닛 보드','쥬얼 설정'] : []
   });
+  const unitConditionRows=traitPresetMode ? buildSavedValueCompareRows(compareChangeState,compareCurrentState,{onlyDiffs:false,includeIds:DPS_BASE_UNIT_MODE_VALUE_IDS,includeRuneChoice:false}) : [];
   const enchantRows=buildEnchantCompareRows(enchantCompareCodeFromValues(compareChangeState.values),enchantCompareCodeFromValues(compareCurrentState.values));
   const statRows=[...buildStateStatRows(changeStats,currentStats),...buildStateDamageBoardContextRows(changeSnapshot,currentSnapshot)];
   const traitRows=buildSavedTraitCompareRows(compareChangeState,compareCurrentState);
   const zeroRows=buildSavedZeroScoreCompareRows(compareChangeState.zeroScore,compareCurrentState.zeroScore,{onlyDiffs:true});
   const jewelRows=traitPresetMode ? buildTraitPresetJewelCompareRows(options.changeJewelSettings,options.currentJewelSettings) : [];
   const unitBoardRows=traitPresetMode ? [
+    ...unitConditionRows,
     ...buildTraitPresetUnitBoardSummaryRows(changeStats,currentStats,options.changeUnitBoard,options.currentUnitBoard),
     ...buildTraitPresetUnitBoardCompareRows(options.changeUnitBoard,options.currentUnitBoard,{
       changeIncluded:options.changeUnitBoardIncluded,
@@ -3129,7 +3234,7 @@ function buildJsonComparison(changeState,options={}){
 }
 function renderJsonComparison(changeState,options={}){
   if(options.useSelectedBase){
-    const basePreset=selectedBaseTraitPreset();
+    const basePreset=selectedTraitPresetForComparison('base');
     if(!basePreset) throw new Error('기준 프리셋을 선택하세요.');
     const baseState=normalizeSavedState(basePreset.state);
     if(!baseState) throw new Error('기준 프리셋 데이터가 올바르지 않습니다.');
@@ -3241,7 +3346,7 @@ function applySelectedExcelSheet(){
   }
 }
 function buildExcelComparisonForSelectedBase(cells,specCells,zeroCells,fileName,sheetName,jewelImport){
-  const basePreset=selectedBaseTraitPreset();
+  const basePreset=selectedTraitPresetForComparison('base');
   if(!basePreset) throw new Error('기준 프리셋을 선택하세요.');
   const baseState=normalizeSavedState(basePreset.state);
   if(!baseState) throw new Error('기준 프리셋 데이터가 올바르지 않습니다.');
@@ -3370,7 +3475,7 @@ async function handleBaseCompareFile(file){
   }
 }
 async function handleExcelCompareFile(file){
-  const basePreset=selectedBaseTraitPreset();
+  const basePreset=selectedTraitPresetForComparison('base');
   const body=$('excelCompareBody');
   if(!basePreset){
     clearCompareTargetSelection();
@@ -3523,7 +3628,7 @@ function focusTraitInputRow(row,hostScroll,pageX,pageY){
   const focusNow=()=>{
     const next=qs(`.tv-input[data-row="${row}"]`);
     if(!next) return false;
-    try{next.focus({preventScroll:true});}catch(_e){next.focus();}
+    try{next.focus({preventScroll:true});}catch{next.focus();}
     if(typeof next.select==='function') next.select();
     if(host) host.scrollTop=hostScroll;
     window.scrollTo(pageX,pageY);
@@ -4278,14 +4383,28 @@ function bindButtonPressFeedback(){
     setTimeout(()=>btn.classList.remove('is-pressed'), 180);
   }, true);
 }
-function bindArtifactDpsViewEvents(){
+function bindDamageBoardSwitchEvents(){
   document.addEventListener('click', e=>{
-    const toggle=e.target?.closest?.('#artifactDpsViewToggle');
-    if(!toggle) return;
+    const speedToggle=e.target?.closest?.('[data-spec-dps-speed-toggle]');
+    if(speedToggle){
+      e.preventDefault();
+      toggleSpecDpsSpeedMode();
+      return;
+    }
+    const artifactToggle=e.target?.closest?.('#artifactDpsViewToggle');
+    if(!artifactToggle) return;
     e.preventDefault();
-    setArtifactDpsViewFromSwitch(!isArtifactDpsViewEnabled());
+    setArtifactDpsViewEnabled(!isArtifactDpsViewEnabled());
     requestAppUpdate();
   }, true);
+}
+function bindDpsBaseUnitConditionEvents(){
+  document.addEventListener('click',e=>{
+    const toggle=e.target?.closest?.('[data-dps-base-unit-condition-toggle]');
+    if(!toggle || toggle.disabled) return;
+    e.preventDefault();
+    toggleDpsBaseUnitCondition(toggle);
+  },true);
 }
 function bindAppEvents(){
   if(appEventsBound) return;
@@ -4294,7 +4413,7 @@ function bindAppEvents(){
     bindFontScaleViewportGuard, bindActionEvents, bindBusCutEvents, bindTraitHoldEvents, bindTraitInputEvents,
     ()=>window.DpsModal.bindEvents(), bindExcelCompareEvents, ()=>window.DpsPreset.bindEvents(), bindJewelImageEvents,
     bindConvenienceMenuEvents, bindZeroScoreCalculator, bindTraitLimitDisplayEvents, bindDpsBaseUnitControlEvents, bindReactiveInputs,
-    bindButtonPressFeedback, bindArtifactDpsViewEvents, bindAppTitleVersion
+    bindButtonPressFeedback, bindDamageBoardSwitchEvents, bindDpsBaseUnitConditionEvents, bindAppTitleVersion
   ].forEach(fn=>fn());
 }
 function initApp(){

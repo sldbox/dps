@@ -454,10 +454,34 @@ function enemyRoundTime(round, diffName=vs('diff')){
   const finalTime=base + eternalExtra + enemyRoundTimeBonus(diffName);
   return Math.max(1,Math.round(finalTime*10)/10);
 }
+const SPEED_MODE_MULTIPLIER=1.3;
+function storedSpeedModeEnabled(inputId){
+  return normalizeOnOffValue(vs(inputId),'OFF')==='ON';
+}
+function speedModeSupported(diffName=vs('diff')){
+  return !isTowerDifficulty(diffName);
+}
+function speedModeRoundTime(baseTime,enabled){
+  const time=Number(baseTime);
+  if(!Number.isFinite(time)) return time;
+  return enabled ? Math.round((time/SPEED_MODE_MULTIPLIER)*10)/10 : time;
+}
+function specDpsSpeedModeEnabled(diffName=vs('diff')){
+  return speedModeSupported(diffName) && storedSpeedModeEnabled('specDpsSpeedMode');
+}
+function dpsBaseUnitSpeedModeEnabled(diffName=vs('diff')){
+  return speedModeSupported(diffName) && storedSpeedModeEnabled('dpsBaseUnitSpeedMode');
+}
+function specDpsRoundTime(round,diffName=vs('diff')){
+  return speedModeRoundTime(enemyRoundTime(round,diffName),specDpsSpeedModeEnabled(diffName));
+}
 function battleModeLabel(diffName=vs('diff')){return isCoopActive(diffName) ? '협동' : '개인';}
-function dpsContextModeLabel(diffName=vs('diff')){
-  const players=isCoopActive(diffName) ? '/3인' : '';
-  return `${battleModeLabel(diffName)}/${enemyDisplayModeLabel(diffName)}${players}`;
+function dpsContextModeValues(diffName=vs('diff')){
+  const players=isCoopActive(diffName) ? ' · 3인' : '';
+  return {
+    primary:specDpsSpeedModeEnabled(diffName) ? '스피드' : '일반',
+    secondary:`${battleModeLabel(diffName)} · ${enemyDisplayModeLabel(diffName)}${players}`
+  };
 }
 function enemyDataFromTables(mode, round, options={}){
   const r=Number(round) || 0;
@@ -835,7 +859,7 @@ function normalizeDpsBaseUnitExtraSlotSetting(value){
 function normalizeDpsBaseUnitExtraSettings(value){
   let source=value;
   if(typeof source==='string'){
-    try{source=JSON.parse(source || '{}');}catch(_error){source={};}
+    try{source=JSON.parse(source || '{}');}catch{source={};}
   }
   if(!source || typeof source!=='object' || Array.isArray(source)) source={};
   const out={};
@@ -1019,11 +1043,46 @@ function dpsBaseUnitWeaponAttack(unit){
   let attack=nonNegativeNumber(tiers[tierIndex]);
   return attack;
 }
+/* 유닛 보드 전투 모드·적 방어 효과 */
+const DPS_BASE_UNIT_MODE_VALUE_IDS=Object.freeze(['dpsBaseUnitSpeedMode','dpsBaseUnitShieldOff','dpsBaseUnitShieldMaster']);
 const DPS_BASE_UNIT_ENEMY_BUFF_DIFFICULTIES=new Set(['Hell','Inferno','Lunatic','Holic','Epic','Ultimate','Impossible','The Final','Hall Of Fame','Abyss road','Deep Abyss','도전의 탑']);
+const DPS_BASE_UNIT_FIXED_INVULNERABILITY_DIFFICULTIES=new Set(['Hall Of Fame','Abyss road','Deep Abyss']);
+const DPS_BASE_UNIT_INVULNERABILITY_TIME_LOSS=4;
+function dpsBaseUnitShieldOffLocked(diffName=vs('diff')){
+  return DPS_BASE_UNIT_FIXED_INVULNERABILITY_DIFFICULTIES.has(difficultyName(diffName));
+}
+function dpsBaseUnitShieldMasterLocked(){
+  return hasRuneOption('shieldImmune');
+}
+function dpsBaseUnitConditionLocked(inputId,diffName=vs('diff')){
+  if(inputId==='dpsBaseUnitSpeedMode') return !speedModeSupported(diffName);
+  if(inputId==='dpsBaseUnitShieldOff') return dpsBaseUnitShieldOffLocked(diffName);
+  if(inputId==='dpsBaseUnitShieldMaster') return dpsBaseUnitShieldMasterLocked();
+  return false;
+}
+function dpsBaseUnitShieldOffEnabled(diffName=vs('diff')){
+  return !dpsBaseUnitShieldOffLocked(diffName) && normalizeOnOffValue(vs('dpsBaseUnitShieldOff'),'OFF')==='ON';
+}
+function dpsBaseUnitShieldMasterEnabled(){
+  return !dpsBaseUnitShieldMasterLocked() && normalizeOnOffValue(vs('dpsBaseUnitShieldMaster'),'OFF')==='ON';
+}
+function dpsBaseUnitInvulnerabilityTimeLoss(diffName=vs('diff')){
+  const name=difficultyName(diffName);
+  if(!DPS_BASE_UNIT_ENEMY_BUFF_DIFFICULTIES.has(name)) return 0;
+  if(DPS_BASE_UNIT_FIXED_INVULNERABILITY_DIFFICULTIES.has(name)) return DPS_BASE_UNIT_INVULNERABILITY_TIME_LOSS;
+  return dpsBaseUnitShieldOffEnabled(diffName) ? 0 : DPS_BASE_UNIT_INVULNERABILITY_TIME_LOSS;
+}
+function dpsBaseUnitRoundTime(round,diffName=vs('diff')){
+  const baseTime=enemyRoundTime(round,diffName);
+  const speedAdjustedTime=speedModeRoundTime(baseTime,dpsBaseUnitSpeedModeEnabled(diffName));
+  const timeLoss=dpsBaseUnitInvulnerabilityTimeLoss(diffName);
+  return Math.max(1,Math.round((speedAdjustedTime-timeLoss)*10)/10);
+}
 function dpsBaseUnitEnemyProtectionFactor(diffName=vs('diff')){
   if(!DPS_BASE_UNIT_ENEMY_BUFF_DIFFICULTIES.has(difficultyName(diffName))) return 1;
-  const rawSuperShieldFactor=1-0.667*30/(30+35);
-  const superShieldFactor=hasRuneOption('shieldImmune') ? 1 : Math.round(rawSuperShieldFactor*1000)/1000;
+  const shieldCycleMultiplier=dpsBaseUnitShieldMasterEnabled() ? 2 : 1;
+  const rawSuperShieldFactor=1-0.667*30/(30+35*shieldCycleMultiplier);
+  const superShieldFactor=dpsBaseUnitShieldMasterLocked() ? 1 : Math.round(rawSuperShieldFactor*1000)/1000;
   const stealthFactor=0.999;
   return Math.max(0.000001,Math.min(superShieldFactor,stealthFactor));
 }
@@ -1065,7 +1124,7 @@ function dpsBaseUnitTargetProfiles({enemyData,defenseReduce,displayHR,displaySR,
   }));
 }
 function dpsBaseUnitRequiredDps({enemyData,defenseReduce,dmgReduce,round,displayHR,displaySR,diffName=vs('diff')}){
-  const clearTime=enemyRoundTime(round,diffName);
+  const clearTime=dpsBaseUnitRoundTime(round,diffName);
   const enemyArmor=Math.max(0,Number(enemyData?.armor)||0);
   const protectionFactor=dpsBaseUnitEnemyProtectionFactor(diffName);
   const profiles=dpsBaseUnitTargetProfiles({enemyData,defenseReduce,displayHR,displaySR,diffName});
@@ -1128,7 +1187,8 @@ function dpsBaseUnitAttackRate(unit, context){
   const flowerAs=Number(context?.flowerAttackSpeed)||0;
   const uniqueSpeed=Math.max(0.000001,1+(Number(unit?.attackSpeedMultiplier)||0));
   const speedMultiplier=Math.max(0.000001,(1+(speedStat+flowerAs+voidPowerAs)/100)*difficultySlow*ua*dt*privateUa*uniqueSpeed);
-  const adjustedCooldown=Math.round((weaponSpeed/speedMultiplier)*10000)/10000;
+  const speedModeMultiplier=dpsBaseUnitSpeedModeEnabled() ? SPEED_MODE_MULTIPLIER : 1;
+  const adjustedCooldown=Math.round((weaponSpeed/(speedMultiplier*speedModeMultiplier))*10000)/10000;
   const asLimit=Math.max(0,Number(unit?.asLimit)||0);
   const limitMultiplier=Math.max(0.000001,difficultySlow*ua*dt*privateUa);
   const limitCooldown=asLimit>0 ? asLimit/limitMultiplier : 0;
@@ -1182,7 +1242,9 @@ function dpsBaseUnitArtifactWaveTiming(context){
   const baseCooldown=Math.max(0.001,Number(config.baseWaveCooldown)||4);
   const minimumInterval=Math.max(0.001,Number(config.minimumWaveInterval)||0.001);
   const accelerationValue=Number(context?.M13);
-  const accelerationMultiplier=Number.isFinite(accelerationValue) && accelerationValue>0 ? accelerationValue : 1;
+  const baseAccelerationMultiplier=Number.isFinite(accelerationValue) && accelerationValue>0 ? accelerationValue : 1;
+  const speedModeMultiplier=dpsBaseUnitSpeedModeEnabled() ? SPEED_MODE_MULTIPLIER : 1;
+  const accelerationMultiplier=baseAccelerationMultiplier*speedModeMultiplier;
   const interval=Math.max(minimumInterval,baseCooldown/accelerationMultiplier);
   const waveRate=1/interval;
   return {rate:waveRate,cooldown:interval,interval,waveCount:waveRate,baseCooldown,accelerationMultiplier};
@@ -1292,10 +1354,10 @@ function computeStatsRaw(){
   const AB5=dps2(M8,M10,M9,M16,M17,M18,0);
   const dt=personalUaDtMultiplier();
   const gradeAs=UNIT_GRADE_AS[activeUnitGrade()] ?? 0;
-  const AB6=(1+(M7+upperStats.actualAs+gradeAs)/100)*(1-diff.as/100)*M13*dt;
+  const AB6=(1+(M7+upperStats.actualAs+gradeAs)/100)*(1-diff.as/100)*M13*dt*(specDpsSpeedModeEnabled() ? SPEED_MODE_MULTIPLIER : 1);
   const rawM19=AB3*AB4*AB5*AB6;
   const displayMultiplier=contentDpsDisplayMultiplier(vs('diff'),targetRound,displayHR,displaySR);
-  const roundTime=enemyRoundTime(targetRound);
+  const roundTime=specDpsRoundTime(targetRound);
   const M19=rawM19*displayMultiplier;
 
   const dpsBaseUnitSelection=dpsBaseUnitStorageValue();
@@ -1466,10 +1528,10 @@ function calculateArtifactDpsRaw(stats=computeStatsRaw()){
   const flowerMultiplier=on('flowerSkill3') ? 1.15 : 1;
   const adTdMultiplier=(1 + (stats.M4||0) / 100) * ((stats.M11||0) / 100);
   const critMultiplier=dps2(stats.M8||0, stats.M10||0, stats.M9||0, stats.M16||0, stats.M17||0, stats.M18||0, 1);
-  const uaMultiplier=(1 - (stats.diff?.as||0) / 100) * (stats.M13||0) * artifactEnergyRegenMultiplier() * personalUaDtMultiplier();
+  const uaMultiplier=(1 - (stats.diff?.as||0) / 100) * (stats.M13||0) * artifactEnergyRegenMultiplier() * personalUaDtMultiplier() * (specDpsSpeedModeEnabled() ? SPEED_MODE_MULTIPLIER : 1);
   const displayMultiplier=contentDpsDisplayMultiplier(vs('diff'), ctx.targetRound, stats.displayHR||0, stats.displaySR||0);
   const rawArtifactDps=dps0Part * flowerMultiplier * adTdMultiplier * critMultiplier * uaMultiplier;
-  const roundTime=enemyRoundTime(ctx.targetRound);
+  const roundTime=specDpsRoundTime(ctx.targetRound);
   const artifactDps=rawArtifactDps * displayMultiplier;
   return {
     dps:Number.isFinite(artifactDps) ? artifactDps : 0,
@@ -1487,6 +1549,7 @@ function calculateArtifactDpsRaw(stats=computeStatsRaw()){
     round:ctx.targetRound
   };
 }
+/* 계산 미리보기 상태 */
 const ARTIFACT_DPS_PREVIEW_IDS=['diff','penance','round','challengeTowerFloor','soloMode','coopMode','coopPassenger2Dr','coopPassenger3Dr','team','prodArtifact','pbless',...EROSION_CONTROL_IDS];
 function capturePreviewElementStates(ids){
   return ids.map(id=>{
@@ -1584,19 +1647,26 @@ function prepareDpsPreviewControls(diffName, penanceLevel, round, options={}, si
   });
   return controls;
 }
-function calculateArtifactDpsPreview(diffName, penanceLevel, round, options={}){
-  const saved=capturePreviewElementStates(ARTIFACT_DPS_PREVIEW_IDS);
+function withPreparedDpsPreview(elementIds,diffName,penanceLevel,round,options,signaturePrefix,callback){
+  const saved=capturePreviewElementStates(elementIds);
   try{
-    prepareDpsPreviewControls(diffName, penanceLevel, round, options, 'artifact');
-    const artifactEl=$('prodArtifact');
-    if(artifactEl) artifactEl.checked=true;
-    const stats=computeStatsRaw();
-    return {...calculateArtifactDpsRaw(stats), baseDps:Number.isFinite(stats.M19) ? stats.M19 : 0};
+    prepareDpsPreviewControls(diffName,penanceLevel,round,options,signaturePrefix);
+    return callback();
+  }finally{
+    restorePreviewElementStates(saved);
+  }
+}
+function calculateArtifactDpsPreview(diffName, penanceLevel, round, options={}){
+  try{
+    return withPreparedDpsPreview(ARTIFACT_DPS_PREVIEW_IDS,diffName,penanceLevel,round,options,'artifact',()=>{
+      const artifactEl=$('prodArtifact');
+      if(artifactEl) artifactEl.checked=true;
+      const stats=computeStatsRaw();
+      return {...calculateArtifactDpsRaw(stats), baseDps:Number.isFinite(stats.M19) ? stats.M19 : 0};
+    });
   }catch(e){
     rememberAppIssue('error','[artifact DPS preview failed]', e);
     return {dps:0,baseDps:0,error:e};
-  }finally{
-    restorePreviewElementStates(saved);
   }
 }
 function hasRuneOption(code){
@@ -1824,44 +1894,38 @@ function selectedControlText(el){
   return String(el.value ?? '—').trim() || '—';
 }
 function getDpsContextValues(){
-  const diffEl=$('diff');
+  const diff=selectedControlText($('diff'));
   const penValue=effectivePenanceValue();
   const roundInt=normalizedRoundNumber(targetRoundStoredValue());
   const floorInt=normalizedTowerFloorNumber(challengeTowerFloorStoredValue());
   const towerActive=isTowerDifficulty();
-  const diff=selectedControlText(diffEl);
-  const mode=dpsContextModeLabel();
-  const penance=penValue>0 ? `${penValue} 고행` : '고행 없음';
-  const roundValue=towerActive ? floorInt : roundInt;
-  const round=towerActive ? `${floorInt}층` : `${roundInt} 라운드`;
-  const floor=`${floorInt}층`;
-  const penanceShort=String(penValue);
-  const roundShort=towerActive ? `${floorInt}층` : String(roundInt);
-  return {mode, diff, penValue, roundValue, penance, round, floor, penanceShort, roundShort};
+  const mode=dpsContextModeValues();
+  const difficultyDetail=towerActive
+    ? `${floorInt}층 · ${roundInt} 라운드`
+    : `${penValue} 고행 · ${roundInt} 라운드`;
+  return {modePrimary:mode.primary,modeSecondary:mode.secondary,diff,difficultyDetail};
 }
 function updateDpsContextSummary(){
   const ctx=getDpsContextValues();
   setTextMap({
-    dpsContextMode:ctx.mode,
+    dpsContextMode:ctx.modePrimary,
+    dpsContextModeDetail:ctx.modeSecondary,
     dpsContextDiff:ctx.diff,
-    dpsContextPenance:ctx.penanceShort,
-    dpsContextRound:ctx.roundShort
+    dpsContextDiffDetail:ctx.difficultyDetail
   });
 }
 
 /* DPS표 미리보기 */
 const DPS_PREVIEW_IDS=['diff','penance','round','challengeTowerFloor','soloMode','coopMode','team','pbless',...EROSION_CONTROL_IDS];
 function computeDpsPreview(diffName, penanceLevel, round, options={}){
-  const saved=capturePreviewElementStates(DPS_PREVIEW_IDS);
   try{
-    prepareDpsPreviewControls(diffName, penanceLevel, round, options, 'preview');
-    const s=computeStatsRaw();
-    return Number.isFinite(s.M19) ? s.M19 : 0;
+    return withPreparedDpsPreview(DPS_PREVIEW_IDS,diffName,penanceLevel,round,options,'preview',()=>{
+      const stats=computeStatsRaw();
+      return Number.isFinite(stats.M19) ? stats.M19 : 0;
+    });
   }catch(e){
     rememberAppIssue('error','[DPS table preview failed]', e);
     return 0;
-  }finally{
-    restorePreviewElementStates(saved);
   }
 }
 
@@ -2251,7 +2315,7 @@ function zeroHonorTowerScore(floor){
 function getZeroScoreSheetCells(workbook){
   try{
     return workbook?.sheets?.some(sheet=>sheet.name===ZERO_EXCEL_SHEET_NAME) ? workbook.getCells(ZERO_EXCEL_SHEET_NAME) : null;
-  }catch(_e){ return null; }
+  }catch{ return null; }
 }
 function normalizeZeroHonorValue(value){
   const text=excelText(value).toLowerCase().replace(/명예/g,'').trim();

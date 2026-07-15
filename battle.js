@@ -1,6 +1,8 @@
 (function(){
   'use strict';
 
+  /* 애니메이션 상태·공통 유틸 */
+
   const BATTLE_STYLE_ID='dps-battle-style';
   const BATTLE_STYLE=String.raw`
 .battle-stage{
@@ -46,7 +48,7 @@ body:is(.is-mobile,.is-narrow-mobile) .battle-enemy-status-value{font-size:8.8px
 body:is(.is-mobile,.is-narrow-mobile) .battle-enemy-status-track{height:6px;}
 @media (prefers-reduced-motion:reduce){.battle-enemy-status-fill{transition:none;}}
 
-/* 특성 프리셋 알림 */
+/* 프리셋 알림 상태 */
 body .trait-preset-heading,body.is-tabbed .mobile-page .trait-preset-heading{overflow:visible;}
 .preset-notice-bubble{
   position:absolute;
@@ -1340,11 +1342,12 @@ body .trait-preset-heading,body.is-tabbed .mobile-page .trait-preset-heading{ove
   }
   function drawActorLabels(ctx,x,y,label,color,scale,alpha,defenseReduce){
     const player=drawPlayerLabel(ctx,x,y,label,color,scale,alpha);
-    if(number(defenseReduce)<=0) return player;
-    const playerHeight=player?.height||Math.max(13,14*scale);
-    const defenseHeight=Math.max(13,13.5*Math.max(.72,scale*.92));
-    const defenseY=(player?.y??y)-playerHeight/2-defenseHeight/2-3;
-    drawDefenseReductionLabel(ctx,x,defenseY,defenseReduce,scale,alpha);
+    if(number(defenseReduce)>0){
+      const playerHeight=player?.height||Math.max(13,14*scale);
+      const defenseHeight=Math.max(13,13.5*Math.max(.72,scale*.92));
+      const defenseY=(player?.y??y)-playerHeight/2-defenseHeight/2-3;
+      drawDefenseReductionLabel(ctx,x,defenseY,defenseReduce,scale,alpha);
+    }
     return player;
   }
   function drawMinion(ctx,x,y,size,theme,time,shield,hp,angle,index,quality){
@@ -1385,7 +1388,7 @@ body .trait-preset-heading,body.is-tabbed .mobile-page .trait-preset-heading{ove
     const count=Math.max(6,Math.round(12*quality));for(let i=0;i<count;i++){const angle=i*Math.PI*2/count;ctx.beginPath();ctx.moveTo(x,y-30);ctx.lineTo(x+Math.cos(angle)*(26+42*(1-intensity)),y-30+Math.sin(angle)*(26+42*(1-intensity)));ctx.stroke();}ctx.restore();
   }
 
-  /* 특성 프리셋 알림 */
+  /* 프리셋 알림 */
   const PRESET_ALERT_ACTIONS=Object.freeze({
     select:Object.freeze({message:'이 프리셋을 선택했어!',duration:2300,priority:20}),
     load:Object.freeze({message:'프리셋을 불러왔어!',duration:3000,priority:45}),
@@ -1523,7 +1526,7 @@ body .trait-preset-heading,body.is-tabbed .mobile-page .trait-preset-heading{ove
     if(!presetAlertState.current&&!presetAlertState.timer) showPresetAlertIdle();
   }
 
-  /* 초기화·공개 API */
+  /* 장면 생성·갱신 */
   function ensureScene(){
     const stage=document.getElementById('battleUnitStage');
     if(stage&&!battleScene) battleScene=new BattleScene(stage);
@@ -1554,6 +1557,7 @@ body .trait-preset-heading,body.is-tabbed .mobile-page .trait-preset-heading{ove
       setTimeout(queueRefresh,180);
     }
   }
+  /* 이벤트·공개 API */
   function init(){
     ensureBattleStyle();
     ensureScene();
