@@ -10,7 +10,6 @@
   });
   const MONTH_RUNE_MODAL_CLASS_NAMES=Object.freeze(['is-modal-compare','is-modal-runes','is-modal-jewels','is-modal-dps']);
   const DPS_TABLE_MIN_DPS_INPUT_SELECTOR='#dpsTableMinDps,#dpsTableMinDpsMain';
-  let dpsJewelSettingsReturnFocus=null;
   let eventsBound=false;
 
   function createShell(id,className,innerHtml){
@@ -53,46 +52,12 @@
     document.body?.classList.add(`is-dps-mode-${activeMode}`);
   }
 
-  function setJewelSettingsButtonExpanded(expanded){
-    document.querySelectorAll('[data-dps-jewel-config-open]').forEach(button=>{
-      button.setAttribute('aria-expanded',expanded?'true':'false');
-    });
-  }
-
-  /* 쥬얼 설정 모달 */
-  function createJewelSettingsModal(){
-    return createShell('dpsJewelSettingsModal','dps-jewel-settings-modal-shell',`
-      <div class="dps-jewel-settings-backdrop" data-dps-jewel-config-close="1"></div>
-      <section class="dps-jewel-settings-modal" role="dialog" aria-modal="true" aria-labelledby="dpsJewelSettingsTitle">
-        <header class="dps-jewel-settings-head">
-          <h2 id="dpsJewelSettingsTitle">쥬얼 설정</h2>
-          <button type="button" class="ui-icon-btn dps-jewel-settings-close" data-dps-jewel-config-close="1" aria-label="쥬얼 설정 닫기">×</button>
-        </header>
-        <div class="dps-jewel-settings-body" data-dps-jewel-config>
-          <div class="dps-jewel-config-grid" id="dpsJewelConfigGrid"></div>
-        </div>
-      </section>`);
-  }
-
   function openJewelSettings(){
-    dpsJewelSettingsReturnFocus=document.activeElement instanceof HTMLElement?document.activeElement:null;
-    const modal=createJewelSettingsModal();
-    if(typeof renderDpsJewelConfigGrids==='function') renderDpsJewelConfigGrids();
-    setOpen('dpsJewelSettingsModal','dps-jewel-settings-modal-open',true);
-    setJewelSettingsButtonExpanded(true);
-    requestAnimationFrame(()=>{
-      modal.querySelector('[data-dps-jewel-config-close]')?.focus?.({preventScroll:true});
-    });
+    try{ window.dispatchEvent(new CustomEvent('dps:unitJewelModalRequest',{detail:{panel:'jewel'}})); }catch{}
   }
 
   function closeJewelSettings(){
-    if(!isOpen('dpsJewelSettingsModal')) return;
-    const modal=setOpen('dpsJewelSettingsModal','dps-jewel-settings-modal-open',false);
-    setJewelSettingsButtonExpanded(false);
-    if(modal && dpsJewelSettingsReturnFocus?.isConnected){
-      dpsJewelSettingsReturnFocus.focus({preventScroll:true});
-    }
-    dpsJewelSettingsReturnFocus=null;
+    try{ window.dispatchEvent(new CustomEvent('dps:unitJewelModalCloseRequest')); }catch{}
   }
 
   /* 분석·DPS표·룬·쥬얼 */
@@ -212,10 +177,6 @@
   function handleDocumentClick(event){
     const target=event.target instanceof Element?event.target:null;
     if(!target) return;
-    if(target.closest('[data-dps-jewel-config-close]')){
-      closeJewelSettings();
-      return;
-    }
     if(target.closest('[data-month-rune-close]')){
       closeMonthRune();
       return;
@@ -226,7 +187,6 @@
 
   function handleDocumentKeydown(event){
     if(event.key==='Escape'){
-      if(isOpen('dpsJewelSettingsModal')) closeJewelSettings();
       if(isOpen('monthRuneModal')) closeMonthRune();
       return;
     }

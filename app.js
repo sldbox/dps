@@ -1703,8 +1703,10 @@ function dpsJewelConfigCardHtml(name,settings){
   const finalStats=dpsJewelFinalStats(name,settings);
   const options=window.DPS_DATA?.DPS_JEWEL_INPUT_OPTIONS || {};
   const field=(key,label,suffix='')=>`<label class="dps-jewel-field"><span>${label}</span><select data-dps-jewel-name="${escapeHtml(name)}" data-dps-jewel-field="${key}" aria-label="${escapeHtml(name)} ${label}">${dpsJewelOptionHtml(options[key],input[key],suffix)}</select></label>`;
-  const gradeClass=finalStats.mythic==='Y'?'is-mythic':'is-legendary';
-  return `<article class="dps-jewel-card"><header><b>${escapeHtml(name)}</b><em class="${gradeClass}">${finalStats.mythic==='Y'?'신화':'전설'}</em></header><div class="dps-jewel-fields">${field('ad','공격력')}${field('as','공격속도')}${field('td','총데미지')}${field('ua','가속','%')}${field('enhance','강화')}${field('mythic','신화')}</div><p>최종 <b>${escapeHtml(finalStats.ad)} / ${escapeHtml(finalStats.as)} / ${escapeHtml(finalStats.td)} / ${escapeHtml(finalStats.ua)}%</b></p></article>`;
+  const mythic=finalStats.mythic==='Y';
+  const gradeClass=mythic?'is-mythic':'is-legendary';
+  const gradeText=mythic?'신화':'전설';
+  return `<article class="dps-jewel-card"><header><b class="${gradeClass}">${escapeHtml(gradeText)} ${escapeHtml(name)}</b></header><p class="dps-jewel-final"><span>최종</span><b>${escapeHtml(finalStats.ad)}</b><b>${escapeHtml(finalStats.as)}</b><b>${escapeHtml(finalStats.td)}</b><b>${escapeHtml(finalStats.ua)} %</b></p><div class="dps-jewel-fields">${field('ad','공격력')}${field('as','공격속도')}${field('td','총데미지')}${field('ua','가속','%')}${field('enhance','강화')}${field('mythic','신화')}</div></article>`;
 }
 function updateDpsJewelConfig(select){
   const store=$('dpsJewelSettings');
@@ -2172,12 +2174,6 @@ function bindDpsBaseUnitControlEvents(){
   if(document.documentElement.dataset.dpsBaseUnitControlBound==='1') return;
   document.documentElement.dataset.dpsBaseUnitControlBound='1';
   document.addEventListener('click', e=>{
-    const jewelConfigOpen=e.target?.closest?.('[data-dps-jewel-config-open]');
-    if(jewelConfigOpen){
-      e.preventDefault();
-      window.DpsModal.openJewelSettings();
-      return;
-    }
     const clearUnit=e.target?.closest?.('[data-dps-base-unit-clear-slot]');
     if(clearUnit?.closest?.('[data-dps-base-unit-control]')){
       e.preventDefault();

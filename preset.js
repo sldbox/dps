@@ -1130,6 +1130,9 @@ function refreshTraitPresetControls(selectedId){
   qsa('[data-action="loadTraitPreset"],[data-action="updateTraitPreset"],[data-action="renameTraitPreset"],[data-action="deleteTraitPreset"],[data-action="compareTraitPreset"]').forEach(btn=>{
     btn.disabled=!current;
   });
+  qsa('[data-trait-preset-unit-jewel-open]').forEach(btn=>{
+    btn.disabled=!current && !store.presets.length;
+  });
   qsa('[data-action="exportTraitPresets"]').forEach(btn=>{ btn.disabled=!store.presets.length; });
   renderTraitPresetStatus(status, store);
   renderTraitPresetUpdateStatus(store);
@@ -2014,6 +2017,387 @@ function compareTraitPreset(){
   updateCompareActionButtons();
   return true;
 }
+let traitPresetUnitJewelReturnFocus=null;
+let traitPresetUnitJewelActivePanel='copy';
+let traitPresetUnitCopyAppliedTargetIds=new Set();
+function setTraitPresetUnitJewelButtonExpanded(expanded){
+  qsa('[data-trait-preset-unit-jewel-open]').forEach(button=>{
+    button.setAttribute('aria-expanded',expanded?'true':'false');
+  });
+}
+function createTraitPresetUnitJewelModal(){
+  window.DpsModal.createShell('traitPresetUnitJewelModal','trait-preset-unit-jewel-modal-shell',`
+    <div class="trait-preset-unit-jewel-backdrop" data-trait-preset-unit-jewel-close="1"></div>
+    <section class="trait-preset-unit-jewel-modal" role="dialog" aria-modal="true" aria-labelledby="traitPresetUnitJewelTitle">
+      <header class="trait-preset-unit-jewel-head">
+        <h2 id="traitPresetUnitJewelTitle">유닛 관리</h2>
+        <div class="trait-preset-unit-jewel-tabs" role="tablist" aria-label="유닛 및 쥬얼 설정">
+          <button class="trait-preset-unit-jewel-tab" type="button" role="tab" data-trait-preset-unit-jewel-tab="copy" aria-selected="true" aria-controls="traitPresetUnitCopyPanel">유닛 복사</button>
+          <button class="trait-preset-unit-jewel-tab" type="button" role="tab" data-trait-preset-unit-jewel-tab="jewel" aria-selected="false" aria-controls="traitPresetJewelSettingPanel">쥬얼 설정</button>
+        </div>
+        <button type="button" class="ui-icon-btn trait-preset-unit-jewel-close" data-trait-preset-unit-jewel-close="1" aria-label="유닛 관리 닫기">×</button>
+      </header>
+      <div class="trait-preset-unit-jewel-body">
+        <section class="trait-preset-unit-jewel-panel trait-preset-unit-copy-panel" id="traitPresetUnitCopyPanel" role="tabpanel" data-trait-preset-unit-jewel-panel="copy">
+          <div class="trait-preset-unit-copy-layout">
+            <div class="trait-preset-unit-copy-left">
+              <div class="trait-preset-unit-copy-actionbar">
+                <button class="btn pri ui-action-btn" id="traitPresetUnitCopyApplyBtn" type="button" data-trait-preset-unit-copy-apply="1" disabled><span>복사 하기</span><small>복사 적용 후에는 프리셋이 변경됩니다. 변경 내용을 보관하려면 내보내기를 진행하세요.</small></button>
+              </div>
+              <section class="trait-preset-unit-copy-side">
+                <label class="trait-preset-unit-copy-select"><span class="trait-preset-unit-copy-select-head"><em>복사 원본</em></span><select id="traitPresetUnitCopySourceSelect" aria-label="복사 원본 프리셋"></select></label>
+                <div class="trait-preset-unit-copy-info" id="traitPresetUnitCopySourcePreview"></div>
+              </section>
+              <i class="trait-preset-unit-copy-arrow" aria-hidden="true">↓</i>
+              <section class="trait-preset-unit-copy-side">
+                <div class="trait-preset-unit-copy-target-head"><span>복사 대상</span><b id="traitPresetUnitCopyTargetStateLabel">복사 적용 전</b></div>
+                <div class="trait-preset-unit-copy-info">
+                  <div id="traitPresetUnitCopyTargetPreview"></div>
+                </div>
+              </section>
+            </div>
+            <div class="trait-preset-unit-copy-right">
+              <div class="trait-preset-unit-copy-toolbar">
+                <b>프리셋 목록</b>
+                <div>
+                  <button class="ui-action-btn trait-preset-unit-copy-tool" type="button" data-trait-preset-unit-copy-select-all="1">전체 선택</button>
+                  <button class="ui-action-btn trait-preset-unit-copy-tool" type="button" data-trait-preset-unit-copy-clear="1">선택 해제</button>
+                </div>
+              </div>
+              <div class="trait-preset-unit-copy-list" id="traitPresetUnitCopyTargetList"></div>
+            </div>
+          </div>
+        </section>
+        <section class="trait-preset-unit-jewel-panel trait-preset-unit-jewel-settings-panel" id="traitPresetJewelSettingPanel" role="tabpanel" data-trait-preset-unit-jewel-panel="jewel" hidden>
+          <div class="dps-jewel-settings-body trait-preset-unit-jewel-settings-body" data-dps-jewel-config>
+            <div class="dps-jewel-config-grid" id="dpsJewelConfigGrid"></div>
+          </div>
+        </section>
+      </div>
+    </section>`);
+}
+function traitPresetUnitCopyStore(){
+  return loadTraitPresetStore();
+}
+function traitPresetUnitBoardForPreset(store,presetId){
+  return traitPresetUnitBoardState(store,presetId) || normalizeTraitPresetUnitBoardState(null);
+}
+function traitPresetUnitCopyUnitDetailItems(state){
+  const normalized=normalizeTraitPresetUnitBoardState(state);
+  return normalized.units.map(item=>{
+    const unit=dpsBaseUnitById(item.unitId);
+    const label=dpsBaseUnitLabel(unit || item.unitId);
+    const details=[];
+    if(unit && dpsBaseUnitHasQuantity(unit) && Number(item.quantity)>1) details.push(`${Number(item.quantity)}기`);
+    if(Number(item.enhanceExpected)>0) details.push(`강화 ${Number(item.enhanceExpected)}`);
+    if(Number(item.limitBreak)>0) details.push(`한돌 ${Number(item.limitBreak)}`);
+    if(normalizeDpsJewelName(item.legendaryMythicJewel)) details.push(`쥬얼 ${normalizeDpsJewelName(item.legendaryMythicJewel)}`);
+    if(normalizeDpsBaseUnitVoidPowerValue(item.voidPower)==='ON') details.push('공허 권능');
+    if(normalized.slotExpansions.includes(item.unitId)) details.push('슬롯 확장');
+    const extras=(normalized.additionalUnitSettings?.[item.unitId] || []).map((extra,index)=>{
+      const parts=[];
+      if(Number(extra.limitBreak)>0) parts.push(`한돌 ${Number(extra.limitBreak)}`);
+      if(normalizeDpsJewelName(extra.legendaryMythicJewel)) parts.push(`쥬얼 ${normalizeDpsJewelName(extra.legendaryMythicJewel)}`);
+      return parts.length ? `${index+2}기 ${parts.join(' · ')}` : '';
+    }).filter(Boolean);
+    return {label,details:details.length ? details : ['기본'],extras};
+  });
+}
+function traitPresetUnitCopyUnitDetailHtml(state){
+  const items=traitPresetUnitCopyUnitDetailItems(state);
+  if(!items.length) return '<div class="trait-preset-unit-copy-empty-units">선택된 유닛 없음</div>';
+  return `<ul class="trait-preset-unit-copy-units">${items.map(item=>`
+    <li>
+      <b>${escapeHtml(item.label)}</b>
+      <span>${item.details.map(detail=>`<em>${escapeHtml(detail)}</em>`).join('')}</span>
+      ${item.extras.length ? `<small>${item.extras.map(extra=>`<i>${escapeHtml(extra)}</i>`).join('')}</small>` : ''}
+    </li>`).join('')}</ul>`;
+}
+function traitPresetUnitCopySourceId(store){
+  const select=$('traitPresetUnitCopySourceSelect');
+  const selected=select?.value || selectedTraitPresetId() || loadTraitPresetStatusData().selectedTraitPresetId;
+  return store.presets.some(preset=>preset.id===selected) ? selected : firstTraitPresetSelectId(store);
+}
+function traitPresetUnitCopySourceOptionsHtml(store,sourceId){
+  const buckets=sortedTraitPresetBuckets(store);
+  const updatedIds=new Set(loadTraitPresetStatusData().updatedPresetIds);
+  const groups=TRAIT_PRESET_SELECT_GROUPS.map(group=>{
+    const options=(buckets[group.key] || []).map(preset=>{
+      const selected=preset.id===sourceId ? ' selected' : '';
+      return `<option value="${escapeHtml(preset.id)}"${selected}>${escapeHtml(traitPresetSelectLabel(preset,updatedIds,group.key))}</option>`;
+    }).join('');
+    return options ? `<optgroup label="${escapeHtml(group.label)}">${options}</optgroup>` : '';
+  }).join('');
+  return groups || '<option value="">저장된 프리셋 없음</option>';
+}
+function traitPresetUnitCopySelectLabel(preset,groupKey){
+  return traitPresetSelectLabel(preset,new Set(loadTraitPresetStatusData().updatedPresetIds),groupKey || traitPresetCategoryKey(preset));
+}
+function traitPresetUnitCopyModeText(preset){
+  const values=(preset?.state && typeof preset.state==='object' && preset.state.values && typeof preset.state.values==='object') ? preset.state.values : {};
+  const coop=normalizeOnOffValue(values.coopMode,'OFF')==='ON';
+  const tower=isTowerDifficulty(values.diff);
+  const mode=tower ? '도전의 탑' : (coop ? '협동' : '개인');
+  const speed=normalizeOnOffValue(values.dpsBaseUnitSpeedMode,'OFF')==='ON' ? '스피드' : '클래식';
+  const team=coop ? '3인' : '';
+  const round=tower ? `${normalizedTowerFloorString(values.challengeTowerFloor || TOWER_FLOOR_INPUT_MIN)}층` : (values.round ? `${values.round}라` : '');
+  return [mode,speed,team,round].filter(Boolean).join(' · ');
+}
+function traitPresetUnitCopyDifficultyInfo(preset){
+  const values=(preset?.state && typeof preset.state==='object' && preset.state.values && typeof preset.state.values==='object') ? preset.state.values : {};
+  const tower=isTowerDifficulty(values.diff);
+  const round=normalizedRoundNumber(values.round || ROUND_INPUT_MIN);
+  const floor=normalizedTowerFloorString(values.challengeTowerFloor || TOWER_FLOOR_INPUT_MIN);
+  const penance=Math.max(0,Number(values.penance)||0);
+  return {
+    name:difficultyName(values.diff || '') || '—',
+    detail:tower ? `${floor}층 · ${round} 라운드` : `${penance} 고행 · ${round} 라운드`
+  };
+}
+function traitPresetUnitCopyStats(store,preset,board,cache=new Map()){
+  const key=`${preset?.id || ''}:${stableTraitPresetValue(board)}`;
+  if(cache.has(key)) return cache.get(key);
+  const fallback={required:'—',expected:'—',achievement:'—'};
+  try{
+    if(typeof snapshotComparisonState!=='function' || typeof makeStateObject!=='function') throw new Error('unit board stats unavailable');
+    const snapshot=snapshotComparisonState(preset.state,makeStateObject(),{
+      includeUnitBoard:true,
+      unitBoardIncluded:traitPresetUnitBoardHasValues(board),
+      unitBoard:board,
+      includeJewelSettings:!!store.jewelSettings,
+      jewelSettings:store.jewelSettings
+    });
+    const info=snapshot?.stats?.dpsBaseUnit || {};
+    const value={
+      required:dpsBaseUnitNumberText(info.requiredDps,DPS_BASE_UNIT_SUMMARY_NUMBER_OPTIONS),
+      expected:dpsBaseUnitNumberText(info.expectedDps,DPS_BASE_UNIT_SUMMARY_NUMBER_OPTIONS),
+      achievement:dpsBaseUnitAchievementText(info.achievementRate)
+    };
+    cache.set(key,value);
+    return value;
+  }catch{
+    cache.set(key,fallback);
+    return fallback;
+  }
+}
+function traitPresetUnitCopyStatsHtml(stats){
+  return `<div class="trait-preset-unit-copy-card-stats">
+    <span><b>클리어 기준</b><em>${escapeHtml(stats.required)}</em></span>
+    <span><b>클리어 기대값</b><em>${escapeHtml(stats.expected)}</em></span>
+    <span><b>달성률</b><em>${escapeHtml(stats.achievement)}</em></span>
+  </div>`;
+}
+function traitPresetUnitCopyPresetInfoHtml(preset,groupKey){
+  const modeParts=traitPresetUnitCopyModeText(preset).split(' · ').filter(Boolean);
+  const speed=modeParts.find(item=>item==='스피드' || item==='클래식') || '';
+  const mode=modeParts.filter(item=>item!=='스피드' && item!=='클래식').join(' · ');
+  const difficulty=traitPresetUnitCopyDifficultyInfo(preset);
+  return `<div class="trait-preset-unit-copy-card-preset">
+    <b>${escapeHtml(traitPresetUnitCopySelectLabel(preset,groupKey))}</b>
+    ${speed ? `<span>${escapeHtml(speed)}</span>` : ''}
+    ${mode ? `<em>${escapeHtml(mode)}</em>` : ''}
+    <small><i>난이도</i><strong>${escapeHtml(difficulty.name)}</strong><em>${escapeHtml(difficulty.detail)}</em></small>
+  </div>`;
+}
+function traitPresetUnitCopyCardBodyHtml(preset,board,stats,groupKey){
+  if(!preset) return '<div class="trait-preset-unit-copy-empty-units">프리셋 목록에서 복사할 대상 선택</div>';
+  return `<div class="trait-preset-unit-copy-card-main">
+    ${traitPresetUnitCopyPresetInfoHtml(preset,groupKey)}
+    <div class="trait-preset-unit-copy-card-detail">
+      ${traitPresetUnitCopyStatsHtml(stats)}
+      <div class="trait-preset-unit-copy-card-unit-head"><span>유닛명</span><span>유닛 세부정보</span></div>
+      <div class="trait-preset-unit-copy-card-units">${traitPresetUnitCopyUnitDetailHtml(board)}</div>
+    </div>
+  </div>`;
+}
+function traitPresetUnitCopyTargetPreviewIds(items,checkedIds=new Set()){
+  const validIds=new Set(items.filter(item=>!item.duplicate || traitPresetUnitCopyAppliedTargetIds.has(item.preset.id)).map(item=>item.preset.id));
+  return [...new Set([...checkedIds].map(id=>String(id || '')).filter(id=>id && validIds.has(id)))];
+}
+function traitPresetUnitCopyTargetPreviewHtml(items,store,checkedIds=new Set(),statsCache=new Map()){
+  const ids=traitPresetUnitCopyTargetPreviewIds(items,checkedIds);
+  if(!ids.length) return '<div class="trait-preset-unit-copy-empty-units">프리셋 목록에서 복사할 대상 선택</div>';
+  return `<div class="trait-preset-unit-copy-preview-list">${ids.map(id=>{
+    const item=items.find(entry=>entry.preset.id===id);
+    if(!item) return '';
+    const stats=traitPresetUnitCopyStats(store,item.preset,item.board,statsCache);
+    const label=traitPresetUnitCopySelectLabel(item.preset,item.group.key);
+    return `<label class="trait-preset-unit-copy-option trait-preset-unit-copy-preview-card is-extra is-selected">
+      <input type="checkbox" value="${escapeHtml(id)}" data-trait-preset-unit-copy-preview-target="1" data-preset-name="${escapeHtml(label)}" checked/>
+      <span class="trait-preset-unit-copy-check" aria-hidden="true"></span>
+      ${traitPresetUnitCopyCardBodyHtml(item.preset,item.board,stats,item.group.key)}
+    </label>`;
+  }).join('')}</div>`;
+}
+function traitPresetUnitCopyTargetItems(store,sourceId,sourceBoard){
+  const sourceValue=stableTraitPresetValue(sourceBoard);
+  const buckets=sortedTraitPresetBuckets(store);
+  return TRAIT_PRESET_SELECT_GROUPS.flatMap(group=>
+    (buckets[group.key] || [])
+      .filter(preset=>preset.id!==sourceId)
+      .map(preset=>{
+        const board=traitPresetUnitBoardForPreset(store,preset.id);
+        return {preset,group,board,duplicate:stableTraitPresetValue(board)===sourceValue};
+      })
+  );
+}
+function traitPresetUnitCopyTargetHtml(items,store,checkedIds=new Set(),statsCache=new Map()){
+  if(!items.length) return '<div class="trait-preset-unit-copy-empty">복사할 대상 프리셋이 없습니다.</div>';
+  return TRAIT_PRESET_SELECT_GROUPS.map(group=>{
+    const groupItems=items.filter(item=>item.group.key===group.key);
+    if(!groupItems.length) return '';
+    const cards=groupItems.map(({preset,board,duplicate})=>{
+      const label=traitPresetUnitCopySelectLabel(preset,group.key);
+      const applied=traitPresetUnitCopyAppliedTargetIds.has(preset.id);
+      const blockedDuplicate=duplicate && !applied;
+      const checked=!blockedDuplicate && checkedIds.has(preset.id) ? ' checked' : '';
+      const disabled=blockedDuplicate ? ' disabled' : '';
+      const stats=traitPresetUnitCopyStats(store,preset,board,statsCache);
+      return `<label class="trait-preset-unit-copy-option${blockedDuplicate?' is-duplicate':' is-changing'}"${blockedDuplicate?' aria-disabled="true"':''}>
+        <input type="checkbox" value="${escapeHtml(preset.id)}" data-trait-preset-unit-copy-target="1" data-preset-name="${escapeHtml(label)}"${checked}${disabled}/>
+        <span class="trait-preset-unit-copy-check" aria-hidden="true"></span>
+        ${traitPresetUnitCopyCardBodyHtml(preset,board,stats,group.key)}
+        ${blockedDuplicate ? '<span class="trait-preset-unit-copy-duplicate-mark" aria-hidden="true">중복 선택 불가</span>' : ''}
+      </label>`;
+    }).join('');
+    return `<section class="trait-preset-unit-copy-group" aria-label="${escapeHtml(group.label)}">
+      <h3 class="trait-preset-unit-copy-group-label">${escapeHtml(group.label)}</h3>
+      <div class="trait-preset-unit-copy-group-list">${cards}</div>
+    </section>`;
+  }).join('');
+}
+function selectedTraitPresetUnitCopyCheckedIds(){
+  return [...qsa('#traitPresetUnitCopyTargetList [data-trait-preset-unit-copy-target]:checked:not(:disabled)')].map(input=>input.value).filter(Boolean);
+}
+function selectedTraitPresetUnitCopyTargetIds(){
+  return [...new Set(selectedTraitPresetUnitCopyCheckedIds().map(id=>String(id || '')).filter(Boolean))];
+}
+function syncTraitPresetUnitBoardCopySelection(){
+  const boxes=[...qsa('#traitPresetUnitCopyTargetList [data-trait-preset-unit-copy-target]')];
+  const targetIds=selectedTraitPresetUnitCopyTargetIds();
+  const apply=$('traitPresetUnitCopyApplyBtn');
+  if(apply) apply.disabled=!targetIds.length;
+  boxes.forEach(input=>{
+    const card=input.closest('.trait-preset-unit-copy-option');
+    card?.classList.toggle('is-selected',input.checked);
+  });
+}
+function updateTraitPresetUnitCopyPreview(){
+  const store=traitPresetUnitCopyStore();
+  const sourceId=traitPresetUnitCopySourceId(store);
+  const source=store.presets.find(preset=>preset.id===sourceId) || null;
+  const sourceBoard=traitPresetUnitBoardForPreset(store,sourceId);
+  const targets=traitPresetUnitCopyTargetItems(store,sourceId,sourceBoard);
+  const checkedIds=new Set(selectedTraitPresetUnitCopyTargetIds());
+  const statsCache=new Map();
+  const sourcePreview=$('traitPresetUnitCopySourcePreview');
+  const targetPreview=$('traitPresetUnitCopyTargetPreview');
+  const targetLabel=$('traitPresetUnitCopyTargetStateLabel');
+  if(sourcePreview) sourcePreview.innerHTML=source ? traitPresetUnitCopyCardBodyHtml(source,sourceBoard,traitPresetUnitCopyStats(store,source,sourceBoard,statsCache),traitPresetCategoryKey(source)) : '<div class="trait-preset-unit-copy-empty-units">원본 선택</div>';
+  if(targetPreview) targetPreview.innerHTML=traitPresetUnitCopyTargetPreviewHtml(targets,store,checkedIds,statsCache);
+  if(targetLabel) targetLabel.textContent=traitPresetUnitCopyTargetPreviewIds(targets,checkedIds).some(id=>traitPresetUnitCopyAppliedTargetIds.has(id)) ? '복사 적용 후' : '복사 적용 전';
+  syncTraitPresetUnitBoardCopySelection();
+}
+function renderTraitPresetUnitCopyPanel(options={}){
+  const store=traitPresetUnitCopyStore();
+  const sourceId=options.sourceId || traitPresetUnitCopySourceId(store);
+  const sourceSelect=$('traitPresetUnitCopySourceSelect');
+  const targetList=$('traitPresetUnitCopyTargetList');
+  const checkedIds=options.keepSelection===true ? new Set(selectedTraitPresetUnitCopyTargetIds().filter(id=>id!==sourceId)) : new Set();
+  const sourceBoard=traitPresetUnitBoardForPreset(store,sourceId);
+  const targets=traitPresetUnitCopyTargetItems(store,sourceId,sourceBoard);
+  targets.filter(item=>item.duplicate && !traitPresetUnitCopyAppliedTargetIds.has(item.preset.id)).forEach(item=>checkedIds.delete(item.preset.id));
+  if(sourceSelect) sourceSelect.innerHTML=traitPresetUnitCopySourceOptionsHtml(store,sourceId);
+  if(sourceSelect) sourceSelect.value=sourceId || '';
+  if(targetList) targetList.innerHTML=traitPresetUnitCopyTargetHtml(targets,store,checkedIds,new Map());
+  updateTraitPresetUnitCopyPreview();
+}
+function setTraitPresetUnitJewelPanel(panel){
+  const next=panel==='jewel' ? 'jewel' : 'copy';
+  traitPresetUnitJewelActivePanel=next;
+  qsa('[data-trait-preset-unit-jewel-tab]').forEach(tab=>{
+    const active=tab.dataset.traitPresetUnitJewelTab===next;
+    tab.setAttribute('aria-selected',active?'true':'false');
+    tab.tabIndex=active ? 0 : -1;
+  });
+  qsa('[data-trait-preset-unit-jewel-panel]').forEach(item=>{ item.hidden=item.dataset.traitPresetUnitJewelPanel!==next; });
+  if(next==='copy') renderTraitPresetUnitCopyPanel({keepSelection:true});
+  if(next==='jewel') renderDpsJewelConfigGrids();
+}
+function closeTraitPresetUnitJewelModal(options={}){
+  if(!window.DpsModal?.isOpen?.('traitPresetUnitJewelModal')) return;
+  window.DpsModal.setOpen('traitPresetUnitJewelModal','trait-preset-unit-jewel-modal-open',false);
+  setTraitPresetUnitJewelButtonExpanded(false);
+  if(options.restoreFocus!==false && traitPresetUnitJewelReturnFocus?.isConnected) traitPresetUnitJewelReturnFocus.focus({preventScroll:true});
+  traitPresetUnitJewelReturnFocus=null;
+}
+function openTraitPresetUnitJewelModal(trigger=null,panel='copy'){
+  const store=loadTraitPresetStore();
+  if(!store.presets.length){
+    notifyStorageAction('저장된 프리셋이 없습니다.','err');
+    refreshTraitPresetControls('');
+    return false;
+  }
+  traitPresetUnitJewelReturnFocus=trigger instanceof HTMLElement ? trigger : (document.activeElement instanceof HTMLElement ? document.activeElement : null);
+  createTraitPresetUnitJewelModal();
+  traitPresetUnitCopyAppliedTargetIds=new Set();
+  setTraitPresetUnitJewelPanel(panel);
+  window.DpsModal.setOpen('traitPresetUnitJewelModal','trait-preset-unit-jewel-modal-open',true);
+  setTraitPresetUnitJewelButtonExpanded(true);
+  requestAnimationFrame(()=>{
+    const focusTarget=traitPresetUnitJewelActivePanel==='jewel'
+      ? document.querySelector('[data-dps-jewel-config] select')
+      : $('traitPresetUnitCopySourceSelect');
+    focusTarget?.focus?.({preventScroll:true});
+  });
+  return true;
+}
+function applyTraitPresetUnitBoardCopy(){
+  const sourceId=$('traitPresetUnitCopySourceSelect')?.value || '';
+  const targetIds=selectedTraitPresetUnitCopyTargetIds();
+  if(!targetIds.length){
+    syncTraitPresetUnitBoardCopySelection();
+    return false;
+  }
+  try{
+    let store=loadTraitPresetStore();
+    const source=store.presets.find(preset=>preset.id===sourceId);
+    if(!source) throw new Error('복사할 원본 프리셋을 찾을 수 없습니다.');
+    const sourceBoard=traitPresetUnitBoardForPreset(store,sourceId);
+    const sourceBoardValue=stableTraitPresetValue(sourceBoard);
+    const changedIds=[];
+    targetIds.forEach(id=>{
+      const target=store.presets.find(preset=>preset.id===id);
+      if(!target) return;
+      const hasBoard=traitPresetHasUnitBoard(store,id);
+      const previous=hasBoard ? traitPresetUnitBoardState(store,id) : normalizeTraitPresetUnitBoardState(null);
+      const changed=hasBoard
+        ? stableTraitPresetValue(previous)!==sourceBoardValue
+        : traitPresetUnitBoardHasValues(sourceBoard);
+      if(changed){
+        setTraitPresetUnitBoardState(store,id,sourceBoard);
+        changedIds.push(id);
+      }
+    });
+    if(!changedIds.length){
+      notifyStorageAction('중복 프리셋은 복사할 수 없습니다.','warn');
+      return false;
+    }
+    saveTraitPresetStore(store,{source:'copyTraitPresetUnitBoard',dispatch:true});
+    if(changedIds.includes(selectedTraitPresetId())){
+      applyTraitPresetUnitBoardState(sourceBoard);
+      if(!isStorageLocked()) saveState({silent:true});
+    }
+    traitPresetUnitCopyAppliedTargetIds=new Set(changedIds);
+    renderTraitPresetUnitCopyPanel({sourceId,keepSelection:true});
+    markTraitPresetUpdated(changedIds,'update');
+    return true;
+  }catch(e){
+    rememberAppIssue('error','[trait preset unit board copy failed]',e);
+    notifyStorageAction(e?.message || '유닛 보드 복사 실패','err',{animationAction:'error'});
+    return false;
+  }
+}
 function bindTraitPresetEvents(){
   document.addEventListener('change',e=>{
     if(e.target?.id==='traitPresetSelect'){
@@ -2025,11 +2409,63 @@ function bindTraitPresetEvents(){
       importTraitPresetFile(file).finally(()=>{ e.target.value=''; });
     }
     if(e.target?.id==='traitPresetExcelSheet') syncTraitPresetExcelImportMode();
+    if(e.target?.id==='traitPresetUnitCopySourceSelect'){
+      traitPresetUnitCopyAppliedTargetIds=new Set();
+      renderTraitPresetUnitCopyPanel({sourceId:e.target.value,keepSelection:true});
+    }
+    if(e.target?.matches?.('[data-trait-preset-unit-copy-target]')){
+      traitPresetUnitCopyAppliedTargetIds=new Set();
+      updateTraitPresetUnitCopyPreview();
+    }
+    if(e.target?.matches?.('[data-trait-preset-unit-copy-preview-target]')){
+      traitPresetUnitCopyAppliedTargetIds=new Set();
+      const listInput=[...qsa('#traitPresetUnitCopyTargetList [data-trait-preset-unit-copy-target]')].find(input=>input.value===e.target.value);
+      if(listInput && !listInput.disabled) listInput.checked=!!e.target.checked;
+      updateTraitPresetUnitCopyPreview();
+    }
   });
   document.addEventListener('input',e=>{
     if(e.target?.id==='traitPresetExcelName') e.target.dataset.autofill='0';
   });
   document.addEventListener('click',e=>{
+    const unitJewelOpen=e.target.closest('[data-trait-preset-unit-jewel-open]');
+    if(unitJewelOpen){
+      e.preventDefault();
+      e.stopPropagation();
+      openTraitPresetUnitJewelModal(unitJewelOpen,'copy');
+      return;
+    }
+    const unitJewelTab=e.target.closest('[data-trait-preset-unit-jewel-tab]');
+    if(unitJewelTab){
+      e.preventDefault();
+      setTraitPresetUnitJewelPanel(unitJewelTab.dataset.traitPresetUnitJewelTab);
+      return;
+    }
+    if(e.target.closest('[data-trait-preset-unit-jewel-close]')){
+      e.preventDefault();
+      closeTraitPresetUnitJewelModal({restoreFocus:true});
+      return;
+    }
+    if(e.target.closest('[data-trait-preset-unit-copy-select-all]')){
+      e.preventDefault();
+      traitPresetUnitCopyAppliedTargetIds=new Set();
+      qsa('#traitPresetUnitCopyTargetList [data-trait-preset-unit-copy-target]:not(:disabled)').forEach(input=>{ input.checked=true; });
+      updateTraitPresetUnitCopyPreview();
+      return;
+    }
+    if(e.target.closest('[data-trait-preset-unit-copy-clear]')){
+      e.preventDefault();
+      traitPresetUnitCopyAppliedTargetIds=new Set();
+      qsa('#traitPresetUnitCopyTargetList [data-trait-preset-unit-copy-target]').forEach(input=>{ input.checked=false; });
+      updateTraitPresetUnitCopyPreview();
+      return;
+    }
+    if(e.target.closest('[data-trait-preset-unit-copy-apply]')){
+      e.preventDefault();
+      e.stopPropagation();
+      applyTraitPresetUnitBoardCopy();
+      return;
+    }
     const updateScopeToggle=e.target.closest('[data-trait-preset-update-scope-toggle]');
     if(updateScopeToggle){
       e.preventDefault();
@@ -2074,12 +2510,19 @@ function bindTraitPresetEvents(){
       if(!$('traitPresetUpdateScopePopover')?.hidden) setTraitPresetUpdateScopePopoverOpen(false,{restoreFocus:true});
       if($('traitPresetExcelImportModal')?.classList.contains('is-open')) closeTraitPresetExcelImportModal();
       if($('traitPresetExportModal')?.classList.contains('is-open')) closeTraitPresetExportModal();
+      if($('traitPresetUnitJewelModal')?.classList.contains('is-open')) closeTraitPresetUnitJewelModal({restoreFocus:true});
     }
     if(e.key==='Enter' && e.target?.id==='traitPresetExportName'){
       e.preventDefault();
       e.stopPropagation();
       downloadTraitPresetExport(e.target.value || '');
     }
+  });
+  window.addEventListener('dps:unitJewelModalRequest',e=>{
+    openTraitPresetUnitJewelModal(null,e.detail?.panel || 'jewel');
+  });
+  window.addEventListener('dps:unitJewelModalCloseRequest',()=>{
+    closeTraitPresetUnitJewelModal({restoreFocus:true});
   });
 }
 
