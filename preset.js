@@ -89,22 +89,15 @@ function normalizeMoneyStorageValues(values){
   });
   return values;
 }
-function normalizedSpBankInvestmentLevel(inv){
-  if(!inv || typeof inv!=='object') return 0;
-  return Math.max(0, Math.min(TMAX[SP_BANK_TRAIT_ROW]||999, Math.round(+(inv[SP_BANK_TRAIT_ROW]||0))));
-}
-function resolveSpBankApplyFromValues(values){
-  return hasOwn(values,'spBankApply') ? normalizeSpBankApplyValue(values.spBankApply) : '미반영';
-}
 function syncSpBankPresetState(values, inv){
   if(!values || typeof values!=='object' || !inv || typeof inv!=='object') return;
-  const bankLevel=normalizedSpBankInvestmentLevel(inv);
-  const applyState=resolveSpBankApplyFromValues(values);
+  const bankLevel=Math.max(0, Math.min(TMAX[SP_BANK_TRAIT_ROW]||999, Math.round(+(inv[SP_BANK_TRAIT_ROW]||0))));
+  const applyState=hasOwn(values,'spBankApply') ? normalizeSpBankApplyValue(values.spBankApply) : '미반영';
   inv[SP_BANK_TRAIT_ROW]=bankLevel;
   values.spBankApply=applyState;
 }
 function isUserStateValueId(id){ return USER_STATE_VALUE_IDS.has(id); }
-function userStateElementIds(){ return storageElementIds().filter(isUserStateValueId); }
+function userStateElementIds(){ return storageElementIds().filter(id=>USER_STATE_VALUE_IDS.has(id)); }
 const storageState={isLoading:false,suppressSave:false,factoryState:null,saveFailCount:0,hasSavedState:false};
 function isStorageLocked(){return storageState.isLoading || storageState.suppressSave;}
 function storageElementIds(){
@@ -1009,16 +1002,13 @@ function traitPresetNumberValue(value, fallback=0){
   const number=Number(normalized);
   return Number.isFinite(number) ? number : fallback;
 }
-function traitPresetDifficultyOrder(diffName){
-  const index=TRAIT_PRESET_DIFFICULTY_ORDER.indexOf(difficultyName(diffName));
-  return index>=0 ? index : TRAIT_PRESET_DIFFICULTY_ORDER.length;
-}
 function traitPresetSortInfo(preset){
   const {values,meta}=traitPresetValueSource(preset);
   const diff=values.diff || meta.diff || '';
+  const diffIndex=TRAIT_PRESET_DIFFICULTY_ORDER.indexOf(difficultyName(diff));
   const towerFloor=traitPresetNumberValue(values.challengeTowerFloor || meta.challengeTowerFloor, TOWER_FLOOR_INPUT_MIN);
   return {
-    diffOrder:traitPresetDifficultyOrder(diff),
+    diffOrder:diffIndex>=0 ? diffIndex : TRAIT_PRESET_DIFFICULTY_ORDER.length,
     penance:traitPresetNumberValue(values.penance || meta.penance, 0),
     round:traitPresetNumberValue(values.round || meta.round, 1),
     towerFloor,
@@ -1081,24 +1071,11 @@ function traitPresetSelectLabel(preset, updatedIds, categoryKey){
   const suffix=updatedIds.has(preset.id) ? ' · 업데이트됨' : '';
   return `${traitPresetOptionName(preset, categoryKey)}${suffix}`;
 }
-function setTraitPresetNameOption(option, label){
-  option.classList.add('trait-preset-name-option');
-  option.dataset.traitPresetNameOption='1';
-  option.dataset.traitPresetLabel=label;
-  option.textContent=label;
-}
 function traitPresetNameOptionAttrs(label){
   return ` class="trait-preset-name-option" data-trait-preset-name-option="1" data-trait-preset-label="${escapeHtml(label)}"`;
 }
-function isTraitPresetCustomSelect(target){
-  return target?.matches?.('#traitPresetSelect,#traitPresetUnitCopySourceSelect');
-}
 function traitPresetOptionLabel(option){
   return option?.dataset?.traitPresetLabel || option?.textContent || option?.label || '';
-}
-function traitPresetCustomSelectFor(select){
-  const next=select?.nextElementSibling;
-  return next?.matches?.(`[data-trait-preset-custom-select="${select.id}"]`) ? next : null;
 }
 function closeTraitPresetCustomSelect(custom){
   if(!custom) return;
@@ -1109,9 +1086,6 @@ function closeTraitPresetCustomSelect(custom){
 }
 function closeTraitPresetCustomSelects(except=null){
   qsa('[data-trait-preset-custom-select]').forEach(custom=>{ if(custom!==except) closeTraitPresetCustomSelect(custom); });
-}
-function selectedTraitPresetCustomOption(select){
-  return select?.selectedOptions?.[0] || [...(select?.options || [])].find(option=>option.value===select.value) || null;
 }
 function appendTraitPresetCustomOption(menu, select, option){
   if(option.hidden) return;
@@ -1156,8 +1130,9 @@ function renderTraitPresetCustomMenu(custom, select){
   menu.hidden=!custom.classList.contains('is-open');
 }
 function syncTraitPresetCustomSelect(select){
-  if(!isTraitPresetCustomSelect(select)) return;
-  let custom=traitPresetCustomSelectFor(select);
+  if(!select?.matches?.('#traitPresetSelect,#traitPresetUnitCopySourceSelect')) return;
+  const next=select.nextElementSibling;
+  let custom=next?.matches?.(`[data-trait-preset-custom-select="${select.id}"]`) ? next : null;
   if(!custom){
     custom=document.createElement('div');
     custom.className='trait-preset-custom-select';
@@ -1171,7 +1146,7 @@ function syncTraitPresetCustomSelect(select){
   select.setAttribute('aria-hidden','true');
   const button=custom.querySelector('[data-trait-preset-custom-button]');
   const buttonText=custom.querySelector('.trait-preset-custom-button-text');
-  const selected=selectedTraitPresetCustomOption(select);
+  const selected=select.selectedOptions?.[0] || [...select.options].find(option=>option.value===select.value) || null;
   if(buttonText) buttonText.textContent=traitPresetOptionLabel(selected) || (select.disabled ? '저장된 프리셋 없음' : '프리셋 목록');
   if(button) button.disabled=select.disabled;
   custom.classList.toggle('is-disabled',select.disabled);
@@ -1205,7 +1180,11 @@ function renderTraitPresetSelectOptions(select, store, selected, updatedIds){
     presets.forEach(preset=>{
       const option=document.createElement('option');
       option.value=preset.id;
-      setTraitPresetNameOption(option, traitPresetSelectLabel(preset, updatedIds, group.key));
+      const label=traitPresetSelectLabel(preset, updatedIds, group.key);
+      option.className='trait-preset-name-option';
+      option.dataset.traitPresetNameOption='1';
+      option.dataset.traitPresetLabel=label;
+      option.textContent=label;
       optgroup.appendChild(option);
     });
     select.appendChild(optgroup);
@@ -1346,15 +1325,14 @@ function traitPresetUpdateScopeGroups(scope){
       return (aIndex<0 ? Number.MAX_SAFE_INTEGER : aIndex)-(bIndex<0 ? Number.MAX_SAFE_INTEGER : bIndex);
     });
 }
-function traitPresetUpdateScopeGroupHtml(group){
-  const items=group.names.map(name=>`<li>${escapeHtml(name)}</li>`).join('');
-  return `<section class="trait-preset-update-scope-group"><h5>${escapeHtml(group.kind)}</h5><ul>${items}</ul></section>`;
-}
 function renderTraitPresetUpdateScope(scope='shared'){
   const normalizedScope=scope==='single' ? 'single' : 'shared';
   const list=document.querySelector(`[data-trait-preset-update-scope-list="${normalizedScope}"]`);
   if(!list) return false;
-  list.innerHTML=traitPresetUpdateScopeGroups(normalizedScope).map(traitPresetUpdateScopeGroupHtml).join('');
+  list.innerHTML=traitPresetUpdateScopeGroups(normalizedScope).map(group=>{
+    const items=group.names.map(name=>`<li>${escapeHtml(name)}</li>`).join('');
+    return `<section class="trait-preset-update-scope-group"><h5>${escapeHtml(group.kind)}</h5><ul>${items}</ul></section>`;
+  }).join('');
   return true;
 }
 function setTraitPresetUpdateScopeView(scope, options={}){
@@ -1370,9 +1348,6 @@ function setTraitPresetUpdateScopeView(scope, options={}){
   });
   renderTraitPresetUpdateScope(normalizedScope);
   return normalizedScope;
-}
-function renderTraitPresetUpdateScopePopover(){
-  return setTraitPresetUpdateScopeView('shared');
 }
 function setTraitPresetUpdateScopePopoverOpen(open, options={}){
   const toggle=$('traitPresetUpdateScopeBtn');
@@ -1666,9 +1641,6 @@ function requestTraitPresetFullReset(trigger){
 }
 /* 가져오기·내보내기 */
 
-function currentWebDpsVersion(){
-  return String(window.DPS_BUILD_VERSION || window.APP_VERSION || STORAGE_VERSION || 'dev');
-}
 function makeTraitPresetFileName(customName=''){
   const cleaned=String(customName ?? '')
     .replace(/\.[Tt][Xx][Tt]$/,'')
@@ -1734,7 +1706,7 @@ function downloadTraitPresetExport(customName=''){
     saveTraitPresetStore(exportStore,{source:'export'});
     delete exportStore.webDpsVersion;
     const {unitBoard,jewelSettings,...exportMain}=exportStore;
-    const payload=JSON.stringify({webDpsVersion:currentWebDpsVersion(),...exportMain,type:TRAIT_PRESET_FILE_TYPE,fileVersion:TRAIT_PRESET_FILE_VERSION,exportedAt:new Date().toISOString(),defaultPresetName:'',jewelSettings,unitBoard}, null, 2);
+    const payload=JSON.stringify({webDpsVersion:String(window.DPS_BUILD_VERSION || window.APP_VERSION || STORAGE_VERSION || 'dev'),...exportMain,type:TRAIT_PRESET_FILE_TYPE,fileVersion:TRAIT_PRESET_FILE_VERSION,exportedAt:new Date().toISOString(),defaultPresetName:'',jewelSettings,unitBoard}, null, 2);
     const blob=new Blob([payload], {type:'text/plain;charset=utf-8'});
     const url=URL.createObjectURL(blob);
     const a=document.createElement('a');
@@ -1758,9 +1730,6 @@ function downloadTraitPresetExport(customName=''){
       setTraitPresetExportSavingState(false);
     }, 300);
   }
-}
-function exportTraitPresets(){
-  return openTraitPresetExportModal();
 }
 function openTraitPresetImportPicker(){
   setTimeout(()=>{
@@ -2174,9 +2143,6 @@ function createTraitPresetUnitJewelModal(){
       </div>
     </section>`);
 }
-function traitPresetUnitCopyStore(){
-  return loadTraitPresetStore();
-}
 function traitPresetUnitBoardForPreset(store,presetId){
   return traitPresetUnitBoardState(store,presetId) || normalizeTraitPresetUnitBoardState(null);
 }
@@ -2280,11 +2246,14 @@ function traitPresetUnitCopyStats(store,preset,board,cache=new Map()){
   }
 }
 function traitPresetUnitCopyStatsHtml(stats){
-  return `<div class="trait-preset-unit-copy-card-stats">
-    <span><b>클리어 기준</b><em>${escapeHtml(stats.required)}</em></span>
-    <span><b>클리어 기대값</b><em>${escapeHtml(stats.expected)}</em></span>
-    <span><b>달성률</b><em>${escapeHtml(stats.achievement)}</em></span>
-  </div>`;
+  return `<section class="trait-preset-unit-copy-card-summary">
+    <b class="trait-preset-unit-copy-card-section-label">전투 요약</b>
+    <div class="trait-preset-unit-copy-card-stats">
+      <span><b>클리어 기준</b><em>${escapeHtml(stats.required)}</em></span>
+      <span><b>클리어 기대값</b><em>${escapeHtml(stats.expected)}</em></span>
+      <span><b>달성률</b><em>${escapeHtml(stats.achievement)}</em></span>
+    </div>
+  </section>`;
 }
 function traitPresetUnitCopyPresetInfoHtml(preset,groupKey){
   const modeParts=traitPresetUnitCopyModeText(preset).split(' · ').filter(Boolean);
@@ -2292,10 +2261,11 @@ function traitPresetUnitCopyPresetInfoHtml(preset,groupKey){
   const mode=modeParts.filter(item=>item!=='스피드' && item!=='클래식').join(' · ');
   const difficulty=traitPresetUnitCopyDifficultyInfo(preset);
   return `<div class="trait-preset-unit-copy-card-preset">
-    <b>${escapeHtml(traitPresetUnitCopySelectLabel(preset,groupKey))}</b>
-    ${speed ? `<span>${escapeHtml(speed)}</span>` : ''}
-    ${mode ? `<em>${escapeHtml(mode)}</em>` : ''}
-    <small><i>난이도</i><strong>${escapeHtml(difficulty.name)}</strong><em>${escapeHtml(difficulty.detail)}</em></small>
+    <div class="trait-preset-unit-copy-card-title"><i>프리셋</i><b>${escapeHtml(traitPresetUnitCopySelectLabel(preset,groupKey))}</b></div>
+    <div class="trait-preset-unit-copy-card-meta">
+      <span><i>모드</i><strong>${escapeHtml(mode || '—')}</strong>${speed ? `<em>${escapeHtml(speed)}</em>` : ''}</span>
+      <span><i>난이도</i><strong>${escapeHtml(difficulty.name)}</strong><em>${escapeHtml(difficulty.detail)}</em></span>
+    </div>
   </div>`;
 }
 function traitPresetUnitCopyCardBodyHtml(preset,board,stats,groupKey){
@@ -2304,8 +2274,11 @@ function traitPresetUnitCopyCardBodyHtml(preset,board,stats,groupKey){
     ${traitPresetUnitCopyPresetInfoHtml(preset,groupKey)}
     <div class="trait-preset-unit-copy-card-detail">
       ${traitPresetUnitCopyStatsHtml(stats)}
-      <div class="trait-preset-unit-copy-card-unit-head"><span>유닛명</span><span>유닛 세부정보</span></div>
-      <div class="trait-preset-unit-copy-card-units">${traitPresetUnitCopyUnitDetailHtml(board)}</div>
+      <section class="trait-preset-unit-copy-card-unit-section">
+        <b class="trait-preset-unit-copy-card-section-label">유닛 구성</b>
+        <div class="trait-preset-unit-copy-card-unit-head"><span>유닛명</span><span>유닛 세부정보</span></div>
+        <div class="trait-preset-unit-copy-card-units">${traitPresetUnitCopyUnitDetailHtml(board)}</div>
+      </section>
     </div>
   </div>`;
 }
@@ -2365,11 +2338,10 @@ function traitPresetUnitCopyTargetHtml(items,store,checkedIds=new Set(),statsCac
     </section>`;
   }).join('');
 }
-function selectedTraitPresetUnitCopyCheckedIds(){
-  return [...qsa('#traitPresetUnitCopyTargetList [data-trait-preset-unit-copy-target]:checked:not(:disabled)')].map(input=>input.value).filter(Boolean);
-}
 function selectedTraitPresetUnitCopyTargetIds(){
-  return [...new Set(selectedTraitPresetUnitCopyCheckedIds().map(id=>String(id || '')).filter(Boolean))];
+  const ids=[...qsa('#traitPresetUnitCopyTargetList [data-trait-preset-unit-copy-target]:checked:not(:disabled)')]
+    .map(input=>String(input.value || '')).filter(Boolean);
+  return [...new Set(ids)];
 }
 function syncTraitPresetUnitBoardCopySelection(){
   const boxes=[...qsa('#traitPresetUnitCopyTargetList [data-trait-preset-unit-copy-target]')];
@@ -2382,7 +2354,7 @@ function syncTraitPresetUnitBoardCopySelection(){
   });
 }
 function updateTraitPresetUnitCopyPreview(){
-  const store=traitPresetUnitCopyStore();
+  const store=loadTraitPresetStore();
   const sourceId=traitPresetUnitCopySourceId(store);
   const source=store.presets.find(preset=>preset.id===sourceId) || null;
   const sourceBoard=traitPresetUnitBoardForPreset(store,sourceId);
@@ -2398,7 +2370,7 @@ function updateTraitPresetUnitCopyPreview(){
   syncTraitPresetUnitBoardCopySelection();
 }
 function renderTraitPresetUnitCopyPanel(options={}){
-  const store=traitPresetUnitCopyStore();
+  const store=loadTraitPresetStore();
   const sourceId=options.sourceId || traitPresetUnitCopySourceId(store);
   const sourceSelect=$('traitPresetUnitCopySourceSelect');
   const targetList=$('traitPresetUnitCopyTargetList');
@@ -2679,7 +2651,7 @@ window.DpsPreset=Object.freeze({
   init:function(){
     refreshTraitPresetControls();
     restoreTraitPresetStatus();
-    renderTraitPresetUpdateScopePopover();
+    setTraitPresetUpdateScopeView('shared');
   },
   bindEvents:bindTraitPresetEvents,
   saveCurrent:saveTraitPreset,
@@ -2689,6 +2661,6 @@ window.DpsPreset=Object.freeze({
   deleteCurrent:deleteTraitPreset,
   resetAll:requestTraitPresetFullReset,
   openImport:openTraitPresetImportPicker,
-  exportFile:exportTraitPresets,
+  exportFile:openTraitPresetExportModal,
   openAnalysis:compareTraitPreset
 });
