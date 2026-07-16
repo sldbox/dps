@@ -48,57 +48,6 @@ body:is(.is-mobile,.is-narrow-mobile) .battle-enemy-status-value{font-size:8.8px
 body:is(.is-mobile,.is-narrow-mobile) .battle-enemy-status-track{height:6px;}
 @media (prefers-reduced-motion:reduce){.battle-enemy-status-fill{transition:none;}}
 
-/* 프리셋 알림 상태 */
-body .trait-preset-heading,body.is-tabbed .mobile-page .trait-preset-heading{overflow:visible;}
-.preset-notice-bubble{
-  position:absolute;
-  z-index:80;
-  top:50%;
-  left:calc(100% + 9px);
-  width:max-content;
-  max-width:min(300px,45vw);
-  padding:8px 10px;
-  transform:translateY(-50%);
-  pointer-events:none;
-  border:1px solid #8ba7c7;
-  border-radius:11px;
-  background:#f8fbff;
-  color:#17324f;
-  box-shadow:0 5px 14px rgba(20,43,70,.18);
-  font-size:11px;
-  font-weight:900;
-  line-height:1.4;
-  text-align:left;
-  white-space:normal;
-  overflow-wrap:anywhere;
-  animation:presetNoticeIn .2s ease-out both;
-}
-.preset-notice-bubble[hidden]{display:none;}
-.preset-notice-bubble::after{
-  content:"";
-  position:absolute;
-  left:-7px;
-  top:50%;
-  width:12px;
-  height:12px;
-  transform:translateY(-50%) rotate(45deg);
-  border-left:1px solid #8ba7c7;
-  border-bottom:1px solid #8ba7c7;
-  background:#f8fbff;
-}
-.preset-notice-bubble.is-attention{border-color:#d58b2d;background:#fff7e7;color:#6c3c08;}
-.preset-notice-bubble.is-attention::after{border-color:#d58b2d;background:#fff7e7;}
-.preset-notice-bubble.is-error{border-color:#d34b62;background:#fff0f3;color:#751f32;}
-.preset-notice-bubble.is-error::after{border-color:#d34b62;background:#fff0f3;}
-
-@keyframes presetNoticeIn{from{opacity:0;transform:translate(-4px,-50%) scale(.97);}to{opacity:1;transform:translate(0,-50%) scale(1);}}
-
-@media (max-width:600px){
-  .preset-notice-bubble{max-width:42vw;padding:7px 8px;font-size:9.5px;line-height:1.35;}
-}
-@media (prefers-reduced-motion:reduce){
-  .preset-notice-bubble{animation:none;transition:none;}
-}
 `;
   function ensureBattleStyle(){
     if(document.getElementById(BATTLE_STYLE_ID)) return;
@@ -1388,144 +1337,6 @@ body .trait-preset-heading,body.is-tabbed .mobile-page .trait-preset-heading{ove
     const count=Math.max(6,Math.round(12*quality));for(let i=0;i<count;i++){const angle=i*Math.PI*2/count;ctx.beginPath();ctx.moveTo(x,y-30);ctx.lineTo(x+Math.cos(angle)*(26+42*(1-intensity)),y-30+Math.sin(angle)*(26+42*(1-intensity)));ctx.stroke();}ctx.restore();
   }
 
-  /* 프리셋 알림 */
-  const PRESET_ALERT_ACTIONS=Object.freeze({
-    select:Object.freeze({message:'이 프리셋을 선택했어!',duration:2300,priority:20}),
-    load:Object.freeze({message:'프리셋을 불러왔어!',duration:3000,priority:45}),
-    save:Object.freeze({message:'새 프리셋을 저장했어!',duration:3200,priority:48}),
-    rename:Object.freeze({message:'프리셋 이름을 바꿨어!',duration:3000,priority:42}),
-    update:Object.freeze({message:'프리셋이 업데이트됐어. 내보내기 해줘!',duration:3300,priority:55}),
-    import:Object.freeze({message:'프리셋을 가져왔어!',duration:3300,priority:52}),
-    export:Object.freeze({message:'안전하게 내보냈어!',duration:3300,priority:52}),
-    'list-change':Object.freeze({message:'프리셋 목록을 정리했어!',duration:2700,priority:28}),
-    'need-update':Object.freeze({message:'변경사항이 있어. 업데이트가 필요해!',duration:4300,priority:90,attention:true}),
-    'need-export':Object.freeze({message:'변경한 프리셋을 내보내야 해!',duration:4100,priority:82,attention:true}),
-    'need-import':Object.freeze({message:'저장된 프리셋이 없어. 가져오기 해줘!',duration:4300,priority:76,attention:true}),
-    error:Object.freeze({message:'처리하지 못했어. 내용을 확인해줘!',duration:4300,priority:100,error:true})
-  });
-  const PRESET_ATTENTION_ACTIONS=Object.freeze([
-    Object.freeze({key:'needsUpdate',action:'need-update'}),
-    Object.freeze({key:'needsExport',action:'need-export'}),
-    Object.freeze({key:'needsImport',action:'need-import'})
-  ]);
-  const presetAlertState={
-    bubble:null,message:null,queue:[],current:null,
-    timer:0,reminderTimer:0,attention:{needsUpdate:false,needsExport:false,needsImport:false},paused:false
-  };
-  function ensurePresetAlert(){
-    if(presetAlertState.bubble&&presetAlertState.message) return true;
-    const bubble=document.getElementById('presetNoticeBubble');
-    const message=bubble?.querySelector('[data-preset-notice-message]');
-    if(!bubble||!message) return false;
-    presetAlertState.bubble=bubble;
-    presetAlertState.message=message;
-    return true;
-  }
-  function clearPresetAlertTimer(name){
-    if(presetAlertState[name]) window.clearTimeout(presetAlertState[name]);
-    presetAlertState[name]=0;
-  }
-  function renderPresetAlert(scene,options={}){
-    if(!ensurePresetAlert()) return;
-    const bubble=presetAlertState.bubble;
-    bubble.classList.toggle('is-attention',Boolean(scene.attention));
-    bubble.classList.toggle('is-error',Boolean(scene.error||options.action==='error'));
-    if(options.notification){
-      presetAlertState.message.textContent=String(options.message||scene.message||'').trim();
-      bubble.hidden=false;
-    }else{
-      bubble.hidden=true;
-      presetAlertState.message.textContent='';
-    }
-  }
-  function showPresetAlertIdle(){
-    if(presetAlertState.paused||!ensurePresetAlert()) return;
-    presetAlertState.current=null;
-    renderPresetAlert({});
-  }
-  function runPresetAlert(entry){
-    presetAlertState.current=entry;
-    renderPresetAlert(entry.scene,{notification:true,action:entry.action,message:entry.message});
-    clearPresetAlertTimer('timer');
-    presetAlertState.timer=window.setTimeout(()=>{
-      presetAlertState.timer=0;
-      presetAlertState.current=null;
-      advancePresetAlert();
-    },entry.scene.duration);
-  }
-  function advancePresetAlert(){
-    if(presetAlertState.paused) return;
-    presetAlertState.queue.sort((a,b)=>b.scene.priority-a.scene.priority||a.createdAt-b.createdAt);
-    const next=presetAlertState.queue.shift();
-    if(next) runPresetAlert(next);
-    else showPresetAlertIdle();
-  }
-  function queuePresetAlert(action,options={}){
-    const scene=PRESET_ALERT_ACTIONS[action];
-    if(!scene||!ensurePresetAlert()) return false;
-    const entry={action,scene,message:String(options.message||scene.message||'').trim(),createdAt:Date.now()};
-    presetAlertState.queue=presetAlertState.queue.filter(item=>item.action!==action);
-    const current=presetAlertState.current;
-    if(!current||scene.priority>current.scene.priority||options.replace===true){
-      clearPresetAlertTimer('timer');
-      runPresetAlert(entry);
-    }else{
-      presetAlertState.queue.push(entry);
-    }
-    return true;
-  }
-  function activePresetAttentionActions(){
-    return PRESET_ATTENTION_ACTIONS
-      .filter(item=>presetAlertState.attention[item.key])
-      .map(item=>item.action);
-  }
-  function schedulePresetAttentionReminder(){
-    clearPresetAlertTimer('reminderTimer');
-    const actions=activePresetAttentionActions();
-    if(!actions.length) return;
-    presetAlertState.reminderTimer=window.setTimeout(()=>{
-      presetAlertState.reminderTimer=0;
-      activePresetAttentionActions().forEach((action,index)=>queuePresetAlert(action,{replace:index===0}));
-      schedulePresetAttentionReminder();
-    },22000);
-  }
-  function setPresetAttention(partial={}){
-    const previous={...presetAlertState.attention};
-    PRESET_ATTENTION_ACTIONS.forEach(({key})=>{
-      if(Object.prototype.hasOwnProperty.call(partial,key)) presetAlertState.attention[key]=Boolean(partial[key]);
-    });
-    PRESET_ATTENTION_ACTIONS.forEach(({key,action})=>{
-      if(presetAlertState.attention[key]) return;
-      presetAlertState.queue=presetAlertState.queue.filter(item=>item.action!==action);
-      if(presetAlertState.current?.action===action){
-        clearPresetAlertTimer('timer');
-        presetAlertState.current=null;
-      }
-    });
-    PRESET_ATTENTION_ACTIONS
-      .filter(({key})=>!previous[key]&&presetAlertState.attention[key])
-      .map(item=>item.action)
-      .forEach((action,index)=>queuePresetAlert(action,{replace:index===0}));
-    if(!presetAlertState.current) advancePresetAlert();
-    schedulePresetAttentionReminder();
-  }
-  function notifyPreset(action,options={}){
-    const safeAction=PRESET_ALERT_ACTIONS[action]?action:'error';
-    const message=safeAction==='error'&&options.message
-      ?String(options.message).replace(/\s+/g,' ').slice(0,72)
-      :options.message;
-    return queuePresetAlert(safeAction,{...options,message});
-  }
-  function setPresetAlertPaused(value){
-    presetAlertState.paused=Boolean(value);
-    if(!presetAlertState.paused&&!presetAlertState.timer) advancePresetAlert();
-  }
-  function initPresetAlert(){
-    if(!ensurePresetAlert()) return;
-    setPresetAlertPaused(document.hidden);
-    if(!presetAlertState.current&&!presetAlertState.timer) showPresetAlertIdle();
-  }
-
   /* 장면 생성·갱신 */
   function ensureScene(){
     const stage=document.getElementById('battleUnitStage');
@@ -1543,13 +1354,12 @@ body .trait-preset-heading,body.is-tabbed .mobile-page .trait-preset-heading{ove
   }
   function refresh(){
     const scene=ensureScene();
-    ensurePresetAlert();
     if(scene){
       scene.resize(true);
       scene.draw(performance.now());
     }
   }
-  function onVisibilityChange(){paused=document.hidden;setPresetAlertPaused(paused);if(!paused) queueRefresh();}
+  function onVisibilityChange(){paused=document.hidden;if(!paused) queueRefresh();}
   function onDocumentClick(event){
     if(event.target?.closest?.('.mobile-section-tab')){
       requestAnimationFrame(queueRefresh);
@@ -1563,7 +1373,6 @@ body .trait-preset-heading,body.is-tabbed .mobile-page .trait-preset-heading{ove
     ensureScene();
     if(initialized) return;
     initialized=true;
-    initPresetAlert();
     paused=document.hidden;
     document.addEventListener('visibilitychange',onVisibilityChange);
     document.addEventListener('click',onDocumentClick,true);
@@ -1587,5 +1396,5 @@ body .trait-preset-heading,body.is-tabbed .mobile-page .trait-preset-heading{ove
     queueRefresh();
   }
 
-  window.DpsAnimation=Object.freeze({init,updateBattle,notifyPreset,setPresetAttention});
+  window.DpsAnimation=Object.freeze({init,updateBattle});
 })();

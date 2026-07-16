@@ -2039,6 +2039,27 @@ function traitOptimizationRemaining(kind){
   if(kind==='SOUL') return v('soul') - resourceUsed('SOUL');
   return 0;
 }
+function restoreTraitInvestment(row, savedValue){
+  if(savedValue===undefined) delete INV[row];
+  else INV[row]=savedValue;
+}
+function withTemporaryTraitInvestments(changes, callback){
+  const saved=new Map();
+  const normalized=[];
+  changes.forEach(([row,delta])=>{
+    row=+row;
+    delta=+delta || 0;
+    if(!Number.isFinite(row) || !Number.isFinite(delta) || delta===0) return;
+    if(!saved.has(row)) saved.set(row, INV[row]);
+    normalized.push([row,delta]);
+  });
+  try{
+    normalized.forEach(([row,delta])=>{ INV[row]=(INV[row]||0)+delta; });
+    return callback();
+  }finally{
+    saved.forEach((value,row)=>restoreTraitInvestment(row,value));
+  }
+}
 function traitOptimizationDeltaCost(row, add){
   row=+row;
   add=Math.max(0, Math.round(+add||0));
@@ -2046,15 +2067,18 @@ function traitOptimizationDeltaCost(row, add){
   if(add<=0) return 0;
   if(n+add>(TMAX[row]||999)) return Infinity;
   if(RP_ROWS.has(row)) return rpCost(row,n+add)-rpCost(row,n);
-  const old=INV[row];
+  const saved=INV[row];
   let total=0;
-  for(let i=0;i<add;i++){
-    INV[row]=(old||0)+i;
-    const c=nextCost(row);
-    if(!Number.isFinite(c)){ total=Infinity; break; }
-    total+=c;
+  try{
+    for(let i=0;i<add;i++){
+      INV[row]=(saved||0)+i;
+      const c=nextCost(row);
+      if(!Number.isFinite(c)){ total=Infinity; break; }
+      total+=c;
+    }
+  }finally{
+    restoreTraitInvestment(row,saved);
   }
-  INV[row]=old;
   return total;
 }
 function isTraitOptimizationTarget(t){
@@ -2099,10 +2123,8 @@ function evaluateTraitOptimizationCandidate(base, kind, rem, changes, label, opt
     cost+=c;
   }
   if(cost>rem) return null;
-  for(const [row,add] of changes) INV[row]=(INV[row]||0)+add;
-  const ns=computeStatsRaw();
+  const ns=withTemporaryTraitInvestments(changes, ()=>computeStatsRaw());
   const limitsOk=traitLimitStatsOk(ns);
-  for(const [row,add] of changes) INV[row]=(INV[row]||0)-add;
   if(!limitsOk) return null;
   const gain=ns.M19-base.M19;
   if(gain<=0 || (options.visibleGain!==false && !traitRecommendationGainIsVisible(gain))) return null;
@@ -2132,16 +2154,11 @@ function traitOptimizationMultiTargetBundleCandidate(base, rem, options={}){
   if(options.fullCost){
     let cost=0;
     for(const [row,add] of changes){
-      const old=INV[row]||0, saved=INV[row];
-      INV[row]=old+add;
-      cost+=cumCost(row);
-      INV[row]=saved;
+      cost+=withTemporaryTraitInvestments([[row,add]], ()=>cumCost(row));
     }
     if(!Number.isFinite(cost) || cost<=0 || cost>rem) return null;
-    for(const [row,add] of changes) INV[row]=(INV[row]||0)+add;
-    const ns=computeStatsRaw();
+    const ns=withTemporaryTraitInvestments(changes, ()=>computeStatsRaw());
     const limitsOk=traitLimitStatsOk(ns);
-    for(const [row,add] of changes) INV[row]=(INV[row]||0)-add;
     const gain=ns.M19-base.M19;
     if(!limitsOk || gain<=0 || (options.visibleGain!==false && !traitRecommendationGainIsVisible(gain))) return null;
     return {changes,kind:'SP',score:gain/cost,gain,cost,label:'멀티 타겟 분기점'};

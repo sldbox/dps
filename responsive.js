@@ -2,7 +2,6 @@
   'use strict';
 
   /* 반응형 상태·측정 헬퍼 */
-  const qsa = (selector) => Array.from(document.querySelectorAll(selector));
   const MODES = ['is-pc-landscape', 'is-pc-portrait', 'is-tablet', 'is-mobile', 'is-portrait-view', 'is-mobile-device', 'is-tablet-device', 'is-narrow-mobile', 'is-tabbed'];
   const TABBED_PAGES = [
     { key: 'spec', label: '기본 정보', selectors: ['.col-left'] },
@@ -199,7 +198,7 @@
     state.restore.forEach((marker, el) => {
       if (marker.parentNode) marker.parentNode.insertBefore(el, marker.nextSibling);
     });
-    qsa('.mobile-page').forEach(page => page.remove());
+    Array.from(document.querySelectorAll('.mobile-page')).forEach(page => page.remove());
     if (state.tabs) state.tabs.remove();
     document.querySelector('.col-work')?.classList.remove('is-mobile-arranged');
     state.tabs = null;

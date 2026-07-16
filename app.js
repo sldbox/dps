@@ -1946,6 +1946,9 @@ function dpsBaseUnitSelectOptionsHtml(selectedId, selectedIds){
   }).join('');
   return `<option value="">선택 안 함</option>${groupHtml}`;
 }
+function dpsBaseUnitFieldHtml(fieldLabel, fieldClass, content){
+  return `<div class="dps-base-unit-field ${fieldClass}"><span class="dps-base-unit-field-label">${fieldLabel}</span>${content}</div>`;
+}
 function dpsBaseUnitSlotHtml(unitId, slotIndex, slots){
   const unit=dpsBaseUnitById(unitId);
   const empty=!unit;
@@ -1955,8 +1958,7 @@ function dpsBaseUnitSlotHtml(unitId, slotIndex, slots){
   const attack=result ? dpsBaseUnitAttackText(result) : '—';
   const pierce=result ? dpsBaseUnitPercentText(result.excelPierce) : (unit ? (dpsBaseUnitIsArtifact(unit) ? '0%' : dpsBaseUnitPercentText(dpsBaseUnitBoardBasePierce + dpsBaseUnitPierceBonus(unit))) : '—');
   const dps=result ? dpsBaseUnitDpsText(result) : '—';
-  const field=(fieldLabel,fieldClass,content)=>`<div class="dps-base-unit-field ${fieldClass}"><span class="dps-base-unit-field-label">${fieldLabel}</span>${content}</div>`;
-  const entry=`<div class="dps-base-unit-entry dps-base-unit-slot${empty ? ' is-empty' : ''}${unit && dpsBaseUnitHasQuantity(unit) ? ' has-quantity' : ' is-fixed'}" data-dps-base-unit-slot-row="${slotIndex}">${field('유닛명','dps-base-unit-name-field',selectControl)}${field('공격력','dps-base-unit-attack-field',`<span class="dps-base-unit-board-cell dps-base-unit-board-attack">${escapeHtml(attack)}</span>`)}${field('방어력 관통','dps-base-unit-pierce-field',`<span class="dps-base-unit-board-cell dps-base-unit-board-pierce">${escapeHtml(pierce)}</span>`)}${field(unit && dpsBaseUnitIsArtifact(unit)?'파장 총 DPS':'총 DPS','dps-base-unit-dps-field',`<b class="dps-base-unit-board-cell dps-base-unit-board-dps">${escapeHtml(dps)}</b>`)}${field('수량','dps-base-unit-quantity-field',`<div class="dps-base-unit-board-cell dps-base-unit-board-quantity">${dpsBaseUnitQuantityControlHtml(unit,slotIndex)}</div>`)}</div>`;
+  const entry=`<div class="dps-base-unit-entry dps-base-unit-slot${empty ? ' is-empty' : ''}${unit && dpsBaseUnitHasQuantity(unit) ? ' has-quantity' : ' is-fixed'}" data-dps-base-unit-slot-row="${slotIndex}">${dpsBaseUnitFieldHtml('유닛명','dps-base-unit-name-field',selectControl)}${dpsBaseUnitFieldHtml('공격력','dps-base-unit-attack-field',`<span class="dps-base-unit-board-cell dps-base-unit-board-attack">${escapeHtml(attack)}</span>`)}${dpsBaseUnitFieldHtml('방어력 관통','dps-base-unit-pierce-field',`<span class="dps-base-unit-board-cell dps-base-unit-board-pierce">${escapeHtml(pierce)}</span>`)}${dpsBaseUnitFieldHtml(unit && dpsBaseUnitIsArtifact(unit)?'파장 총 DPS':'총 DPS','dps-base-unit-dps-field',`<b class="dps-base-unit-board-cell dps-base-unit-board-dps">${escapeHtml(dps)}</b>`)}${dpsBaseUnitFieldHtml('수량','dps-base-unit-quantity-field',`<div class="dps-base-unit-board-cell dps-base-unit-board-quantity">${dpsBaseUnitQuantityControlHtml(unit,slotIndex)}</div>`)}</div>`;
   return `<div class="dps-base-unit-card${empty?' is-empty':''}">${entry}${dpsBaseUnitSettingsHtml(unit,slotIndex)}</div>`;
 }
 function dpsBaseUnitSlotsHtml(slots){
@@ -4255,7 +4257,7 @@ const ACTION_HANDLERS={
   renameTraitPreset:(...args)=>window.DpsPreset.renameCurrent(...args),
   deleteTraitPreset:(...args)=>window.DpsPreset.deleteCurrent(...args),
   resetAllTraitPresetState:(...args)=>window.DpsPreset.resetAll(...args),
-  exportTraitPresets:(...args)=>window.DpsPreset.exportFile(...args),
+  backupTraitPresets:(...args)=>window.DpsPreset.openBackup(...args),
   importTraitPresets:(...args)=>window.DpsPreset.openImport(...args),
   compareTraitPreset:(...args)=>window.DpsPreset.openAnalysis(...args),
   openDpsTable,
@@ -4293,7 +4295,7 @@ const REACTIVE_INPUT_EXCLUDED_IDS=new Set([
   'traitPresetName',
   'traitPresetSelect',
   'traitPresetImportFile',
-  'traitPresetExportName',
+  'traitPresetBackupName',
   'dpsTableMinDps',
   'dpsTableMinDpsMain',
   'artifactDpsViewToggle'
