@@ -1433,22 +1433,23 @@ body.is-narrow-mobile .damage-board-title .artifact-dps-switch.is-active i{left:
 
 body.is-mobile .trait-preset-backup-modal, body.is-narrow-mobile .trait-preset-backup-modal{width:100%;max-height:calc(100vh - 16px);}
 body.is-mobile .trait-preset-backup-body, body.is-narrow-mobile .trait-preset-backup-body{gap:8px;max-height:calc(100vh - 56px);padding:9px;overflow:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;}
-body.is-mobile .trait-preset-backup-targets, body.is-narrow-mobile .trait-preset-backup-targets{grid-template-columns:minmax(0,1.22fr) minmax(0,1fr);gap:6px;min-height:238px;}
-body.is-mobile .trait-preset-backup-target-group, body.is-narrow-mobile .trait-preset-backup-target-group{gap:5px;padding:7px;}
-body.is-mobile .trait-preset-backup-target-group h3, body.is-narrow-mobile .trait-preset-backup-target-group h3{gap:4px;font-size:calc(8.5px * var(--app-font-scale));}
-body.is-mobile .trait-preset-backup-target-group h3 b, body.is-narrow-mobile .trait-preset-backup-target-group h3 b{min-width:20px;height:17px;padding:0 4px;font-size:calc(7.6px * var(--app-font-scale));}
-body.is-mobile .trait-preset-backup-target-group ul, body.is-narrow-mobile .trait-preset-backup-target-group ul{gap:3px;max-height:220px;}
-body.is-mobile .trait-preset-backup-target-group li, body.is-narrow-mobile .trait-preset-backup-target-group li{gap:3px;padding:5px 4px;font-size:calc(8.1px * var(--app-font-scale));line-height:1.2;}
-body.is-mobile .trait-preset-backup-scope-tags, body.is-narrow-mobile .trait-preset-backup-scope-tags{gap:2px;}
-body.is-mobile .trait-preset-backup-scope-tag, body.is-narrow-mobile .trait-preset-backup-scope-tag{min-width:27px;min-height:17px;padding:2px 3px;font-size:calc(6.8px * var(--app-font-scale));}
-body.is-mobile .trait-preset-backup-change-items, body.is-narrow-mobile .trait-preset-backup-change-items{grid-template-rows:repeat(2,minmax(0,1fr));gap:6px;}
-body.is-mobile .trait-preset-backup-change-item, body.is-narrow-mobile .trait-preset-backup-change-item{gap:6px;padding:7px 4px;}
-body.is-mobile .trait-preset-backup-change-item header, body.is-narrow-mobile .trait-preset-backup-change-item header{gap:4px;}
-body.is-mobile .trait-preset-backup-change-item h4, body.is-narrow-mobile .trait-preset-backup-change-item h4{font-size:calc(7.5px * var(--app-font-scale));line-height:1.2;}
-body.is-mobile .trait-preset-backup-change-item strong, body.is-narrow-mobile .trait-preset-backup-change-item strong{min-width:29px;min-height:18px;padding:2px 4px;font-size:calc(7.8px * var(--app-font-scale));}
+body.is-mobile .trait-preset-backup-targets, body.is-narrow-mobile .trait-preset-backup-targets{grid-template-columns:minmax(0,1fr);gap:8px;min-height:0;}
+body.is-mobile .trait-preset-backup-target-group, body.is-narrow-mobile .trait-preset-backup-target-group{gap:6px;padding:8px;}
+body.is-mobile .trait-preset-backup-target-group h3, body.is-narrow-mobile .trait-preset-backup-target-group h3{gap:6px;font-size:calc(10px * var(--app-font-scale));}
+body.is-mobile .trait-preset-backup-target-group h3 b, body.is-narrow-mobile .trait-preset-backup-target-group h3 b{min-width:23px;height:19px;padding:0 5px;font-size:calc(8px * var(--app-font-scale));}
+body.is-mobile .trait-preset-backup-target-group ul, body.is-narrow-mobile .trait-preset-backup-target-group ul{gap:4px;max-height:245px;}
+body.is-mobile .trait-preset-backup-target-group li, body.is-narrow-mobile .trait-preset-backup-target-group li{gap:5px;padding:6px 7px;font-size:calc(9.4px * var(--app-font-scale));line-height:1.22;}
+body.is-mobile .trait-preset-backup-target-group .trait-preset-unit-copy-duplicate-mark, body.is-narrow-mobile .trait-preset-backup-target-group .trait-preset-unit-copy-duplicate-mark{padding:4px 6px;background:rgba(2,8,18,.56);font-size:calc(12.5px * var(--app-font-scale));line-height:1.05;text-shadow:0 1px 8px rgba(0,0,0,.62);}
+body.is-mobile .trait-preset-backup-scope-tags, body.is-narrow-mobile .trait-preset-backup-scope-tags{gap:3px;}
+body.is-mobile .trait-preset-backup-scope-tag, body.is-narrow-mobile .trait-preset-backup-scope-tag{min-width:32px;min-height:19px;padding:2px 5px;font-size:calc(7.4px * var(--app-font-scale));}
+body.is-mobile .trait-preset-backup-change-items, body.is-narrow-mobile .trait-preset-backup-change-items{grid-template-rows:none;grid-template-columns:minmax(0,1fr);gap:7px;}
+body.is-mobile .trait-preset-backup-change-item, body.is-narrow-mobile .trait-preset-backup-change-item{gap:7px;min-height:74px;padding:8px 7px;}
+body.is-mobile .trait-preset-backup-change-item header, body.is-narrow-mobile .trait-preset-backup-change-item header{gap:6px;}
+body.is-mobile .trait-preset-backup-change-item h4, body.is-narrow-mobile .trait-preset-backup-change-item h4{font-size:calc(9px * var(--app-font-scale));line-height:1.25;}
+body.is-mobile .trait-preset-backup-change-item strong, body.is-narrow-mobile .trait-preset-backup-change-item strong{min-width:34px;min-height:20px;padding:2px 5px;font-size:calc(8.2px * var(--app-font-scale));}
 body.is-mobile .trait-preset-backup-change-tags, body.is-narrow-mobile .trait-preset-backup-change-tags{gap:3px;}
-body.is-mobile .trait-preset-backup-change-tags span, body.is-narrow-mobile .trait-preset-backup-change-tags span{min-height:18px;padding:3px 4px;font-size:calc(7.2px * var(--app-font-scale));line-height:1.15;}
-body.is-mobile .trait-preset-backup-change-empty, body.is-narrow-mobile .trait-preset-backup-change-empty{font-size:calc(7.4px * var(--app-font-scale));}
+body.is-mobile .trait-preset-backup-change-tags span, body.is-narrow-mobile .trait-preset-backup-change-tags span{min-height:20px;padding:3px 6px;font-size:calc(7.8px * var(--app-font-scale));line-height:1.16;}
+body.is-mobile .trait-preset-backup-change-empty, body.is-narrow-mobile .trait-preset-backup-change-empty{font-size:calc(8.2px * var(--app-font-scale));}
 body.is-mobile .trait-preset-backup-actions.is-pending, body.is-narrow-mobile .trait-preset-backup-actions.is-pending{grid-template-columns:repeat(2,minmax(0,1fr));gap:5px;}
 body.is-mobile .trait-preset-backup-actions .btn, body.is-narrow-mobile .trait-preset-backup-actions .btn{min-height:38px;padding:5px 3px;font-size:calc(8.4px * var(--app-font-scale));line-height:1.25;}
 body.is-mobile .trait-preset-backup-file-box, body.is-narrow-mobile .trait-preset-backup-file-box{gap:6px;padding:7px;}
@@ -1466,7 +1467,7 @@ body.is-mobile .trait-preset-unit-jewel-head, body.is-narrow-mobile .trait-prese
 body.is-mobile .trait-preset-unit-jewel-head h2, body.is-narrow-mobile .trait-preset-unit-jewel-head h2{font-size:calc(12px * var(--app-font-scale));}
 body.is-mobile .trait-preset-unit-jewel-body, body.is-narrow-mobile .trait-preset-unit-jewel-body{grid-template-rows:minmax(0,1fr);gap:8px;padding:8px;}
 body.is-mobile .trait-preset-unit-copy-panel, body.is-narrow-mobile .trait-preset-unit-copy-panel{gap:8px;}
-body.is-tablet .trait-preset-unit-copy-layout, body.is-pc-portrait .trait-preset-unit-copy-layout,
+body.is-pc-portrait .trait-preset-unit-copy-layout,
 body.is-mobile .trait-preset-unit-copy-layout, body.is-narrow-mobile .trait-preset-unit-copy-layout{grid-template-columns:minmax(0,1fr);gap:10px;}
 body.is-mobile .trait-preset-unit-copy-toolbar, body.is-narrow-mobile .trait-preset-unit-copy-toolbar{gap:7px;}
 body.is-mobile .trait-preset-unit-copy-toolbar>div, body.is-narrow-mobile .trait-preset-unit-copy-toolbar>div{width:100%;}
