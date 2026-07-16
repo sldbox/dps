@@ -45,7 +45,7 @@ function traitPresetDefaultValue(id){
 }
 const TRAIT_PRESET_UPDATE_SCOPE_EXTRA_GROUPS=Object.freeze({
   shared:Object.freeze([
-    Object.freeze({kind:'더제로 승단 정보',names:Object.freeze(['계산'])}),
+    Object.freeze({kind:'더제로 승단 정보',names:Object.freeze(['승단 계산'])}),
     Object.freeze({kind:'쥬얼 설정',names:Object.freeze(['전설·신화 쥬얼'])})
   ]),
   single:Object.freeze([
@@ -2198,15 +2198,16 @@ function traitPresetUnitCopySourceOptionsHtml(store,sourceId){
 function traitPresetUnitCopySelectLabel(preset,groupKey){
   return traitPresetSelectLabel(preset,new Set(loadTraitPresetStatusData().updatedPresetIds),groupKey || traitPresetCategoryKey(preset));
 }
-function traitPresetUnitCopyModeText(preset){
+function traitPresetUnitCopyModeInfo(preset){
   const values=(preset?.state && typeof preset.state==='object' && preset.state.values && typeof preset.state.values==='object') ? preset.state.values : {};
-  const coop=normalizeOnOffValue(values.coopMode,'OFF')==='ON';
-  const tower=isTowerDifficulty(values.diff);
-  const mode=tower ? '도전의 탑' : (coop ? '협동' : '개인');
-  const speed=normalizeOnOffValue(values.dpsBaseUnitSpeedMode,'OFF')==='ON' ? '스피드' : '클래식';
-  const team=coop ? '3인' : '';
-  const round=tower ? `${normalizedTowerFloorString(values.challengeTowerFloor || TOWER_FLOOR_INPUT_MIN)}층` : (values.round ? `${values.round}라` : '');
-  return [mode,speed,team,round].filter(Boolean).join(' · ');
+  const coop=isCoopAllowedDifficulty(values.diff) && normalizeOnOffValue(values.coopMode,'OFF')==='ON';
+  const speed=speedModeSupported(values.diff) && normalizeOnOffValue(values.dpsBaseUnitSpeedMode,'OFF')==='ON';
+  const battleMode=coop ? '협동' : '개인';
+  const enemyMode=enemyDisplayModeLabel(values.diff);
+  return {
+    primary:speed ? '스피드' : '일반',
+    secondary:[battleMode,enemyMode,coop ? '3인' : ''].filter(Boolean).join(' · ')
+  };
 }
 function traitPresetUnitCopyDifficultyInfo(preset){
   const values=(preset?.state && typeof preset.state==='object' && preset.state.values && typeof preset.state.values==='object') ? preset.state.values : {};
@@ -2256,14 +2257,12 @@ function traitPresetUnitCopyStatsHtml(stats){
   </section>`;
 }
 function traitPresetUnitCopyPresetInfoHtml(preset,groupKey){
-  const modeParts=traitPresetUnitCopyModeText(preset).split(' · ').filter(Boolean);
-  const speed=modeParts.find(item=>item==='스피드' || item==='클래식') || '';
-  const mode=modeParts.filter(item=>item!=='스피드' && item!=='클래식').join(' · ');
+  const mode=traitPresetUnitCopyModeInfo(preset);
   const difficulty=traitPresetUnitCopyDifficultyInfo(preset);
   return `<div class="trait-preset-unit-copy-card-preset">
     <div class="trait-preset-unit-copy-card-title"><i>프리셋</i><b>${escapeHtml(traitPresetUnitCopySelectLabel(preset,groupKey))}</b></div>
     <div class="trait-preset-unit-copy-card-meta">
-      <span><i>모드</i><strong>${escapeHtml(mode || '—')}</strong>${speed ? `<em>${escapeHtml(speed)}</em>` : ''}</span>
+      <span><i>모드</i><strong>${escapeHtml(mode.primary)}</strong><em>${escapeHtml(mode.secondary)}</em></span>
       <span><i>난이도</i><strong>${escapeHtml(difficulty.name)}</strong><em>${escapeHtml(difficulty.detail)}</em></span>
     </div>
   </div>`;

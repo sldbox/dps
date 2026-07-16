@@ -504,59 +504,15 @@ const XP_CUT_DIVISOR_ROWS=[
   {stage:'3단계', party3:22},
   {stage:'4단계', party3:30}
 ];
-let xpCutRowFeedbackTimer=0;
-let xpCutRowFeedbackCells=[];
 function renderXpCut(){
-  restoreXpCutRowFeedback();
   const base=Math.max(0, v('sp'))*0.8;
-  const renderPartyRows=(targetId, divisorKey)=>{
-    const target=$(targetId);
-    if(!target) return;
-    target.innerHTML=XP_CUT_DIVISOR_ROWS.map(row=>{
-      const divisor=row[divisorKey];
-      const value=big(base/divisor);
-      return `<button class="bus-cut-row" type="button"><span class="bus-cut-stage">${row.stage}</span><span class="bus-cut-value" data-value="${value}" data-feedback="÷${divisor}배"><span class="bus-cut-text">${value}</span></span></button>`;
-    }).join('');
-  };
-  renderPartyRows('xpCutRows3','party3');
-}
-function restoreXpCutRowFeedback(){
-  if(xpCutRowFeedbackTimer) clearTimeout(xpCutRowFeedbackTimer);
-  xpCutRowFeedbackTimer=0;
-  xpCutRowFeedbackCells.forEach(cell=>{
-    if(!cell || !cell.isConnected) return;
-    const text=cell.querySelector('.bus-cut-text');
-    if(text) text.textContent=cell.dataset.value || text.textContent;
-    cell.classList.remove('is-feedback');
-  });
-  xpCutRowFeedbackCells=[];
-}
-function showXpCutRowFeedback(row){
-  if(!row) return false;
-  restoreXpCutRowFeedback();
-  const cells=Array.from(row.querySelectorAll('.bus-cut-value'));
-  if(!cells.length) return false;
-  cells.forEach(cell=>{
-    const text=cell.querySelector('.bus-cut-text');
-    if(!text || !cell.dataset.feedback) return;
-    text.textContent=cell.dataset.feedback;
-    cell.classList.add('is-feedback');
-  });
-  xpCutRowFeedbackCells=cells;
-  xpCutRowFeedbackTimer=setTimeout(restoreXpCutRowFeedback, 1000);
-  return true;
-}
-function activateXpCutRowFeedback(target,e){
-  const row=target?.closest?.('.bus-cut-row');
-  if(!row || !row.closest('.bus-cut-card')) return false;
-  e?.preventDefault?.();
-  return showXpCutRowFeedback(row);
-}
-function bindBusCutEvents(){
-  document.addEventListener('click', e=>activateXpCutRowFeedback(e.target,e));
-  document.addEventListener('keydown', e=>{
-    if(e.key==='Enter' || e.key===' ') activateXpCutRowFeedback(e.target,e);
-  });
+  const target=$('xpCutRows3');
+  if(!target) return;
+  target.innerHTML=XP_CUT_DIVISOR_ROWS.map(row=>{
+    const divisor=row.party3;
+    const value=big(base/divisor);
+    return `<div class="bus-cut-row"><span class="bus-cut-stage">${row.stage}·${divisor}배</span><span class="bus-cut-value">${value}</span></div>`;
+  }).join('');
 }
 
 function isArtifactDpsViewEnabled(){
@@ -576,14 +532,13 @@ function syncArtifactDpsViewSwitch(){
   toggle.classList.toggle('is-active', active);
   toggle.setAttribute('aria-checked', active ? 'true' : 'false');
 }
-function syncOnOffSwitch(toggle,{active=false,disabled=false,label='설정',reason='',containerSelector=''}){
+function syncOnOffSwitch(toggle,{active=false,disabled=false,label='설정',containerSelector=''}){
   if(!toggle) return;
   toggle.disabled=disabled;
   toggle.classList.toggle('is-active',active);
   toggle.setAttribute('aria-checked',active ? 'true' : 'false');
   toggle.setAttribute('aria-disabled',disabled ? 'true' : 'false');
-  toggle.setAttribute('aria-label',disabled ? `${label} OFF · ${reason}` : `${label} ${active ? 'ON' : 'OFF'}`);
-  toggle.title=reason;
+  toggle.setAttribute('aria-label',`${label} ${active ? 'ON' : 'OFF'}`);
   if(containerSelector) toggle.closest(containerSelector)?.classList.toggle('is-disabled',disabled);
 }
 function syncSpecDpsSpeedSwitch(){
@@ -593,8 +548,7 @@ function syncSpecDpsSpeedSwitch(){
   const disabled=!speedModeSupported();
   if(disabled) input.value='OFF';
   const active=!disabled && storedSpeedModeEnabled('specDpsSpeedMode');
-  const reason=disabled ? '도전의 탑은 스피드 모드 미지원' : '';
-  syncOnOffSwitch(toggle,{active,disabled,label:'스피드 모드',reason,containerSelector:'.spec-dps-speed-switch-wrap'});
+  syncOnOffSwitch(toggle,{active,disabled,label:'스피드 모드',containerSelector:'.spec-dps-speed-switch-wrap'});
 }
 function toggleSpecDpsSpeedMode(){
   const input=$('specDpsSpeedMode');
@@ -607,12 +561,6 @@ function toggleSpecDpsSpeedMode(){
   return true;
 }
 /* 유닛 보드 전투 모드·적 방어 효과 스위치 */
-function dpsBaseUnitConditionDisabledReason(inputId){
-  if(inputId==='dpsBaseUnitSpeedMode') return '도전의 탑은 스피드 모드 미지원';
-  if(inputId==='dpsBaseUnitShieldOff') return `${difficultyName(vs('diff'))} 난이도는 무적 제거 불가 · -4초 고정`;
-  if(inputId==='dpsBaseUnitShieldMaster') return '10강 슈퍼쉴드 면역 적용 중';
-  return '';
-}
 function syncDpsBaseUnitConditionSwitch(toggle){
   if(!toggle) return;
   const inputId=toggle.dataset.dpsBaseUnitConditionToggle || '';
@@ -621,8 +569,7 @@ function syncDpsBaseUnitConditionSwitch(toggle){
   if(disabled && input) input.value='OFF';
   const active=!disabled && storedSpeedModeEnabled(inputId);
   const label=toggle.dataset.dpsBaseUnitConditionLabel || '설정';
-  const reason=disabled ? dpsBaseUnitConditionDisabledReason(inputId) : '';
-  syncOnOffSwitch(toggle,{active,disabled,label,reason,containerSelector:'.dps-base-unit-condition-item'});
+  syncOnOffSwitch(toggle,{active,disabled,label,containerSelector:'.dps-base-unit-condition-item'});
 }
 function syncDpsBaseUnitConditionSwitches(){
   qsa('[data-dps-base-unit-condition-toggle]').forEach(syncDpsBaseUnitConditionSwitch);
@@ -1430,7 +1377,7 @@ const FIELD_REGISTRY={
   dpsBaseUnitExtraSettings:{kind:'유닛 보드',name:'추가 유닛 쥬얼 & 한계 돌파',save:true},
   dpsBaseUnitSlotExpansions:{kind:'유닛 보드',name:'슬롯 확장',save:true},
   dpsBaseUnitSpeedMode:{kind:'유닛 보드',name:'스피드 모드',compare:true,save:true},
-  dpsBaseUnitShieldOff:{kind:'유닛 보드',name:'적제거 · 쉴드오프',compare:true,save:true},
+  dpsBaseUnitShieldOff:{kind:'유닛 보드',name:'적버프 제거 · 쉴드오프',compare:true,save:true},
   dpsBaseUnitShieldMaster:{kind:'유닛 보드',name:'슈퍼실드 주기변경 · 쉴드마스',compare:true,save:true},
   erosionStack:{kind:'기본 정보',name:'침식 스텍',compare:true,save:true,excel:'number'},
   jewelErosionRes:{kind:'기본 정보',name:'심연 내성',compare:true,save:true,excel:'number'},
@@ -4102,39 +4049,29 @@ const ZERO_RANK_FALLBACK_TABLE=[
   {name:'패왕+',score:650},{name:'제왕',score:700},{name:'제왕+',score:750},{name:'신황',score:800},{name:'신황+',score:850}
 ];
 function getZeroRankTable(){
-  const rows=[...qsa('.zero-rank-table tbody tr')].map(row=>{
-    const cells=row.querySelectorAll('td');
-    const name=excelText(cells[0]?.textContent);
-    const score=excelNumber(cells[2]?.textContent);
+  const rows=[...qsa('.zero-rank-entry')].map(row=>{
+    const name=excelText(row.dataset.rankName);
+    const score=excelNumber(row.dataset.rankScore);
     return name && score!==null ? {name,score,row} : null;
   }).filter(Boolean);
   return rows.length ? rows : ZERO_RANK_FALLBACK_TABLE;
 }
 function zeroRankEntry(score){
   const value=Number(score)||0;
-  return getZeroRankTable().reduce((best,item)=>value>=item.score ? item : best, getZeroRankTable()[0] || ZERO_RANK_FALLBACK_TABLE[0]);
+  const table=getZeroRankTable();
+  return table.reduce((best,item)=>value>=item.score ? item : best, table[0] || ZERO_RANK_FALLBACK_TABLE[0]);
 }
 function zeroRankName(score){
   return zeroRankEntry(score)?.name || '입문';
 }
-function zeroBenefitRankName(article){
-  const text=excelText(article?.querySelector('h4 span')?.textContent);
-  return text.replace(/^\[/,'').replace(/\]$/,'').trim();
-}
 function updateZeroRankHighlights(currentRank, targetRank){
   const current=excelText(currentRank);
   const target=excelText(targetRank);
-  qsa('.zero-rank-table tbody tr').forEach(row=>{
-    const name=excelText(row.querySelector('td')?.textContent);
+  qsa('.zero-rank-entry').forEach(row=>{
+    const name=excelText(row.dataset.rankName);
     row.classList.toggle('zero-rank-current', !!current && name===current);
     row.classList.toggle('zero-rank-target', !!target && name===target);
     row.classList.toggle('zero-rank-same', !!current && current===target && name===current);
-  });
-  qsa('.zero-benefit-rank').forEach(article=>{
-    const name=zeroBenefitRankName(article);
-    article.classList.toggle('zero-rank-current', !!current && name===current);
-    article.classList.toggle('zero-rank-target', !!target && name===target);
-    article.classList.toggle('zero-rank-same', !!current && current===target && name===current);
   });
   const card=qs('.zero-rank-result-card');
   if(card){
@@ -4445,7 +4382,7 @@ function bindAppEvents(){
   if(appEventsBound) return;
   appEventsBound=true;
   [
-    bindFontScaleViewportGuard, bindActionEvents, bindBusCutEvents, bindTraitHoldEvents, bindTraitInputEvents,
+    bindFontScaleViewportGuard, bindActionEvents, bindTraitHoldEvents, bindTraitInputEvents,
     ()=>window.DpsModal.bindEvents(), bindExcelCompareEvents, ()=>window.DpsPreset.bindEvents(), bindJewelImageEvents,
     bindConvenienceMenuEvents, bindZeroScoreCalculator, bindTraitLimitDisplayEvents, bindDpsBaseUnitControlEvents, bindReactiveInputs,
     bindButtonPressFeedback, bindDamageBoardSwitchEvents, bindDpsBaseUnitConditionEvents, bindAppTitleVersion
