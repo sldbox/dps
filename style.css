@@ -1179,19 +1179,13 @@ body .trait-preset-body .btn.danger:not(.pri):active, body .trait-preset-body .b
 .trait-preset-backup-change-tags span{display:inline-flex;align-items:center;justify-content:center;max-width:100%;min-height:24px;padding:4px 8px;border:1px solid #36577f;border-radius:999px;background:#182b44;color:#eef6ff;font-size:calc(9.2px * var(--app-font-scale));font-weight:850;line-height:1.2;word-break:keep-all;}
 .trait-preset-backup-change-empty{align-self:center;margin:0;color:#7f93ad;font-size:calc(9.5px * var(--app-font-scale));font-weight:850;}
 .trait-preset-backup-actions{display:grid;grid-template-columns:minmax(0,1fr);gap:8px;}
-.trait-preset-backup-actions.is-pending{grid-template-columns:repeat(3,minmax(0,1fr));}
+.trait-preset-backup-actions.is-pending{grid-template-columns:repeat(2,minmax(0,1fr));}
 .trait-preset-backup-actions .btn{width:100%;min-width:0;min-height:38px;margin:0;padding:6px 8px;font-size:calc(10.5px * var(--app-font-scale));white-space:normal;}
 .trait-preset-backup-actions .btn:disabled{opacity:.42;cursor:not-allowed;filter:saturate(.35);}
 .trait-preset-backup-file-box{display:grid;grid-template-columns:minmax(0,1fr);gap:8px;min-width:0;padding:10px;border:1px solid #314863;border-radius:9px;background:#0d1828;}
 .trait-preset-backup-file-box .trait-preset-excel-field{margin:0;}
-.trait-preset-backup-file-box input.is-readonly,.trait-preset-backup-file-box input[readonly]{border-color:#49627f;background:#0f1a29;color:#bfdbfe;cursor:default;}
-.trait-preset-backup-file-mode-row{display:grid;grid-template-columns:minmax(88px,.55fr) minmax(0,1.45fr);gap:8px;align-items:center;min-width:0;}
-.trait-preset-backup-file-mode-row>span{height:36px;display:flex;align-items:center;justify-content:center;padding:0 8px;border:1px solid var(--field-label-bd,#30435f);border-left-color:var(--field-label-accent,#425b7e);border-radius:8px;background:var(--field-label-bg,#172235);color:var(--field-label-text,#d7e4f3);font-size:calc(10.5px * var(--app-font-scale));font-weight:900;line-height:1;}
-.trait-preset-backup-file-mode-buttons{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;min-width:0;}
-.trait-preset-backup-file-mode{min-width:0;min-height:36px;padding:6px 8px;border-color:#345579;background:#101f33;color:#cfe0ff;font-size:calc(10.2px * var(--app-font-scale));font-weight:950;line-height:1.2;text-align:center;white-space:normal;}
-.trait-preset-backup-file-mode.is-active{border-color:#60a5fa;background:linear-gradient(180deg,#1d4f94,#17386d);color:#fff;box-shadow:0 0 0 1px rgba(96,165,250,.22);}
-.trait-preset-backup-file-mode.is-active:hover,.trait-preset-backup-file-mode.is-active:focus-visible,.trait-preset-backup-file-mode.is-active:active:not(:disabled){border-color:#60a5fa;background:linear-gradient(180deg,#1d4f94,#17386d);color:#fff;box-shadow:0 0 0 1px rgba(96,165,250,.22);filter:none;}
-.trait-preset-backup-file-mode:disabled{opacity:.44;cursor:not-allowed;filter:saturate(.45);}
+.trait-preset-backup-execute-row{display:grid;grid-template-columns:minmax(88px,.55fr) minmax(0,1.45fr);gap:8px;align-items:center;min-width:0;}
+.trait-preset-backup-execute-row>span{height:36px;display:flex;align-items:center;justify-content:center;padding:0 8px;border:1px solid var(--field-label-bd,#30435f);border-left-color:var(--field-label-accent,#425b7e);border-radius:8px;background:var(--field-label-bg,#172235);color:var(--field-label-text,#d7e4f3);font-size:calc(10.5px * var(--app-font-scale));font-weight:900;line-height:1;}
 .trait-preset-backup-result{display:grid;gap:7px;padding:15px;border:1px solid #22c55e;border-radius:10px;background:rgba(6,78,59,.24);}
 .trait-preset-backup-result h3{color:#d1fae5;}
 .trait-preset-backup-result p{color:#a7f3d0;font-family:Consolas,monospace;}
@@ -1455,13 +1449,11 @@ body.is-mobile .trait-preset-backup-change-item strong, body.is-narrow-mobile .t
 body.is-mobile .trait-preset-backup-change-tags, body.is-narrow-mobile .trait-preset-backup-change-tags{gap:3px;}
 body.is-mobile .trait-preset-backup-change-tags span, body.is-narrow-mobile .trait-preset-backup-change-tags span{min-height:18px;padding:3px 4px;font-size:calc(7.2px * var(--app-font-scale));line-height:1.15;}
 body.is-mobile .trait-preset-backup-change-empty, body.is-narrow-mobile .trait-preset-backup-change-empty{font-size:calc(7.4px * var(--app-font-scale));}
-body.is-mobile .trait-preset-backup-actions.is-pending, body.is-narrow-mobile .trait-preset-backup-actions.is-pending{grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;}
+body.is-mobile .trait-preset-backup-actions.is-pending, body.is-narrow-mobile .trait-preset-backup-actions.is-pending{grid-template-columns:repeat(2,minmax(0,1fr));gap:5px;}
 body.is-mobile .trait-preset-backup-actions .btn, body.is-narrow-mobile .trait-preset-backup-actions .btn{min-height:38px;padding:5px 3px;font-size:calc(8.4px * var(--app-font-scale));line-height:1.25;}
 body.is-mobile .trait-preset-backup-file-box, body.is-narrow-mobile .trait-preset-backup-file-box{gap:6px;padding:7px;}
-body.is-mobile .trait-preset-backup-file-mode-row, body.is-narrow-mobile .trait-preset-backup-file-mode-row{grid-template-columns:minmax(76px,.52fr) minmax(0,1.48fr);gap:6px;}
-body.is-mobile .trait-preset-backup-file-mode-row>span, body.is-narrow-mobile .trait-preset-backup-file-mode-row>span{height:34px;padding:0 5px;font-size:calc(8.6px * var(--app-font-scale));}
-body.is-mobile .trait-preset-backup-file-mode-buttons, body.is-narrow-mobile .trait-preset-backup-file-mode-buttons{gap:5px;}
-body.is-mobile .trait-preset-backup-file-mode, body.is-narrow-mobile .trait-preset-backup-file-mode{min-height:34px;padding:5px 4px;font-size:calc(8.2px * var(--app-font-scale));}
+body.is-mobile .trait-preset-backup-execute-row, body.is-narrow-mobile .trait-preset-backup-execute-row{grid-template-columns:minmax(76px,.52fr) minmax(0,1.48fr);gap:6px;}
+body.is-mobile .trait-preset-backup-execute-row>span, body.is-narrow-mobile .trait-preset-backup-execute-row>span{height:34px;padding:0 5px;font-size:calc(8.6px * var(--app-font-scale));}
 body.is-mobile .trait-preset-unit-copy-left, body.is-narrow-mobile .trait-preset-unit-copy-left{gap:13px;}
 body.is-mobile .trait-preset-unit-copy-arrow, body.is-narrow-mobile .trait-preset-unit-copy-arrow{min-height:30px;margin:1px 0;font-size:calc(28px * var(--app-font-scale));}
 body.is-mobile .trait-preset-unit-copy-select-head, body.is-narrow-mobile .trait-preset-unit-copy-select-head,

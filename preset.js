@@ -622,7 +622,6 @@ function safeJsonParse(raw){
   return null;
 }
 const TRAIT_PRESET_STATUS_STORAGE_KEY=DPS_CONFIG.storage.traitPresetStatusKey || 'gbd_dps_calculator:trait_preset_status';
-const TRAIT_PRESET_SOURCE_FILE_STORAGE_KEY='gbd_dps_calculator:trait_preset_source_file';
 function emptyTraitPresetStatusData(){
   return {updatedPresetIds:[],backupNeeded:false,lastAction:'latest',selectedTraitPresetId:'',pendingJewelSettings:false,pendingUnitBoardPresetIds:[]};
 }
@@ -667,37 +666,6 @@ function cleanTraitPresetFileBaseName(value=''){
     .trim()
     .replace(/[. ]+$/,'')
     .slice(0,80);
-}
-function normalizeTraitPresetSourceFileInfo(fileName=''){
-  const original=String(fileName || '').split(/[\\/]/).pop().trim();
-  const baseName=cleanTraitPresetFileBaseName(original);
-  if(!baseName) return null;
-  const extMatch=original.match(/\.([^.]+)$/);
-  const ext=(extMatch?.[1] || 'txt').toLowerCase()==='txt' ? 'txt' : 'txt';
-  return {fileName:`${baseName}.${ext}`,baseName,ext,importedAt:Date.now()};
-}
-function loadTraitPresetSourceFileInfo(){
-  try{
-    const raw=localStorage.getItem(TRAIT_PRESET_SOURCE_FILE_STORAGE_KEY);
-    if(!raw) return null;
-    const parsed=safeJsonParse(raw);
-    if(!parsed || typeof parsed!=='object') return null;
-    const normalized=normalizeTraitPresetSourceFileInfo(parsed.fileName || parsed.baseName || '');
-    if(!normalized) return null;
-    return {...normalized,importedAt:+parsed.importedAt || normalized.importedAt};
-  }catch(error){
-    rememberAppIssue('warn','프리셋 원본 파일명 불러오기', error);
-    return null;
-  }
-}
-function saveTraitPresetSourceFileInfo(fileName){
-  const info=normalizeTraitPresetSourceFileInfo(fileName);
-  if(!info) return null;
-  try{ localStorage.setItem(TRAIT_PRESET_SOURCE_FILE_STORAGE_KEY, JSON.stringify(info)); }catch(error){ rememberAppIssue('warn','프리셋 원본 파일명 저장', error); }
-  return info;
-}
-function clearTraitPresetSourceFileInfo(){
-  try{ localStorage.removeItem(TRAIT_PRESET_SOURCE_FILE_STORAGE_KEY); }catch(error){ rememberAppIssue('warn','프리셋 원본 파일명 삭제', error); }
 }
 function currentTraitPresetStatusData(partial={}){
   const status=normalizeTraitPresetStatusData({...loadTraitPresetStatusData(), ...partial});
@@ -1569,7 +1537,6 @@ function resetToFirstVisitState(){
       localStorage.removeItem(STORAGE_KEY);
       localStorage.removeItem(TRAIT_PRESET_STORAGE_KEY);
       localStorage.removeItem(TRAIT_PRESET_STATUS_STORAGE_KEY);
-      clearTraitPresetSourceFileInfo();
       localStorage.removeItem(DPS_CONFIG.storage.fontKey);
     }catch(error){
       rememberAppIssue('warn','전체 저장 데이터 제거', error);
@@ -1808,7 +1775,6 @@ function traitPresetBackupTargetsHtml(plan){
 }
 let traitPresetBackupModalPlan=null;
 let traitPresetBackupLocked=false;
-let traitPresetBackupFileMode='new';
 function setTraitPresetBackupSavingState(active){
   traitPresetBackupLocked=!!active;
   qsa('[data-trait-preset-backup-run]').forEach(btn=>{
@@ -1816,48 +1782,20 @@ function setTraitPresetBackupSavingState(active){
     btn.disabled=!!active || applyWithoutChanges;
   });
   qsa('[data-trait-preset-backup-close]').forEach(btn=>{ btn.disabled=!!active; });
-  qsa('[data-trait-preset-backup-file-mode]').forEach(btn=>{ btn.disabled=!!active || (btn.dataset.traitPresetBackupFileMode==='overwrite' && !loadTraitPresetSourceFileInfo()?.baseName); });
 }
 function traitPresetBackupFallbackName(plan){
   return cleanTraitPresetFileBaseName(plan?.selectedPreset?.name || '') || '';
 }
-function traitPresetBackupFileModeData(plan){
-  const sourceInfo=loadTraitPresetSourceFileInfo();
-  const hasSource=!!sourceInfo?.baseName;
-  const mode=hasSource && traitPresetBackupFileMode==='overwrite' ? 'overwrite' : 'new';
-  const fallback=traitPresetBackupFallbackName(plan);
-  const baseName=mode==='overwrite' && hasSource ? sourceInfo.baseName : (sourceInfo?.baseName || fallback);
-  return {sourceInfo,hasSource,mode,baseName};
-}
-function syncTraitPresetBackupFileNameMode(mode){
-  const plan=traitPresetBackupModalPlan || traitPresetBackupChangePlan();
-  const sourceInfo=loadTraitPresetSourceFileInfo();
-  traitPresetBackupFileMode=(mode==='overwrite' && sourceInfo?.baseName) ? 'overwrite' : 'new';
-  const data=traitPresetBackupFileModeData(plan);
-  qsa('[data-trait-preset-backup-file-mode]').forEach(btn=>{
-    const active=btn.dataset.traitPresetBackupFileMode===data.mode;
-    btn.classList.toggle('is-active',active);
-    btn.setAttribute('aria-pressed',active ? 'true' : 'false');
-    if(btn.dataset.traitPresetBackupFileMode==='overwrite') btn.disabled=!data.hasSource || traitPresetBackupLocked;
-    else btn.disabled=traitPresetBackupLocked;
-  });
-  const input=$('traitPresetBackupName');
-  if(input){
-    input.readOnly=data.mode==='overwrite';
-    input.classList.toggle('is-readonly',input.readOnly);
-    if(data.mode==='overwrite' || !input.value.trim()) input.value=data.baseName;
-    input.placeholder=data.hasSource ? data.sourceInfo.fileName : '파일명을 입력하세요';
-  }
+function traitPresetBackupDefaultFileName(plan){
+  return traitPresetBackupFallbackName(plan);
 }
 function traitPresetBackupFileNameControlHtml(plan){
-  const data=traitPresetBackupFileModeData(plan);
-  const inputAttrs=data.mode==='overwrite' ? ' readonly' : '';
-  const overwriteDisabled=data.hasSource ? '' : ' disabled';
+  const baseName=traitPresetBackupDefaultFileName(plan);
   return `<section class="trait-preset-backup-file-box">
-    <label class="trait-preset-excel-field"><span>백업 파일명</span><input id="traitPresetBackupName" type="text" maxlength="80" autocomplete="off" placeholder="파일명을 입력하세요" value="${escapeHtml(data.baseName)}"${inputAttrs}/></label>
-    <div class="trait-preset-backup-file-mode-row"><span>백업 방식</span><div class="trait-preset-backup-file-mode-buttons" role="group" aria-label="백업 파일명 방식">
-      <button class="ui-action-btn trait-preset-backup-file-mode${data.mode==='overwrite'?' is-active':''}" type="button" data-trait-preset-backup-file-mode="overwrite" aria-pressed="${data.mode==='overwrite'?'true':'false'}"${overwriteDisabled}>덮어쓰기</button>
-      <button class="ui-action-btn trait-preset-backup-file-mode${data.mode==='new'?' is-active':''}" type="button" data-trait-preset-backup-file-mode="new" aria-pressed="${data.mode==='new'?'true':'false'}">새로 생성</button>
+    <label class="trait-preset-excel-field"><span>백업 파일명</span><input id="traitPresetBackupName" type="text" maxlength="80" autocomplete="off" placeholder="파일명을 입력하세요" value="${escapeHtml(baseName)}"/></label>
+    <div class="trait-preset-backup-execute-row"><span>백업 실행</span><div class="trait-preset-backup-actions is-pending">
+      <button class="btn subtle ui-action-btn" type="button" data-trait-preset-backup-run="stored">원본 통합프리셋 백업</button>
+      <button class="btn pri ui-action-btn" type="button" data-trait-preset-backup-run="apply"${plan.hasPending ? '' : ' disabled'}>변경 적용 후 백업</button>
     </div></div>
   </section>`;
 }
@@ -1879,14 +1817,8 @@ function renderTraitPresetBackupModal(plan){
   if(modal) modal.classList.toggle('has-pending-change',!!plan.hasPending);
   body.innerHTML=`
     ${traitPresetBackupTargetsHtml(plan)}
-    ${traitPresetBackupFileNameControlHtml(plan)}
-    <div class="trait-preset-backup-actions is-pending">
-      <button class="btn subtle ui-action-btn" type="button" data-trait-preset-backup-close="1">닫기</button>
-      <button class="btn subtle ui-action-btn" type="button" data-trait-preset-backup-run="stored">저장된 프리셋만 백업</button>
-      <button class="btn pri ui-action-btn" type="button" data-trait-preset-backup-run="apply"${plan.hasPending ? '' : ' disabled'}>변경 적용 후 백업</button>
-    </div>`;
+    ${traitPresetBackupFileNameControlHtml(plan)}`;
   body.scrollTop=0;
-  syncTraitPresetBackupFileNameMode(traitPresetBackupFileMode);
   setTraitPresetBackupSavingState(false);
 }
 function renderTraitPresetBackupResult({fileName,mode,plan,error=''}){
@@ -1894,13 +1826,13 @@ function renderTraitPresetBackupResult({fileName,mode,plan,error=''}){
   if(!body) return;
   body.closest('.trait-preset-backup-modal')?.classList.remove('has-pending-change');
   if(error){
-    body.innerHTML=`<section class="trait-preset-backup-result is-error"><h3>프리셋 백업을 완료하지 못했습니다.</h3><p>${escapeHtml(error)}</p></section><div class="trait-preset-backup-actions"><button class="btn pri ui-action-btn" type="button" data-trait-preset-backup-close="1">닫기</button></div>`;
+    body.innerHTML=`<section class="trait-preset-backup-result is-error"><h3>프리셋 백업을 완료하지 못했습니다.</h3><p>${escapeHtml(error)}</p></section>`;
     return;
   }
   const updatedHtml=mode==='apply' && plan.hasPending
     ? traitPresetBackupTargetsHtml(plan)
     : (plan.hasCurrentPending ? '<p class="trait-preset-backup-saved-only">현재 화면의 미반영 변경사항은 프리셋에 적용하지 않았습니다.</p>' : (plan.hasStoredPending ? traitPresetBackupTargetsHtml(plan) : ''));
-  body.innerHTML=`<section class="trait-preset-backup-result"><h3>프리셋 백업 파일 생성 완료</h3><p>${escapeHtml(fileName)}</p></section>${updatedHtml}<div class="trait-preset-backup-actions"><button class="btn pri ui-action-btn" type="button" data-trait-preset-backup-close="1">닫기</button></div>`;
+  body.innerHTML=`<section class="trait-preset-backup-result"><h3>프리셋 백업 파일 생성 완료</h3><p>${escapeHtml(fileName)}</p></section>${updatedHtml}`;
 }
 function openTraitPresetBackupModal(){
   try{
@@ -1909,7 +1841,6 @@ function openTraitPresetBackupModal(){
     const store=loadTraitPresetStore();
     if(!store.presets.length){ notifyStorageAction('백업할 프리셋이 없습니다.','err'); return false; }
     traitPresetBackupModalPlan=traitPresetBackupChangePlan(store,currentSnapshot);
-    traitPresetBackupFileMode=loadTraitPresetSourceFileInfo()?.baseName ? 'overwrite' : 'new';
     createTraitPresetBackupModal();
     renderTraitPresetBackupModal(traitPresetBackupModalPlan);
     window.DpsModal.setOpen('traitPresetBackupModal','trait-preset-excel-modal-open',true);
@@ -1927,7 +1858,6 @@ function openTraitPresetBackupModal(){
 function closeTraitPresetBackupModal(){
   if(traitPresetBackupLocked) return false;
   traitPresetBackupModalPlan=null;
-  traitPresetBackupFileMode='new';
   window.DpsModal.setOpen('traitPresetBackupModal','trait-preset-excel-modal-open',false);
   return true;
 }
@@ -2188,7 +2118,6 @@ async function importTraitPresetFile(file){
     if(isUnsupportedOldTraitPresetPayload(parsed)) throw new Error(TRAIT_PRESET_UNSUPPORTED_OLD_MESSAGE);
     const imported=normalizeTraitPresetImportData(parsed);
     const result=mergeTraitPresetImport(imported);
-    saveTraitPresetSourceFileInfo(file?.name || '');
     const loadId=result.firstImportedPresetId || '';
     if(loadId) loadTraitPresetById(loadId,{notifySuccess:false,preserveSharedValues:false});
     else refreshTraitPresetControls('');
@@ -2772,12 +2701,6 @@ function bindTraitPresetEvents(){
     }
     if(e.target.closest('[data-trait-preset-excel-close]')) closeTraitPresetExcelImportModal();
     if(e.target.closest('[data-trait-preset-excel-save]')) saveSelectedExcelSheetAsTraitPreset();
-    const backupFileMode=e.target.closest('[data-trait-preset-backup-file-mode]');
-    if(backupFileMode){
-      e.preventDefault();
-      syncTraitPresetBackupFileNameMode(backupFileMode.dataset.traitPresetBackupFileMode);
-      return;
-    }
     if(e.target.closest('[data-trait-preset-backup-close]')) closeTraitPresetBackupModal();
     const backupRun=e.target.closest('[data-trait-preset-backup-run]');
     if(backupRun){
