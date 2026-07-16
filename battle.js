@@ -17,8 +17,8 @@
   box-shadow:inset 0 0 0 1px rgba(139,102,93,.08),inset 0 14px 28px rgba(0,0,0,.28),inset 0 -12px 24px rgba(0,0,0,.34);
 }
 .battle-canvas-shell.has-enemy-status.show-enemy-status{display:grid;grid-template-rows:38px minmax(0,1fr);}
-.battle-canvas-viewport{position:relative;display:block;width:100%;height:100%;min-width:0;min-height:0;overflow:hidden;}
-.battle-canvas{display:block;width:100%;height:100%;touch-action:pan-y;}
+.battle-canvas-viewport{position:relative;display:block;width:100%;height:100%;min-width:0;min-height:0;overflow:hidden;background:#08070a;}
+.battle-canvas{display:block;width:100%;height:100%;touch-action:pan-y;background:#08070a;backface-visibility:hidden;transform:translateZ(0);}
 .battle-enemy-status{
   display:grid;grid-template-columns:auto minmax(0,1fr) minmax(0,1fr);gap:12px;align-items:center;min-width:0;
   padding:5px 12px;border-bottom:1px solid rgba(139,108,82,.52);
@@ -97,6 +97,8 @@ body:is(.is-mobile,.is-narrow-mobile) .battle-enemy-status-track{height:6px;}
   const INFILTRATION_DURATION=3;
   const BATTLE_DURATION=5;
   const ACTIVE_CYCLE_DURATION=INFILTRATION_DURATION+BATTLE_DURATION;
+  const CANVAS_RESIZE_EPSILON=1;
+  const STATUS_UPDATE_INTERVAL=90;
   const RESULT_START_PHASE=.76;
   const RESULT_FADE_OUT_PHASE=.94;
   const RESULT_END_PHASE=.985;
@@ -501,10 +503,15 @@ body:is(.is-mobile,.is-narrow-mobile) .battle-enemy-status-track{height:6px;}
   function prefersReducedMotion(){return Boolean(window.matchMedia?.('(prefers-reduced-motion: reduce)').matches);}
   function qualityFor(width,height){
     if(prefersReducedMotion()) return .42;
-    const pixels=width*height*(window.devicePixelRatio||1);
-    if(width<480||pixels>1500000) return .58;
-    if(width<800||pixels>850000) return .76;
+    const dpr=window.devicePixelRatio||1;
+    const pixels=width*height*dpr*dpr;
+    if(width<480||pixels>1200000) return .50;
+    if(width<800||pixels>850000) return .70;
     return 1;
+  }
+  function stableCanvasDimension(size,fallback){
+    const value=Number.isFinite(size)&&size>0?size:fallback;
+    return Math.max(1,Math.floor(value||1));
   }
   function isActuallyVisible(element){
     if(!element||!element.isConnected||element.hidden) return false;
@@ -547,18 +554,19 @@ body:is(.is-mobile,.is-narrow-mobile) .battle-enemy-status-track{height:6px;}
       this.status.element.hidden=true;
       this.shell.append(this.status.element,this.viewport);
       this.runtime={signature:'',cycleIndex:null,maxHp:0,maxShield:0,hp:0,shield:0,appliedDamage:0,defeatedAt:Array(10).fill(-1)};
+      this.nextStatusUpdateAt=0;
       this.selectionSignature='';
       this.selectionStartedAt=performance.now();
       this.dialogueSignature='';
       this.dialogueStartedAt=performance.now();
       this.statusVisible=false;
       stage.replaceChildren(this.shell);
-      this.ctx=this.canvas.getContext('2d',{alpha:true,desynchronized:true});
+      this.ctx=this.canvas.getContext('2d',{alpha:false});
       this.width=0;
       this.height=0;
       this.dpr=1;
-      this.resizeObserver=typeof ResizeObserver==='function'?new ResizeObserver(()=>this.resize(true)):null;
-      this.resizeObserver?.observe(stage);
+      this.resizeObserver=typeof ResizeObserver==='function'?new ResizeObserver(()=>this.resize()):null;
+      this.resizeObserver?.observe(this.viewport);
       this.resize(true);
     }
     setData(data){
@@ -586,29 +594,33 @@ body:is(.is-mobile,.is-narrow-mobile) .battle-enemy-status-track{height:6px;}
     }
     resize(force=false){
       const rect=this.viewport.getBoundingClientRect();
-      const width=Math.max(1,Math.round(rect.width||this.stage.clientWidth||1));
-      const height=Math.max(1,Math.round(rect.height||this.stage.clientHeight||1));
-      const maxDpr=width<600?1.55:2;
+      const width=stableCanvasDimension(rect.width,this.stage.clientWidth);
+      const height=stableCanvasDimension(rect.height,this.stage.clientHeight);
+      const maxDpr=width<600?1.5:2;
       const dpr=clamp(window.devicePixelRatio||1,1,maxDpr);
-      if(!force&&width===this.width&&height===this.height&&dpr===this.dpr) return;
+      const displayChanged=Math.abs(width-this.width)>=CANVAS_RESIZE_EPSILON||Math.abs(height-this.height)>=CANVAS_RESIZE_EPSILON;
+      const dprChanged=Math.abs(dpr-this.dpr)>=.01;
+      if(!displayChanged&&!dprChanged&&this.canvas.width&&this.canvas.height) return;
       this.width=width;this.height=height;this.dpr=dpr;
-      this.canvas.width=Math.round(width*dpr);
-      this.canvas.height=Math.round(height*dpr);
-      this.canvas.style.width=`${width}px`;
-      this.canvas.style.height=`${height}px`;
+      const pixelWidth=Math.max(1,Math.round(width*dpr));
+      const pixelHeight=Math.max(1,Math.round(height*dpr));
+      if(force||this.canvas.width!==pixelWidth) this.canvas.width=pixelWidth;
+      if(force||this.canvas.height!==pixelHeight) this.canvas.height=pixelHeight;
       this.ctx.setTransform(dpr,0,0,dpr,0,0);
       this.ctx.imageSmoothingEnabled=true;
-      this.ctx.imageSmoothingQuality='high';
+      this.ctx.imageSmoothingQuality=width<600?'medium':'high';
     }
     draw(now){
       if(paused||!isActuallyVisible(this.stage)) return;
       const flow=unitFlowState(this.data,now,this.selectionStartedAt);
       this.setStatusVisible(flow.showStatus);
-      this.resize();
       this.ctx.clearRect(0,0,this.width,this.height);
       const dialogueTime=Math.max(0,(now-this.dialogueStartedAt)/1000);
       const durability=drawUnitBoardScene(this.ctx,this.width,this.height,this.data,now,dialogueTime,this.runtime,flow);
-      if(flow.showStatus) updateDurabilityStatus(this.status,durability,themeFor(this.data.battleType));
+      if(flow.showStatus&&now>=this.nextStatusUpdateAt){
+        updateDurabilityStatus(this.status,durability,themeFor(this.data.battleType));
+        this.nextStatusUpdateAt=now+STATUS_UPDATE_INTERVAL;
+      }
     }
   }
 
@@ -1739,7 +1751,7 @@ body:is(.is-mobile,.is-narrow-mobile) .battle-enemy-status-track{height:6px;}
   function refresh(){
     const scene=ensureScene();
     if(scene){
-      scene.resize(true);
+      scene.resize();
       scene.draw(performance.now());
     }
   }
