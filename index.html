@@ -308,27 +308,8 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 <div class="trait-preset-title trait-subgroup-title">
 <span class="trait-preset-heading">특성 프리셋</span>
 <div class="trait-preset-header-actions">
-<button class="btn subtle ui-action-btn ui-update-target-style trait-preset-update-scope-btn" id="traitPresetUpdateScopeBtn" type="button" data-trait-preset-update-scope-toggle aria-expanded="false" aria-controls="traitPresetUpdateScopePopover">업데이트 대상</button>
 <button class="btn subtle danger ui-action-btn trait-preset-reset-btn" data-action="resetAllTraitPresetState" id="traitPresetResetAllBtn" type="button">전체 초기화</button>
 </div>
-<aside class="trait-preset-update-scope-popover" id="traitPresetUpdateScopePopover" role="dialog" aria-labelledby="traitPresetUpdateScopeTitle" hidden>
-<div class="trait-preset-update-scope-head">
-<strong id="traitPresetUpdateScopeTitle">프리셋 업데이트 대상</strong>
-<button class="trait-preset-update-scope-close" type="button" data-trait-preset-update-scope-close aria-label="프리셋 업데이트 대상 닫기">×</button>
-</div>
-<div class="trait-preset-update-scope-tabs" role="tablist" aria-label="프리셋 업데이트 대상 구분">
-<button class="trait-preset-update-scope-tab is-shared" id="traitPresetSharedScopeTab" type="button" role="tab" data-trait-preset-update-scope-tab="shared" aria-selected="true" aria-controls="traitPresetSharedScopePanel">프리셋 전체 업데이트 대상</button>
-<button class="trait-preset-update-scope-tab is-single" id="traitPresetSingleScopeTab" type="button" role="tab" data-trait-preset-update-scope-tab="single" aria-selected="false" aria-controls="traitPresetSingleScopePanel" tabindex="-1">프리셋 단일 업데이트 대상</button>
-</div>
-<section class="trait-preset-update-scope-card is-shared" id="traitPresetSharedScopePanel" role="tabpanel" data-trait-preset-update-scope-panel="shared" aria-labelledby="traitPresetSharedScopeTab">
-<p>모든 저장 프리셋에 동일하게 반영</p>
-<div class="trait-preset-update-scope-list" data-trait-preset-update-scope-list="shared"></div>
-</section>
-<section class="trait-preset-update-scope-card is-single" id="traitPresetSingleScopePanel" role="tabpanel" data-trait-preset-update-scope-panel="single" aria-labelledby="traitPresetSingleScopeTab" hidden>
-<p>현재 선택한 프리셋에만 반영</p>
-<div class="trait-preset-update-scope-list" data-trait-preset-update-scope-list="single"></div>
-</section>
-</aside>
 </div>
 <div class="trait-preset-body trait-subgroup-body">
 <div class="trait-preset-name-row">
@@ -757,7 +738,7 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 
 <div class="col-right">
 <div class="dps-base-unit-panel" data-dps-base-unit-control>
-<div class="section-title dps-base-unit-panel-title"><span>유닛 보드</span><div class="dps-base-unit-title-actions"><button class="ui-action-btn ui-update-target-style dps-unit-jewel-open-btn" type="button" data-trait-preset-unit-jewel-open aria-haspopup="dialog" aria-controls="traitPresetUnitJewelModal" aria-expanded="false">유닛 관리</button></div></div>
+<div class="section-title dps-base-unit-panel-title"><span>유닛 보드</span><div class="dps-base-unit-title-actions"><button class="ui-action-btn ui-update-target-style dps-unit-jewel-open-btn" type="button" data-trait-preset-unit-jewel-open="copy" aria-haspopup="dialog" aria-controls="traitPresetUnitJewelModal" aria-expanded="false">유닛 복사</button><button class="ui-action-btn ui-update-target-style dps-unit-jewel-open-btn" type="button" data-trait-preset-unit-jewel-open="jewel" aria-haspopup="dialog" aria-controls="traitPresetUnitJewelModal" aria-expanded="false">쥬얼 설정</button></div></div>
 <div class="battle-stage battle-stage-unit" id="battleUnitStage" aria-label="마왕과 용사의 전투 상태" hidden></div>
 <div class="dps-base-unit-summary" id="dpsBaseUnitSummary" aria-label="유닛 보드 모드 및 달성 정보" hidden></div>
 <input id="dpsBaseUnits" type="hidden" value=""/>
