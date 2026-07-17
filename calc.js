@@ -333,12 +333,16 @@ function traitRate(t){
   }
   return t[4]||0;
 }
+function effectiveTeamCount(diffName=vs('diff')){
+  if(isCoopActive(diffName)) return 3;
+  return Math.max(1, Math.min(3, Number(v('team')) || 1));
+}
 function sumStat(type){
   let s=0;
   TRAITS.forEach(t=>{
     if(t[3]!==type||T_UA.has(t[0])) return;
     let val=(INV[t[0]]||0)*traitRate(t);
-    if(t[5]==='team' && !isSoloStartDifficulty()) val*=Math.max(1,v('team')||1);
+    if(t[5]==='team' && !isSoloStartDifficulty()) val*=effectiveTeamCount();
     if(t[0]===70||t[0]===103||t[0]===110) val=Math.round(val*10)/10;
     s+=val;
   });
@@ -465,6 +469,10 @@ function enemyRoundTime(round, diffName=vs('diff')){
   return Math.max(1,Math.round(finalTime*10)/10);
 }
 const SPEED_MODE_MULTIPLIER=1.3;
+const SPEED_MODE_ROUND_TIME_RATIO=43/61.5;
+function roundTimeToOneDecimal(value){
+  return Math.round((Number(value)+Number.EPSILON)*10)/10;
+}
 function storedSpeedModeEnabled(inputId){
   return normalizeOnOffValue(vs(inputId),'OFF')==='ON';
 }
@@ -474,7 +482,7 @@ function speedModeSupported(diffName=vs('diff')){
 function speedModeRoundTime(baseTime,enabled){
   const time=Number(baseTime);
   if(!Number.isFinite(time)) return time;
-  return enabled ? Math.round((time/SPEED_MODE_MULTIPLIER)*10)/10 : time;
+  return roundTimeToOneDecimal(enabled ? time*SPEED_MODE_ROUND_TIME_RATIO : time);
 }
 function specDpsSpeedModeEnabled(diffName=vs('diff')){
   return speedModeSupported(diffName) && storedSpeedModeEnabled('specDpsSpeedMode');
@@ -726,7 +734,7 @@ function unitADPrivateBonus(){
   return gradeAd + level + uniqueBuff + (enh.value||0) - abyssAdPenalty();
 }
 function personalUaDtMultiplier(){
-  return vs('dt')==='ON' ? 1.15 : 1;
+  return 1.15;
 }
 function syncAutoEP(){
   const ep=Math.floor(effectiveXpValue()/100000) + Math.floor(Math.max(0, v('bxp'))/50000);
@@ -1087,7 +1095,7 @@ function dpsBaseUnitRoundTime(round,diffName=vs('diff')){
   const baseTime=enemyRoundTime(round,diffName);
   const speedAdjustedTime=speedModeRoundTime(baseTime,dpsBaseUnitSpeedModeEnabled(diffName));
   const timeLoss=dpsBaseUnitInvulnerabilityTimeLoss(diffName);
-  return Math.max(1,Math.round((speedAdjustedTime-timeLoss)*10)/10);
+  return Math.max(1,roundTimeToOneDecimal(speedAdjustedTime-timeLoss));
 }
 function dpsBaseUnitEnemyProtectionFactor(diffName=vs('diff')){
   if(!DPS_BASE_UNIT_ENEMY_BUFF_DIFFICULTIES.has(difficultyName(diffName))) return 1;
@@ -1253,20 +1261,29 @@ function dpsBaseUnitArtifactWaveTiming(context){
   const baseCooldown=Math.max(0.001,Number(config.baseWaveCooldown)||4);
   const minimumInterval=Math.max(0.001,Number(config.minimumWaveInterval)||0.001);
   const accelerationValue=Number(context?.M13);
-  const baseAccelerationMultiplier=Number.isFinite(accelerationValue) && accelerationValue>0 ? accelerationValue : 1;
-  const speedModeMultiplier=dpsBaseUnitSpeedModeEnabled() ? SPEED_MODE_MULTIPLIER : 1;
-  const accelerationMultiplier=baseAccelerationMultiplier*speedModeMultiplier;
-  const interval=Math.max(minimumInterval,baseCooldown/accelerationMultiplier);
+  const uaMultiplier=Number.isFinite(accelerationValue) && accelerationValue>0 ? accelerationValue : 1;
+  const difficultySlow=Math.max(0.000001,1-(Number(context?.difficultyAs)||0)/100);
+  const dtMultiplier=Math.max(0.000001,Number(context?.dt)||1);
+  const energyRegenMultiplier=Math.max(0.000001,Number(context?.artifactEnergyRegen)||artifactEnergyRegenMultiplier());
+  const speedModeEnabled=context && Object.prototype.hasOwnProperty.call(context,'speedModeEnabled')
+    ? !!context.speedModeEnabled
+    : dpsBaseUnitSpeedModeEnabled(context?.diffName);
+  const speedModeMultiplier=speedModeEnabled ? SPEED_MODE_MULTIPLIER : 1;
+  const accelerationMultiplier=difficultySlow*uaMultiplier*dtMultiplier*energyRegenMultiplier*speedModeMultiplier;
+  const interval=Math.max(minimumInterval,baseCooldown/Math.max(0.000001,accelerationMultiplier));
   const waveRate=1/interval;
   return {rate:waveRate,cooldown:interval,interval,waveCount:waveRate,baseCooldown,accelerationMultiplier};
 }
-function dpsBaseUnitArtifactDpsParts(unit,context){
+function dpsBaseUnitArtifactTargetCount(){
   const config=dpsBaseUnitArtifactConfig();
+  return Math.max(1,Math.round(Number(config.waveTargetCount)||60));
+}
+function dpsBaseUnitArtifactDpsParts(unit,context){
   const enhance=dpsBaseUnitEnhanceValue(unit);
   const adTdMultiplier=(1+((Number(context.globalAd)||0)+enhance)/100)*(Number(context.M11)||0)/100;
   const critMultiplier=dps2(context.M8,context.M10,context.M9,context.M16,context.M17,context.M18,1);
   const timing=dpsBaseUnitArtifactWaveTiming(context);
-  const targetCount=Math.max(1,Math.round(Number(config.waveTargetCount)||50));
+  const targetCount=dpsBaseUnitArtifactTargetCount();
   const perWaveDamage=context.weaponAttack*adTdMultiplier*critMultiplier;
   const rawM19=perWaveDamage*targetCount*timing.rate;
   return {
@@ -1366,9 +1383,9 @@ function computeStatsRaw(){
   const dt=personalUaDtMultiplier();
   const gradeAs=UNIT_GRADE_AS[activeUnitGrade()] ?? 0;
   const AB6=(1+(M7+upperStats.actualAs+gradeAs)/100)*(1-diff.as/100)*M13*dt*(specDpsSpeedModeEnabled() ? SPEED_MODE_MULTIPLIER : 1);
+  const roundTime=specDpsRoundTime(targetRound);
   const rawM19=AB3*AB4*AB5*AB6;
   const displayMultiplier=contentDpsDisplayMultiplier(vs('diff'),targetRound,displayHR,displaySR);
-  const roundTime=specDpsRoundTime(targetRound);
   const M19=rawM19*displayMultiplier;
 
   const dpsBaseUnitSelection=dpsBaseUnitStorageValue();
@@ -1378,6 +1395,8 @@ function computeStatsRaw(){
       const artifactWeapon=dpsBaseUnitArtifactWeaponStats(displayAP);
       const context={
         globalAd:M4,M11,M8,M10,M9,M16,M17,M18,M13,dt,difficultyAs:diff.as,roundTime,
+        enemyData,diffName:vs('diff'),displayHR,displaySR,clearDefenseReduce:M12_dr,
+        artifactEnergyRegen:artifactEnergyRegenMultiplier(),speedModeEnabled:dpsBaseUnitSpeedModeEnabled(vs('diff')),
         enemyArmor:enemyData.armor,M12:M12_dr,targetRound,weaponAttack:artifactWeapon.weaponAttack
       };
       const parts=dpsBaseUnitArtifactDpsParts(unit,context);
@@ -1521,40 +1540,55 @@ function artifactEnergyRegenMultiplier(){
 }
 function calculateArtifactDpsRaw(stats=computeStatsRaw()){
   const ctx=currentPenaltyContext();
-  const enemyData=stats.enemyData || enemyRoundData(ctx.targetRound);
-  const ownTarget={defenseReduce:stats.M12||0,pierce:0,hpReduce:stats.displayHR||0,shieldReduce:stats.displaySR||0};
-  const ownDurability=targetDurabilityRemain(enemyData, ownTarget);
-  const passengerTargets=coopPassengerTargetEffectsList().map(target=>{
-    const durability=targetDurabilityRemain(enemyData, target);
-    return {...target, hpRemain:durability.remain};
-  });
-  const dmgReduce=ctx.diff.dmg * (1 - ctx.penDmg / 100) * (Number(enemyData.damageMultiplier)||1);
-  const dps0Part=battleTargetDps0Average(
-    {...ownTarget, hpRemain:ownDurability.remain},
-    passengerTargets,
-    enemyData.armor,
-    dmgReduce
-  );
-  const playerCount=battleEnemyCountMultiplier();
-  const flowerMultiplier=on('flowerSkill3') ? 1.15 : 1;
-  const adTdMultiplier=(1 + (stats.M4||0) / 100) * ((stats.M11||0) / 100);
-  const critMultiplier=dps2(stats.M8||0, stats.M10||0, stats.M9||0, stats.M16||0, stats.M17||0, stats.M18||0, 1);
-  const uaMultiplier=(1 - (stats.diff?.as||0) / 100) * (stats.M13||0) * artifactEnergyRegenMultiplier() * personalUaDtMultiplier() * (specDpsSpeedModeEnabled() ? SPEED_MODE_MULTIPLIER : 1);
-  const displayMultiplier=contentDpsDisplayMultiplier(vs('diff'), ctx.targetRound, stats.displayHR||0, stats.displaySR||0);
-  const rawArtifactDps=dps0Part * flowerMultiplier * adTdMultiplier * critMultiplier * uaMultiplier;
-  const roundTime=specDpsRoundTime(ctx.targetRound);
-  const artifactDps=rawArtifactDps * displayMultiplier;
+  const diffName=vs('diff');
+  const enemyData=stats.enemyData || enemyRoundData(ctx.targetRound,diffName);
+  const displayAP=Number(stats.displayAPU ?? stats.displayAP ?? 0);
+  const artifactWeapon=dpsBaseUnitArtifactWeaponStats(displayAP);
+  const roundTime=specDpsRoundTime(ctx.targetRound,diffName);
+  const context={
+    globalAd:stats.M4||0,
+    M11:stats.M11||0,
+    M8:stats.M8||0,
+    M10:stats.M10||0,
+    M9:stats.M9||0,
+    M16:stats.M16||0,
+    M17:stats.M17||0,
+    M18:stats.M18||0,
+    M13:stats.M13||1,
+    dt:personalUaDtMultiplier(),
+    difficultyAs:stats.diff?.as || ctx.diff?.as || 0,
+    roundTime,
+    enemyData,
+    diffName,
+    displayHR:stats.displayHR||0,
+    displaySR:stats.displaySR||0,
+    clearDefenseReduce:stats.M12||0,
+    artifactEnergyRegen:artifactEnergyRegenMultiplier(),
+    speedModeEnabled:specDpsSpeedModeEnabled(diffName),
+    enemyArmor:enemyData.armor,
+    M12:stats.M12||0,
+    targetRound:ctx.targetRound,
+    weaponAttack:artifactWeapon.weaponAttack
+  };
+  const parts=dpsBaseUnitArtifactDpsParts(dpsBaseUnitArtifactConfig().unitId || 'artifactUnit',context);
+  const displayMultiplier=contentDpsDisplayMultiplier(diffName, ctx.targetRound, stats.displayHR||0, stats.displaySR||0);
+  const artifactDps=parts.rawM19*displayMultiplier;
   return {
     dps:Number.isFinite(artifactDps) ? artifactDps : 0,
-    rawDps:Number.isFinite(rawArtifactDps) ? rawArtifactDps : 0,
+    rawDps:Number.isFinite(parts.rawM19) ? parts.rawM19 : 0,
     roundTime,
-    dps0:dps0Part,
-    flowerMultiplier,
-    adTdMultiplier,
-    critMultiplier,
-    uaMultiplier,
+    dps0:parts.perWaveDamage,
+    flowerMultiplier:on('flowerSkill3') ? 1.15 : 1,
+    adTdMultiplier:parts.AB4,
+    critMultiplier:parts.AB5,
+    uaMultiplier:parts.artifactAcceleration,
     displayMultiplier,
-    playerCount,
+    playerCount:battleEnemyCountMultiplier(diffName),
+    targetCount:parts.artifactTargetCount,
+    artifactWaveInterval:parts.artifactWaveInterval,
+    artifactWaveCount:parts.artifactWaveCount,
+    perWaveDamage:parts.perWaveDamage,
+    weaponAttack:artifactWeapon.weaponAttack,
     enemyData,
     penanceLevel:ctx.penanceLevel,
     round:ctx.targetRound

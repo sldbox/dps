@@ -621,6 +621,7 @@ function safeJsonParse(raw){
   return null;
 }
 const TRAIT_PRESET_STATUS_STORAGE_KEY=DPS_CONFIG.storage.traitPresetStatusKey || 'gbd_dps_calculator:trait_preset_status';
+const TRAIT_PRESET_DRAFT_STORAGE_KEY=DPS_CONFIG.storage.traitPresetDraftKey || 'gbd_dps_calculator:trait_preset_drafts';
 function emptyTraitPresetStatusData(){
   return {updatedPresetIds:[],backupNeeded:false,lastAction:'latest',selectedTraitPresetId:'',pendingJewelSettings:false,pendingUnitBoardPresetIds:[]};
 }
@@ -959,6 +960,35 @@ function saveTraitPresetStore(store,options={}){
   if(options.dispatch!==false) dispatchTraitPresetStoreChanged({source:options.source || 'save'});
   return normalized;
 }
+function loadTraitPresetDrafts(){
+  try{
+    const data=safeJsonParse(localStorage.getItem(TRAIT_PRESET_DRAFT_STORAGE_KEY));
+    return data && typeof data==='object' && !Array.isArray(data) ? data : {};
+  }catch(e){ rememberAppIssue('warn','프리셋 임시 변경 로드',e); return {}; }
+}
+function saveTraitPresetDrafts(drafts){
+  const out={};
+  Object.entries(drafts || {}).forEach(([id,draft])=>{
+    const state=normalizeTraitPresetState(draft?.state);
+    if(!id || !state) return;
+    out[id]={state};
+    if(draft.unitBoard) out[id].unitBoard=normalizeTraitPresetUnitBoardState(draft.unitBoard);
+  });
+  if(Object.keys(out).length) localStorage.setItem(TRAIT_PRESET_DRAFT_STORAGE_KEY,JSON.stringify(out));
+  else localStorage.removeItem(TRAIT_PRESET_DRAFT_STORAGE_KEY);
+  return out;
+}
+function traitPresetDraftForId(id){
+  const draft=loadTraitPresetDrafts()[String(id || '')];
+  const state=normalizeTraitPresetState(draft?.state);
+  return state ? {state,unitBoard:draft.unitBoard ? normalizeTraitPresetUnitBoardState(draft.unitBoard) : null} : null;
+}
+function clearTraitPresetDraft(id){
+  const drafts=loadTraitPresetDrafts();
+  delete drafts[String(id || '')];
+  saveTraitPresetDrafts(drafts);
+}
+function clearTraitPresetDrafts(){ localStorage.removeItem(TRAIT_PRESET_DRAFT_STORAGE_KEY); }
 function selectedTraitPresetId(){
   return $('traitPresetSelect')?.value || '';
 }
@@ -1236,6 +1266,7 @@ function saveTraitPreset(){
     setTraitPresetUnitBoardState(store,id,captureTraitPresetUnitBoardState());
     store.jewelSettings=captureTraitPresetJewelSettings();
     saveTraitPresetStore(store,{source:'saveTraitPreset'});
+    clearTraitPresetDraft(id);
     markTraitPresetUpdated([id],'update');
     rememberTraitPresetSelection(id);
     refreshTraitPresetControls(id);
@@ -1268,12 +1299,15 @@ function loadTraitPresetById(id,options={}){
     return false;
   }
   try{
-    applyTraitPresetState(preset,{
+    if(options.discardDraft===true) clearTraitPresetDraft(id);
+    const draft=options.useDraft===false ? null : traitPresetDraftForId(id);
+    const applyPreset=draft?.state ? {...preset,state:draft.state} : preset;
+    applyTraitPresetState(applyPreset,{
       persist:true,
       preserveSharedValues:options.preserveSharedValues===true,
       jewelSettings:store.jewelSettings,
-      unitBoardIncluded:traitPresetHasUnitBoard(store,id),
-      unitBoardState:traitPresetUnitBoardState(store,id)
+      unitBoardIncluded:draft?.unitBoard ? true : traitPresetHasUnitBoard(store,id),
+      unitBoardState:draft?.unitBoard || traitPresetUnitBoardState(store,id)
     });
     rememberTraitPresetSelection(id);
     refreshTraitPresetControls(id);
@@ -1286,7 +1320,7 @@ function loadTraitPresetById(id,options={}){
   }
 }
 function loadTraitPreset(){
-  return loadTraitPresetById(selectedTraitPresetId(),{preserveSharedValues:false});
+  return loadTraitPresetById(selectedTraitPresetId(),{preserveSharedValues:false,useDraft:false,discardDraft:true});
 }
 function stableTraitPresetValue(value){
   if(value && typeof value==='object'){
@@ -1451,6 +1485,7 @@ function updateTraitPreset(options={}){
     setTraitPresetUnitBoardState(store,id,currentUnitBoard);
     store.jewelSettings=currentJewelSettings;
     store=saveTraitPresetStore(store,{source:'updateTraitPreset'});
+    clearTraitPresetDraft(id);
     localStorage.setItem(STORAGE_KEY,JSON.stringify(localState));
     storageState.hasSavedState=true;
     const statusIds=new Set(updatedIds.length ? updatedIds : [id]);
@@ -1472,13 +1507,47 @@ function updateTraitPreset(options={}){
     return false;
   }
 }
+function rememberTraitPresetDraft(id){
+  const draftId=String(id || '').trim();
+  if(!draftId) return false;
+  const store=loadTraitPresetStore();
+  const preset=store.presets.find(item=>item.id===draftId);
+  if(!preset) return false;
+  const state=markPresetStateCurrentVersion(makeStateObject());
+  if(!state) return false;
+  const unitBoard=captureTraitPresetUnitBoardState();
+  const stateChanged=traitPresetStateChangeSummary(preset.state,state).stateChanged;
+  const unitBoardChanged=traitPresetHasUnitBoard(store,draftId) && stableTraitPresetValue(traitPresetUnitBoardState(store,draftId))!==stableTraitPresetValue(unitBoard);
+  const drafts=loadTraitPresetDrafts();
+  if(stateChanged || unitBoardChanged){
+    drafts[draftId]={state};
+    if(unitBoardChanged) drafts[draftId].unitBoard=unitBoard;
+  }else delete drafts[draftId];
+  saveTraitPresetDrafts(drafts);
+  return stateChanged || unitBoardChanged;
+}
+function applyTraitPresetDraftsToStore(store=loadTraitPresetStore()){
+  const drafts=loadTraitPresetDrafts();
+  const validIds=new Set(store.presets.map(preset=>String(preset.id || '')));
+  const now=Date.now();
+  let changed=false;
+  store.presets=store.presets.map(preset=>{
+    const draft=drafts[preset.id];
+    const state=validIds.has(preset.id) ? markPresetStateCurrentVersion(draft?.state) : null;
+    if(!state) return preset;
+    changed=true;
+    return {...preset,updatedAt:now,schemaVersion:TRAIT_PRESET_SCHEMA_VERSION,meta:traitPresetMetaFromSavedState(state),state};
+  });
+  Object.entries(drafts).forEach(([id,draft])=>{
+    if(validIds.has(id) && draft.unitBoard) setTraitPresetUnitBoardState(store,id,normalizeTraitPresetUnitBoardState(draft.unitBoard));
+  });
+  return changed ? saveTraitPresetStore(store,{source:'traitPresetDraftApply'}) : store;
+}
 function updateTraitPresetBeforeSelectionChange(nextId){
   const previousId=loadTraitPresetStatusData().selectedTraitPresetId;
   const normalizedNextId=String(nextId || '').trim();
   if(!previousId || previousId===normalizedNextId) return true;
-  const store=loadTraitPresetStore();
-  if(!store.presets.some(preset=>preset.id===previousId)) return true;
-  updateTraitPreset({id:previousId,silent:true,rememberSelection:false,refresh:false});
+  rememberTraitPresetDraft(previousId);
   return true;
 }
 function renameTraitPreset(){
@@ -1517,6 +1586,7 @@ function deleteTraitPreset(){
       let nextStore=loadTraitPresetStore();
       nextStore.presets=nextStore.presets.filter(item=>item.id!==id);
       deleteTraitPresetUnitBoardState(nextStore,id);
+      clearTraitPresetDraft(id);
       saveTraitPresetStore(nextStore,{source:'deleteTraitPreset'});
       markTraitPresetUpdated([],'delete');
       rememberTraitPresetSelection('');
@@ -1536,6 +1606,7 @@ function resetToFirstVisitState(){
       localStorage.removeItem(STORAGE_KEY);
       localStorage.removeItem(TRAIT_PRESET_STORAGE_KEY);
       localStorage.removeItem(TRAIT_PRESET_STATUS_STORAGE_KEY);
+      localStorage.removeItem(TRAIT_PRESET_DRAFT_STORAGE_KEY);
       localStorage.removeItem(DPS_CONFIG.storage.fontKey);
     }catch(error){
       rememberAppIssue('warn','전체 저장 데이터 제거', error);
@@ -1726,14 +1797,31 @@ function traitPresetBackupChangePlan(store=loadTraitPresetStore(),currentSnapsho
     markScope(id,'single');
     hasCurrentPending=true;
   });
+  let hasDraftPending=false;
+  Object.entries(loadTraitPresetDrafts()).forEach(([id,draft])=>{
+    if(!validIds.has(id) || id===selectedId) return;
+    const preset=store.presets.find(item=>item.id===id);
+    const state=normalizeTraitPresetState(draft?.state);
+    if(!preset || !state) return;
+    const summary=traitPresetStateChangeSummary(preset.state,state);
+    summary.sharedKeys.forEach(key=>commonChangeKeys.add(key));
+    summary.singleKeys.forEach(key=>singleChangeKeys.add(key));
+    if(summary.sharedChanged){ store.presets.forEach(item=>markScope(item.id,'common')); hasDraftPending=true; }
+    if(summary.singleKeys.size){ markScope(id,'single'); hasDraftPending=true; }
+    if(draft.unitBoard && stableTraitPresetValue(traitPresetUnitBoardState(store,id))!==stableTraitPresetValue(normalizeTraitPresetUnitBoardState(draft.unitBoard))){
+      singleChangeKeys.add('unitBoard');
+      markScope(id,'single');
+      hasDraftPending=true;
+    }
+  });
   const hasStoredPending=storedUpdatedIds.size>0 || storedUnitBoardIds.size>0 || status.pendingJewelSettings===true;
   const commonChangeNames=traitPresetChangeLabels(commonChangeKeys);
   const singleChangeNames=traitPresetChangeLabels(singleChangeKeys);
   return {
     store,selectedId,selectedPreset,currentState,currentUnitBoard,currentJewelSettings,
     presetRows:traitPresetBackupPresetRows(store,commonScopeIds,singleScopeIds),
-    commonChangeNames,singleChangeNames,hasCurrentPending,hasStoredPending,
-    hasPending:hasCurrentPending || hasStoredPending
+    commonChangeNames,singleChangeNames,hasCurrentPending,hasStoredPending,hasDraftPending,
+    hasPending:hasCurrentPending || hasStoredPending || hasDraftPending
   };
 }
 function traitPresetBackupScopeTagsHtml(row){
@@ -1874,7 +1962,7 @@ function createTraitPresetBackupFile(customName=''){
   return fileName;
 }
 function restoreTraitPresetBackupSnapshot(snapshot){
-  [[TRAIT_PRESET_STORAGE_KEY,snapshot.store],[TRAIT_PRESET_STATUS_STORAGE_KEY,snapshot.status]].forEach(([key,value])=>{
+  [[TRAIT_PRESET_STORAGE_KEY,snapshot.store],[TRAIT_PRESET_STATUS_STORAGE_KEY,snapshot.status],[TRAIT_PRESET_DRAFT_STORAGE_KEY,snapshot.drafts]].forEach(([key,value])=>{
     if(value===null) localStorage.removeItem(key);
     else localStorage.setItem(key,value);
   });
@@ -1886,15 +1974,18 @@ function runTraitPresetBackup(mode='stored'){
   const normalizedMode=mode==='apply' ? 'apply' : 'stored';
   if(normalizedMode==='apply' && !plan.hasPending) return false;
   const customName=$('traitPresetBackupName')?.value || '';
-  const snapshot={store:localStorage.getItem(TRAIT_PRESET_STORAGE_KEY),status:localStorage.getItem(TRAIT_PRESET_STATUS_STORAGE_KEY)};
+  const snapshot={store:localStorage.getItem(TRAIT_PRESET_STORAGE_KEY),status:localStorage.getItem(TRAIT_PRESET_STATUS_STORAGE_KEY),drafts:localStorage.getItem(TRAIT_PRESET_DRAFT_STORAGE_KEY)};
   setTraitPresetBackupSavingState(true);
   try{
-    if(normalizedMode==='apply' && plan.hasCurrentPending){
-      const updated=updateTraitPreset();
-      if(!updated) throw new Error('프리셋 변경사항을 적용하지 못했습니다.');
+    if(normalizedMode==='apply' && plan.hasPending){
+      rememberTraitPresetDraft(selectedTraitPresetId());
+      const hasDrafts=Object.keys(loadTraitPresetDrafts()).length>0;
+      if(hasDrafts) applyTraitPresetDraftsToStore();
+      const updated=updateTraitPreset({silent:true});
+      if(!updated && !hasDrafts && plan.hasCurrentPending) throw new Error('프리셋 변경사항을 적용하지 못했습니다.');
     }
     const fileName=createTraitPresetBackupFile(customName);
-    if(normalizedMode==='apply') notifyTraitPresetBackupComplete();
+    if(normalizedMode==='apply'){ clearTraitPresetDrafts(); notifyTraitPresetBackupComplete(); }
     renderTraitPresetBackupResult({fileName,mode:normalizedMode,plan});
     return true;
   }catch(e){
