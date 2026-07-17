@@ -623,7 +623,7 @@ function safeJsonParse(raw){
 const TRAIT_PRESET_STATUS_STORAGE_KEY=DPS_CONFIG.storage.traitPresetStatusKey || 'gbd_dps_calculator:trait_preset_status';
 const TRAIT_PRESET_DRAFT_STORAGE_KEY=DPS_CONFIG.storage.traitPresetDraftKey || 'gbd_dps_calculator:trait_preset_drafts';
 function emptyTraitPresetStatusData(){
-  return {updatedPresetIds:[],backupNeeded:false,lastAction:'latest',selectedTraitPresetId:'',pendingJewelSettings:false,pendingUnitBoardPresetIds:[]};
+  return {updatedPresetIds:[],backupNeeded:false,lastAction:'latest',selectedTraitPresetId:'',pendingJewelSettings:false,pendingUnitBoardPresetIds:[],pendingCommonChangeKeys:[],pendingSingleChangeKeys:[]};
 }
 function normalizeTraitPresetStatusData(data){
   const base=emptyTraitPresetStatusData();
@@ -638,7 +638,13 @@ function normalizeTraitPresetStatusData(data){
   const pendingUnitBoardPresetIds=Array.isArray(data.pendingUnitBoardPresetIds)
     ? [...new Set(data.pendingUnitBoardPresetIds.map(id=>String(id || '').trim()).filter(Boolean))]
     : [];
-  return {updatedPresetIds,backupNeeded,lastAction,selectedTraitPresetId,pendingJewelSettings,pendingUnitBoardPresetIds};
+  const pendingCommonChangeKeys=Array.isArray(data.pendingCommonChangeKeys)
+    ? [...new Set(data.pendingCommonChangeKeys.map(key=>String(key || '').trim()).filter(Boolean))]
+    : [];
+  const pendingSingleChangeKeys=Array.isArray(data.pendingSingleChangeKeys)
+    ? [...new Set(data.pendingSingleChangeKeys.map(key=>String(key || '').trim()).filter(Boolean))]
+    : [];
+  return {updatedPresetIds,backupNeeded,lastAction,selectedTraitPresetId,pendingJewelSettings,pendingUnitBoardPresetIds,pendingCommonChangeKeys,pendingSingleChangeKeys};
 }
 /* 프리셋 상태 */
 function loadTraitPresetStatusData(){
@@ -674,6 +680,8 @@ function currentTraitPresetStatusData(partial={}){
   status.updatedPresetIds=status.updatedPresetIds.filter(id=>validIds.has(id));
   status.pendingUnitBoardPresetIds=status.pendingUnitBoardPresetIds.filter(id=>validIds.has(id));
   if(status.selectedTraitPresetId && !validIds.has(status.selectedTraitPresetId)) status.selectedTraitPresetId='';
+  status.pendingCommonChangeKeys=[...new Set(status.pendingCommonChangeKeys.map(key=>String(key || '').trim()).filter(Boolean))];
+  status.pendingSingleChangeKeys=[...new Set(status.pendingSingleChangeKeys.map(key=>String(key || '').trim()).filter(Boolean))];
   return {status,store};
 }
 function traitPresetBackupButtonText(status, store){
@@ -704,13 +712,20 @@ function markTraitPresetUpdated(ids, action='update', options={}){
   const pendingUnitBoardPresetIds=options.unitBoard===true
     ? [...new Set([...previous.pendingUnitBoardPresetIds, ...normalizedIds])]
     : previous.pendingUnitBoardPresetIds;
-  updateTraitPresetStatus({updatedPresetIds,pendingUnitBoardPresetIds,backupNeeded:true,lastAction:action},{persist:true});
+  const optionCommonKeys=Array.isArray(options.commonChangeKeys) ? options.commonChangeKeys : [];
+  const optionSingleKeys=Array.isArray(options.singleChangeKeys) ? options.singleChangeKeys : [];
+  const pendingCommonChangeKeys=[...new Set([...previous.pendingCommonChangeKeys, ...optionCommonKeys].map(key=>String(key || '').trim()).filter(Boolean))];
+  const unitBoardKeys=options.unitBoard===true ? ['unitBoard'] : [];
+  const pendingSingleChangeKeys=[...new Set([...previous.pendingSingleChangeKeys, ...optionSingleKeys, ...unitBoardKeys].map(key=>String(key || '').trim()).filter(Boolean))];
+  updateTraitPresetStatus({updatedPresetIds,pendingUnitBoardPresetIds,pendingCommonChangeKeys,pendingSingleChangeKeys,backupNeeded:true,lastAction:action},{persist:true});
 }
 function clearTraitPresetUpdatedStatus(action='latest',options={}){
   const partial={updatedPresetIds:[],backupNeeded:false,lastAction:action};
   if(options.keepPending!==true){
     partial.pendingJewelSettings=false;
     partial.pendingUnitBoardPresetIds=[];
+    partial.pendingCommonChangeKeys=[];
+    partial.pendingSingleChangeKeys=[];
   }
   updateTraitPresetStatus(partial,{persist:true});
 }
@@ -1456,6 +1471,13 @@ function updateTraitPreset(options={}){
     const missingRequiredValues=traitPresetMissingRequiredValuesByPreset(store);
     const stateChangeSummary=traitPresetStateChangeSummary(preset.state,currentState);
     const stateChanged=stateChangeSummary.stateChanged;
+    const statusCommonChangeKeys=new Set(stateChangeSummary.sharedKeys);
+    const statusSingleChangeKeys=new Set(stateChangeSummary.singleKeys);
+    missingRequiredValues.forEach(missingIds=>{
+      (Array.isArray(missingIds) ? missingIds : []).forEach(valueId=>{
+        (TRAIT_PRESET_SINGLE_UPDATE_VALUE_IDS.has(valueId) ? statusSingleChangeKeys : statusCommonChangeKeys).add(`value:${valueId}`);
+      });
+    });
     const unitBoardChanged=traitPresetHasUnitBoard(store,id)
       ? stableTraitPresetValue(traitPresetUnitBoardState(store,id))!==stableTraitPresetValue(currentUnitBoard)
       : true;
@@ -1463,6 +1485,8 @@ function updateTraitPreset(options={}){
     const jewelChanged=storedJewelSettings
       ? stableTraitPresetValue(storedJewelSettings)!==stableTraitPresetValue(currentJewelSettings)
       : true;
+    if(unitBoardChanged) statusSingleChangeKeys.add('unitBoard');
+    if(jewelChanged) statusCommonChangeKeys.add('jewelSettings');
     if(!stateChanged && !unitBoardChanged && !jewelChanged && !missingRequiredValues.size){
       if(options.refresh!==false) renderTraitPresetUpdateStatus(store);
       if(options.silent!==true) notifyStorageAction('프리셋 변경사항 없음','warn');
@@ -1489,8 +1513,12 @@ function updateTraitPreset(options={}){
     localStorage.setItem(STORAGE_KEY,JSON.stringify(localState));
     storageState.hasSavedState=true;
     const statusIds=new Set(updatedIds.length ? updatedIds : [id]);
+    if(extensionUpgradeIds.length) statusSingleChangeKeys.add('unitBoard');
     if(jewelChanged || extensionUpgradeIds.length) store.presets.forEach(item=>statusIds.add(item.id));
-    markTraitPresetUpdated([...statusIds],'update');
+    markTraitPresetUpdated([...statusIds],'update',{
+      commonChangeKeys:[...statusCommonChangeKeys],
+      singleChangeKeys:[...statusSingleChangeKeys]
+    });
     const afterUpdateStatus=loadTraitPresetStatusData();
     const clearedUnitBoardIds=new Set([id, ...extensionUpgradeIds]);
     updateTraitPresetStatus({
@@ -1565,7 +1593,7 @@ function renameTraitPreset(){
     preset.name=next;
     preset.updatedAt=Date.now();
     saveTraitPresetStore(store,{source:'renameTraitPreset'});
-    markTraitPresetUpdated([id],'rename');
+    markTraitPresetUpdated([id],'rename',{singleChangeKeys:['presetName']});
     rememberTraitPresetSelection(id);
     refreshTraitPresetControls(id);
     notifyStorageAction(`프리셋 이름 변경 완료: ${next}`,'ok',{statusAction:'save'});
@@ -1675,6 +1703,7 @@ function traitPresetChangeKeyLabel(key){
     zeroScore:'승단 계산',
     unitBoard:'유닛 보드',
     jewelSettings:'쥬얼 설정',
+    presetName:'프리셋 이름',
     storedPreset:'저장된 프리셋 변경',
     'state:shared':'공통 설정',
     'state:single':'단일 설정'
@@ -1724,8 +1753,14 @@ function traitPresetBackupChangePlan(store=loadTraitPresetStore(),currentSnapsho
     (scope==='single' ? singleScopeIds : commonScopeIds).add(normalizedId);
   };
   const storedUpdatedLooksCommon=storedUpdatedIds.size>1 && storedUpdatedIds.size===validIds.size;
+  const storedCommonChangeKeys=new Set(status.pendingCommonChangeKeys || []);
+  const storedSingleChangeKeys=new Set(status.pendingSingleChangeKeys || []);
   storedUpdatedIds.forEach(id=>markScope(id,storedUpdatedLooksCommon ? 'common' : 'single'));
-  if(storedUpdatedIds.size) (storedUpdatedLooksCommon ? commonChangeKeys : singleChangeKeys).add('storedPreset');
+  storedCommonChangeKeys.forEach(key=>commonChangeKeys.add(key));
+  storedSingleChangeKeys.forEach(key=>singleChangeKeys.add(key));
+  if(storedUpdatedIds.size && !storedCommonChangeKeys.size && !storedSingleChangeKeys.size){
+    (storedUpdatedLooksCommon ? commonChangeKeys : singleChangeKeys).add('storedPreset');
+  }
   storedUnitBoardIds.forEach(id=>markScope(id,'single'));
   if(storedUnitBoardIds.size) singleChangeKeys.add('unitBoard');
   if(status.pendingJewelSettings){
@@ -1901,18 +1936,15 @@ function renderTraitPresetBackupModal(plan){
   body.scrollTop=0;
   setTraitPresetBackupSavingState(false);
 }
-function renderTraitPresetBackupResult({fileName,mode,plan,error=''}){
+function renderTraitPresetBackupResult(error=''){
   const body=$('traitPresetBackupBody');
   if(!body) return;
   body.closest('.trait-preset-backup-modal')?.classList.remove('has-pending-change');
-  if(error){
-    body.innerHTML=`<section class="trait-preset-backup-result is-error"><h3>프리셋 백업을 완료하지 못했습니다.</h3><p>${escapeHtml(error)}</p></section>`;
-    return;
-  }
-  const updatedHtml=mode==='apply' && plan.hasPending
-    ? traitPresetBackupTargetsHtml(plan)
-    : (plan.hasCurrentPending ? '<p class="trait-preset-backup-saved-only">현재 화면의 미반영 변경사항은 프리셋에 적용하지 않았습니다.</p>' : (plan.hasStoredPending ? traitPresetBackupTargetsHtml(plan) : ''));
-  body.innerHTML=`<section class="trait-preset-backup-result"><h3>프리셋 백업 파일 생성 완료</h3><p>${escapeHtml(fileName)}</p></section>${updatedHtml}`;
+  body.innerHTML=`<section class="trait-preset-backup-result is-error"><h3>프리셋 백업을 완료하지 못했습니다.</h3><p>${escapeHtml(error)}</p></section>`;
+}
+function notifyTraitPresetBackupFileComplete(fileName){
+  const normalized=String(fileName || '').trim() || makeTraitPresetFileName('');
+  showToast(`${normalized} 백업이 완료되었습니다.`,'ok');
 }
 function openTraitPresetBackupModal(){
   try{
@@ -1986,14 +2018,16 @@ function runTraitPresetBackup(mode='stored'){
     }
     const fileName=createTraitPresetBackupFile(customName);
     if(normalizedMode==='apply'){ clearTraitPresetDrafts(); notifyTraitPresetBackupComplete(); }
-    renderTraitPresetBackupResult({fileName,mode:normalizedMode,plan});
+    notifyTraitPresetBackupFileComplete(fileName);
+    traitPresetBackupModalPlan=null;
+    window.DpsModal.setOpen('traitPresetBackupModal','trait-preset-excel-modal-open',false);
     return true;
   }catch(e){
     if(normalizedMode==='apply'){
       try{ restoreTraitPresetBackupSnapshot(snapshot); }catch(rollbackError){ rememberAppIssue('error','[trait preset backup rollback failed]',rollbackError); }
     }
     rememberAppIssue('error','[trait preset backup failed]',e);
-    renderTraitPresetBackupResult({fileName:'',mode:normalizedMode,plan,error:e?.message || '특성 프리셋 백업 실패'});
+    renderTraitPresetBackupResult(e?.message || '특성 프리셋 백업 실패');
     return false;
   }finally{
     setTraitPresetBackupSavingState(false);
