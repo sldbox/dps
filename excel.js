@@ -1167,7 +1167,7 @@ function readFileAsText(file){
 function isCompareNumericValueId(id){
   return EXCEL_NUMERIC_INPUT_IDS.has(id);
 }
-const NEW_PRESET_ON_OFF_VALUE_IDS=new Set(['specDpsSpeedMode','dpsBaseUnitSpeedMode','dpsBaseUnitShieldMaster']);
+const NEW_PRESET_ON_OFF_VALUE_IDS=new Set(['specDpsSpeedMode','dpsBaseUnitSpeedMode','dpsBaseUnitShieldOff','dpsBaseUnitShieldMaster']);
 function compareSavedValueDisplay(value,id){
   if(NEW_PRESET_ON_OFF_VALUE_IDS.has(id) && (value===undefined || value===null || String(value).trim()==='')) return '미저장';
   if(TRAIT_LIMIT_INPUT_IDS.has(id)) return traitLimitDisplayText(value);

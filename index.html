@@ -5,7 +5,7 @@
 <meta name="google-site-verification" content="RTuDWbMdnKgbpRpl05eXh9epFwWRSxju4NOl8OtjMsI" />
 
 <script>
-window.DPS_BUILD_VERSION = "2607171700";
+window.DPS_BUILD_VERSION = "2607171100";
 window.APP_VERSION = window.DPS_BUILD_VERSION;
 (function(){
   'use strict';
@@ -185,14 +185,14 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 <meta content="https://sldbox.github.io/dps/" property="og:url"/>
 <meta content="개복디 특성 계산기" property="og:title"/>
 <meta content="특성 투자, 재화 사용량, 표기 스탯, 총데미지, DPS를 한 번에 계산할 수 있는 개복디 전용 계산기입니다." property="og:description"/>
-<meta content="https://sldbox.github.io/dps/logo.png?v=2607171700" property="og:image"/>
-<meta content="https://sldbox.github.io/dps/logo.png?v=2607171700" property="og:image:secure_url"/>
+<meta content="https://sldbox.github.io/dps/logo.png?v=2607171100" property="og:image"/>
+<meta content="https://sldbox.github.io/dps/logo.png?v=2607171100" property="og:image:secure_url"/>
 <meta content="image/png" property="og:image:type"/>
 <meta content="개복디 특성 계산기 로고" property="og:image:alt"/>
 <meta content="summary_large_image" name="twitter:card"/>
 <meta content="개복디 특성 계산기" name="twitter:title"/>
 <meta content="특성 투자, 재화 사용량, 표기 스탯, 총데미지, DPS를 한 번에 계산할 수 있는 개복디 전용 계산기입니다." name="twitter:description"/>
-<meta content="https://sldbox.github.io/dps/logo.png?v=2607171700" name="twitter:image"/>
+<meta content="https://sldbox.github.io/dps/logo.png?v=2607171100" name="twitter:image"/>
 <meta content="개복디 특성 계산기 로고" name="twitter:image:alt"/>
 <link href="https://cdn.jsdelivr.net" rel="preconnect"/>
 <link crossorigin="" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" rel="stylesheet"/>
@@ -747,12 +747,17 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 <input id="dpsBaseUnitExtraSettings" type="hidden" value="{}"/>
 <input id="dpsBaseUnitSlotExpansions" type="hidden" value="[]"/>
 <input id="dpsBaseUnitSpeedMode" type="hidden" value="OFF"/>
+<input id="dpsBaseUnitShieldOff" type="hidden" value="OFF"/>
 <input id="dpsBaseUnitShieldMaster" type="hidden" value="OFF"/>
 <div id="dpsBaseUnitQuantityStore" hidden></div>
 <div class="dps-base-unit-condition-controls" aria-label="유닛 보드 전투 모드 및 적 방어 효과 설정">
 <div class="dps-base-unit-condition-item">
 <span class="dps-base-unit-condition-label">스피드 모드</span>
 <div class="dps-base-unit-condition-control"><button class="artifact-dps-switch dps-base-unit-condition-switch" id="dpsBaseUnitSpeedModeToggle" type="button" role="switch" aria-checked="false" data-dps-base-unit-condition-toggle="dpsBaseUnitSpeedMode" data-dps-base-unit-condition-label="스피드 모드"><span class="artifact-dps-switch-text">OFF</span><span class="artifact-dps-switch-text">ON</span><i aria-hidden="true"></i></button></div>
+</div>
+<div class="dps-base-unit-condition-item">
+<span class="dps-base-unit-condition-label">적버프 제거 · 쉴드오프</span>
+<div class="dps-base-unit-condition-control"><button class="artifact-dps-switch dps-base-unit-condition-switch" id="dpsBaseUnitShieldOffToggle" type="button" role="switch" aria-checked="false" data-dps-base-unit-condition-toggle="dpsBaseUnitShieldOff" data-dps-base-unit-condition-label="적버프 제거 · 쉴드오프"><span class="artifact-dps-switch-text">OFF</span><span class="artifact-dps-switch-text">ON</span><i aria-hidden="true"></i></button></div>
 </div>
 <div class="dps-base-unit-condition-item">
 <span class="dps-base-unit-condition-label">슈퍼실드 주기변경 · 쉴드마스</span>

@@ -253,26 +253,12 @@ function syncBattleMode(sourceId=''){
   solo.value=coopOn ? 'OFF' : 'ON';
   coop.value=coopOn ? 'ON' : 'OFF';
   syncPenanceOptions();
-  syncTeamSelect({restorePersonal: !!sourceId && !coopOn});
+  syncTeamSelect();
 }
-function syncTeamSelect(options={}){
+function syncTeamSelect(){
   const el=$('team');
   if(!el) return;
-  const row=el.closest?.('[data-basic-row="team"]');
-  const coopActive=typeof isCoopActive==='function' ? isCoopActive(vs('diff')) : normalizeOnOffValue(vs('coopMode'),'OFF')==='ON';
-  const current=normalizeTeamCountValue(el.value);
-  if(coopActive){
-    if(current!=='3') el.dataset.personalTeamValue=current;
-    el.value='3';
-    el.disabled=true;
-    row?.classList.add('is-locked');
-    return;
-  }
-  el.disabled=false;
-  const value=normalizeTeamCountValue(options.restorePersonal && el.dataset.personalTeamValue ? el.dataset.personalTeamValue : current);
-  el.value=value;
-  el.dataset.personalTeamValue=value;
-  row?.classList.remove('is-locked');
+  el.value=normalizeTeamCountValue(el.value);
 }
 function resetTeamOnDifficultyChange(){
   syncBattleMode('coopMode');
@@ -428,7 +414,7 @@ function currentRoundTimeBonusSeconds(){
 function renderDamageBoardRoundTime(s){
   const roundTime=Number(s?.roundTime);
   const bonus=currentRoundTimeBonusSeconds();
-  const rpTimeText=bonus>0 || isTowerDifficulty(vs('diff'))
+  const rpTimeText=enemyRoundTimeBonus(vs('diff'))>0 || isTowerDifficulty(vs('diff'))
     ? `RP ${fmt(bonus,0)}초 / 최대 8초`
     : '-';
   setText('enemyRoundTimeQuick', Number.isFinite(roundTime) ? `${fmt(roundTime,1)}초` : '—');
@@ -995,6 +981,7 @@ const FIELD_REGISTRY={
   dpsBaseUnitExtraSettings:{kind:'유닛 보드',name:'추가 유닛 쥬얼 & 한계 돌파',save:true},
   dpsBaseUnitSlotExpansions:{kind:'유닛 보드',name:'슬롯 확장',save:true},
   dpsBaseUnitSpeedMode:{kind:'유닛 보드',name:'스피드 모드',compare:true,save:true},
+  dpsBaseUnitShieldOff:{kind:'유닛 보드',name:'적버프 제거 · 쉴드오프',compare:true,save:true},
   dpsBaseUnitShieldMaster:{kind:'유닛 보드',name:'슈퍼실드 주기변경 · 쉴드마스',compare:true,save:true},
   erosionStack:{kind:'기본 정보',name:'침식 스텍',compare:true,save:true,excel:'number'},
   jewelErosionRes:{kind:'기본 정보',name:'심연 내성',compare:true,save:true,excel:'number'},
@@ -1229,7 +1216,7 @@ function dpsBaseUnitAchievementPercent(value){
 }
 function dpsBaseUnitAchievementText(value){
   const percent=dpsBaseUnitAchievementPercent(value);
-  return percent===null ? '—' : `${dpsBaseUnitNumberText(percent,{trillion:true})}%`;
+  return percent===null ? '—' : `${percent.toLocaleString('ko-KR')}%`;
 }
 function dpsBaseUnitAchievementState(value){
   const percent=dpsBaseUnitAchievementPercent(value);
