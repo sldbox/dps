@@ -794,16 +794,19 @@ body:is(.is-mobile,.is-narrow-mobile) .battle-enemy-status-track{height:6px;}
     }
     ctx.restore();
 
-    ctx.save();
-    const layers=[
+    drawTerrainLayers(ctx,width,height,[
       {count:12,base:.70,peak:.42,spread:.11,fill:'rgba(7,6,10,.84)',seed:12},
       {count:10,base:.735,peak:.50,spread:.085,fill:rgba(theme.castleEdge,.19),seed:66},
       {count:8,base:.76,peak:.59,spread:.055,fill:'rgba(30,23,30,.28)',seed:104}
-    ];
+    ],.81);
+  }
+
+  function drawTerrainLayers(ctx,width,height,layers,bottom){
+    ctx.save();
     for(const layer of layers){
       ctx.fillStyle=layer.fill;ctx.beginPath();ctx.moveTo(0,height*layer.base);
       for(let i=0;i<=layer.count;i++) ctx.lineTo(width*i/layer.count,height*(layer.peak-layer.spread*hash(i+layer.seed)));
-      ctx.lineTo(width,height*.81);ctx.lineTo(0,height*.81);ctx.closePath();ctx.fill();
+      ctx.lineTo(width,height*bottom);ctx.lineTo(0,height*bottom);ctx.closePath();ctx.fill();
     }
     ctx.restore();
   }
@@ -822,7 +825,7 @@ body:is(.is-mobile,.is-narrow-mobile) .battle-enemy-status-track{height:6px;}
     ctx.fillRect(0,height*.70,width,height*.30);
   }
 
-  /* 침투 장면: 2607140100 스펙 보드 애니메이션 기반 */
+  /* 침투 장면 */
   function drawInfiltrationScene(ctx,width,height,data,theme,phaseTime,quality,sequenceIndex=0){
     const phase=clamp(phaseTime/INFILTRATION_DURATION,0,1);
     const time=sequenceIndex*ACTIVE_CYCLE_DURATION+phaseTime;
@@ -886,7 +889,7 @@ body:is(.is-mobile,.is-narrow-mobile) .battle-enemy-status-track{height:6px;}
       ctx.fillRect(castle.gateCx-castle.gateW,castle.gateTop,castle.gateW*2,castle.gateH);
       ctx.restore();
     }
-    drawSpecVignette(ctx,width,height);
+    drawSceneVignette(ctx,width,height);
   }
 
 
@@ -957,14 +960,10 @@ body:is(.is-mobile,.is-narrow-mobile) .battle-enemy-status-track{height:6px;}
     }
     ctx.globalAlpha=1;ctx.fillStyle=linearGradient(ctx,0,height*.4,0,height*.76,[[0,'rgba(0,0,0,0)'],[.72,rgba(theme.bossLight,.045)],[1,'rgba(0,0,0,0)']]);
     ctx.fillRect(0,height*.35,width,height*.45);ctx.restore();
-    ctx.save();
-    const layers=[{count:10,base:.70,peak:.43,spread:.10,fill:'rgba(8,7,11,.78)',seed:12},{count:8,base:.74,peak:.54,spread:.07,fill:rgba(theme.castleEdge,.18),seed:66}];
-    for(const layer of layers){
-      ctx.fillStyle=layer.fill;ctx.beginPath();ctx.moveTo(0,height*layer.base);
-      for(let i=0;i<=layer.count;i++) ctx.lineTo(width*i/layer.count,height*(layer.peak-layer.spread*hash(i+layer.seed)));
-      ctx.lineTo(width,height*.80);ctx.lineTo(0,height*.80);ctx.closePath();ctx.fill();
-    }
-    ctx.restore();
+    drawTerrainLayers(ctx,width,height,[
+      {count:10,base:.70,peak:.43,spread:.10,fill:'rgba(8,7,11,.78)',seed:12},
+      {count:8,base:.74,peak:.54,spread:.07,fill:rgba(theme.castleEdge,.18),seed:66}
+    ],.80);
   }
 
   function drawPerspectiveRoad(ctx,width,height,castle,theme){
@@ -1136,19 +1135,6 @@ body:is(.is-mobile,.is-narrow-mobile) .battle-enemy-status-track{height:6px;}
 
   function drawSpecEmbers(ctx,width,height,theme,time,quality){const count=Math.round(15*quality);ctx.save();ctx.globalCompositeOperation='lighter';for(let i=0;i<count;i++){const x=width*(.55+hash(i+95)*.44),y=height*(.90-frac(time*.08+hash(i+44))*.68);ctx.globalAlpha=.08+.26*hash(i+71);ctx.fillStyle=i%2?theme.bossLight:'#ffb86a';ctx.beginPath();ctx.arc(x,y,.6+hash(i)*1.2,0,Math.PI*2);ctx.fill();}ctx.restore();}
 
-  function drawSpecVignette(ctx,width,height){
-    const vignette=ctx.createRadialGradient(width*.50,height*.56,height*.16,width*.50,height*.56,width*.70);
-    vignette.addColorStop(0,'rgba(0,0,0,0)');
-    vignette.addColorStop(.70,'rgba(0,0,0,.11)');
-    vignette.addColorStop(1,'rgba(0,0,0,.48)');
-    ctx.fillStyle=vignette;
-    ctx.fillRect(0,0,width,height);
-    const lower=ctx.createLinearGradient(0,height*.72,0,height);
-    lower.addColorStop(0,'rgba(0,0,0,0)');
-    lower.addColorStop(1,'rgba(0,0,0,.30)');
-    ctx.fillStyle=lower;
-    ctx.fillRect(0,height*.70,width,height*.30);
-  }
 
   function runArtFor(color,frame){const set=color===PLAYER_COLORS.p2?art.heroRunP2:color===PLAYER_COLORS.p3?art.heroRunP3:art.heroRunP1;return set[frame%2];}
 

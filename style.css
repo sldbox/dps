@@ -246,7 +246,6 @@ body.is-tablet .clean-rune-card .enchant-result-value, body.is-pc-portrait .clea
 body.month-rune-modal-open:is(.is-dps-mode-solo,.is-dps-mode-coop,.is-dps-mode-tower) .month-rune-modal-shell{align-items:flex-start;}
 .month-rune-backdrop{position:absolute;inset:0;background:rgba(3,7,14,.72);backdrop-filter:blur(7px);}
 .month-rune-modal{position:relative;width:min(980px,calc(100vw - 36px));height:auto;max-height:calc(100vh - 36px);overflow:hidden;display:flex;flex-direction:column;border:1px solid #2a3b56;border-radius:16px;background:linear-gradient(180deg,#0b111c 0%,#101827 100%);box-shadow:0 22px 70px rgba(0,0,0,.48),inset 0 1px 0 rgba(255,255,255,.06);}
-.month-rune-modal.is-modal-compare{width:min(1180px,calc(100vw - 64px));height:min(760px,calc(100vh - 72px));max-height:calc(100vh - 72px);}
 .month-rune-modal.is-modal-dps{width:min(1440px,calc(100vw - 24px));height:auto;max-height:calc(100vh - 28px);}
 .month-rune-modal.is-modal-jewels{width:min(1040px,calc(100vw - 36px));}
 .month-rune-modal.is-modal-runes{width:min(1080px,calc(100vw - 36px));}
@@ -254,16 +253,13 @@ body.month-rune-modal-open:is(.is-dps-mode-solo,.is-dps-mode-coop,.is-dps-mode-t
 .month-rune-title{flex:0 0 auto;margin:0;color:#f8fbff;font-size:calc(15px * var(--app-font-scale));font-weight:1000;line-height:1;white-space:nowrap;text-shadow:0 1px 0 rgba(0,0,0,.24);}
 .month-rune-header-actions{display:flex;align-items:center;justify-content:center;flex:1;min-width:0;}
 .month-rune-header-actions:empty{display:none;}
-.month-rune-modal.is-modal-compare .month-rune-header-actions{justify-content:center;}
 .month-rune-header-tabs.dps-table-tabs{width:min(100%,520px);gap:8px;}
 .month-rune-header-tabs .dps-table-tab{height:40px;min-height:40px;padding:3px 14px;}
 .month-rune-close{position:absolute;top:12px;right:14px;z-index:2;display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border:1px solid #3a4d67;border-radius:10px;background:#111a28;color:#d7e4f3;font-size:calc(20px * var(--app-font-scale));font-weight:900;line-height:1;cursor:pointer;box-shadow:inset 0 1px 0 rgba(255,255,255,.06);}
 .month-rune-close:hover{background:#172438;border-color:#7aa7ff;color:#f8fbff;}
 .month-rune-body{flex:1;min-height:0;max-height:calc(100vh - 96px);padding:12px;overflow:auto;background:linear-gradient(180deg,#0b111c 0%,#0f1724 100%);}
-.month-rune-modal.is-modal-compare .month-rune-body{max-height:none;overflow:hidden;}
 .month-rune-modal.is-modal-dps .month-rune-body{flex:0 1 auto;max-height:calc(100vh - 86px);overflow:hidden;padding:0;background:transparent;}
 .month-rune-panel{display:block;}
-.month-rune-modal.is-modal-compare .month-rune-panel[data-month-rune-panel="compare"]{height:100%;min-height:0;}
 .month-rune-panel[hidden]{display:none;}
 .month-rune-note, .month-rune-empty{margin:0 0 12px;padding:11px 13px;border:1px solid #26364d;border-radius:12px;background:#121d2e;color:#cfe0ff;font-size:calc(12px * var(--app-font-scale));font-weight:900;line-height:1.4;box-shadow:inset 0 1px 0 rgba(255,255,255,.05);}
 .month-rune-empty{text-align:center;color:#93a4b9;background:#111a28;border-style:dashed;}
@@ -372,89 +368,6 @@ body .dps-card.stat-dps-summary .dps-lbl,
 body .dps-card.stat-dps-summary .dps-context-summary,
 body .dps-card.stat-dps-summary .dps-context-item,
 body .dps-card.stat-dps-summary .dps-context-item > *{background:none;background-image:none;-webkit-background-clip:initial;background-clip:initial;text-shadow:none;}
-.excel-compare-controls{display:flex;align-items:center;justify-content:center;gap:7px;width:100%;}
-.excel-compare-header-controls{justify-content:center;overflow-x:auto;overflow-y:hidden;scrollbar-width:thin;}
-.excel-compare-header-controls > *{flex:0 0 auto;}
-.excel-compare-controls select{height:34px;min-width:130px;padding:0 30px 0 10px;border:1px solid var(--role-interactive-bd);border-radius:9px;background:var(--role-interactive-bg);color:#cfe0ff;font-weight:900;text-align:center;text-align-last:center;}
-.excel-compare-controls select:disabled{border-color:#344966;background:var(--color-slate-50);color:var(--color-slate-400);}
-.excel-compare-file-btn{display:inline-flex;align-items:center;justify-content:center;height:34px;padding:0 14px;border:1px solid var(--btn-action-border);border-radius:9px;background:var(--btn-action-bg);color:var(--btn-action-text);font-weight:900;cursor:pointer;}
-.excel-compare-file-btn.is-disabled{border-color:#344966;background:var(--color-slate-50);color:var(--color-slate-400);box-shadow:none;cursor:not-allowed;opacity:.55;}
-.excel-compare-file-btn input{display:none;}
-.excel-compare-apply-btn{display:inline-flex;align-items:center;justify-content:center;height:34px;padding:0 14px;border:1px solid #1f7a4a;border-radius:9px;background:#1f7a4a;color:var(--on-dark);font-weight:900;cursor:pointer;white-space:nowrap;}
-.excel-compare-apply-btn:hover:not(:disabled){background:#73d696;border-color:#73d696;}
-.excel-compare-reset-btn{display:inline-flex;align-items:center;justify-content:center;height:34px;padding:0 14px;border:1px solid #3a4d67;border-radius:9px;background:var(--color-white);color:var(--color-slate-700);font-weight:900;cursor:pointer;white-space:nowrap;}
-.excel-compare-restore-btn{display:inline-flex;align-items:center;justify-content:center;height:34px;padding:0 14px;border:1px solid #d99030;border-radius:9px;background:#241b0a;color:#d99a55;font-weight:900;cursor:pointer;white-space:nowrap;}
-.excel-compare-reset-btn:hover:not(:disabled){border-color:var(--color-blue-300);background:var(--color-blue-50);color:var(--color-blue-700);}
-.excel-compare-restore-btn:hover:not(:disabled){border-color:#b46916;background:#33260e;color:#f6c77a;}
-.excel-compare-apply-btn:disabled, .excel-compare-reset-btn:disabled, .excel-compare-restore-btn:disabled{border-color:#344966;background:var(--color-slate-50);color:var(--color-slate-400);box-shadow:none;cursor:not-allowed;}
-.excel-compare-panel{display:flex;flex-direction:column;min-height:0;height:100%;max-height:100%;overflow:hidden;background:#080d15;border:1px solid #26364d;border-radius:12px;}
-.excel-compare-panel .excel-compare-body{flex:1;min-height:0;}
-.excel-compare-body{display:flex;flex:1;flex-direction:column;min-height:220px;overflow:hidden;padding:10px;background:#080d15;}
-.excel-compare-empty, .excel-compare-error{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:200px;padding:24px;border:1px dashed #3a4d67;border-radius:12px;background:var(--color-white);color:var(--color-slate-600);font-weight:900;text-align:center;}
-.excel-compare-empty small{margin-top:8px;color:var(--color-slate-500);font-weight:700;line-height:1.45;}
-.excel-compare-error{border-color:#7f1d2d;background:#2b1017;color:#991b1b;}
-.excel-compare-summary{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px;margin-bottom:10px;}
-.excel-compare-summary-card{min-width:0;min-height:58px;padding:8px 10px;text-align:center;font:inherit;}
-.excel-compare-summary span{color:var(--color-slate-500);font-size:calc(10.5px * var(--app-font-scale));font-weight:800;white-space:nowrap;}
-.excel-compare-summary b{overflow:hidden;color:var(--color-text-main);font-size:calc(12px * var(--app-font-scale));font-weight:900;text-overflow:ellipsis;white-space:nowrap;}
-.excel-compare-summary-card.is-all span{color:var(--color-text-main);font-size:calc(12px * var(--app-font-scale));font-weight:900;}
-.excel-compare-summary .same, .excel-compare-summary .near, .excel-compare-summary .diff{border-color:#26364d;background:var(--color-white);}
-.excel-compare-summary .same b{color:var(--color-slate-600);}
-.excel-compare-summary .near b{color:#f0b66b;}
-.excel-compare-summary .diff b{color:#ff9aaa;}
-.excel-compare-summary-card:hover{border-color:#9bb5e6;background:#111a28;}
-.excel-compare-summary-card:focus-visible{outline:2px solid rgba(49,87,213,.45);outline-offset:2px;}
-.excel-compare-summary-card.is-active{border-color:var(--color-accent);background:#10233d;box-shadow:inset 0 0 0 1px rgba(49,87,213,.35);}
-.excel-compare-summary-card.is-active span{color:#b8d2ff;}
-.excel-compare-summary-card.is-active b{color:#cfe0ff;}
-.excel-compare-table-wrap{display:flex;flex:1;flex-direction:column;min-height:0;overflow-x:auto;overflow-y:hidden;border:1px solid #26364d;border-radius:10px;background:var(--color-white);}
-.excel-compare-table-scroll{flex:1;min-height:0;overflow-x:visible;overflow-y:auto;}
-.excel-compare-table{width:100%;min-width:760px;table-layout:fixed;border-collapse:separate;border-spacing:0;font-size:calc(11.5px * var(--app-font-scale));font-variant-numeric:tabular-nums;}
-.excel-compare-table col.compare-col-kind{width:13%;}
-.excel-compare-table col.compare-col-name{width:24%;}
-.excel-compare-table col.compare-col-current, .excel-compare-table col.compare-col-change{width:18%;}
-.excel-compare-table col.compare-col-diff{width:27%;}
-.excel-compare-table th, .excel-compare-table td{height:31px;padding:5px 8px;border-right:1px solid var(--color-slate-200);border-bottom:1px solid var(--color-slate-200);background:var(--color-white);text-align:center;white-space:nowrap;}
-.excel-compare-table tr.is-detail-row th, .excel-compare-table tr.is-detail-row td{height:auto;min-height:31px;vertical-align:top;white-space:normal;overflow-wrap:anywhere;word-break:keep-all;}
-.compare-detail-list{display:grid;grid-template-columns:minmax(0,1fr);gap:4px;width:100%;min-width:0;margin:0;text-align:left;}
-.compare-detail-item{display:grid;grid-template-columns:minmax(74px,.8fr) minmax(0,1.2fr);gap:8px;align-items:start;min-width:0;padding:2px 0;border-bottom:1px solid rgba(58,77,103,.5);line-height:1.35;}
-.compare-detail-item:last-child{border-bottom:0;}
-.compare-detail-item dt{min-width:0;color:var(--color-slate-500);font-weight:800;white-space:normal;word-break:keep-all;}
-.compare-detail-item dd{min-width:0;margin:0;color:var(--color-text-main);font-weight:900;text-align:right;white-space:normal;overflow-wrap:anywhere;word-break:keep-all;}
-.excel-compare-table .compare-diff .compare-detail-item dd{color:inherit;}
-.excel-compare-table-head{flex:0 0 auto;}
-.excel-compare-table-head th{background:#172438;color:#b8d2ff;font-weight:900;text-align:center;}
-.excel-compare-table-head th:last-child, .excel-compare-table-body td:last-child{border-right:0;}
-.excel-compare-table-body tr:last-child th, .excel-compare-table-body tr:last-child td{border-bottom:1px solid var(--color-slate-200);}
-.excel-compare-table tbody th{text-align:center;}
-.excel-compare-table tbody td:first-child{text-align:center;font-weight:900;}
-.excel-compare-table .compare-diff{font-weight:900;}
-.excel-compare-table .diff-same{color:var(--color-slate-600);}
-.excel-compare-table .diff-positive{color:#ff9aaa;}
-.excel-compare-table .diff-negative{color:var(--color-blue-700);}
-.excel-compare-table .diff-text{color:#f0b66b;}
-.excel-compare-table .diff-warn{color:var(--color-slate-500);}
-.excel-compare-table .excel-compare-no-diff{height:72px;color:var(--color-slate-500);font-weight:900;text-align:center;}
-.month-rune-modal.is-modal-compare .month-rune-head{display:grid;grid-template-columns:minmax(0,1fr) 34px;grid-template-rows:auto auto;align-items:center;gap:8px 10px;min-height:0;padding:10px 12px;}
-.month-rune-modal.is-modal-compare .month-rune-title{grid-column:1;grid-row:1;min-width:0;line-height:1.15;}
-.month-rune-modal.is-modal-compare .month-rune-close{position:static;grid-column:2;grid-row:1;justify-self:end;align-self:center;flex:0 0 auto;}
-.month-rune-modal.is-modal-compare .month-rune-header-actions{grid-column:1 / -1;grid-row:2;display:block;width:100%;min-width:0;overflow:visible;}
-.month-rune-modal.is-modal-compare .excel-compare-header-controls{display:grid;grid-template-columns:.82fr 1.55fr .82fr 1.55fr;gap:7px;width:100%;min-width:0;align-items:stretch;overflow:visible;}
-.month-rune-modal.is-modal-compare .excel-compare-header-controls > *{width:100%;min-width:0;}
-.month-rune-modal.is-modal-compare .excel-compare-header-controls > .excel-compare-base-file-btn{grid-column:1;grid-row:1;}
-.month-rune-modal.is-modal-compare .excel-compare-header-controls > #excelCompareBasePreset{grid-column:2;grid-row:1;}
-.month-rune-modal.is-modal-compare .excel-compare-header-controls > .excel-compare-target-file-btn{grid-column:3;grid-row:1;}
-.month-rune-modal.is-modal-compare .excel-compare-header-controls > #excelCompareSheet{grid-column:4;grid-row:1;}
-.month-rune-modal.is-modal-compare .excel-compare-header-controls > #excelCompareApplyBtn{grid-column:1 / 3;grid-row:2;}
-.month-rune-modal.is-modal-compare .excel-compare-header-controls > #excelCompareJewelOnlyBtn{grid-column:3;grid-row:2;}
-.month-rune-modal.is-modal-compare .excel-compare-header-controls > #excelCompareRestoreBtn{grid-column:4;grid-row:2;}
-.month-rune-modal.is-modal-compare .excel-compare-header-controls > #excelCompareResetBtn{grid-column:1 / 5;grid-row:3;}
-.month-rune-modal.is-modal-compare .excel-compare-file-btn,
-.month-rune-modal.is-modal-compare .excel-compare-apply-btn,
-.month-rune-modal.is-modal-compare .excel-compare-jewel-only-btn,
-.month-rune-modal.is-modal-compare .excel-compare-restore-btn,
-.month-rune-modal.is-modal-compare .excel-compare-reset-btn,
-.month-rune-modal.is-modal-compare .excel-compare-controls select{height:36px;min-height:36px;font-size:calc(11.2px * var(--app-font-scale));}
 body, input, button, select, textarea{font-family:var(--font-main);}
 .font-scale-ctrl{display:flex;align-items:center;gap:3px;height:34px;margin-right:8px;padding:3px;border:1px solid #26364d;border-radius:10px;background:#111a28;box-shadow:0 2px 7px rgba(0,0,0,.20);}
 .font-scale-btn, .font-scale-value{height:26px;cursor:pointer;min-width:30px;padding:0 7px;}
@@ -578,7 +491,6 @@ body:not(.is-tabbed) .col-left, body:not(.is-tabbed) .col-mid, body:not(.is-tabb
 .stat-row{min-height:30px;}
 .stat-row .sc-name, .stat-row .sc-val{display:flex;align-items:center;justify-content:center;text-align:center;}
 body.is-mobile .month-rune-modal{width:calc(100vw - 12px);height:auto;max-height:calc(var(--mobile-vh, 100vh) - 12px);margin:6px auto;border-radius:14px;}
-body.is-mobile .month-rune-modal.is-modal-compare{width:calc(100vw - 8px);height:calc(var(--mobile-vh, 100vh) - 8px);max-height:calc(var(--mobile-vh, 100vh) - 8px);margin:4px auto;}
 body.is-mobile .month-rune-modal.is-modal-dps{width:calc(100vw - 8px);height:auto;max-height:calc(var(--mobile-vh, 100vh) - 8px);margin:4px auto;}
 body.is-mobile .month-rune-modal.is-modal-dps .month-rune-body{max-height:calc(var(--mobile-vh, 100vh) - 72px);}
 body.is-mobile .month-rune-modal.is-modal-dps .dps-table-inline-panel{max-height:calc(var(--mobile-vh, 100vh) - 88px);}
@@ -607,30 +519,6 @@ body.is-mobile .month-rune-compare{grid-template-columns:1fr;}
 body.is-mobile .month-rune-side{padding:8px;}
 body.is-mobile .month-rune-side + .month-rune-side{border-left:0;border-top:1px solid var(--color-slate-200);}
 body.is-mobile .month-rune-effect-row{grid-template-columns:48px minmax(0,1fr);gap:6px;padding:5px 6px;font-size:calc(10.5px * var(--app-font-scale));}
-body.is-tablet .month-rune-modal.is-modal-compare .excel-compare-header-controls,
-body.is-pc-portrait .month-rune-modal.is-modal-compare .excel-compare-header-controls{grid-template-columns:.9fr 1.5fr .9fr 1.5fr;gap:6px;}
-body.is-tablet .month-rune-modal.is-modal-compare .excel-compare-file-btn,
-body.is-tablet .month-rune-modal.is-modal-compare .excel-compare-apply-btn,
-body.is-tablet .month-rune-modal.is-modal-compare .excel-compare-jewel-only-btn,
-body.is-tablet .month-rune-modal.is-modal-compare .excel-compare-restore-btn,
-body.is-tablet .month-rune-modal.is-modal-compare .excel-compare-reset-btn,
-body.is-tablet .month-rune-modal.is-modal-compare .excel-compare-controls select{height:34px;min-height:34px;padding-left:8px;padding-right:8px;font-size:calc(10px * var(--app-font-scale));}
-body.is-mobile .month-rune-modal.is-modal-compare .month-rune-head{grid-template-columns:minmax(0,1fr) 32px;gap:7px;padding:8px 9px 9px 10px;}
-body.is-mobile .month-rune-modal.is-modal-compare .excel-compare-header-controls{grid-template-columns:repeat(6,minmax(0,1fr));gap:5px;}
-body.is-mobile .month-rune-modal.is-modal-compare .excel-compare-header-controls > .excel-compare-base-file-btn{grid-column:1 / 4;grid-row:1;}
-body.is-mobile .month-rune-modal.is-modal-compare .excel-compare-header-controls > #excelCompareBasePreset{grid-column:4 / 7;grid-row:1;}
-body.is-mobile .month-rune-modal.is-modal-compare .excel-compare-header-controls > .excel-compare-target-file-btn{grid-column:1 / 4;grid-row:2;}
-body.is-mobile .month-rune-modal.is-modal-compare .excel-compare-header-controls > #excelCompareSheet{grid-column:4 / 7;grid-row:2;}
-body.is-mobile .month-rune-modal.is-modal-compare .excel-compare-header-controls > #excelCompareApplyBtn{grid-column:1 / 4;grid-row:3;}
-body.is-mobile .month-rune-modal.is-modal-compare .excel-compare-header-controls > #excelCompareJewelOnlyBtn{grid-column:4 / 7;grid-row:3;}
-body.is-mobile .month-rune-modal.is-modal-compare .excel-compare-header-controls > #excelCompareRestoreBtn{grid-column:1 / 4;grid-row:4;}
-body.is-mobile .month-rune-modal.is-modal-compare .excel-compare-header-controls > #excelCompareResetBtn{grid-column:4 / 7;grid-row:4;}
-body.is-mobile .month-rune-modal.is-modal-compare .excel-compare-file-btn,
-body.is-mobile .month-rune-modal.is-modal-compare .excel-compare-apply-btn,
-body.is-mobile .month-rune-modal.is-modal-compare .excel-compare-jewel-only-btn,
-body.is-mobile .month-rune-modal.is-modal-compare .excel-compare-restore-btn,
-body.is-mobile .month-rune-modal.is-modal-compare .excel-compare-reset-btn,
-body.is-mobile .month-rune-modal.is-modal-compare .excel-compare-controls select{height:30px;min-height:30px;font-size:calc(8.5px * var(--app-font-scale));}
 body.is-mobile .month-rune-effect-row b{font-size:calc(10px * var(--app-font-scale));}
 body.is-mobile .dps-table-tabs{gap:5px;}
 body.is-mobile .dps-table-tab{padding:7px 6px;}
@@ -644,7 +532,6 @@ body.is-mobile .month-rune-modal.is-modal-dps .dps-tower-panel .dps-tower-enemy{
 body.is-mobile .month-rune-modal.is-modal-dps .dps-tower-panel .dps-tower-enemy-item{gap:2px;justify-content:center;white-space:nowrap;}
 body.is-mobile .dps-coop-scroll{width:100%;max-width:100%;max-height:calc(var(--mobile-vh, 100vh) - 155px);overflow:auto;}
 body.is-tablet .month-rune-modal{width:min(980px,calc(100vw - 16px));height:auto;max-height:calc(100vh - 16px);margin:8px auto;}
-body.is-tablet .month-rune-modal.is-modal-compare{width:min(980px,calc(100vw - 20px));height:calc(100vh - 20px);max-height:calc(100vh - 20px);margin:10px auto;}
 body.is-tablet .month-rune-modal.is-modal-dps{width:calc(100vw - 8px);height:auto;max-height:calc(100vh - 12px);margin:6px auto;}
 body.is-tablet .month-rune-modal.is-modal-dps .month-rune-body{max-height:calc(100vh - 78px);}
 body.is-tablet .month-rune-modal.is-modal-dps .dps-table-inline-panel{max-height:calc(100vh - 94px);}
@@ -845,18 +732,6 @@ body.is-mobile .sg.unit-enhance-card .unit-enhance-left .mini-ir.mini-ir-button-
 body.is-narrow-mobile .col-work{padding:6px;}
 body.is-narrow-mobile .dps-num{font-size:calc(28px * var(--app-font-scale));}
 body.is-tablet.is-portrait-view .stat-dps-card, body.is-tablet.is-portrait-view .bus-cut-card, body.is-tablet.is-portrait-view .final-damage-card{width:100%;min-width:0;}
-body.is-tablet .excel-compare-controls{gap:5px;}
-body.is-tablet .excel-compare-header-controls{overflow-x:auto;overflow-y:hidden;}
-body.is-tablet .excel-compare-controls select{height:31px;min-width:112px;padding:0 24px 0 8px;font-size:calc(10.5px * var(--app-font-scale));}
-body.is-tablet .excel-compare-file-btn, body.is-tablet .excel-compare-apply-btn, body.is-tablet .excel-compare-reset-btn, body.is-tablet .excel-compare-restore-btn{height:31px;padding:0 9px;font-size:calc(10px * var(--app-font-scale));}
-body.is-tablet .excel-compare-body{padding:8px;}
-body.is-tablet .excel-compare-summary{grid-template-columns:repeat(6,minmax(0,1fr));gap:6px;margin-bottom:8px;}
-body.is-tablet .excel-compare-summary-card{min-height:50px;padding:6px 5px;}
-body.is-tablet .excel-compare-summary span{font-size:calc(8.75px * var(--app-font-scale));}
-body.is-tablet .excel-compare-summary b{font-size:calc(10px * var(--app-font-scale));}
-body.is-tablet .excel-compare-table{min-width:800px;font-size:calc(10px * var(--app-font-scale));}
-body.is-tablet .excel-compare-table th, body.is-tablet .excel-compare-table td{height:27px;padding:3px 6px;}
-body.is-tablet .compare-detail-item{grid-template-columns:minmax(64px,.8fr) minmax(0,1.2fr);gap:6px;}
 body.is-mobile .hdr{display:flex;flex-direction:row;flex-wrap:nowrap;align-items:center;justify-content:space-between;min-height:52px;padding:0 10px;gap:8px;}
 body.is-mobile .hdr-brand{width:auto;min-width:0;flex:1 1 auto;display:flex;align-items:center;justify-content:flex-start;gap:8px;}
 body.is-mobile .hdr-logo{flex:0 0 auto;width:34px;height:30px;}
@@ -867,30 +742,6 @@ body.is-mobile .hdr-creator-line{display:flex;align-items:center;gap:4px;max-wid
 body.is-mobile .hdr-creator-line span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 body.is-mobile .hdr-creator-line span:first-child{max-width:58px;}
 body.is-mobile .hdr-creator-line span:last-child{max-width:86px;}
-body.is-mobile .excel-compare-controls{gap:5px;width:100%;}
-body.is-mobile .excel-compare-header-controls{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));overflow:visible;}
-body.is-mobile .excel-compare-header-controls > *{min-width:0;width:100%;}
-body.is-mobile .excel-compare-header-controls > .excel-compare-base-file-btn{grid-column:1 / 4;}
-body.is-mobile .excel-compare-header-controls > #excelCompareBasePreset{grid-column:4 / 7;}
-body.is-mobile .excel-compare-header-controls > .excel-compare-target-file-btn{grid-column:1 / 4;}
-body.is-mobile .excel-compare-header-controls > #excelCompareSheet{grid-column:4 / 7;}
-body.is-mobile .excel-compare-header-controls > #excelCompareApplyBtn{grid-column:1 / 4;}
-body.is-mobile .excel-compare-header-controls > #excelCompareJewelOnlyBtn{grid-column:4 / 7;}
-body.is-mobile .excel-compare-header-controls > #excelCompareRestoreBtn{grid-column:1 / 4;}
-body.is-mobile .excel-compare-header-controls > #excelCompareResetBtn{grid-column:4 / 7;}
-body.is-mobile .excel-compare-controls select{height:30px;min-width:0;width:100%;padding:0 20px 0 5px;font-size:calc(9px * var(--app-font-scale));}
-body.is-mobile .excel-compare-file-btn, body.is-mobile .excel-compare-apply-btn, body.is-mobile .excel-compare-jewel-only-btn, body.is-mobile .excel-compare-reset-btn, body.is-mobile .excel-compare-restore-btn{height:30px;min-width:0;padding:0 6px;font-size:calc(8.5px * var(--app-font-scale));letter-spacing:-.45px;}
-body.is-mobile .excel-compare-body{padding:7px;}
-body.is-mobile .excel-compare-empty, body.is-mobile .excel-compare-error{min-height:180px;padding:18px;font-size:calc(11px * var(--app-font-scale));}
-body.is-mobile .excel-compare-empty small{margin-top:6px;font-size:calc(9.5px * var(--app-font-scale));}
-body.is-mobile .excel-compare-summary{grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;margin-bottom:7px;}
-body.is-mobile .excel-compare-summary-card{min-height:40px;padding:4px 3px;border-radius:7px;}
-body.is-mobile .excel-compare-summary-card:first-child{grid-column:auto;min-height:40px;}
-body.is-mobile .excel-compare-summary span{font-size:calc(8px * var(--app-font-scale));line-height:1.15;white-space:nowrap;}
-body.is-mobile .excel-compare-summary b{max-width:100%;font-size:calc(9px * var(--app-font-scale));line-height:1.15;}
-body.is-mobile .excel-compare-table{min-width:760px;font-size:calc(9px * var(--app-font-scale));}
-body.is-mobile .excel-compare-table th, body.is-mobile .excel-compare-table td{height:26px;padding:3px 5px;}
-body.is-mobile .compare-detail-item{grid-template-columns:minmax(58px,.85fr) minmax(0,1.15fr);gap:5px;}
 body.is-mobile .sg.rune-spec.clean-rune-card{overflow:hidden;padding:10px;}
 body.is-mobile .sg.rune-spec.clean-rune-card > .sg-title{margin:-10px -10px 10px;padding:0 12px;width:auto;height:34px;min-height:34px;display:flex;align-items:center;white-space:nowrap;writing-mode:horizontal-tb;}
 body.is-mobile .clean-rune-card .rune-panel.tidy-rune-panel{display:flex;flex-direction:column;gap:12px;width:100%;min-width:0;}
@@ -907,7 +758,7 @@ body.is-tabbed .hdr{flex:0 0 auto;position:sticky;top:0;z-index:50;}
 body.is-tabbed .mobile-section-tabs{grid-column:1/-1;grid-row:2;position:sticky;top:var(--mobile-header-h, 56px);z-index:45;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));align-items:center;flex:0 0 auto;width:100%;gap:7px;padding:8px 10px;border-bottom:1px solid var(--ui-line,#26364d);background:rgba(12,18,29,.96);box-shadow:0 3px 10px rgba(0,0,0,.26);}
 body.is-tablet.is-tabbed .mobile-section-tabs{grid-template-columns:repeat(3,minmax(0,1fr));}
 body.is-tabbed .mobile-section-tab{width:100%;min-width:0;height:36px;min-height:36px;padding:0 8px;font-size:calc(11px * var(--app-font-scale));font-weight:900;letter-spacing:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;}
-body.is-tabbed .col-work{grid-column:1/-1;grid-row:3;display:block;flex:1 1 auto;width:var(--mobile-vw, 100vw);max-width:var(--mobile-vw, 100vw);min-width:0;height:calc(var(--mobile-vh, 100dvh) - var(--mobile-header-h, 56px) - var(--mobile-tabs-h, 82px));min-height:0;max-height:calc(var(--mobile-vh, 100dvh) - var(--mobile-header-h, 56px) - var(--mobile-tabs-h, 82px));padding:8px;overflow:hidden;overscroll-behavior-x:none;touch-action:pan-y;}
+body.is-tabbed .col-work{grid-column:1/-1;grid-row:3;display:block;flex:1 1 auto;width:var(--mobile-vw, 100vw);max-width:var(--mobile-vw, 100vw);min-width:0;height:calc(var(--mobile-vh, 100dvh) - var(--mobile-header-h, 56px) - var(--mobile-tabs-h, 82px));min-height:0;max-height:calc(var(--mobile-vh, 100dvh) - var(--mobile-header-h, 56px) - var(--mobile-tabs-h, 82px));padding:8px;overflow:hidden;overscroll-behavior-x:none;touch-action:pan-y;background:transparent;}
 body.is-tabbed .mobile-page{display:none;width:100%;max-width:100%;min-width:0;height:100%;min-height:0;max-height:100%;overflow-x:hidden;overflow-y:auto;overscroll-behavior-y:auto;-webkit-overflow-scrolling:touch;margin:0;padding:0;touch-action:pan-y;}
 body.is-tabbed .mobile-page.active{display:block;}
 body.is-tabbed .mobile-page > .sg, body.is-tabbed .mobile-page > .data-card{height:auto;min-height:0;max-height:none;}
@@ -1000,7 +851,6 @@ select:not(:disabled):focus{--ui-field-current-border:var(--ui-field-focus-borde
 .trait-group .tr:hover{background:transparent;}
 .tv-input{background:var(--role-interactive-bg);border-color:var(--role-interactive-bd);color:var(--color-slate-900);}
 .enhance-summary-card{background:linear-gradient(180deg,var(--color-white) 0%,#111a28 100%);border-color:#26364d;box-shadow:0 1px 2px rgba(22,46,80,.035);}
-body.is-tabbed .col-work{background:transparent;}
 body.is-tabbed .mobile-page > .sg, body.is-tabbed .mobile-page > .data-card{border-color:transparent;border-radius:0;box-shadow:none;}
 @media (max-width:600px){
 .hdr.app-header{min-height:52px;padding:0 10px;}
@@ -1026,9 +876,6 @@ body.is-pc-portrait .clean-rune-card .rune-option-card{grid-column:2;grid-row:1;
 body.is-pc-portrait .clean-rune-card .additional-editor{grid-column:1;grid-row:2;}
 body.is-pc-portrait .clean-rune-card .enchant-combined{grid-column:2;grid-row:2;margin-top:0;}
 .hdr.app-header::after{content:none;display:none;}
-.rune-basic-card{background:transparent;}
-.rune-option-card{background:transparent;}
-.additional-editor{background:transparent;}
 .enchant-combined{background:linear-gradient(145deg,#111a28 0%,#221a33 100%);}
 .rune-panel-title{position:relative;padding-left:10px;}
 .rune-panel-title::before{content:"";position:absolute;left:0;width:3px;height:14px;border-radius:999px;background:linear-gradient(180deg,#7aa7ff,#c4b5fd);}
@@ -1063,7 +910,6 @@ body .dps-matrix tbody tr td.dps-risk-cell{background:#d85c72;color:var(--on-dar
 body .col-left .sg > .sg-title, body .col-mid .stat-dps-card > .section-title, body .col-right .dps-base-unit-panel > .section-title, body .col-left .bus-cut-card > h3, body .col-left .final-damage-card > h3, body .trait-group > h4, body.is-tabbed .mobile-page > .sg > .sg-title, body.is-tabbed .mobile-page > .data-card > .section-title, body.is-tabbed .mobile-page > .data-card > h3:not(.zero-rank-title), body.is-tabbed .mobile-page .trait-group > h4, body.is-tabbed .mobile-page .zero-rank-title, body.is-tabbed .mobile-page .optimizer-head, body.is-tabbed .mobile-page .trait-subgroup-title{border:0;background:var(--section-head-bg);color:var(--on-dark);box-shadow:none;}
 body .trait-group > h4 > .trait-title, body .col-left .sg > .sg-title > span:first-child, body .col-left .bus-cut-card > h3 > span:first-child, body .col-left .final-damage-card > h3 > span:first-child{color:var(--on-dark);}
 body .trait-group > h4 .trait-title{color:var(--on-dark);}
-.excel-compare-version{display:inline-flex;align-items:center;justify-content:center;margin:0 2px;padding:1px 7px;border:1px solid #d99030;border-radius:999px;background:var(--color-white);color:var(--color-orange-800);font-weight:900;line-height:1.2;}
 body .trait-optimizer-panel, body .trait-standalone-panel{width:100%;min-width:0;margin:0;padding:0;border:0;border-radius:0;background:transparent;box-shadow:none;overflow:visible;}
 body .col-left > .trait-preset-panel, body .col-left > .trait-board-panel{margin:0 0 10px;}
 body .trait-optimizer-panel .optimizer-head, body .trait-subgroup-title{width:100%;height:var(--section-head-h,36px);min-height:var(--section-head-h,36px);margin:0 0 10px;padding:0 14px;box-sizing:border-box;display:flex;align-items:center;justify-content:space-between;gap:8px;background:var(--section-head-bg,#d7e6ff);border:0;border-radius:calc(var(--ui-radius, 15px) - 1px) calc(var(--ui-radius, 15px) - 1px) 0 0;color:var(--section-head-text,var(--color-white));font-size:calc(13px * var(--app-font-scale));font-weight:900;line-height:1;letter-spacing:0;text-align:left;text-shadow:0 1px 1px rgba(8,28,65,.2);box-shadow:none;}
@@ -1152,7 +998,7 @@ body .trait-preset-body .btn.danger:not(.pri):active, body .trait-preset-body .b
 .trait-preset-backup-modal{width:min(860px,calc(100vw - 28px));max-height:calc(100vh - 32px);}
 .trait-preset-backup-modal.has-pending-change{border-color:#60a5fa;box-shadow:0 0 0 1px rgba(96,165,250,.32),0 0 28px rgba(37,99,235,.28),0 18px 48px rgba(0,0,0,.42);}
 .trait-preset-backup-body{gap:12px;max-height:calc(100vh - 72px);padding:14px;overflow:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;}
-.trait-preset-backup-result h3{margin:0;color:#fff7d6;font-size:calc(13px * var(--app-font-scale));font-weight:950;line-height:1.35;text-align:center;}
+.trait-preset-backup-result h3{margin:0;font-size:calc(13px * var(--app-font-scale));font-weight:950;line-height:1.35;text-align:center;}
 .trait-preset-backup-result p,.trait-preset-backup-saved-only{margin:0;color:#f5e7c7;font-size:calc(10.5px * var(--app-font-scale));font-weight:850;line-height:1.5;text-align:center;word-break:keep-all;}
 .trait-preset-backup-targets{display:grid;grid-template-columns:minmax(0,1.22fr) minmax(0,1fr);align-items:stretch;gap:10px;min-width:0;min-height:304px;}
 .trait-preset-backup-target-group{display:grid;min-width:0;padding:10px;border:1px solid #314863;border-radius:9px;background:#0d1828;}

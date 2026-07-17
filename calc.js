@@ -14,6 +14,16 @@ function excelFlag(value){
   const number=excelNumber(value);
   return ['true','on','on+','yes','y'].includes(text) || (number!==null && number!==0);
 }
+function parseJsonObject(value){
+  if(value && typeof value==='object' && !Array.isArray(value)) return value;
+  if(typeof value!=='string') return {};
+  try{
+    const parsed=JSON.parse(value || '{}');
+    return parsed && typeof parsed==='object' && !Array.isArray(parsed) ? parsed : {};
+  }catch{
+    return {};
+  }
+}
 
 const ROUND_INPUT_MIN=1;
 const ROUND_INPUT_MAX=300;
@@ -614,10 +624,10 @@ function syncExclusiveRuneOptions(){
     });
   });
 }
-function reinforceSuccessChance(tries, isTheZero, upRev, upFRev){
+function reinforceChanceStats(tries, isTheZero, upRev, upFRev){
   tries=clampInt(tries,0,999);
-  if(tries<=0) return 0;
-  const upP=105 + (isTheZero ? 20 : 0) + upRev * 2;
+  if(tries<=0) return {averageSuccessChance:0, expectedFailureCount:0, atLeastOneFailureChance:0};
+  const upP=100 + (isTheZero ? 20 : 0) + upRev * 2;
   const failStep=4 + 2 * upFRev;
   const streakChance=[];
   for(let i=0;i<=tries;i++) streakChance[i]=1 - 70 / (upP + i * failStep);
@@ -638,10 +648,18 @@ function reinforceSuccessChance(tries, isTheZero, upRev, upFRev){
   }
   let sum=0;
   for(let i=1;i<=tries;i++) sum += upOdds[i];
-  return sum / tries;
+  return {
+    averageSuccessChance:sum / tries,
+    expectedFailureCount:tries - sum,
+    atLeastOneFailureChance:1 - Math.pow(streakChance[0], tries)
+  };
 }
-function reinforceExpectedValue(successChance, count, masterRate, doubleReinf, repairAdd){
-  return Math.floor(30 * successChance * count * (1 + doubleReinf / 200) + 10 * (1 - successChance) * count * masterRate + repairAdd * (1 - successChance) * count);
+function reinforceExpectedValue(successChance, count, masterRate, doubleReinf, repairAdd, expectedFailureCount, failureChance, aprilPlus){
+  const successValue=30 * successChance * count;
+  const doubleReinforceValue=successValue * doubleReinf / 200;
+  const masterValue=10 * masterRate * expectedFailureCount;
+  const repairValue=repairAdd * failureChance;
+  return Math.floor(successValue + doubleReinforceValue + masterValue + repairValue + aprilPlus * 10);
 }
 function unitEnhanceStats(){
   const over=normalizeOverEnhanceValue(v('overEnhance'));
@@ -654,8 +672,9 @@ function unitEnhanceStats(){
   const septemberNormal=monthRuneCount('sep','normal');
   const septemberPlus=monthRuneCount('sep','plus');
   const count=10 + (INV[58]||0) + over + aprilNormal + (hasRuneOption('reinf5')?5:0);
-  const chance=reinforceSuccessChance(count, true, INV[64]||0, INV[65]||0);
-  const value=reinforceExpectedValue(chance, count, masterRate, INV[96]||0, repairAdd) + aprilPlus * 10;
+  const chanceStats=reinforceChanceStats(count, true, INV[64]||0, INV[65]||0);
+  const chance=chanceStats.averageSuccessChance;
+  const value=reinforceExpectedValue(chance, count, masterRate, INV[96]||0, repairAdd, chanceStats.expectedFailureCount, chanceStats.atLeastOneFailureChance, aprilPlus);
   return {count,chance,value,septemberNormal,septemberPlus};
 }
 function upperOptionStats(){
@@ -718,7 +737,6 @@ function syncAutoEP(){
   return ep;
 }
 function effectiveAdditionalStats(){
-  // 엑셀 스펙 시트는 하이퍼/고행, 도전의탑, 심연 시트에 추가 룬 스탯을 동일하게 적용한다.
   return { ad:v('addAD'), as:v('addAS'), cd:v('addCD'), cri:v('addCRI'), ap:v('addAP'), td:v('addTD'), ua:v('addUA'), dr:0, sr:0, hr:0 };
 }
 function growthGraduationAttackBonus(){
@@ -810,11 +828,7 @@ function normalizeDpsJewelSetting(value){
   };
 }
 function normalizeJewelSettings(value,names,normalizeSetting){
-  let source=value;
-  if(typeof source==='string'){
-    try{source=JSON.parse(source || '{}');}catch{source={};}
-  }
-  if(!source || typeof source!=='object' || Array.isArray(source)) source={};
+  const source=parseJsonObject(value);
   return Object.fromEntries(names.map(name=>[name,normalizeSetting(source[name])]));
 }
 function serializeJewelSettings(value,normalizeSettings){return JSON.stringify(normalizeSettings(value));}
@@ -857,11 +871,7 @@ function normalizeDpsBaseUnitExtraSlotSetting(value){
   };
 }
 function normalizeDpsBaseUnitExtraSettings(value){
-  let source=value;
-  if(typeof source==='string'){
-    try{source=JSON.parse(source || '{}');}catch{source={};}
-  }
-  if(!source || typeof source!=='object' || Array.isArray(source)) source={};
+  const source=parseJsonObject(value);
   const out={};
   Object.entries(source).forEach(([unitId,raw])=>{
     const unit=dpsBaseUnitById(unitId);

@@ -77,16 +77,7 @@
   }
 
   function buildCompareHeaderControls(){
-    return `<div class="excel-compare-controls excel-compare-header-controls">
-      <label class="ui-action-btn excel-compare-file-btn excel-compare-base-file-btn">기준 파일<input id="excelCompareBaseFile" type="file" accept=".json,.txt,application/json,text/plain"></label>
-      <select id="excelCompareBasePreset" aria-label="기준 프리셋 목록" disabled><option value="">기준 프리셋 목록</option></select>
-      <label class="ui-action-btn excel-compare-file-btn excel-compare-target-file-btn">비교 파일<input id="excelCompareFile" type="file" accept=".xlsm,.xlsx,.json,.txt,application/json,text/plain,application/vnd.ms-excel.sheet.macroEnabled.12"></label>
-      <select id="excelCompareSheet" aria-label="비교 프리셋 목록" disabled><option value="">비교파일을 불러오세요</option></select>
-      <button id="excelCompareApplyBtn" class="ui-action-btn excel-compare-apply-btn" type="button" data-excel-compare-apply="1" disabled>비교 프리셋값 적용</button>
-      <button id="excelCompareJewelOnlyBtn" class="ui-action-btn excel-compare-jewel-only-btn" type="button" data-excel-compare-jewel-only="1" disabled>쥬얼 데이터만 적용</button>
-      <button id="excelCompareRestoreBtn" class="ui-action-btn excel-compare-restore-btn" type="button" data-excel-compare-restore="1" disabled>기준 프리셋 복원</button>
-      <button id="excelCompareResetBtn" class="ui-action-btn excel-compare-reset-btn" type="button" data-excel-compare-reset="1" disabled>초기화</button>
-    </div>`;
+    return window.ExcelFeature?.renderCompareHeaderControls?.() || '';
   }
 
   function renderMonthRuneModalHeader(tabName){
@@ -114,9 +105,7 @@
   }
 
   function buildCompareApplyPanel(){
-    return `<section class="dps-table-panel excel-compare-panel">
-      <div class="excel-compare-body" id="excelCompareBody">${EXCEL_COMPARE_EMPTY_HTML}</div>
-    </section>`;
+    return window.ExcelFeature?.renderComparePanel?.() || '<section class="dps-table-panel"></section>';
   }
 
   function renderDpsTablePanel(){
