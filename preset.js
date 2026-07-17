@@ -1936,11 +1936,11 @@ function renderTraitPresetBackupModal(plan){
   body.scrollTop=0;
   setTraitPresetBackupSavingState(false);
 }
-function renderTraitPresetBackupResult(error=''){
+function renderTraitPresetBackupError(error=''){
   const body=$('traitPresetBackupBody');
   if(!body) return;
   body.closest('.trait-preset-backup-modal')?.classList.remove('has-pending-change');
-  body.innerHTML=`<section class="trait-preset-backup-result is-error"><h3>프리셋 백업을 완료하지 못했습니다.</h3><p>${escapeHtml(error)}</p></section>`;
+  body.innerHTML=`<section class="trait-preset-backup-error"><h3>프리셋 백업을 완료하지 못했습니다.</h3><p>${escapeHtml(error)}</p></section>`;
 }
 function notifyTraitPresetBackupFileComplete(fileName){
   const normalized=String(fileName || '').trim() || makeTraitPresetFileName('');
@@ -2027,7 +2027,7 @@ function runTraitPresetBackup(mode='stored'){
       try{ restoreTraitPresetBackupSnapshot(snapshot); }catch(rollbackError){ rememberAppIssue('error','[trait preset backup rollback failed]',rollbackError); }
     }
     rememberAppIssue('error','[trait preset backup failed]',e);
-    renderTraitPresetBackupResult(e?.message || '특성 프리셋 백업 실패');
+    renderTraitPresetBackupError(e?.message || '특성 프리셋 백업 실패');
     return false;
   }finally{
     setTraitPresetBackupSavingState(false);

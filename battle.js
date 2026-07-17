@@ -1071,7 +1071,6 @@ body:is(.is-mobile,.is-narrow-mobile) .battle-enemy-status-track{height:6px;}
       const beamCount=Math.max(1,Math.round((barrier.main?2:1)*Math.max(.9,quality)));
       for(let i=0;i<beamCount;i++){
         const travel=frac(time*(.34+.04*i)+i/Math.max(1,beamCount)+index*.21);
-        const eased=smooth(travel);
         const bend=(index-(barriers.length-1)/2)*7+(i-(beamCount-1)/2)*4;
         const midX=lerp(source.x,target.x,.55),midY=lerp(source.y,target.y,.55)+bend;
         const x=travel<.5?lerp(source.x,midX,smooth(travel*2)):lerp(midX,target.x,smooth((travel-.5)*2));
