@@ -498,6 +498,14 @@ function specDpsRoundTime(round,diffName=vs('diff')){
   const timeLoss=dpsBaseUnitInvulnerabilityTimeLoss(diffName);
   return Math.max(1,roundTimeToOneDecimal(speedAdjustedTime-timeLoss));
 }
+function specDpsRoundTimeDpsMultiplier(round,diffName=vs('diff')){
+  const baseTime=enemyRoundTime(round,diffName);
+  const speedAdjustedTime=speedModeRoundTime(baseTime,specDpsSpeedModeEnabled(diffName));
+  const timeLoss=dpsBaseUnitInvulnerabilityTimeLoss(diffName);
+  if(!Number.isFinite(speedAdjustedTime) || speedAdjustedTime<=0 || timeLoss<=0) return 1;
+  const adjustedTime=Math.max(1,roundTimeToOneDecimal(speedAdjustedTime-timeLoss));
+  return Math.max(1,speedAdjustedTime/adjustedTime);
+}
 function battleModeLabel(diffName=vs('diff')){return isCoopActive(diffName) ? '협동' : '개인';}
 function dpsContextModeValues(diffName=vs('diff')){
   const players=isCoopActive(diffName) ? ' · 3인' : '';
@@ -1390,7 +1398,7 @@ function computeStatsRaw(){
   const AB6=(1+(M7+upperStats.actualAs+gradeAs)/100)*(1-diff.as/100)*M13*dt*(specDpsSpeedModeEnabled() ? SPEED_MODE_MULTIPLIER : 1);
   const roundTime=specDpsRoundTime(targetRound);
   const rawM19=AB3*AB4*AB5*AB6;
-  const displayMultiplier=contentDpsDisplayMultiplier(vs('diff'),targetRound,displayHR,displaySR);
+  const displayMultiplier=contentDpsDisplayMultiplier(vs('diff'),targetRound,displayHR,displaySR)*specDpsRoundTimeDpsMultiplier(targetRound,vs('diff'));
   const M19=rawM19*displayMultiplier;
 
   const dpsBaseUnitSelection=dpsBaseUnitStorageValue();
@@ -1576,7 +1584,7 @@ function calculateArtifactDpsRaw(stats=computeStatsRaw()){
     weaponAttack:artifactWeapon.weaponAttack
   };
   const parts=dpsBaseUnitArtifactDpsParts(dpsBaseUnitArtifactConfig().unitId || 'artifactUnit',context);
-  const displayMultiplier=contentDpsDisplayMultiplier(diffName, ctx.targetRound, stats.displayHR||0, stats.displaySR||0);
+  const displayMultiplier=contentDpsDisplayMultiplier(diffName, ctx.targetRound, stats.displayHR||0, stats.displaySR||0)*specDpsRoundTimeDpsMultiplier(ctx.targetRound,diffName);
   const artifactDps=parts.rawM19*displayMultiplier;
   return {
     dps:Number.isFinite(artifactDps) ? artifactDps : 0,
