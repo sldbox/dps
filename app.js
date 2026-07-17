@@ -336,37 +336,6 @@ function currentArtifactDpsResult(){
   }
   return calculateArtifactDpsPreview(diff, v('penance'), targetRoundStoredValue(), {battleMode});
 }
-function updateBattleBoards(s,displayDps,unitHidden=false){
-  const info=s?.dpsBaseUnit;
-  const enemy=s?.enemyData || {};
-  const enemyRound=Math.max(0,Number(enemy.round)||0);
-  const unitSlots=currentDpsBaseUnitSlots();
-  const selectedIds=unitSlots.filter(Boolean);
-  const selectedUnitCount=selectedIds.length;
-  const artifactUnitSelected=selectedIds.includes('artifactUnit');
-  const artifactPrimarySelected=unitSlots[0]==='artifactUnit';
-  const artifactResult=Array.isArray(info?.results) ? info.results.find(result=>result?.unitId==='artifactUnit') : null;
-  window.DpsAnimation?.updateBattle({
-    dps:Number(displayDps),
-    requiredDps:Number(info?.requiredDps),
-    achievementRate:Number(info?.achievementRate),
-    coop:isCoopMode(),
-    battleType:battleDataModeKeyForDifficulty(vs('diff')),
-    unitHidden,
-    selectedUnitCount,
-    enemyCount:enemyRoundDisplayCount(enemyRound),
-    enemyHp:Number(enemy.hp),
-    enemyShield:Number(enemy.shield),
-    enemyArmor:Number(enemy.armor),
-    defenseReduce1:Number(s?.M12),
-    defenseReduce2:coopPassengerDefenseReduceValue('coopPassenger2Dr'),
-    defenseReduce3:coopPassengerDefenseReduceValue('coopPassenger3Dr'),
-    artifactUnitSelected,
-    artifactPrimarySelected,
-    artifactAttackRate:Number(artifactResult?.artifactAttackRate)||0,
-    artifactWaveInterval:Number(artifactResult?.artifactWaveInterval)||0
-  });
-}
 function renderDpsSummary(s){
   updateDpsContextSummary();
   syncDpsBaseUnitControl();
@@ -375,7 +344,6 @@ function renderDpsSummary(s){
   if(shouldHideDpsForRound()){
     setText('dpsVal', '—');
     renderDpsBaseUnitSummary(s,true);
-    updateBattleBoards(s,NaN,true);
     syncDpsMinDpsInputs();
     updateDpsRiskViews(NaN);
     if(isDpsTableOpen()) renderDpsTablePanelContent();
@@ -385,7 +353,6 @@ function renderDpsSummary(s){
   const displayDps=artifactView ? artifactResult.dps : s.M19;
   setText('dpsVal', Number.isFinite(displayDps) ? displayDps.toFixed(2) : '—');
   renderDpsBaseUnitSummary(s,false);
-  updateBattleBoards(s,displayDps,false);
   syncDpsMinDpsInputs();
   updateDpsRiskViews(displayDps);
   if(isDpsTableOpen()) renderDpsTablePanelContent();
@@ -2715,7 +2682,6 @@ function bindAppEvents(){
   ].forEach(fn=>fn());
 }
 function initApp(){
-  window.DpsAnimation?.init();
   loadFontScale();
   renderZeroScoreCalculatorRows();
   bindAppEvents();

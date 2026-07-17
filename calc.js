@@ -511,6 +511,10 @@ function specDpsRoundTimeParts(round,diffName=vs('diff')){
 function specDpsRoundTime(round,diffName=vs('diff')){
   return specDpsRoundTimeParts(round,diffName).finalTime;
 }
+function specDpsRoundTimeDpsMultiplier(round,diffName=vs('diff')){
+  const parts=specDpsRoundTimeParts(round,diffName);
+  return parts.timeLoss>0 ? parts.speedAdjustedTime/parts.finalTime : 1;
+}
 function battleModeLabel(diffName=vs('diff')){return isCoopActive(diffName) ? '협동' : '개인';}
 function dpsContextModeValues(diffName=vs('diff')){
   const players=isCoopActive(diffName) ? ' · 3인' : '';
@@ -1443,7 +1447,7 @@ function computeStatsRaw(){
   const AB6=(1+(M7+upperStats.actualAs+gradeAs)/100)*(1-diff.as/100)*M13*dt*(specDpsSpeedModeEnabled() ? SPEED_MODE_MULTIPLIER : 1);
   const roundTime=specDpsRoundTime(targetRound);
   const rawM19=AB3*AB4*AB5*AB6;
-  const displayMultiplier=contentDpsDisplayMultiplier(vs('diff'),targetRound,displayHR,displaySR);
+  const displayMultiplier=contentDpsDisplayMultiplier(vs('diff'),targetRound,displayHR,displaySR)*specDpsRoundTimeDpsMultiplier(targetRound,vs('diff'));
   const M19=rawM19*displayMultiplier;
 
   const dpsBaseUnitSelection=dpsBaseUnitStorageValue();
@@ -1621,7 +1625,7 @@ function calculateArtifactDpsRaw(stats=computeStatsRaw()){
   const displayMultiplier=contentDpsDisplayMultiplier(vs('diff'), ctx.targetRound, stats.displayHR||0, stats.displaySR||0);
   const rawArtifactDps=dps0Part * flowerMultiplier * adTdMultiplier * critMultiplier * uaMultiplier;
   const roundTimeParts=specDpsRoundTimeParts(ctx.targetRound);
-  const timeLossMultiplier=roundTimeParts.timeLoss>0 ? roundTimeParts.speedAdjustedTime/roundTimeParts.finalTime : 1;
+  const timeLossMultiplier=specDpsRoundTimeDpsMultiplier(ctx.targetRound,vs('diff'));
   const roundTime=roundTimeParts.finalTime;
   const artifactDps=rawArtifactDps * displayMultiplier * timeLossMultiplier;
   return {
