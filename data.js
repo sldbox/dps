@@ -329,7 +329,7 @@ const ARTIFACT_DPS_CONFIG=Object.freeze({
   baseWeaponAttack:500,
   baseWaveCooldown:4,
   minimumWaveInterval:0.001,
-  waveTargetCount:50,
+  waveTargetCount:60,
   baseRaceUpgradeLevel:120,
   raceUpgradeAttackPerLevel:2.5,
   upgradeRaces:Object.freeze(['테란 바이오닉','테란 메카닉','플토 바이오닉','플토 메카닉','저그','중립'])
