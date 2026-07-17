@@ -108,6 +108,9 @@ body:is(.is-mobile,.is-narrow-mobile) .battle-enemy-status-track{height:6px;}
   let initialized=false;
   let paused=false;
   let refreshQueued=false;
+  let stateUpdateQueued=false;
+  let stateRetryCount=0;
+  let stateObserver=null;
 
   const SVG_SOURCES=Object.freeze({
     hero:`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 210">
@@ -499,6 +502,81 @@ body:is(.is-mobile,.is-narrow-mobile) .battle-enemy-status-track{height:6px;}
       artifactAttackRate:Math.max(0,number(data.artifactAttackRate)),
       artifactWaveInterval:Math.max(0,number(data.artifactWaveInterval))
     };
+  }
+  function safeCall(name,...args){
+    const fn=window[name];
+    if(typeof fn!=='function') return undefined;
+    try{return fn(...args);}catch{return undefined;}
+  }
+  function currentBattleDataFromState(){
+    const stats=safeCall('computeStatsRaw');
+    if(!stats) return null;
+    const info=stats?.dpsBaseUnit;
+    const enemy=stats?.enemyData || {};
+    const enemyRound=Math.max(0,Number(enemy.round)||0);
+    const unitSlots=Array.isArray(safeCall('currentDpsBaseUnitSlots')) ? safeCall('currentDpsBaseUnitSlots') : [];
+    const selectedIds=unitSlots.filter(Boolean);
+    const selectedUnitCount=selectedIds.length;
+    const artifactUnitSelected=selectedIds.includes('artifactUnit');
+    const artifactPrimarySelected=unitSlots[0]==='artifactUnit';
+    const artifactResult=Array.isArray(info?.results) ? info.results.find(result=>result?.unitId==='artifactUnit') : null;
+    const artifactView=Boolean(safeCall('isArtifactDpsViewEnabled'));
+    const unitHidden=Boolean(safeCall('shouldHideDpsForRound'));
+    const artifactDps=artifactView ? safeCall('currentArtifactDpsResult')?.dps : NaN;
+    const displayDps=unitHidden ? NaN : Number(artifactView ? artifactDps : stats.M19);
+    const diffName=typeof window.vs==='function' ? safeCall('vs','diff') : '';
+    return {
+      dps:displayDps,
+      requiredDps:Number(info?.requiredDps),
+      achievementRate:Number(info?.achievementRate),
+      coop:Boolean(safeCall('isCoopMode')),
+      battleType:safeCall('battleDataModeKeyForDifficulty',diffName),
+      unitHidden,
+      selectedUnitCount,
+      enemyCount:safeCall('enemyRoundDisplayCount',enemyRound),
+      enemyHp:Number(enemy.hp),
+      enemyShield:Number(enemy.shield),
+      enemyArmor:Number(enemy.armor),
+      defenseReduce1:Number(stats?.M12),
+      defenseReduce2:Number(safeCall('coopPassengerDefenseReduceValue','coopPassenger2Dr')),
+      defenseReduce3:Number(safeCall('coopPassengerDefenseReduceValue','coopPassenger3Dr')),
+      artifactUnitSelected,
+      artifactPrimarySelected,
+      artifactAttackRate:Number(artifactResult?.artifactAttackRate)||0,
+      artifactWaveInterval:Number(artifactResult?.artifactWaveInterval)||0
+    };
+  }
+  function updateBattleFromState(){
+    const data=currentBattleDataFromState();
+    if(data){
+      stateRetryCount=0;
+      updateBattle(data);
+      return true;
+    }
+    return false;
+  }
+  function queueStateUpdate(){
+    if(stateUpdateQueued) return;
+    stateUpdateQueued=true;
+    requestAnimationFrame(()=>{
+      stateUpdateQueued=false;
+      if(updateBattleFromState()) return;
+      if(stateRetryCount<24){
+        stateRetryCount++;
+        setTimeout(queueStateUpdate,60);
+      }
+    });
+  }
+  function bindStateUpdateTriggers(){
+    document.addEventListener('input',queueStateUpdate,true);
+    document.addEventListener('change',queueStateUpdate,true);
+    document.addEventListener('click',queueStateUpdate,true);
+    document.addEventListener('keyup',queueStateUpdate,true);
+    const target=document.getElementById('dpsVal') || document.body;
+    if(target&&window.MutationObserver){
+      stateObserver=new MutationObserver(queueStateUpdate);
+      stateObserver.observe(target,{childList:true,characterData:true,subtree:true});
+    }
   }
   function prefersReducedMotion(){return Boolean(window.matchMedia?.('(prefers-reduced-motion: reduce)').matches);}
   function qualityFor(width,height){
@@ -1757,10 +1835,12 @@ body:is(.is-mobile,.is-narrow-mobile) .battle-enemy-status-track{height:6px;}
     paused=document.hidden;
     document.addEventListener('visibilitychange',onVisibilityChange);
     document.addEventListener('click',onDocumentClick,true);
+    bindStateUpdateTriggers();
     window.addEventListener('resize',queueRefresh,{passive:true});
     window.addEventListener('orientationchange',queueRefresh,{passive:true});
-    window.addEventListener('pageshow',queueRefresh,{passive:true});
-    window.addEventListener('focus',queueRefresh,{passive:true});
+    window.addEventListener('pageshow',queueStateUpdate,{passive:true});
+    window.addEventListener('focus',queueStateUpdate,{passive:true});
+    queueStateUpdate();
     requestAnimationFrame(tick);
   }
   function updateBattle(data={}){
@@ -1777,5 +1857,9 @@ body:is(.is-mobile,.is-narrow-mobile) .battle-enemy-status-track{height:6px;}
     queueRefresh();
   }
 
-  window.DpsAnimation=Object.freeze({init,updateBattle});
+  function boot(){init();queueStateUpdate();}
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot,{once:true});
+  else requestAnimationFrame(boot);
+
+  window.DpsAnimation=Object.freeze({init,updateBattle,refresh:queueStateUpdate});
 })();
