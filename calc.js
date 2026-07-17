@@ -469,7 +469,6 @@ function enemyRoundTime(round, diffName=vs('diff')){
   return Math.max(1,Math.round(finalTime*10)/10);
 }
 const SPEED_MODE_MULTIPLIER=1.3;
-const SPEED_MODE_ROUND_TIME_RATIO=43/61.5;
 function roundTimeToOneDecimal(value){
   return Math.round((Number(value)+Number.EPSILON)*10)/10;
 }
@@ -482,16 +481,22 @@ function speedModeSupported(diffName=vs('diff')){
 function speedModeRoundTime(baseTime,enabled){
   const time=Number(baseTime);
   if(!Number.isFinite(time)) return time;
-  return roundTimeToOneDecimal(enabled ? time*SPEED_MODE_ROUND_TIME_RATIO : time);
+  return roundTimeToOneDecimal(enabled ? time/SPEED_MODE_MULTIPLIER : time);
+}
+function unifiedDpsSpeedModeEnabled(diffName=vs('diff')){
+  return speedModeSupported(diffName) && (storedSpeedModeEnabled('specDpsSpeedMode') || storedSpeedModeEnabled('dpsBaseUnitSpeedMode'));
 }
 function specDpsSpeedModeEnabled(diffName=vs('diff')){
-  return speedModeSupported(diffName) && storedSpeedModeEnabled('specDpsSpeedMode');
+  return unifiedDpsSpeedModeEnabled(diffName);
 }
 function dpsBaseUnitSpeedModeEnabled(diffName=vs('diff')){
-  return speedModeSupported(diffName) && storedSpeedModeEnabled('dpsBaseUnitSpeedMode');
+  return unifiedDpsSpeedModeEnabled(diffName);
 }
 function specDpsRoundTime(round,diffName=vs('diff')){
-  return speedModeRoundTime(enemyRoundTime(round,diffName),specDpsSpeedModeEnabled(diffName));
+  const baseTime=enemyRoundTime(round,diffName);
+  const speedAdjustedTime=speedModeRoundTime(baseTime,specDpsSpeedModeEnabled(diffName));
+  const timeLoss=dpsBaseUnitInvulnerabilityTimeLoss(diffName);
+  return Math.max(1,roundTimeToOneDecimal(speedAdjustedTime-timeLoss));
 }
 function battleModeLabel(diffName=vs('diff')){return isCoopActive(diffName) ? '협동' : '개인';}
 function dpsContextModeValues(diffName=vs('diff')){
@@ -1089,7 +1094,7 @@ function dpsBaseUnitInvulnerabilityTimeLoss(diffName=vs('diff')){
   const name=difficultyName(diffName);
   if(!DPS_BASE_UNIT_ENEMY_BUFF_DIFFICULTIES.has(name)) return 0;
   if(DPS_BASE_UNIT_FIXED_INVULNERABILITY_DIFFICULTIES.has(name)) return DPS_BASE_UNIT_INVULNERABILITY_TIME_LOSS;
-  return dpsBaseUnitShieldOffEnabled(diffName) ? 0 : DPS_BASE_UNIT_INVULNERABILITY_TIME_LOSS;
+  return dpsBaseUnitShieldOffEnabled(diffName) ? DPS_BASE_UNIT_INVULNERABILITY_TIME_LOSS : 0;
 }
 function dpsBaseUnitRoundTime(round,diffName=vs('diff')){
   const baseTime=enemyRoundTime(round,diffName);

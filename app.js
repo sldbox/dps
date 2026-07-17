@@ -555,21 +555,33 @@ function syncOnOffSwitch(toggle,{active=false,disabled=false,label='설정',cont
   toggle.setAttribute('aria-label',`${label} ${active ? 'ON' : 'OFF'}`);
   if(containerSelector) toggle.closest(containerSelector)?.classList.toggle('is-disabled',disabled);
 }
+const UNIFIED_DPS_SPEED_MODE_INPUT_IDS=Object.freeze(['specDpsSpeedMode','dpsBaseUnitSpeedMode']);
+function setUnifiedDpsSpeedModeValue(enabled){
+  const disabled=!speedModeSupported();
+  const active=!disabled && !!enabled;
+  UNIFIED_DPS_SPEED_MODE_INPUT_IDS.forEach(id=>{
+    const input=$(id);
+    if(input) input.value=active ? 'ON' : 'OFF';
+  });
+  return {active,disabled};
+}
+function normalizeUnifiedDpsSpeedModeValue(){
+  const active=UNIFIED_DPS_SPEED_MODE_INPUT_IDS.some(id=>storedSpeedModeEnabled(id));
+  return setUnifiedDpsSpeedModeValue(active);
+}
 function syncSpecDpsSpeedSwitch(){
   const toggle=$('specDpsSpeedModeToggle');
-  const input=$('specDpsSpeedMode');
-  if(!toggle || !input) return;
-  const disabled=!speedModeSupported();
-  if(disabled) input.value='OFF';
-  const active=!disabled && storedSpeedModeEnabled('specDpsSpeedMode');
+  if(!toggle) return;
+  const {active,disabled}=normalizeUnifiedDpsSpeedModeValue();
   syncOnOffSwitch(toggle,{active,disabled,label:'스피드 모드',containerSelector:'.spec-dps-speed-switch-wrap'});
 }
 function toggleSpecDpsSpeedMode(){
-  const input=$('specDpsSpeedMode');
   const toggle=$('specDpsSpeedModeToggle');
-  if(!input || toggle?.disabled || !speedModeSupported()) return false;
-  input.value=storedSpeedModeEnabled('specDpsSpeedMode') ? 'OFF' : 'ON';
+  const {active,disabled}=normalizeUnifiedDpsSpeedModeValue();
+  if(toggle?.disabled || disabled) return false;
+  setUnifiedDpsSpeedModeValue(!active);
   syncSpecDpsSpeedSwitch();
+  syncDpsBaseUnitConditionSwitches();
   requestAppUpdate();
   scheduleAutoSave();
   return true;
@@ -579,10 +591,15 @@ function syncDpsBaseUnitConditionSwitch(toggle){
   if(!toggle) return;
   const inputId=toggle.dataset.dpsBaseUnitConditionToggle || '';
   const input=$(inputId);
+  const label=toggle.dataset.dpsBaseUnitConditionLabel || '설정';
+  if(inputId==='dpsBaseUnitSpeedMode'){
+    const {active,disabled}=normalizeUnifiedDpsSpeedModeValue();
+    syncOnOffSwitch(toggle,{active,disabled,label,containerSelector:'.dps-base-unit-condition-item'});
+    return;
+  }
   const disabled=dpsBaseUnitConditionLocked(inputId);
   if(disabled && input) input.value='OFF';
   const active=!disabled && storedSpeedModeEnabled(inputId);
-  const label=toggle.dataset.dpsBaseUnitConditionLabel || '설정';
   syncOnOffSwitch(toggle,{active,disabled,label,containerSelector:'.dps-base-unit-condition-item'});
 }
 function syncDpsBaseUnitConditionSwitches(){
@@ -591,7 +608,18 @@ function syncDpsBaseUnitConditionSwitches(){
 function toggleDpsBaseUnitCondition(toggle){
   const inputId=toggle?.dataset?.dpsBaseUnitConditionToggle || '';
   const input=$(inputId);
-  if(!input || toggle.disabled || dpsBaseUnitConditionLocked(inputId)) return false;
+  if(!input || toggle.disabled) return false;
+  if(inputId==='dpsBaseUnitSpeedMode'){
+    const {active,disabled}=normalizeUnifiedDpsSpeedModeValue();
+    if(disabled) return false;
+    setUnifiedDpsSpeedModeValue(!active);
+    syncSpecDpsSpeedSwitch();
+    syncDpsBaseUnitConditionSwitches();
+    requestAppUpdate();
+    scheduleAutoSave();
+    return true;
+  }
+  if(dpsBaseUnitConditionLocked(inputId)) return false;
   input.value=storedSpeedModeEnabled(inputId) ? 'OFF' : 'ON';
   syncDpsBaseUnitConditionSwitch(toggle);
   requestAppUpdate();
