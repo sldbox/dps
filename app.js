@@ -208,13 +208,90 @@ function syncSelectButtons(){
     });
   });
 }
+const SELECTED_UNIT_BUFF_TO_BOARD_UNIT=Object.freeze({
+  prodArtifact:'artifactUnit',
+  prodNova:'prodNova',
+  prodTeratron:'prodTeratron',
+  prodAmon:'prodAmon',
+  prodAdun:'prodAdun',
+  prodKerrigan:'prodKerrigan',
+  prodOvermind:'prodOvermind',
+  prodNarud:'prodNarud'
+});
 function syncBuffChoiceButtons(){
   qsa('.buff-choice-item').forEach(item=>{
     const input=item.querySelector('input[type="checkbox"]');
-    const active=!!input && ((input.id==='prodArtifact' && isArtifactDpsViewEnabled()) || input.checked);
+    const active=!!input?.checked;
     setClassState(item, 'is-active', active);
     item.setAttribute('aria-pressed', active ? 'true' : 'false');
   });
+}
+function syncSelectedUnitBuffsFromDpsBaseUnits(selectedIds){
+  const selected=new Set(dpsBaseUnitSelectionIds(selectedIds));
+  let changed=false;
+  Object.entries(SELECTED_UNIT_BUFF_TO_BOARD_UNIT).forEach(([buffId,unitId])=>{
+    const input=$(buffId);
+    if(!input) return;
+    const checked=selected.has(unitId);
+    if(input.checked!==checked){
+      input.checked=checked;
+      changed=true;
+    }
+  });
+  syncBuffChoiceButtons();
+  return changed;
+}
+function syncSelectedUnitBuffToDpsBaseUnit(input,options={}){
+  const unitId=SELECTED_UNIT_BUFF_TO_BOARD_UNIT[input?.id];
+  if(!unitId) return false;
+  const notify=options.notify!==false;
+  const slots=currentDpsBaseUnitSlots();
+  if(input.checked){
+    if(slots.includes(unitId)){
+      syncSelectedUnitBuffsFromDpsBaseUnits(slots.filter(Boolean));
+      return true;
+    }
+    const emptyIndex=slots.indexOf('');
+    if(emptyIndex<0){
+      input.checked=false;
+      syncBuffChoiceButtons();
+      if(options.warnWhenFull!==false) showToast(`유닛 보드 슬롯이 가득 차 ${dpsBaseUnitLabel(unitId)}을(를) 선택할 수 없습니다.`,'warn');
+      return false;
+    }
+    slots[emptyIndex]=unitId;
+  }else{
+    if(!slots.includes(unitId)){
+      syncSelectedUnitBuffsFromDpsBaseUnits(slots.filter(Boolean));
+      return true;
+    }
+    slots.forEach((id,index)=>{ if(id===unitId) slots[index]=''; });
+  }
+  setDpsBaseUnitStoredValue(slots.filter(Boolean),notify,{slots});
+  return true;
+}
+function reconcileSelectedUnitBuffsWithDpsBaseUnits(explicitValues=null){
+  const input=$('dpsBaseUnits');
+  const slotInput=$('dpsBaseUnitSlots');
+  if(!input || !slotInput) return false;
+  const selectedIds=dpsBaseUnitSelectionIds(normalizeDpsBaseUnitsValue(input.value || ''));
+  const rawSlots=String(slotInput.value || '');
+  let slots=rawSlots ? normalizeDpsBaseUnitSlotValues(rawSlots) : compactDpsBaseUnitSlots(selectedIds);
+  slots=reconcileDpsBaseUnitSlots(slots,selectedIds);
+  Object.entries(SELECTED_UNIT_BUFF_TO_BOARD_UNIT).forEach(([buffId,unitId])=>{
+    if(!explicitValues || !Object.prototype.hasOwnProperty.call(explicitValues,buffId)) return;
+    const buff=$(buffId);
+    const currentIndex=slots.indexOf(unitId);
+    if(buff?.checked){
+      if(currentIndex>=0) return;
+      const emptyIndex=slots.indexOf('');
+      if(emptyIndex>=0) slots[emptyIndex]=unitId;
+      else buff.checked=false;
+      return;
+    }
+    if(currentIndex>=0) slots[currentIndex]='';
+  });
+  writeDpsBaseUnitSelection(input,slotInput,slots);
+  return true;
 }
 function penanceOptionLabel(value){return value>0 ? `${value} 고행` : '선택 안함';}
 function syncPenanceOptions(){
@@ -1001,10 +1078,6 @@ const FIELD_REGISTRY={
   overEnhance:{kind:'룬효과 버프',name:'오버핸스',compare:true,save:true},
   repairEnhance:{kind:'룬효과 버프',name:'리페핸스',compare:true,save:true},
   enhanceMaster:{kind:'룬효과 버프',name:'강화의 달인',compare:true,save:true},
-  dailyCouponBuff:{kind:'룬효과 버프',name:'일일쿠폰',compare:true,save:true},
-  shareUserBuff:{kind:'룬효과 버프',name:'나눔유저',compare:true,save:true},
-  unitUniqueBuff:{kind:'룬효과 버프',name:'단일유닛버프',compare:true,save:true},
-  basePierceBuff:{kind:'룬효과 버프',name:'방어력관통 10%',compare:true,save:true},
   prodArtifact:{kind:'룬효과 버프',name:'유물',compare:true,save:true},
   prodNova:{kind:'룬효과 버프',name:'비밀 작전 노바',compare:true,save:true},
   prodTeratron:{kind:'룬효과 버프',name:'테라트론',compare:true,save:true},
@@ -1659,20 +1732,13 @@ function toggleDpsBaseUnitVoidPower(unitId){
   syncDpsBaseUnitControl();
   return next;
 }
-function ensureArtifactProductionBuffForUnitSelection(selectedIds){
-  const ids=Array.isArray(selectedIds) ? selectedIds : dpsBaseUnitSelectionIds(selectedIds);
-  if(!ids.includes('artifactUnit')) return false;
-  const artifact=$('prodArtifact');
-  if(!artifact || artifact.checked) return false;
-  artifact.checked=true;
-  return true;
-}
 function writeDpsBaseUnitSelection(input,slotInput,slots){
   const selectedIds=slots.filter(Boolean);
   const normalized=normalizeDpsBaseUnitsValue(selectedIds);
   input.value=normalized;
   slotInput.value=serializeDpsBaseUnitSlots(slots);
   syncDpsBaseUnitQuantitiesForSelection(selectedIds);
+  syncSelectedUnitBuffsFromDpsBaseUnits(selectedIds);
   return normalized;
 }
 function setDpsBaseUnitStoredValue(value, notify=true, options={}){
@@ -1681,7 +1747,6 @@ function setDpsBaseUnitStoredValue(value, notify=true, options={}){
   if(!input || !slotInput) return;
   const initialIds=dpsBaseUnitSelectionIds(normalizeDpsBaseUnitsValue(value));
   const selectedIds=initialIds.slice(0,dpsBaseUnitSelectionLimit());
-  ensureArtifactProductionBuffForUnitSelection(selectedIds);
   const requestedSlots=options.slots ? normalizeDpsBaseUnitSlotValues(options.slots) : currentDpsBaseUnitSlots();
   const slots=reconcileDpsBaseUnitSlots(requestedSlots,selectedIds);
   writeDpsBaseUnitSelection(input,slotInput,slots);
@@ -1746,7 +1811,6 @@ function syncDpsBaseUnitControl(){
   const slotInput=$('dpsBaseUnitSlots');
   if(!input || !slotInput) return;
   const selectedIds=dpsBaseUnitSelectionIds(normalizeDpsBaseUnitsValue(input.value || ''));
-  ensureArtifactProductionBuffForUnitSelection(selectedIds);
   sanitizeDpsBaseUnitVoidPowerAvailability(selectedIds);
   const rawSlots=String(slotInput.value || '');
   let slots=rawSlots ? normalizeDpsBaseUnitSlotValues(rawSlots) : compactDpsBaseUnitSlots(selectedIds);
@@ -2617,6 +2681,7 @@ function bindReactiveInputs(){
     if(RUNE_CHOICE_SYNC_IDS.has(target.id)) syncRuneChoice();
     if(ENCHANT_INPUT_ID_SET.has(target.id)) syncEnchantInputs();
     if(RUNE_OPTION_SELECT_ID_SET.has(target.id)) syncExclusiveRuneOptions();
+    if(SELECTED_UNIT_BUFF_TO_BOARD_UNIT[target.id]) syncSelectedUnitBuffToDpsBaseUnit(target);
     if(target.id==='soloMode' || target.id==='coopMode'){
       syncBattleMode(target.id);
     }

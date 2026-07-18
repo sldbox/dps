@@ -615,10 +615,6 @@ function buildExcelBuffRows(cells,specCells){
     buildExcelChoiceRow('오버핸스',cells.H14,'overEnhance'),
     buildExcelChoiceRow('리페핸스',cells.H15,'repairEnhance'),
     buildExcelChoiceRow('강화의 달인',cells.H16,'enhanceMaster'),
-    buildExcelChoiceRow('일일쿠폰',specCells.R24,'dailyCouponBuff',{boolean:true}),
-    buildExcelChoiceRow('나눔유저',cells.H116,'shareUserBuff',{boolean:true}),
-    buildExcelChoiceRow('단일유닛버프',cells.H6,'unitUniqueBuff',{boolean:true}),
-    buildExcelChoiceRow('방어력관통 10%',cells.H8,'basePierceBuff',{boolean:true}),
     buildExcelChoiceRow('유물',cells.F11,'prodArtifact',{boolean:true}),
     buildExcelChoiceRow('비밀 작전 노바',cells.F4,'prodNova',{boolean:true}),
     buildExcelChoiceRow('테라트론',cells.F5,'prodTeratron',{boolean:true}),
@@ -1095,10 +1091,8 @@ function buildExcelState(cells, specCells, zeroCells, sheetName=''){
     [roundFieldId,firstExcelValue(cells,['B7','N43'])],
     ['team',cells.D5],
     ['unitGrade',cells.H4],['unitLevel',cells.H5],
-    ['unitUniqueBuff',cells.H6],['basePierceBuff',cells.H8],
     ['erosionStack',cells.H10],['jewelErosionRes',cells.H11],
     ['overEnhance',cells.H14],['repairEnhance',cells.H15],['enhanceMaster',cells.H16],
-    ['shareUserBuff',cells.H116],
     ['coralShard',specCells.R26],['aiurShard',specCells.R27],['xerusShard',specCells.R28],
     ['prodNova',cells.F4],['prodTeratron',cells.F5],['prodAmon',cells.F6],['prodAdun',cells.F7],
     ['prodKerrigan',cells.F8],['prodOvermind',cells.F9],['prodNarud',cells.F10],['prodArtifact',cells.F11],
@@ -1126,7 +1120,6 @@ function buildExcelState(cells, specCells, zeroCells, sheetName=''){
   applied+=assign('aprRunePlus',specCells.O52);
   applied+=assign('sepRuneNormal',specCells.N53);
   applied+=assign('sepRunePlus',specCells.O53);
-  applied+=assign('dailyCouponBuff',specCells.R24);
   applied+=assign('titleTdBonus',specCells.S17,{valueMap:EXCEL_TITLE_BONUS_MAP});
   [
     ['traitLimitAD',cells.F25],['traitLimitAS',cells.F26],['traitLimitCRI',cells.F27],['traitLimitCD',cells.F28],

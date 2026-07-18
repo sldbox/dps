@@ -57,13 +57,7 @@ body:is(.is-mobile,.is-narrow-mobile) .battle-enemy-status-track{height:6px;}
     document.head.appendChild(style);
   }
 
-  const SOLO_REST_DIALOGUES=Object.freeze([
-    Object.freeze({speaker:'hero',text:'장비 점검 완료. 성문까지 단숨에 돌파한다.'}),
-    Object.freeze({speaker:'artifact',text:'에너지 회오리 충전률 {charge}%.'}),
-    Object.freeze({speaker:'hero',text:'횃불이 꺼지기 전에 출발하자.'}),
-    Object.freeze({speaker:'artifact',text:'마력 코어 안정화 중. 공명 출력 정상.'})
-  ]);
-  const COOP_REST_DIALOGUES=Object.freeze([
+  const PARTY_REST_DIALOGUES=Object.freeze([
     Object.freeze({speaker:'hero',text:'빨강이, 하얀이. 준비됐지?'}),
     Object.freeze({speaker:'p2',text:'준비됐습니다, 보스. 언제든 출발하시죠.'}),
     Object.freeze({speaker:'p3',text:'저도 준비됐어요, 보스. 신호만 주세요.'}),
@@ -514,7 +508,8 @@ body:is(.is-mobile,.is-narrow-mobile) .battle-enemy-status-track{height:6px;}
     const info=stats?.dpsBaseUnit;
     const enemy=stats?.enemyData || {};
     const enemyRound=Math.max(0,Number(enemy.round)||0);
-    const unitSlots=Array.isArray(safeCall('currentDpsBaseUnitSlots')) ? safeCall('currentDpsBaseUnitSlots') : [];
+    const boardSlots=safeCall('currentDpsBaseUnitSlots');
+    const unitSlots=Array.isArray(boardSlots) ? boardSlots : [];
     const selectedIds=unitSlots.filter(Boolean);
     const selectedUnitCount=selectedIds.length;
     const artifactUnitSelected=selectedIds.includes('artifactUnit');
@@ -709,7 +704,7 @@ body:is(.is-mobile,.is-narrow-mobile) .battle-enemy-status-track{height:6px;}
     const theme=themeFor(data.battleType);
     if(flow.mode==='rest'){
       const durability=resetCombatRuntime(runtime,data,null);
-      drawRestScene(ctx,width,height,data,theme,now/1000,quality,dialogueTime);
+      drawRestScene(ctx,width,height,theme,now/1000,quality,dialogueTime);
       return durability;
     }
     if(flow.mode==='infiltration'){
@@ -722,7 +717,7 @@ body:is(.is-mobile,.is-narrow-mobile) .battle-enemy-status-track{height:6px;}
     return drawCombatScene(ctx,width,height,data,flow.battleTime,quality,runtime,flow.sequenceIndex);
   }
 
-  function drawRestScene(ctx,width,height,data,theme,time,quality,dialogueTime){
+  function drawRestScene(ctx,width,height,theme,time,quality,dialogueTime){
     drawRestSky(ctx,width,height,theme,time,quality);
     const ground=ctx.createLinearGradient(0,height*.54,0,height);
     ground.addColorStop(0,'rgba(25,20,18,.24)');
@@ -733,12 +728,10 @@ body:is(.is-mobile,.is-narrow-mobile) .battle-enemy-status-track{height:6px;}
     drawCampSupplies(ctx,width,height,theme,time);
     const fire={x:width*.51,y:height*.84};
     const base=Math.min(width/430,height/150);
-    const heroes=data.coop?[
+    const heroes=[
       {key:'hero',x:width*.28,y:height*.89,scale:base*.82,color:PLAYER_COLORS.p1,label:'나',main:true,phase:.1},
       {key:'p2',x:width*.13,y:height*.91,scale:base*.50,color:PLAYER_COLORS.p2,label:'2P',phase:1.7},
       {key:'p3',x:width*.43,y:height*.92,scale:base*.52,color:PLAYER_COLORS.p3,label:'3P',phase:3.0}
-    ]:[
-      {key:'hero',x:width*.27,y:height*.90,scale:base*.90,color:PLAYER_COLORS.p1,label:'나',main:true,phase:.1}
     ];
     const anchors={};
     const charge=35+Math.round(frac(dialogueTime/21)*65);
@@ -749,8 +742,8 @@ body:is(.is-mobile,.is-narrow-mobile) .battle-enemy-status-track{height:6px;}
     const relic=drawRelic(ctx,width*.76,height*.88,base*.66,{time:time*.82,label:'유물',active:true,charge:charge/100});
     anchors.artifact={x:relic.core.x,y:relic.core.y-8*base};
     drawCampfire(ctx,fire.x,fire.y,Math.max(12,20*base),time,quality);
-    drawCampEnergy(ctx,fire.x,fire.y,Math.max(12,20*base),theme,time,quality,data.coop);
-    const dialogue=activeDialogue(dialogueTime,data.coop?COOP_REST_DIALOGUES:SOLO_REST_DIALOGUES,{lineInterval:3.45,visibleDuration:2.8,pauseDuration:3.4});
+    drawCampEnergy(ctx,fire.x,fire.y,Math.max(12,20*base),theme,time,quality,true);
+    const dialogue=activeDialogue(dialogueTime,PARTY_REST_DIALOGUES,{lineInterval:3.45,visibleDuration:2.8,pauseDuration:3.4});
     if(dialogue){
       const item=dialogue.item;
       const anchor=anchors[item.speaker];
@@ -957,7 +950,7 @@ body:is(.is-mobile,.is-narrow-mobile) .battle-enemy-status-track{height:6px;}
       }else render();
     });
 
-    if(barriers.length) drawTeamBarrier(ctx,barriers,theme,time,power,data.coop,quality);
+    if(barriers.length) drawTeamBarrier(ctx,barriers,time,power);
     const closing=smooth(clamp((phase-.82)/.16,0,1));
     if(closing>0){
       ctx.save();
@@ -1184,7 +1177,7 @@ body:is(.is-mobile,.is-narrow-mobile) .battle-enemy-status-track{height:6px;}
     ctx.restore();
   }
 
-  function drawTeamBarrier(ctx,barriers,theme,time,power,coop,quality){
+  function drawTeamBarrier(ctx,barriers,time,power){
     ctx.save();ctx.globalCompositeOperation='lighter';
     barriers.forEach((barrier,index)=>{
       const pulse=.5+.5*Math.sin(time*1.7+index*.9);
@@ -1284,7 +1277,7 @@ body:is(.is-mobile,.is-narrow-mobile) .battle-enemy-status-track{height:6px;}
     drawCastleInterior(ctx,width,height,data,theme,time,quality);
     drawRoute(ctx,width,height,data.coop,theme,model.spawnCorner);
     drawWave(ctx,width,height,data,theme,model,time,quality);
-    if(data.coop) drawCoopSupport(ctx,width,height,data,time);
+    drawPassengerSupport(ctx,width,height,data,time);
     if(data.artifactPrimarySelected){
       const relic=drawDefenseRelic(ctx,width,height,data,model,time);
       drawArtifactAttack(ctx,width,height,data,theme,model,relic,time,quality);
@@ -1620,13 +1613,17 @@ body:is(.is-mobile,.is-narrow-mobile) .battle-enemy-status-track{height:6px;}
     ctx.restore();
   }
 
-  function drawCoopSupport(ctx,width,height,data,time){
+  function visualPassengerDefenseReduce(data,player){
+    if(!data?.coop) return 0;
+    return player==='p3' ? data.defenseReduce3 : data.defenseReduce2;
+  }
+  function drawPassengerSupport(ctx,width,height,data,time){
     const narrow=width<480;
     const size=Math.min(width/440,height/210)*(narrow?.43:.50);
     const p2={x:width*(narrow?.29:.34),y:height*(narrow?.69:.74)};
     const p3={x:width*(narrow?.71:.69),y:height*(narrow?.69:.74)};
-    drawHero(ctx,p2.x,p2.y,size,PLAYER_COLORS.p2,{facing:1,time:time+.6,label:'2P',labelPosition:'above',defenseReduce:data.defenseReduce2});
-    drawHero(ctx,p3.x,p3.y,size,PLAYER_COLORS.p3,{facing:-1,time:time+1.1,label:'3P',labelPosition:'above',defenseReduce:data.defenseReduce3});
+    drawHero(ctx,p2.x,p2.y,size,PLAYER_COLORS.p2,{facing:1,time:time+.6,label:'2P',labelPosition:'above',defenseReduce:visualPassengerDefenseReduce(data,'p2')});
+    drawHero(ctx,p3.x,p3.y,size,PLAYER_COLORS.p3,{facing:-1,time:time+1.1,label:'3P',labelPosition:'above',defenseReduce:visualPassengerDefenseReduce(data,'p3')});
   }
 
   function drawHeroAttack(ctx,width,height,theme,model,hero,quality){

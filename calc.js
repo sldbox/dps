@@ -737,14 +737,15 @@ function upperOptionStats(){
     dps0Mul: flower3 ? 1.15 : 1
   };
 }
+const SYSTEM_COMMON_BUFFS=Object.freeze({
+  dailyCouponCri:10,
+  shareUser:Object.freeze({ad:10,as:10,cri:5}),
+  uniqueUnit:Object.freeze({baseAd:30,septemberPlusAd:10,actualAp:20}),
+  basePierce:10
+});
 const UNIT_GRADE_AD={D:-10,C:-5,B:0,A:5,S:10,SS:20,SSS:30,X:40,XD:50,SXD:50,RXD:100};
 const UNIT_GRADE_AS={D:0,C:0,B:0,A:0,S:0,SS:0,SSS:0,X:0,XD:0,SXD:25,RXD:30};
 function activeUnitGrade(){return vs('unitGrade') || 'S';}
-function checkboxOn(id, fallback=false){
-  const el=$(id);
-  if(!el) return fallback;
-  return el.type==='checkbox' ? !!el.checked : String(el.value||'ON')!=='OFF';
-}
 function xpInputStatBonus(){
   return effectiveXpValue() <= 10000 ? {ad:10, as:10, cri:5} : {ad:0, as:0, cri:0};
 }
@@ -791,7 +792,7 @@ function unitADPrivateBonus(){
   const enh=specUnitEnhanceStats();
   const gradeAd=UNIT_GRADE_AD[activeUnitGrade()] ?? UNIT_GRADE_AD.S;
   const level=(v('unitLevel')||11)*5;
-  const uniqueBuff=checkboxOn('unitUniqueBuff', true) ? 30 + 10*(enh.septemberPlus ?? 4) : 0;
+  const uniqueBuff=SYSTEM_COMMON_BUFFS.uniqueUnit.baseAd + SYSTEM_COMMON_BUFFS.uniqueUnit.septemberPlusAd*(enh.septemberPlus ?? 4);
   return gradeAd + level + uniqueBuff + (enh.value||0) - abyssAdPenalty();
 }
 function personalUaDtMultiplier(){
@@ -1237,11 +1238,11 @@ function dpsBaseUnitRaceCritBonus(unit, round){
   return Number(values[index]) || 0;
 }
 function dpsBaseUnitUniqueAdBonus(unit,totalQuantity){
-  if(!checkboxOn('unitUniqueBuff', true) || unit?.productionUnit) return 0;
+  if(unit?.productionUnit) return 0;
   const enhanceStats=unitEnhanceStats();
   const quantityLimit=1+(enhanceStats.septemberNormal ?? 0);
   if(Math.max(1,Number(totalQuantity)||1)>quantityLimit) return 0;
-  return 30+10*(enhanceStats.septemberPlus ?? 0);
+  return SYSTEM_COMMON_BUFFS.uniqueUnit.baseAd + SYSTEM_COMMON_BUFFS.uniqueUnit.septemberPlusAd*(enhanceStats.septemberPlus ?? 0);
 }
 function dpsBaseUnitPrivateAd(unit, quantity, jewelStats=dpsBaseUnitJewelStats(unit), jewelName=dpsBaseUnitJewelName(unit), limitBreakValue=dpsBaseUnitLimitBreakValue(unit)){
   const limitBreak=dpsBaseUnitLimitBreakStats(unit,limitBreakValue);
@@ -1370,9 +1371,8 @@ function computeStatsRaw(){
   const ascVlookup3=asc[1];
   const ascVlookup4=asc[2];
   const ascVlookup5=asc[3];
-  const shareOn=checkboxOn('shareUserBuff');
-  const shareAD=shareOn?10:0, shareAS=shareOn?10:0, shareCRI=shareOn?5:0;
-  const dailyCouponCRI=checkboxOn('dailyCouponBuff')?10:0;
+  const {ad:shareAD,as:shareAS,cri:shareCRI}=SYSTEM_COMMON_BUFFS.shareUser;
+  const dailyCouponCRI=SYSTEM_COMMON_BUFFS.dailyCouponCri;
   const xpStat=xpInputStatBonus();
   let epUsedForBuff=0;
   TRAITS.forEach(t=>{ if(EP_ROWS.has(t[0])) epUsedForBuff+=cumCost(t[0]); });
@@ -1414,7 +1414,7 @@ function computeStatsRaw(){
   const requiredEnemyDamageRate=specEnemyDamageRate*(Number(enemyData.damageMultiplier)||1);
   const displaySR = sumStat('SR') + enchantAt(4).sr + additionalStats.sr;
   const displayHR = enchantAt(5).hr + additionalStats.hr;
-  const basePierceBonus = checkboxOn('basePierceBuff') ? 10 : 0;
+  const basePierceBonus=SYSTEM_COMMON_BUFFS.basePierce;
   const rpPierce = rpPierceBonus();
   const excelPierce=totalDpsPierce(basePierceBonus,rpPierce);
   const ownTargetEffects={
@@ -1578,7 +1578,7 @@ function computeStatsRaw(){
   const displayAPS = displayAP;
   const displayAPU = displayAP;
   const actualAPU = rawDisplayAP + (unitEnhanceStats().value || 0) + (on('flowerSkill1') ? 40 : 0)
-                  + (checkboxOn('unitUniqueBuff', true) ? 20 : 0) + (v('unitLevel') || 11) * 5;
+                  + SYSTEM_COMMON_BUFFS.uniqueUnit.actualAp + (v('unitLevel') || 11) * 5;
   const actualSR = displaySR * shieldRatio;
   const actualHR = displayHR * hpRatio;
   return {M4,M7,M8,M9,M10,M11,M12,actualM12,M13,M16,M17,M18,M19,rawM19,roundTime,displayMultiplier,rawCD,rawTD,diff,
