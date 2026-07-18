@@ -917,11 +917,11 @@ body:is(.is-mobile,.is-narrow-mobile) .battle-enemy-status-track{height:6px;}
       main:true,start:.04,approachEnd:.58,entryEnd:.80,startX:.16,startY:.89,
       scale:data.artifactPrimarySelected?.88:1,defenseReduce:data.defenseReduce1
     };
-    const runners=data.coop?[
+    const runners=[
       mainRunner,
       {kind:'hero',color:PLAYER_COLORS.p2,label:'2P',start:.10,approachEnd:.67,entryEnd:.86,startX:.06,startY:.84,scale:.64,defenseReduce:data.defenseReduce2},
       {kind:'hero',color:PLAYER_COLORS.p3,label:'3P',start:.16,approachEnd:.76,entryEnd:.92,startX:.11,startY:.94,scale:.66,defenseReduce:data.defenseReduce3}
-    ]:[mainRunner];
+    ];
 
     const states=runners.map((runner,index)=>specRunnerState(runner,index,phase,width,height,castle,time,power));
     const active=states.filter(state=>state.alpha>.02&&state.progress>.01&&state.entry<.98);
