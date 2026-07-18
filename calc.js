@@ -1357,6 +1357,168 @@ function dpsBaseUnitArtifactDpsParts(unit,context){
   };
 }
 
+
+/* 스펙 보드 / 유닛 보드 계산 결과 분리 */
+function computeSpecBoardResult(context){
+  const {
+    diff,targetRound,upperStats,M4,M7,M8,M10,M9,M16,M17,M18,M11,M12_dr,M13,
+    displayHR,displaySR,excelPierce,enemyData,specEnemyDamageRate,dt
+  }=context;
+  const ownTargetEffects={
+    defenseReduce:M12_dr,
+    pierce:excelPierce,
+    hpReduce:displayHR,
+    shieldReduce:displaySR
+  };
+  const ownDurability=targetDurabilityRemain(enemyData,ownTargetEffects);
+  const passengerTargets=coopPassengerTargetEffectsList().map(target=>{
+    const durability=targetDurabilityRemain(enemyData,target);
+    return {...target,hpRemain:durability.remain};
+  });
+  const hpRatio=ownDurability.hpRatio;
+  const shieldRatio=ownDurability.shieldRatio;
+  const hpRemain=ownDurability.remain;
+  const M12=M12_dr;
+  const actualM12=actualDrWithPierce(M12_dr,excelPierce);
+  const specEnemyArmor=Number(enemyData.armorBase)||0;
+  const AB3=battleTargetDps0Average(
+    {...ownTargetEffects,hpRemain},
+    passengerTargets,
+    specEnemyArmor,
+    specEnemyDamageRate
+  )*upperStats.dps0Mul;
+  const AB4=(1+M4/100)*(M11/100);
+  const AB5=dps2(M8,M10,M9,M16,M17,M18,0);
+  const gradeAs=UNIT_GRADE_AS[activeUnitGrade()] ?? 0;
+  const AB6=(1+(M7+upperStats.actualAs+gradeAs)/100)*(1-diff.as/100)*M13*dt*(specDpsSpeedModeEnabled() ? SPEED_MODE_MULTIPLIER : 1);
+  const roundTime=specDpsRoundTime(targetRound);
+  const rawM19=AB3*AB4*AB5*AB6;
+  const displayMultiplier=contentDpsDisplayMultiplier(vs('diff'),targetRound,displayHR,displaySR)*specDpsRoundTimeDpsMultiplier(targetRound,vs('diff'));
+  const M19=rawM19*displayMultiplier;
+  return {
+    hpRatio,shieldRatio,M12,actualM12,AB3,AB4,AB5,AB6,
+    roundTime,rawM19,displayMultiplier,M19
+  };
+}
+function computeDpsBaseUnitBoardResult(context){
+  const {
+    displayAP,basePierceBonus,rpPierce,unitADBonus,upperStats,diff,targetRound,M4,M7,M8,M10,M9,M16,M17,M18,M11,M12_dr,M13,dt,
+    enemyData,displayHR,displaySR,requiredEnemyDamageRate,roundTime
+  }=context;
+  const dpsBaseUnitSelection=dpsBaseUnitStorageValue();
+  const dpsBaseUnits=selectedDpsBaseUnits(dpsBaseUnitSelection);
+  const dpsBaseUnitResults=dpsBaseUnits.map(unit=>{
+    if(dpsBaseUnitIsArtifact(unit)){
+      const artifactWeapon=dpsBaseUnitArtifactWeaponStats(displayAP);
+      const unitContext={
+        globalAd:M4,M11,M8,M10,M9,M16,M17,M18,M13,dt,difficultyAs:diff.as,roundTime,
+        enemyData,diffName:vs('diff'),displayHR,displaySR,clearDefenseReduce:M12_dr,
+        artifactEnergyRegen:artifactEnergyRegenMultiplier(),speedModeEnabled:dpsBaseUnitSpeedModeEnabled(vs('diff')),
+        enemyArmor:enemyData.armor,M12:M12_dr,targetRound,weaponAttack:artifactWeapon.weaponAttack
+      };
+      const parts=dpsBaseUnitArtifactDpsParts(unit,unitContext);
+      const unitTargetEffects={defenseReduce:M12_dr,pierce:0,hpReduce:displayHR,shieldReduce:displaySR};
+      return {
+        AB3:parts.AB3,AB4:parts.AB4,AB5:parts.AB5,AB6:parts.AB6,
+        rawM19:parts.rawM19,M19:Math.round(parts.rawM19),baseRawM19:parts.rawM19,baseM19:Math.round(parts.rawM19),
+        excelPierce:0,unitPierceBonus:0,ownDurability:targetDurabilityRemain(enemyData,unitTargetEffects),
+        actualM12:actualDrWithPierce(M12_dr,0),enhance:artifactWeapon.enhance,limitBreak:0,jewelName:'',
+        jewelStats:dpsJewelFinalStats(''),jewelGroups:[],voidPower:false,raceCritBonus:0,
+        finalCooldown:parts.finalCooldown,artifactAttackRate:parts.AB6,artifactWaveInterval:parts.artifactWaveInterval,
+        artifactWaveCount:parts.artifactWaveCount,artifactTargetCount:parts.artifactTargetCount,
+        artifactAcceleration:parts.artifactAcceleration,perWaveDamage:parts.perWaveDamage,
+        unitId:unit.id,kind:'artifact',quantity:1,baseWeaponAttack:artifactWeapon.baseWeaponAttack,
+        weaponAttack:artifactWeapon.weaponAttack,weaponUpgradeLevel:artifactWeapon.raceUpgradeLevel,
+        artifactApBonus:artifactWeapon.apBonus,artifactRaceUpgradeAttack:artifactWeapon.raceUpgradeAttack,
+        weaponSpeed:0,asLimit:0,targetCount:0,attackCount:0
+      };
+    }
+    const baseWeaponAttack=nonNegativeNumber(unit.weaponAttack);
+    const weaponAttack=dpsBaseUnitWeaponAttack(unit);
+    const unitPierceBonus=dpsBaseUnitPierceBonus(unit);
+    const quantity=Math.max(1,dpsBaseUnitQuantity(unit));
+    const quantityMultiplier=dpsBaseUnitHasQuantity(unit) ? quantity : 1;
+    const unitMeta={
+      unitId:unit.id,
+      quantity:quantityMultiplier,
+      baseWeaponAttack,
+      weaponAttack,
+      weaponUpgradeLevel:dpsBaseUnitUpgradeLevel(unit),
+      weaponSpeed:Number(unit.weaponSpeed)||0,
+      asLimit:Number(unit.asLimit)||0,
+      targetCount:Number(unit.targetCount)||0,
+      attackCount:Number(unit.attackCount)||0
+    };
+    const jewelName=dpsBaseUnitJewelName(unit);
+    const groups=dpsBaseUnitInstanceGroups(unit,quantityMultiplier);
+    const unitContext={basePierceBonus,rpPierce,unitPierceBonus,totalQuantity:quantityMultiplier,globalAd:M4-unitADBonus,M11,M8,M10,M9,M16,M17,M18,M7,M13,dt,flowerAttackSpeed:upperStats.actualAs,difficultyAs:diff.as,enemyArmor:enemyData.armor,M12:M12_dr,targetRound,weaponAttack};
+    const groupResults=groups.map(group=>({...group,...dpsBaseUnitSingleDpsParts(unit,unitContext,group.stats,group.name,group.limitBreak)}));
+    const unitRawM19=groupResults.reduce((sum,group)=>sum+group.rawM19*group.count,0);
+    const unitSingleTargetRawM19=groupResults.reduce((sum,group)=>sum+group.singleTargetRawM19*group.count,0);
+    const baseParts=dpsBaseUnitSingleDpsParts(unit,unitContext,dpsJewelFinalStats(''),'',0);
+    const displayParts=groupResults[0] || baseParts;
+    const unitTargetEffects={defenseReduce:M12_dr,pierce:baseParts.excelPierce,hpReduce:displayHR,shieldReduce:displaySR};
+    return {
+      AB3:displayParts.AB3,
+      AB4:displayParts.AB4,
+      AB5:displayParts.AB5,
+      AB6:displayParts.AB6,
+      rawM19:unitRawM19,
+      M19:Math.round(unitRawM19),
+      singleTargetRawM19:unitSingleTargetRawM19,
+      singleTargetM19:Math.round(unitSingleTargetRawM19),
+      baseRawM19:baseParts.rawM19,
+      baseM19:Math.round(baseParts.rawM19),
+      baseSingleTargetRawM19:baseParts.singleTargetRawM19,
+      baseSingleTargetM19:Math.round(baseParts.singleTargetRawM19),
+      excelPierce:baseParts.excelPierce,
+      unitPierceBonus,
+      ownDurability:targetDurabilityRemain(enemyData,unitTargetEffects),
+      actualM12:actualDrWithPierce(M12_dr,baseParts.excelPierce),
+      enhance:dpsBaseUnitEnhanceValue(unit),
+      limitBreak:dpsBaseUnitLimitBreakValue(unit),
+      jewelName,
+      jewelStats:dpsJewelFinalStats(jewelName),
+      jewelGroups:groupResults.map(group=>({unitNumber:group.unitNumber,name:group.name,type:group.type,limitBreak:group.limitBreak,count:group.count,dps:Math.round(group.rawM19*group.count)})),
+      voidPower:dpsBaseUnitVoidPowerOn(unit),
+      raceCritBonus:displayParts.raceCritBonus,
+      finalCooldown:displayParts.finalCooldown,
+      attacksPerSecond:displayParts.AB6,
+      targetsPerAttack:displayParts.targetsPerAttack,
+      ...unitMeta
+    };
+  });
+  const unitTotalDps=dpsBaseUnitResults.reduce((sum,item)=>sum+(Number(item?.M19)||0),0);
+  const expectationMultiplier=dpsBaseUnitExpectationMultiplier(vs('diff'));
+  const expectedDps=unitTotalDps*expectationMultiplier;
+  const requiredDps=dpsBaseUnitRequiredDps({
+    enemyData,
+    defenseReduce:M12_dr,
+    dmgReduce:requiredEnemyDamageRate,
+    round:targetRound,
+    displayHR,
+    displaySR,
+    diffName:vs('diff')
+  });
+  const achievementRate=requiredDps>0 ? expectedDps/requiredDps*100 : 0;
+  const differenceDps=expectedDps-requiredDps;
+  return {
+    selection:dpsBaseUnitSelection,
+    selectedIds:dpsBaseUnitSelectionIds(dpsBaseUnitSelection),
+    basePierceBonus,
+    rpPierce,
+    isActive:dpsBaseUnitResults.length>0,
+    isAll:dpsBaseUnitSelectionIds(dpsBaseUnitSelection).includes(dpsBaseUnitAllId()),
+    totalDps:unitTotalDps,
+    expectationMultiplier,
+    expectedDps,
+    requiredDps,
+    achievementRate,
+    differenceDps,
+    results:dpsBaseUnitResults
+  };
+}
+
 function computeStatsRaw(){
   const autoEP=syncAutoEP();
   const penaltyContext=currentPenaltyContext();
@@ -1417,152 +1579,17 @@ function computeStatsRaw(){
   const basePierceBonus=SYSTEM_COMMON_BUFFS.basePierce;
   const rpPierce = rpPierceBonus();
   const excelPierce=totalDpsPierce(basePierceBonus,rpPierce);
-  const ownTargetEffects={
-    defenseReduce:M12_dr,
-    pierce:excelPierce,
-    hpReduce:displayHR,
-    shieldReduce:displaySR
-  };
-  const ownDurability=targetDurabilityRemain(enemyData,ownTargetEffects);
-  const passengerTargets=coopPassengerTargetEffectsList().map(target=>{
-    const durability=targetDurabilityRemain(enemyData,target);
-    return {...target,hpRemain:durability.remain};
-  });
-  const hpRatio=ownDurability.hpRatio;
-  const shieldRatio=ownDurability.shieldRatio;
-  const hpRemain=ownDurability.remain;
-  const M12=M12_dr;
-  const actualM12=actualDrWithPierce(M12_dr,excelPierce);
-  const specEnemyArmor=Number(enemyData.armorBase)||0;
-  const AB3=battleTargetDps0Average(
-    {...ownTargetEffects,hpRemain},
-    passengerTargets,
-    specEnemyArmor,
-    specEnemyDamageRate
-  )*upperStats.dps0Mul;
-  const AB4=(1+M4/100)*(M11/100);
-  const AB5=dps2(M8,M10,M9,M16,M17,M18,0);
   const dt=personalUaDtMultiplier();
-  const gradeAs=UNIT_GRADE_AS[activeUnitGrade()] ?? 0;
-  const AB6=(1+(M7+upperStats.actualAs+gradeAs)/100)*(1-diff.as/100)*M13*dt*(specDpsSpeedModeEnabled() ? SPEED_MODE_MULTIPLIER : 1);
-  const roundTime=specDpsRoundTime(targetRound);
-  const rawM19=AB3*AB4*AB5*AB6;
-  const displayMultiplier=contentDpsDisplayMultiplier(vs('diff'),targetRound,displayHR,displaySR)*specDpsRoundTimeDpsMultiplier(targetRound,vs('diff'));
-  const M19=rawM19*displayMultiplier;
+  const specBoard=computeSpecBoardResult({
+    diff,targetRound,upperStats,M4,M7,M8,M10,M9,M16,M17,M18,M11,M12_dr,M13,
+    displayHR,displaySR,excelPierce,enemyData,specEnemyDamageRate,dt
+  });
+  const {hpRatio,shieldRatio,M12,actualM12,AB3,AB4,AB5,AB6,roundTime,rawM19,displayMultiplier,M19}=specBoard;
 
-  const dpsBaseUnitSelection=dpsBaseUnitStorageValue();
-  const dpsBaseUnits=selectedDpsBaseUnits(dpsBaseUnitSelection);
-  const dpsBaseUnitResults=dpsBaseUnits.map(unit=>{
-    if(dpsBaseUnitIsArtifact(unit)){
-      const artifactWeapon=dpsBaseUnitArtifactWeaponStats(displayAP);
-      const context={
-        globalAd:M4,M11,M8,M10,M9,M16,M17,M18,M13,dt,difficultyAs:diff.as,roundTime,
-        enemyData,diffName:vs('diff'),displayHR,displaySR,clearDefenseReduce:M12_dr,
-        artifactEnergyRegen:artifactEnergyRegenMultiplier(),speedModeEnabled:dpsBaseUnitSpeedModeEnabled(vs('diff')),
-        enemyArmor:enemyData.armor,M12:M12_dr,targetRound,weaponAttack:artifactWeapon.weaponAttack
-      };
-      const parts=dpsBaseUnitArtifactDpsParts(unit,context);
-      const unitTargetEffects={defenseReduce:M12_dr,pierce:0,hpReduce:displayHR,shieldReduce:displaySR};
-      return {
-        AB3:parts.AB3,AB4:parts.AB4,AB5:parts.AB5,AB6:parts.AB6,
-        rawM19:parts.rawM19,M19:Math.round(parts.rawM19),baseRawM19:parts.rawM19,baseM19:Math.round(parts.rawM19),
-        excelPierce:0,unitPierceBonus:0,ownDurability:targetDurabilityRemain(enemyData,unitTargetEffects),
-        actualM12:actualDrWithPierce(M12_dr,0),enhance:artifactWeapon.enhance,limitBreak:0,jewelName:'',
-        jewelStats:dpsJewelFinalStats(''),jewelGroups:[],voidPower:false,raceCritBonus:0,
-        finalCooldown:parts.finalCooldown,artifactAttackRate:parts.AB6,artifactWaveInterval:parts.artifactWaveInterval,
-        artifactWaveCount:parts.artifactWaveCount,artifactTargetCount:parts.artifactTargetCount,
-        artifactAcceleration:parts.artifactAcceleration,perWaveDamage:parts.perWaveDamage,
-        unitId:unit.id,kind:'artifact',quantity:1,baseWeaponAttack:artifactWeapon.baseWeaponAttack,
-        weaponAttack:artifactWeapon.weaponAttack,weaponUpgradeLevel:artifactWeapon.raceUpgradeLevel,
-        artifactApBonus:artifactWeapon.apBonus,artifactRaceUpgradeAttack:artifactWeapon.raceUpgradeAttack,
-        weaponSpeed:0,asLimit:0,targetCount:0,attackCount:0
-      };
-    }
-    const baseWeaponAttack=nonNegativeNumber(unit.weaponAttack);
-    const weaponAttack=dpsBaseUnitWeaponAttack(unit);
-    const unitPierceBonus=dpsBaseUnitPierceBonus(unit);
-    const quantity=Math.max(1,dpsBaseUnitQuantity(unit));
-    const quantityMultiplier=dpsBaseUnitHasQuantity(unit) ? quantity : 1;
-    const unitMeta={
-      unitId:unit.id,
-      quantity:quantityMultiplier,
-      baseWeaponAttack,
-      weaponAttack,
-      weaponUpgradeLevel:dpsBaseUnitUpgradeLevel(unit),
-      weaponSpeed:Number(unit.weaponSpeed)||0,
-      asLimit:Number(unit.asLimit)||0,
-      targetCount:Number(unit.targetCount)||0,
-      attackCount:Number(unit.attackCount)||0
-    };
-    const jewelName=dpsBaseUnitJewelName(unit);
-    const jewelStats=dpsJewelFinalStats(jewelName);
-    const groups=dpsBaseUnitInstanceGroups(unit,quantityMultiplier);
-    const context={basePierceBonus,rpPierce,unitPierceBonus,totalQuantity:quantityMultiplier,globalAd:M4-unitADBonus,M11,M8,M10,M9,M16,M17,M18,M7,M13,dt,flowerAttackSpeed:upperStats.actualAs,difficultyAs:diff.as,enemyArmor:enemyData.armor,M12:M12_dr,targetRound,weaponAttack};
-    const groupResults=groups.map(group=>({...group,...dpsBaseUnitSingleDpsParts(unit,context,group.stats,group.name,group.limitBreak)}));
-    const unitRawM19=groupResults.reduce((sum,group)=>sum+group.rawM19*group.count,0);
-    const unitSingleTargetRawM19=groupResults.reduce((sum,group)=>sum+group.singleTargetRawM19*group.count,0);
-    const baseParts=dpsBaseUnitSingleDpsParts(unit,context,dpsJewelFinalStats(''),'',0);
-    const displayParts=groupResults[0] || baseParts;
-    const unitTargetEffects={defenseReduce:M12_dr,pierce:baseParts.excelPierce,hpReduce:displayHR,shieldReduce:displaySR};
-    return {
-      AB3:displayParts.AB3,
-      AB4:displayParts.AB4,
-      AB5:displayParts.AB5,
-      AB6:displayParts.AB6,
-      rawM19:unitRawM19,
-      M19:Math.round(unitRawM19),
-      singleTargetRawM19:unitSingleTargetRawM19,
-      singleTargetM19:Math.round(unitSingleTargetRawM19),
-      baseRawM19:baseParts.rawM19,
-      baseM19:Math.round(baseParts.rawM19),
-      baseSingleTargetRawM19:baseParts.singleTargetRawM19,
-      baseSingleTargetM19:Math.round(baseParts.singleTargetRawM19),
-      excelPierce:baseParts.excelPierce,
-      unitPierceBonus,
-      ownDurability:targetDurabilityRemain(enemyData,unitTargetEffects),
-      actualM12:actualDrWithPierce(M12_dr,baseParts.excelPierce),
-      enhance:dpsBaseUnitEnhanceValue(unit),
-      limitBreak:dpsBaseUnitLimitBreakValue(unit),
-      jewelName,
-      jewelStats,
-      jewelGroups:groupResults.map(group=>({unitNumber:group.unitNumber,name:group.name,type:group.type,limitBreak:group.limitBreak,count:group.count,dps:Math.round(group.rawM19*group.count)})),
-      voidPower:dpsBaseUnitVoidPowerOn(unit),
-      raceCritBonus:displayParts.raceCritBonus,
-      finalCooldown:displayParts.finalCooldown,
-      attacksPerSecond:displayParts.AB6,
-      targetsPerAttack:displayParts.targetsPerAttack,
-      ...unitMeta
-    };
+  const dpsBaseUnit=computeDpsBaseUnitBoardResult({
+    displayAP,basePierceBonus,rpPierce,unitADBonus,upperStats,diff,targetRound,M4,M7,M8,M10,M9,M16,M17,M18,M11,M12_dr,M13,dt,
+    enemyData,displayHR,displaySR,requiredEnemyDamageRate,roundTime
   });
-  const unitTotalDps=dpsBaseUnitResults.reduce((sum,item)=>sum+(Number(item?.M19)||0),0);
-  const expectationMultiplier=dpsBaseUnitExpectationMultiplier(vs('diff'));
-  const expectedDps=unitTotalDps*expectationMultiplier;
-  const requiredDps=dpsBaseUnitRequiredDps({
-    enemyData,
-    defenseReduce:M12_dr,
-    dmgReduce:requiredEnemyDamageRate,
-    round:targetRound,
-    displayHR,
-    displaySR,
-    diffName:vs('diff')
-  });
-  const achievementRate=requiredDps>0 ? expectedDps/requiredDps*100 : 0;
-  const differenceDps=expectedDps-requiredDps;
-  const dpsBaseUnit={
-    selection:dpsBaseUnitSelection,
-    selectedIds:dpsBaseUnitSelectionIds(dpsBaseUnitSelection),
-    basePierceBonus,
-    rpPierce,
-    isActive:dpsBaseUnitResults.length>0,
-    isAll:dpsBaseUnitSelectionIds(dpsBaseUnitSelection).includes(dpsBaseUnitAllId()),
-    totalDps:unitTotalDps,
-    expectationMultiplier,
-    expectedDps,
-    requiredDps,
-    achievementRate,
-    differenceDps,
-    results:dpsBaseUnitResults
-  };
   let spU=0,spO=0,epU=0,rpU=0,soulU=0;
   TRAITS.forEach(t=>{
     const row=t[0];
