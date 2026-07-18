@@ -957,7 +957,7 @@ body:is(.is-mobile,.is-narrow-mobile) .battle-enemy-status-track{height:6px;}
       }else render();
     });
 
-    if(barriers.length) drawTeamBarrier(ctx,barriers,time,power);
+    if(barriers.length) drawTeamBarrier(ctx,barriers,theme,time,power,data.coop,quality);
     const closing=smooth(clamp((phase-.82)/.16,0,1));
     if(closing>0){
       ctx.save();
@@ -1184,7 +1184,7 @@ body:is(.is-mobile,.is-narrow-mobile) .battle-enemy-status-track{height:6px;}
     ctx.restore();
   }
 
-  function drawTeamBarrier(ctx,barriers,time,power){
+  function drawTeamBarrier(ctx,barriers,theme,time,power,coop,quality){
     ctx.save();ctx.globalCompositeOperation='lighter';
     barriers.forEach((barrier,index)=>{
       const pulse=.5+.5*Math.sin(time*1.7+index*.9);
@@ -1826,7 +1826,7 @@ body:is(.is-mobile,.is-narrow-mobile) .battle-enemy-status-track{height:6px;}
       setTimeout(queueRefresh,180);
     }
   }
-  /* 이벤트 */
+  /* 이벤트·공개 API */
   function init(){
     ensureBattleStyle();
     ensureScene();
@@ -1843,8 +1843,23 @@ body:is(.is-mobile,.is-narrow-mobile) .battle-enemy-status-track{height:6px;}
     queueStateUpdate();
     requestAnimationFrame(tick);
   }
+  function updateBattle(data={}){
+    init();
+    const normalized=normalizedData(data);
+    const scene=ensureScene();
+    if(!scene) return;
+    const selected=normalized.selectedUnitCount>0;
+    scene.stage.hidden=normalized.unitHidden;
+    scene.stage.setAttribute('aria-label',selected
+      ?'선택한 유닛이 침투 후 마왕성 내부에서 전투하는 반복 장면'
+      :'용사와 동료, 유물이 모닥불 앞에서 출발을 준비하는 휴식 장면');
+    scene.setData(normalized);
+    queueRefresh();
+  }
+
   function boot(){init();queueStateUpdate();}
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot,{once:true});
   else requestAnimationFrame(boot);
 
+  window.DpsAnimation=Object.freeze({init,updateBattle,refresh:queueStateUpdate});
 })();
