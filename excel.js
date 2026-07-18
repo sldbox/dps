@@ -1568,17 +1568,13 @@ function compareSelectedExcelSheet(options={}){
   }
 }
 function isTraitPresetCompareBundle(parsed){
-  return !!(parsed && typeof parsed==='object' && isTraitPresetFileType(parsed.type) && Array.isArray(parsed.presets));
+  return !!(parsed && typeof parsed==='object' && (!parsed.type || isTraitPresetFileType(parsed.type)) && Array.isArray(parsed.presets));
 }
 function isCurrentTraitPresetBundlePayload(parsed){
   if(!isTraitPresetCompareBundle(parsed)) return false;
-  const fileVersion=+parsed.fileVersion || 0;
-  const schemaVersion=+parsed.schemaVersion || 0;
-  if(fileVersion<TRAIT_PRESET_MIN_FILE_VERSION || schemaVersion<TRAIT_PRESET_MIN_SCHEMA_VERSION) return false;
   return parsed.presets.every(item=>{
     if(!item || typeof item!=='object' || hasOwn(item,'savedState') || hasOwn(item,'data')) return false;
     if(!item.state || typeof item.state!=='object') return false;
-    if((+item.schemaVersion || 0)<TRAIT_PRESET_MIN_SCHEMA_VERSION || (+item.state.schemaVersion || 0)<TRAIT_PRESET_MIN_SCHEMA_VERSION) return false;
     return hasTraitPresetTowerFloorField(item.state);
   });
 }
@@ -1592,7 +1588,7 @@ function isUnsupportedOldSavedStatePayload(parsed){
   if(!version && (hasOwn(parsed,'values') || hasOwn(parsed,'inv'))) return true;
   if(version && version!==STORAGE_VERSION) return true;
   const schema=+parsed.schemaVersion || 0;
-  if(schema && schema<TRAIT_PRESET_SCHEMA_VERSION) return true;
+  if(schema && schema<APP_STATE_SCHEMA_VERSION) return true;
   return false;
 }
 function isUnsupportedOldTraitPresetPayload(parsed){
@@ -1602,7 +1598,7 @@ function isUnsupportedOldTraitPresetPayload(parsed){
   if(hasOwn(parsed,'presets') && (!isCurrentTraitPresetBundlePayload(parsed))) return true;
   if(isUnsupportedOldSavedStatePayload(parsed)) return true;
   if(hasOwn(parsed,'savedState') || hasOwn(parsed,'data')) return true;
-  if(hasOwn(parsed,'state') && (hasOwn(parsed,'id') || hasOwn(parsed,'name') || hasOwn(parsed,'schemaVersion'))) return true;
+  if(hasOwn(parsed,'state') && (hasOwn(parsed,'id') || hasOwn(parsed,'name'))) return true;
   return false;
 }
 async function readCompareJsonSource(file){
@@ -1632,7 +1628,7 @@ async function handleBaseCompareFile(file){
     }
     compareState.baseTraitPresetBundle=source.traitPresetBundle;
     const presets=compareState.baseTraitPresetBundle.presets || [];
-    const preferred=presets.find(preset=>preset.id===compareState.baseTraitPresetBundle.defaultPresetId) || presets[0];
+    const preferred=presets[0];
     compareState.baseTraitPresetId=preferred?.id || '';
     compareState.baseFileRejected=false;
     compareState.applied=false;
@@ -1676,7 +1672,7 @@ async function handleExcelCompareFile(file){
       compareState.traitPresetBundle=jsonSource.traitPresetBundle || null;
       if(jsonSource.sourceType==='traitPreset'){
         const bundle=jsonSource.traitPresetBundle;
-        const preferred=(bundle.presets || []).find(preset=>preset.id===bundle.defaultPresetId) || (bundle.presets || [])[0];
+        const preferred=(bundle.presets || [])[0];
         compareState.selectedSheetName=preferred?.id || '';
         hydrateCompareControls();
         compareSelectedTraitPreset();
@@ -1874,13 +1870,11 @@ function saveSelectedExcelSheetAsTraitPreset(){
     const imported={presets:[{
       id:presetId,
       name,
-      schemaVersion:TRAIT_PRESET_SCHEMA_VERSION,
       createdAt:now,
       updatedAt:now,
       meta:traitPresetMetaFromSavedState(importedState),
       state:importedState
     }],jewelSettings:jewelImport.present ? jewelImport.settings : null,unitBoard:{
-      schemaVersion:TRAIT_PRESET_UNIT_BOARD_SCHEMA_VERSION,
       presets:{[presetId]:normalizeTraitPresetUnitBoardState(null)}
     }};
     const result=mergeTraitPresetImport(imported,{preserveExistingUnitBoardOnReplace:true});
@@ -1909,7 +1903,6 @@ async function importTraitPresetFile(file){
     }
     const raw=await readFileAsText(file);
     const parsed=safeJsonParse(raw);
-    if(isUnsupportedOldTraitPresetPayload(parsed)) throw new Error(TRAIT_PRESET_UNSUPPORTED_OLD_MESSAGE);
     const imported=normalizeTraitPresetImportData(parsed);
     const result=mergeTraitPresetImport(imported);
     const loadId=result.firstImportedPresetId || '';
@@ -1992,7 +1985,7 @@ function applySelectedTraitPreset(){
       updatedAt:now
     };
     const nextState=markPresetStateCurrentVersion({...state,savedAt:now});
-    const nextPreset={...prev,id:prev.id,name:prev.name,createdAt:prev.createdAt,updatedAt:now,schemaVersion:TRAIT_PRESET_SCHEMA_VERSION,meta:traitPresetMetaFromSavedState(nextState),state:nextState};
+    const nextPreset={...prev,id:prev.id,name:prev.name,createdAt:prev.createdAt,updatedAt:now,meta:traitPresetMetaFromSavedState(nextState),state:nextState};
     if(index>=0) store.presets[index]=nextPreset;
     else store.presets.push(nextPreset);
     if(targetHasUnitBoard) setTraitPresetUnitBoardState(store,nextPreset.id,targetUnitBoard);
@@ -2001,7 +1994,7 @@ function applySelectedTraitPreset(){
       const bundleIndex=compareState.baseTraitPresetBundle.presets.findIndex(item=>item.id===basePreset.id || item.name===basePreset.name);
       if(bundleIndex>=0){
         const bundlePrev=compareState.baseTraitPresetBundle.presets[bundleIndex];
-        const nextBundlePreset={...bundlePrev,id:bundlePrev.id,name:bundlePrev.name,createdAt:bundlePrev.createdAt,updatedAt:now,schemaVersion:TRAIT_PRESET_SCHEMA_VERSION,meta:traitPresetMetaFromSavedState(nextState),state:nextState};
+        const nextBundlePreset={...bundlePrev,id:bundlePrev.id,name:bundlePrev.name,createdAt:bundlePrev.createdAt,updatedAt:now,meta:traitPresetMetaFromSavedState(nextState),state:nextState};
         compareState.baseTraitPresetBundle.presets[bundleIndex]=nextBundlePreset;
         if(targetHasUnitBoard) setTraitPresetUnitBoardState(compareState.baseTraitPresetBundle,nextBundlePreset.id,targetUnitBoard);
         else deleteTraitPresetUnitBoardState(compareState.baseTraitPresetBundle,nextBundlePreset.id);

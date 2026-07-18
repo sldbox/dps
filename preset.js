@@ -4,13 +4,10 @@ const STORAGE_SCOPE=DPS_CONFIG.storage.scope;
 const STORAGE_KEY=DPS_CONFIG.storage.key;
 const CLIENT_KEY=DPS_CONFIG.storage.clientKey;
 const TRAIT_PRESET_STORAGE_KEY=DPS_CONFIG.storage.traitPresetKey || 'gbd_dps_calculator:trait_presets';
-const TRAIT_PRESET_FILE_TYPE='sld_dps_trait_presets';
-const TRAIT_PRESET_FILE_VERSION=2;
-const TRAIT_PRESET_SCHEMA_VERSION=2;
-const TRAIT_PRESET_MIN_FILE_VERSION=2;
-const TRAIT_PRESET_MIN_SCHEMA_VERSION=2;
-const TRAIT_PRESET_UNIT_BOARD_SCHEMA_VERSION=2;
-const TRAIT_PRESET_JEWEL_SETTINGS_SCHEMA_VERSION=1;
+const TRAIT_PRESET_FILE_TYPE='sld_dps_total_preset';
+const TRAIT_PRESET_LEGACY_FILE_TYPES=new Set(['sld_dps_trait_presets',TRAIT_PRESET_FILE_TYPE]);
+const TRAIT_PRESET_MANAGEMENT_VERSION=1;
+const APP_STATE_SCHEMA_VERSION=2;
 const TRAIT_PRESET_EXCLUDED_VALUE_IDS=new Set([
   'dpsBaseUnits','dpsBaseUnitSlots','dpsJewelSettings','dpsBaseUnitExtraSettings','dpsBaseUnitSlotExpansions',
   ...dpsBaseUnitQuantityIds(),
@@ -20,7 +17,7 @@ function isTraitPresetExcludedValueId(id){
   return TRAIT_PRESET_EXCLUDED_VALUE_IDS.has(String(id || ''));
 }
 const TRAIT_PRESET_NAME_PLACEHOLDER='예시) 더파300라버스';
-const TRAIT_PRESET_UNSUPPORTED_OLD_MESSAGE='구버전 프리셋은 더 이상 지원하지 않습니다.\n호환 엑셀버전: 5.4392\n엑셀 파일을 다시 불러온 뒤, 새 특성 프리셋을 생성해 주세요.';
+const TRAIT_PRESET_UNSUPPORTED_OLD_MESSAGE='지원하지 않는 프리셋 파일입니다.\n통합 프리셋 백업 파일을 선택해 주세요.';
 const TRAIT_PRESET_SINGLE_UPDATE_VALUE_IDS=new Set([
   'diff','penance','round','challengeTowerFloor','soloMode','coopMode','coopPassenger2Dr','coopPassenger3Dr','team','pbless','spBankApply',
   'specDpsSpeedMode','dpsBaseUnitSpeedMode','dpsBaseUnitShieldOff','dpsBaseUnitShieldMaster',
@@ -39,7 +36,17 @@ function traitPresetDefaultValue(id){
   return el ? normalizeStoredElementValue(id,elementDefaultValue(el)) : '';
 }
 function isTraitPresetFileType(type){
-  return type===TRAIT_PRESET_FILE_TYPE;
+  return TRAIT_PRESET_LEGACY_FILE_TYPES.has(String(type || ''));
+}
+function currentWebDpsVersion(){
+  return String(window.DPS_BUILD_VERSION || window.APP_VERSION || STORAGE_VERSION || 'dev');
+}
+function hasTraitPresetManagement(data){
+  return !!(data && typeof data==='object' && !Array.isArray(data) && hasOwn(data,'presetManagement'));
+}
+function formatTraitPresetExportedAt(date=new Date()){
+  const pad=n=>String(n).padStart(2,'0');
+  return `${pad(date.getFullYear()%100)}${pad(date.getMonth()+1)}${pad(date.getDate())}_${pad(date.getHours())}${pad(date.getMinutes())}${pad(date.getSeconds())}`;
 }
 function isUnsupportedOldTraitPresetError(error){
   return String(error?.message || error || '')===TRAIT_PRESET_UNSUPPORTED_OLD_MESSAGE;
@@ -192,7 +199,7 @@ function makePublicDefaultState(){
 function captureFactoryState(){ storageState.factoryState=makePublicDefaultState(); }
 function makeStorageEnvelope(partial){
   return {
-    schemaVersion:+partial.schemaVersion || TRAIT_PRESET_SCHEMA_VERSION,
+    schemaVersion:+partial.schemaVersion || APP_STATE_SCHEMA_VERSION,
     values:partial.values || {},
     inv:partial.inv || {},
     zeroScore:partial.zeroScore ? normalizeZeroScoreState(partial.zeroScore) : undefined,
@@ -301,7 +308,6 @@ function makeNormalizedStateEnvelope(source,values,inv,{requireRawValues=false,r
     inv,
     zeroScore:source.zeroScore,
     savedAt:source.savedAt,
-    schemaVersion:TRAIT_PRESET_SCHEMA_VERSION,
     storageVersion:source.storageVersion,
     scope:source.scope,
     ui:source.ui,
@@ -324,13 +330,18 @@ function sanitizeTraitPresetValues(values){
   });
   return out;
 }
+function makeTraitPresetStateEnvelope(source,values,inv){
+  const out={values:values || {},inv:inv || {}};
+  if(source?.zeroScore) out.zeroScore=normalizeZeroScoreState(source.zeroScore);
+  return out;
+}
 function normalizeTraitPresetState(data){
   const normalized=normalizeSavedState(data);
   if(!normalized) return null;
   const values=sanitizeTraitPresetValues(normalized.values);
   const inv={...normalized.inv};
   syncSpBankPresetState(values, inv);
-  return makeNormalizedStateEnvelope(normalized,values,inv);
+  return makeTraitPresetStateEnvelope(normalized,values,inv);
 }
 function makeTraitPresetStateObject(sourceState=makeStateObject()){
   return normalizeTraitPresetState(sourceState);
@@ -391,7 +402,6 @@ function normalizeTraitPresetUnitBoardState(value){
     });
   });
   return {
-    schemaVersion:TRAIT_PRESET_UNIT_BOARD_SCHEMA_VERSION,
     units,
     slotExpansions,
     additionalUnitSettings:normalizeDpsBaseUnitExtraSettings(additionalUnitSettings)
@@ -462,7 +472,6 @@ function normalizeTraitPresetJewelSettings(value){
   const legendarySource=value.legendaryMythicJewels || value.legendaryMythic || value.jewelSettings;
   if(legendarySource===undefined) return null;
   return {
-    schemaVersion:TRAIT_PRESET_JEWEL_SETTINGS_SCHEMA_VERSION,
     legendaryMythicJewels:normalizeDpsJewelSettings(legendarySource || {})
   };
 }
@@ -479,7 +488,7 @@ function applyTraitPresetJewelSettings(value){
   return settings;
 }
 function emptyTraitPresetUnitBoardStore(){
-  return {schemaVersion:TRAIT_PRESET_UNIT_BOARD_SCHEMA_VERSION,presets:{}};
+  return {presets:{}};
 }
 function normalizeTraitPresetUnitBoardStore(value,validPresetIds=[]){
   const requestedIds=[...new Set(validPresetIds.map(id=>String(id || '')).filter(Boolean))];
@@ -492,7 +501,7 @@ function normalizeTraitPresetUnitBoardStore(value,validPresetIds=[]){
     if(!id || (validIds.size && !validIds.has(id))) return;
     presets[id]=normalizeTraitPresetUnitBoardState(state);
   });
-  return {schemaVersion:TRAIT_PRESET_UNIT_BOARD_SCHEMA_VERSION,presets};
+  return {presets};
 }
 function traitPresetHasUnitBoard(store,presetId){
   return !!(store?.unitBoard?.presets && hasOwn(store.unitBoard.presets,String(presetId || '')));
@@ -551,11 +560,11 @@ function mergeTraitPresetWithLocalState(presetState, localState, options={}){
     values,
     inv:{...preset.inv},
     zeroScore:preset.zeroScore,
-    savedAt:preset.savedAt,
-    storageVersion:local.storageVersion || preset.storageVersion,
-    scope:local.scope || preset.scope,
-    ui:preset.ui,
-    clientId:local.clientId || preset.clientId
+    savedAt:local.savedAt || Date.now(),
+    storageVersion:local.storageVersion,
+    scope:local.scope,
+    ui:local.ui,
+    clientId:local.clientId
   });
 }
 function buildTraitPresetApplyState(preset, options={}){
@@ -836,7 +845,7 @@ function appendUniqueTraitPreset(presets, seen, preset){
   presets.push(preset);
 }
 function emptyTraitPresetStore(){
-  return {type:TRAIT_PRESET_FILE_TYPE,fileVersion:TRAIT_PRESET_FILE_VERSION,schemaVersion:TRAIT_PRESET_SCHEMA_VERSION,storageVersion:STORAGE_VERSION,updatedAt:Date.now(),defaultPresetId:'',presets:[],jewelSettings:null,unitBoard:emptyTraitPresetUnitBoardStore()};
+  return {type:TRAIT_PRESET_FILE_TYPE,webDpsVersion:currentWebDpsVersion(),presetManagement:TRAIT_PRESET_MANAGEMENT_VERSION,presets:[],jewelSettings:null,unitBoard:emptyTraitPresetUnitBoardStore()};
 }
 function hasTraitPresetTowerFloorField(state){
   const values=(state && typeof state==='object' && state.values && typeof state.values==='object') ? state.values : {};
@@ -846,9 +855,7 @@ function dispatchTraitPresetStoreChanged(detail={}){
   try{ window.dispatchEvent(new CustomEvent('dps:traitPresetStoreChanged',{detail})); }catch(error){ rememberAppIssue('warn','프리셋 변경 이벤트', error); }
 }
 function markPresetStateCurrentVersion(state){
-  const normalized=normalizeTraitPresetState(state);
-  if(!normalized) return null;
-  return makeStorageEnvelope({...normalized,schemaVersion:TRAIT_PRESET_SCHEMA_VERSION,storageVersion:STORAGE_VERSION,savedAt:+normalized.savedAt || Date.now()});
+  return normalizeTraitPresetState(state);
 }
 function cleanTraitPresetForExport(preset,index=0){
   const normalized=normalizeTraitPresetItem(preset,index,{forceCurrentVersion:true,clearExportRefresh:true});
@@ -858,7 +865,6 @@ function cleanTraitPresetForExport(preset,index=0){
   return {
     id:normalized.id,
     name:normalized.name,
-    schemaVersion:TRAIT_PRESET_SCHEMA_VERSION,
     createdAt:normalized.createdAt,
     updatedAt:normalized.updatedAt || Date.now(),
     meta:traitPresetMetaFromSavedState(state),
@@ -877,11 +883,8 @@ function finalizeTraitPresetStoreForExport(store){
   const jewelSettings=normalizeTraitPresetJewelSettings(source.jewelSettings);
   return {
     type:TRAIT_PRESET_FILE_TYPE,
-    fileVersion:TRAIT_PRESET_FILE_VERSION,
-    schemaVersion:TRAIT_PRESET_SCHEMA_VERSION,
-    storageVersion:STORAGE_VERSION,
-    updatedAt:Date.now(),
-    defaultPresetId:'',
+    webDpsVersion:currentWebDpsVersion(),
+    presetManagement:TRAIT_PRESET_MANAGEMENT_VERSION,
     presets,
     jewelSettings,
     unitBoard
@@ -912,11 +915,6 @@ function normalizeTraitPresetItem(item,index=0,context={}){
   if(!item.state || typeof item.state!=='object') return null;
   const name=normalizeTraitPresetName(item.name || `가져온 프리셋 ${index+1}`);
   if(!name) return null;
-  const sourceFileVersion=+context.fileVersion || TRAIT_PRESET_FILE_VERSION;
-  const sourceSchemaVersion=+context.schemaVersion || TRAIT_PRESET_SCHEMA_VERSION;
-  const itemSchemaVersion=+item.schemaVersion || 0;
-  const stateSchemaVersion=+item.state.schemaVersion || 0;
-  if(sourceFileVersion<TRAIT_PRESET_MIN_FILE_VERSION || sourceSchemaVersion<TRAIT_PRESET_MIN_SCHEMA_VERSION || itemSchemaVersion<TRAIT_PRESET_MIN_SCHEMA_VERSION || stateSchemaVersion<TRAIT_PRESET_MIN_SCHEMA_VERSION) return null;
   if(!hasTraitPresetTowerFloorField(item.state)) return null;
   const state=normalizeTraitPresetState(item.state);
   if(!state) return null;
@@ -924,7 +922,6 @@ function normalizeTraitPresetItem(item,index=0,context={}){
   return {
     id:String(item.id || makeTraitPresetId()),
     name,
-    schemaVersion:TRAIT_PRESET_SCHEMA_VERSION,
     createdAt:+item.createdAt || +item.savedAt || now,
     updatedAt:+item.updatedAt || +state.savedAt || now,
     meta:{...((item.meta && typeof item.meta==='object') ? item.meta : {}), ...traitPresetMetaFromSavedState(state)},
@@ -935,17 +932,13 @@ function normalizeTraitPresetStore(data){
   const empty=emptyTraitPresetStore();
   if(!data || typeof data!=='object' || Array.isArray(data) || !Array.isArray(data.presets)) return empty;
   if(data.type && !isTraitPresetFileType(data.type)) return empty;
-  const sourceFileVersion=+data.fileVersion || 0;
-  const sourceSchemaVersion=+data.schemaVersion || 0;
-  if(sourceFileVersion && sourceFileVersion<TRAIT_PRESET_MIN_FILE_VERSION) return empty;
-  if(sourceSchemaVersion && sourceSchemaVersion<TRAIT_PRESET_MIN_SCHEMA_VERSION) return empty;
+  const needsPresetManagementUpdate=!hasTraitPresetManagement(data);
   const seen=new Set();
   const presets=[];
   const presetIdMap=new Map();
-  const itemContext={fileVersion:sourceFileVersion || TRAIT_PRESET_FILE_VERSION,schemaVersion:sourceSchemaVersion || TRAIT_PRESET_SCHEMA_VERSION,storageVersion:data.storageVersion || ''};
   data.presets.forEach((item,index)=>{
     const sourceId=String(item?.id || '');
-    const preset=normalizeTraitPresetItem(item,index,itemContext);
+    const preset=normalizeTraitPresetItem(item,index);
     if(!preset) return;
     appendUniqueTraitPreset(presets, seen, preset);
     if(sourceId && !presetIdMap.has(sourceId)) presetIdMap.set(sourceId,preset.id);
@@ -958,7 +951,9 @@ function normalizeTraitPresetStore(data){
     if(targetId) unitBoard.presets[targetId]=normalizeTraitPresetUnitBoardState(state);
   });
   const normalizedUnitBoard=normalizeTraitPresetUnitBoardStore(unitBoard,presets.map(preset=>preset.id));
-  return {...empty,updatedAt:+data.updatedAt || Date.now(),defaultPresetId:'',presets,jewelSettings,unitBoard:normalizedUnitBoard};
+  const normalizedStore={...empty,webDpsVersion:String(data.webDpsVersion || currentWebDpsVersion()),presetManagement:TRAIT_PRESET_MANAGEMENT_VERSION,presets,jewelSettings,unitBoard:normalizedUnitBoard};
+  if(needsPresetManagementUpdate) normalizedStore._presetManagementUpdateNeeded=true;
+  return normalizedStore;
 }
 function loadTraitPresetStore(){
   try{
@@ -1273,10 +1268,10 @@ function saveTraitPreset(){
     if(index>=0){
       const prev=store.presets[index];
       id=prev.id;
-      store.presets[index]={...prev,name,schemaVersion:TRAIT_PRESET_SCHEMA_VERSION,updatedAt:now,meta:traitPresetMetaFromState(),state};
+      store.presets[index]={...prev,name,updatedAt:now,meta:traitPresetMetaFromState(),state};
     }else{
       id=makeTraitPresetId();
-      store.presets.push({id,name,schemaVersion:TRAIT_PRESET_SCHEMA_VERSION,createdAt:now,updatedAt:now,meta:traitPresetMetaFromState(),state});
+      store.presets.push({id,name,createdAt:now,updatedAt:now,meta:traitPresetMetaFromState(),state});
     }
     setTraitPresetUnitBoardState(store,id,captureTraitPresetUnitBoardState());
     store.jewelSettings=captureTraitPresetJewelSettings();
@@ -1360,16 +1355,7 @@ function buildSyncedTraitPresetState(baseState, targetState, now){
     else delete values[id];
   });
   normalizeMoneyStorageValues(values);
-  return makeStorageEnvelope({
-    values,
-    inv:{...target.inv},
-    zeroScore:base.zeroScore,
-    savedAt:now,
-    storageVersion:base.storageVersion,
-    scope:target.scope,
-    ui:target.ui,
-    clientId:target.clientId
-  });
+  return makeTraitPresetStateEnvelope({zeroScore:base.zeroScore},values,{...target.inv});
 }
 function stableTraitPresetZeroScore(value){
   return stableTraitPresetValue(normalizeZeroScoreState(value || {rows:[]}));
@@ -1426,25 +1412,17 @@ function initializeMissingTraitPresetValues(state, missingIds, now){
   if(!normalized || !missingIds?.length) return normalized;
   const values={...normalized.values};
   missingIds.forEach(id=>{ values[id]=traitPresetDefaultValue(id); });
-  return makeStorageEnvelope({
-    values,
-    inv:{...normalized.inv},
-    zeroScore:normalized.zeroScore,
-    savedAt:now,
-    storageVersion:normalized.storageVersion,
-    scope:normalized.scope,
-    ui:normalized.ui,
-    clientId:normalized.clientId
-  });
+  return makeTraitPresetStateEnvelope({zeroScore:normalized.zeroScore},values,{...normalized.inv});
 }
 function traitPresetUpdateStatus(store=loadTraitPresetStore()){
   const id=selectedTraitPresetId();
   const preset=store.presets.find(item=>item.id===id);
   if(!preset) return {preset:null,needsUpdate:false,missingValueIds:[]};
+  const managementUpdateNeeded=store?._presetManagementUpdateNeeded===true;
   const unitBoardExtensionNeeded=!traitPresetHasUnitBoard(store,id);
   const jewelExtensionNeeded=!normalizeTraitPresetJewelSettings(store.jewelSettings);
   const missingValueIds=traitPresetMissingRequiredValueIds(preset);
-  return {preset,missingValueIds,needsUpdate:unitBoardExtensionNeeded || jewelExtensionNeeded || missingValueIds.length>0};
+  return {preset,missingValueIds,needsUpdate:managementUpdateNeeded || unitBoardExtensionNeeded || jewelExtensionNeeded || missingValueIds.length>0};
 }
 function renderTraitPresetUpdateStatus(store){
   const status=traitPresetUpdateStatus(store);
@@ -1473,6 +1451,8 @@ function updateTraitPreset(options={}){
     const stateChanged=stateChangeSummary.stateChanged;
     const statusCommonChangeKeys=new Set(stateChangeSummary.sharedKeys);
     const statusSingleChangeKeys=new Set(stateChangeSummary.singleKeys);
+    const managementUpdateNeeded=store?._presetManagementUpdateNeeded===true;
+    if(managementUpdateNeeded) statusCommonChangeKeys.add('presetManagement');
     missingRequiredValues.forEach(missingIds=>{
       (Array.isArray(missingIds) ? missingIds : []).forEach(valueId=>{
         (TRAIT_PRESET_SINGLE_UPDATE_VALUE_IDS.has(valueId) ? statusSingleChangeKeys : statusCommonChangeKeys).add(`value:${valueId}`);
@@ -1487,7 +1467,7 @@ function updateTraitPreset(options={}){
       : true;
     if(unitBoardChanged) statusSingleChangeKeys.add('unitBoard');
     if(jewelChanged) statusCommonChangeKeys.add('jewelSettings');
-    if(!stateChanged && !unitBoardChanged && !jewelChanged && !missingRequiredValues.size){
+    if(!managementUpdateNeeded && !stateChanged && !unitBoardChanged && !jewelChanged && !missingRequiredValues.size){
       if(options.refresh!==false) renderTraitPresetUpdateStatus(store);
       if(options.silent!==true) notifyStorageAction('프리셋 변경사항 없음','warn');
       return false;
@@ -1503,7 +1483,7 @@ function updateTraitPreset(options={}){
       const changed=missingIds.length>0 || (index===selectedIndex && stateChanged) || (index!==selectedIndex && syncSharedValues);
       if(!changed || !nextState) return item;
       updatedIds.push(item.id);
-      return {...item,updatedAt:now,schemaVersion:TRAIT_PRESET_SCHEMA_VERSION,meta:traitPresetMetaFromSavedState(nextState),state:nextState};
+      return {...item,updatedAt:now,meta:traitPresetMetaFromSavedState(nextState),state:nextState};
     });
     const extensionUpgradeIds=initializeMissingTraitPresetUnitBoards(store,id,currentUnitBoard);
     setTraitPresetUnitBoardState(store,id,currentUnitBoard);
@@ -1564,7 +1544,7 @@ function applyTraitPresetDraftsToStore(store=loadTraitPresetStore()){
     const state=validIds.has(preset.id) ? markPresetStateCurrentVersion(draft?.state) : null;
     if(!state) return preset;
     changed=true;
-    return {...preset,updatedAt:now,schemaVersion:TRAIT_PRESET_SCHEMA_VERSION,meta:traitPresetMetaFromSavedState(state),state};
+    return {...preset,updatedAt:now,meta:traitPresetMetaFromSavedState(state),state};
   });
   Object.entries(drafts).forEach(([id,draft])=>{
     if(validIds.has(id) && draft.unitBoard) setTraitPresetUnitBoardState(store,id,normalizeTraitPresetUnitBoardState(draft.unitBoard));
@@ -1703,6 +1683,7 @@ function traitPresetChangeKeyLabel(key){
     zeroScore:'승단 계산',
     unitBoard:'유닛 보드',
     jewelSettings:'쥬얼 설정',
+    presetManagement:'프리셋 유지관리',
     presetName:'프리셋 이름',
     storedPreset:'저장된 프리셋 변경',
     'state:shared':'공통 설정',
@@ -1978,9 +1959,9 @@ function createTraitPresetBackupFile(customName=''){
   if(!store.presets.length) throw new Error('백업할 프리셋이 없습니다.');
   const backupStore=finalizeTraitPresetStoreForExport(store);
   saveTraitPresetStore(backupStore,{source:'backup'});
-  delete backupStore.webDpsVersion;
   const {unitBoard,jewelSettings,...backupMain}=backupStore;
-  const payload=JSON.stringify({webDpsVersion:String(window.DPS_BUILD_VERSION || window.APP_VERSION || STORAGE_VERSION || 'dev'),...backupMain,type:TRAIT_PRESET_FILE_TYPE,fileVersion:TRAIT_PRESET_FILE_VERSION,exportedAt:new Date().toISOString(),defaultPresetName:'',jewelSettings,unitBoard}, null, 2);
+  delete backupMain._presetManagementUpdateNeeded;
+  const payload=JSON.stringify({...backupMain,type:TRAIT_PRESET_FILE_TYPE,webDpsVersion:currentWebDpsVersion(),presetManagement:TRAIT_PRESET_MANAGEMENT_VERSION,exportedAt:formatTraitPresetExportedAt(),jewelSettings,unitBoard}, null, 2);
   const fileName=makeTraitPresetFileName(customName);
   const blob=new Blob([payload], {type:'text/plain;charset=utf-8'});
   const url=URL.createObjectURL(blob);
@@ -2041,17 +2022,16 @@ function openTraitPresetImportPicker(){
 }
 function normalizeTraitPresetImportData(parsed){
   if(!parsed || typeof parsed!=='object' || Array.isArray(parsed)) throw new Error('특성 프리셋 파일 형식이 아닙니다.');
-  if(!isTraitPresetFileType(parsed.type) || !Array.isArray(parsed.presets)) throw new Error(TRAIT_PRESET_UNSUPPORTED_OLD_MESSAGE);
-  const sourceFileVersion=+parsed.fileVersion || 0;
-  const sourceSchemaVersion=+parsed.schemaVersion || 0;
-  if(sourceFileVersion<TRAIT_PRESET_MIN_FILE_VERSION || sourceSchemaVersion<TRAIT_PRESET_MIN_SCHEMA_VERSION) throw new Error(TRAIT_PRESET_UNSUPPORTED_OLD_MESSAGE);
-  const importContext={fileVersion:sourceFileVersion,schemaVersion:sourceSchemaVersion,storageVersion:parsed.storageVersion || ''};
-  const presets=parsed.presets.map((item,index)=>normalizeTraitPresetItem(item,index,importContext)).filter(Boolean);
+  if(parsed.type && !isTraitPresetFileType(parsed.type)) throw new Error(TRAIT_PRESET_UNSUPPORTED_OLD_MESSAGE);
+  if(!Array.isArray(parsed.presets)) throw new Error(TRAIT_PRESET_UNSUPPORTED_OLD_MESSAGE);
+  const needsPresetManagementUpdate=!hasTraitPresetManagement(parsed);
+  const presets=parsed.presets.map((item,index)=>normalizeTraitPresetItem(item,index)).filter(Boolean);
   if(!presets.length) throw new Error(parsed.presets.length ? TRAIT_PRESET_UNSUPPORTED_OLD_MESSAGE : '가져올 수 있는 프리셋이 없습니다.');
   return {
     presets,
     jewelSettings:normalizeTraitPresetJewelSettings(parsed.jewelSettings),
-    unitBoard:normalizeTraitPresetUnitBoardStore(parsed.unitBoard,presets.map(preset=>preset.id))
+    unitBoard:normalizeTraitPresetUnitBoardStore(parsed.unitBoard,presets.map(preset=>preset.id)),
+    needsPresetManagementUpdate
   };
 }
 function mergeTraitPresetImport(imported,options={}){
@@ -2083,7 +2063,9 @@ function mergeTraitPresetImport(imported,options={}){
     if(index===0) firstImportedPresetId=targetId;
   });
   store=saveTraitPresetStore(store,{source:'import'});
-  clearTraitPresetUpdatedStatus('import');
+  const importedIds=(imported.presets || []).map(preset=>store.presets.find(item=>item.name===preset.name)?.id || preset.id).filter(Boolean);
+  if(imported.needsPresetManagementUpdate) markTraitPresetUpdated(importedIds,'import',{commonChangeKeys:['presetManagement']});
+  else clearTraitPresetUpdatedStatus('import');
   return {store,added,replaced,firstImportedPresetId};
 }
 /* 엑셀 가져오기·프리셋 비교 기능은 excel.js로 분리 */
