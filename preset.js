@@ -858,7 +858,7 @@ function markPresetStateCurrentVersion(state){
   return normalizeTraitPresetState(state);
 }
 function cleanTraitPresetForExport(preset,index=0){
-  const normalized=normalizeTraitPresetItem(preset,index,{forceCurrentVersion:true,clearExportRefresh:true});
+  const normalized=normalizeTraitPresetItem(preset,index);
   if(!normalized) return null;
   const state=markPresetStateCurrentVersion(normalized.state);
   if(!state) return null;
@@ -910,7 +910,7 @@ function traitPresetMetaFromSavedState(state){
   return traitPresetMetaFromValues(values);
 }
 
-function normalizeTraitPresetItem(item,index=0,context={}){
+function normalizeTraitPresetItem(item,index=0){
   if(!item || typeof item!=='object') return null;
   if(!item.state || typeof item.state!=='object') return null;
   const name=normalizeTraitPresetName(item.name || `가져온 프리셋 ${index+1}`);
@@ -951,7 +951,7 @@ function normalizeTraitPresetStore(data){
     if(targetId) unitBoard.presets[targetId]=normalizeTraitPresetUnitBoardState(state);
   });
   const normalizedUnitBoard=normalizeTraitPresetUnitBoardStore(unitBoard,presets.map(preset=>preset.id));
-  const normalizedStore={...empty,webDpsVersion:String(data.webDpsVersion || currentWebDpsVersion()),presetManagement:TRAIT_PRESET_MANAGEMENT_VERSION,presets,jewelSettings,unitBoard:normalizedUnitBoard};
+  const normalizedStore={...empty,webDpsVersion:currentWebDpsVersion(),presetManagement:TRAIT_PRESET_MANAGEMENT_VERSION,presets,jewelSettings,unitBoard:normalizedUnitBoard};
   if(needsPresetManagementUpdate) normalizedStore._presetManagementUpdateNeeded=true;
   return normalizedStore;
 }
@@ -965,7 +965,7 @@ function loadTraitPresetStore(){
   }
 }
 function saveTraitPresetStore(store,options={}){
-  const normalized=normalizeTraitPresetStore({...store,updatedAt:Date.now()});
+  const normalized=normalizeTraitPresetStore(store);
   localStorage.setItem(TRAIT_PRESET_STORAGE_KEY, JSON.stringify(normalized));
   if(options.dispatch!==false) dispatchTraitPresetStoreChanged({source:options.source || 'save'});
   return normalized;
@@ -1345,7 +1345,7 @@ function stableTraitPresetValue(value){
   }
   return String(value ?? '');
 }
-function buildSyncedTraitPresetState(baseState, targetState, now){
+function buildSyncedTraitPresetState(baseState, targetState){
   const base=normalizeTraitPresetState(baseState);
   const target=normalizeTraitPresetState(targetState);
   if(!base || !target) return null;
@@ -1407,7 +1407,7 @@ function traitPresetMissingRequiredValuesByPreset(store){
     traitPresetMissingRequiredValueIds(preset)
   ]).filter(([id,missingIds])=>id && missingIds.length));
 }
-function initializeMissingTraitPresetValues(state, missingIds, now){
+function initializeMissingTraitPresetValues(state, missingIds){
   const normalized=normalizeTraitPresetState(state);
   if(!normalized || !missingIds?.length) return normalized;
   const values={...normalized.values};
@@ -1476,10 +1476,10 @@ function updateTraitPreset(options={}){
     const updatedIds=[];
     store.presets=store.presets.map((item,index)=>{
       const missingIds=missingRequiredValues.get(String(item.id || '')) || [];
-      const initializedState=initializeMissingTraitPresetValues(item.state,missingIds,now) || item.state;
+      const initializedState=initializeMissingTraitPresetValues(item.state,missingIds) || item.state;
       let nextState=initializedState;
       if(index===selectedIndex && stateChanged) nextState=currentState;
-      else if(index!==selectedIndex && syncSharedValues) nextState=buildSyncedTraitPresetState(currentState,initializedState,now);
+      else if(index!==selectedIndex && syncSharedValues) nextState=buildSyncedTraitPresetState(currentState,initializedState);
       const changed=missingIds.length>0 || (index===selectedIndex && stateChanged) || (index!==selectedIndex && syncSharedValues);
       if(!changed || !nextState) return item;
       updatedIds.push(item.id);
@@ -1959,9 +1959,7 @@ function createTraitPresetBackupFile(customName=''){
   if(!store.presets.length) throw new Error('백업할 프리셋이 없습니다.');
   const backupStore=finalizeTraitPresetStoreForExport(store);
   saveTraitPresetStore(backupStore,{source:'backup'});
-  const {unitBoard,jewelSettings,...backupMain}=backupStore;
-  delete backupMain._presetManagementUpdateNeeded;
-  const payload=JSON.stringify({...backupMain,type:TRAIT_PRESET_FILE_TYPE,webDpsVersion:currentWebDpsVersion(),presetManagement:TRAIT_PRESET_MANAGEMENT_VERSION,exportedAt:formatTraitPresetExportedAt(),jewelSettings,unitBoard}, null, 2);
+  const payload=JSON.stringify({type:TRAIT_PRESET_FILE_TYPE,webDpsVersion:currentWebDpsVersion(),presetManagement:TRAIT_PRESET_MANAGEMENT_VERSION,exportedAt:formatTraitPresetExportedAt(),presets:backupStore.presets,jewelSettings:backupStore.jewelSettings,unitBoard:backupStore.unitBoard}, null, 2);
   const fileName=makeTraitPresetFileName(customName);
   const blob=new Blob([payload], {type:'text/plain;charset=utf-8'});
   const url=URL.createObjectURL(blob);

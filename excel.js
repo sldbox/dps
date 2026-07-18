@@ -198,7 +198,7 @@ function excelJewelPercent(value){
   return Math.abs(number)<=1 ? number*100 : number;
 }
 function emptyExcelJewelSettings(){
-  return {schemaVersion:1,legendaryMythicJewels:normalizeDpsJewelSettings({})};
+  return {legendaryMythicJewels:normalizeDpsJewelSettings({})};
 }
 function readExcelJewelSettings(workbook){
   const sheetNames=(workbook?.sheets || []).map(sheet=>sheet.name);

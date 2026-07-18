@@ -5,7 +5,7 @@
 <meta name="google-site-verification" content="RTuDWbMdnKgbpRpl05eXh9epFwWRSxju4NOl8OtjMsI" />
 
 <script>
-window.DPS_BUILD_VERSION = "2607180000";
+window.DPS_BUILD_VERSION = "2607181000";
 window.APP_VERSION = window.DPS_BUILD_VERSION;
 (function(){
   'use strict';
@@ -31,8 +31,7 @@ window.APP_VERSION = window.DPS_BUILD_VERSION;
     var version=assetVersion(key || src.replace(/^\.\//, ''));
     var separator=src.indexOf('?')===-1?'?':'&';
     var url=src + separator + 'v=' + encodeURIComponent(version);
-    var fresh=previewFresh || new URLSearchParams(window.location.search).get('fresh');
-    return fresh ? url + '&fresh=' + encodeURIComponent(fresh) : url;
+    return previewFresh ? url + '&fresh=' + encodeURIComponent(previewFresh) : url;
   };
   window.dpsRemoteAssetUrl=function(src,key){
     var path=normalizeAssetPath(key || src);
@@ -185,14 +184,14 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 <meta content="https://sldbox.github.io/dps/" property="og:url"/>
 <meta content="개복디 특성 계산기" property="og:title"/>
 <meta content="특성 투자, 재화 사용량, 표기 스탯, 총데미지, DPS를 한 번에 계산할 수 있는 개복디 전용 계산기입니다." property="og:description"/>
-<meta content="https://sldbox.github.io/dps/logo.png?v=2607180000" property="og:image"/>
-<meta content="https://sldbox.github.io/dps/logo.png?v=2607180000" property="og:image:secure_url"/>
+<meta content="https://sldbox.github.io/dps/logo.png?v=2607181000" property="og:image"/>
+<meta content="https://sldbox.github.io/dps/logo.png?v=2607181000" property="og:image:secure_url"/>
 <meta content="image/png" property="og:image:type"/>
 <meta content="개복디 특성 계산기 로고" property="og:image:alt"/>
 <meta content="summary_large_image" name="twitter:card"/>
 <meta content="개복디 특성 계산기" name="twitter:title"/>
 <meta content="특성 투자, 재화 사용량, 표기 스탯, 총데미지, DPS를 한 번에 계산할 수 있는 개복디 전용 계산기입니다." name="twitter:description"/>
-<meta content="https://sldbox.github.io/dps/logo.png?v=2607180000" name="twitter:image"/>
+<meta content="https://sldbox.github.io/dps/logo.png?v=2607181000" name="twitter:image"/>
 <meta content="개복디 특성 계산기 로고" name="twitter:image:alt"/>
 <link href="https://cdn.jsdelivr.net" rel="preconnect"/>
 <link crossorigin="" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" rel="stylesheet"/>
