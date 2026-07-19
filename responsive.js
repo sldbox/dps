@@ -3,6 +3,11 @@
 
   /* 반응형 상태·측정 헬퍼 */
   const MODES = ['is-pc-landscape', 'is-pc-portrait', 'is-tablet', 'is-mobile', 'is-portrait-view', 'is-mobile-device', 'is-tablet-device', 'is-narrow-mobile', 'is-tabbed'];
+  const TABBED_REFERENCE_ACTIONS = [
+    { key: 'dps', label: 'DPS표', action: 'openDpsTable' },
+    { key: 'runes', label: '이달의룬', action: 'openMonthRuneTab', monthRuneTab: 'runes' },
+    { key: 'jewels', label: '쥬얼', action: 'openMonthRuneTab', monthRuneTab: 'jewels' }
+  ];
   const TABBED_PAGES = [
     { key: 'spec', label: '기본 정보', selectors: ['.col-left'] },
     { key: 'damage', label: '스펙 보드', selectors: ['.col-mid'] },
@@ -105,20 +110,39 @@
     if (!key) return -1;
     return state.pages.findIndex(page => page.key === key);
   }
+  function buildReferenceActionButton(config) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'mobile-section-tab mobile-section-action-tab tone-reference';
+    btn.textContent = config.label;
+    btn.dataset.action = config.action;
+    if (config.monthRuneTab) btn.dataset.monthRuneOpenTab = config.monthRuneTab;
+    return btn;
+  }
   function buildTabs(colWork, pages) {
     if (!state.tabs) {
       state.tabs = document.createElement('div');
       state.tabs.className = 'mobile-section-tabs';
-      state.tabs.setAttribute('role', 'tablist');
-      state.tabs.setAttribute('aria-label', '화면 전환');
+      state.tabs.setAttribute('aria-label', '빠른 기능 및 화면 전환');
       colWork.parentNode.insertBefore(state.tabs, colWork);
+      state.tabs.addEventListener('keydown', handleTabKeydown);
     }
     state.tabs.textContent = '';
+    const actionRow = document.createElement('div');
+    actionRow.className = 'mobile-section-action-row';
+    actionRow.setAttribute('aria-label', '빠른 기능');
+    TABBED_REFERENCE_ACTIONS.forEach(config => {
+      actionRow.appendChild(buildReferenceActionButton(config));
+    });
+    const pageRow = document.createElement('div');
+    pageRow.className = 'mobile-section-page-row';
+    pageRow.setAttribute('role', 'tablist');
+    pageRow.setAttribute('aria-label', '화면 전환');
     pages.forEach((page, idx) => {
       const btn = document.createElement('button');
       btn.type = 'button';
       btn.id = `mobileTab-${page.key}`;
-      btn.className = ['mobile-section-tab', page.toneClass].filter(Boolean).join(' ');
+      btn.className = ['mobile-section-tab', 'mobile-section-page-tab', page.toneClass].filter(Boolean).join(' ');
       btn.textContent = page.label;
       btn.setAttribute('role', 'tab');
       btn.setAttribute('aria-selected', 'false');
@@ -126,12 +150,12 @@
       btn.tabIndex = -1;
       page.el.setAttribute('aria-labelledby', btn.id);
       btn.addEventListener('click', () => showTabbedPage(idx, true));
-      state.tabs.appendChild(btn);
+      pageRow.appendChild(btn);
     });
-    state.tabs.addEventListener('keydown', handleTabKeydown);
+    state.tabs.append(actionRow, pageRow);
   }
   function handleTabKeydown(event) {
-    const tabs = Array.from(state.tabs?.querySelectorAll('.mobile-section-tab') || []);
+    const tabs = Array.from(state.tabs?.querySelectorAll('.mobile-section-page-tab') || []);
     const currentIndex = tabs.indexOf(document.activeElement);
     if (currentIndex < 0) return;
     let nextIndex;
@@ -149,7 +173,7 @@
     state.activeIndex = nextIndex;
     state.activeKey = state.pages[nextIndex]?.key || state.activeKey;
     if (state.tabs) {
-      state.tabs.querySelectorAll('.mobile-section-tab').forEach((btn, idx) => {
+      state.tabs.querySelectorAll('.mobile-section-page-tab').forEach((btn, idx) => {
         const active = idx === nextIndex;
         btn.classList.toggle('active', active);
         btn.setAttribute('aria-selected', active ? 'true' : 'false');

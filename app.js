@@ -899,7 +899,6 @@ function openDpsTable(mode='auto'){
   const fallbackMode=isTowerDifficulty() ? 'tower' : (isCoopActive() ? 'coop' : 'solo');
   const normalizedMode=mode==='round' ? 'solo' : (mode==='auto' ? fallbackMode : mode);
   activeDpsTableMode=DPS_MODAL_MODES.includes(normalizedMode) ? normalizedMode : fallbackMode;
-  closeConvenienceMenu();
   window.DpsModal.openMonthRune('dps');
 }
 function expandMonthRuneCodeGroup(code, desc){
@@ -2557,49 +2556,6 @@ function setZeroRankTab(trigger){
 }
 /* 이벤트·초기화 */
 let appEventsBound=false;
-function setDisclosureOpen(toggle, panel, open){
-  if(!toggle || !panel) return false;
-  toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
-  panel.hidden=!open;
-  return true;
-}
-function toggleDisclosure(toggle, panel){
-  return setDisclosureOpen(toggle, panel, toggle?.getAttribute('aria-expanded')!=='true');
-}
-function getConvenienceMenuParts(){
-  const wrap=document.querySelector('.header-convenience');
-  if(!wrap) return {};
-  return {
-    wrap,
-    toggle:wrap.querySelector('.header-convenience-toggle'),
-    menu:wrap.querySelector('.header-convenience-menu')
-  };
-}
-function setConvenienceMenuOpen(open){
-  const {toggle, menu}=getConvenienceMenuParts();
-  return setDisclosureOpen(toggle, menu, open);
-}
-function closeConvenienceMenu(){
-  setConvenienceMenuOpen(false);
-}
-function toggleConvenienceMenu(){
-  const {toggle, menu}=getConvenienceMenuParts();
-  return toggleDisclosure(toggle, menu);
-}
-function bindConvenienceMenuEvents(){
-  document.addEventListener('click', e=>{
-    const { wrap }=getConvenienceMenuParts();
-    if(e.target.closest('.header-convenience-menu a')){
-      closeConvenienceMenu();
-      return;
-    }
-    if(!wrap || wrap.contains(e.target)) return;
-    closeConvenienceMenu();
-  });
-  document.addEventListener('keydown', e=>{
-    if(e.key==='Escape') closeConvenienceMenu();
-  });
-}
 const ACTION_HANDLERS={
   optimizeSP,
   optimizeUtility,
@@ -2617,7 +2573,6 @@ const ACTION_HANDLERS={
   compareTraitPreset:(...args)=>window.DpsPreset.openAnalysis(...args),
   openDpsTable,
   openMonthRuneTab:(trigger)=>window.DpsModal.openMonthRune(trigger?.dataset?.monthRuneOpenTab || 'compare'),
-  toggleConvenienceMenu,
   zeroRankTab:(trigger)=>setZeroRankTab(trigger),
   zeroScoreStar:(trigger)=>toggleZeroScoreStar(trigger),
   decreaseFont:()=>changeFontScale(-DPS_CONFIG.ui.fontScaleStep),
@@ -2742,7 +2697,7 @@ function bindAppEvents(){
   [
     bindFontScaleViewportGuard, bindActionEvents, bindTraitHoldEvents, bindTraitInputEvents,
     ()=>window.DpsModal.bindEvents(), bindExcelCompareEvents, ()=>window.DpsPreset.bindEvents(), bindJewelImageEvents,
-    bindConvenienceMenuEvents, bindZeroScoreCalculator, bindTraitLimitDisplayEvents, bindDpsBaseUnitControlEvents, bindReactiveInputs,
+    bindZeroScoreCalculator, bindTraitLimitDisplayEvents, bindDpsBaseUnitControlEvents, bindReactiveInputs,
     bindButtonPressFeedback, bindDamageBoardSwitchEvents, bindDpsBaseUnitConditionEvents, bindAppTitleVersion
   ].forEach(fn=>fn());
 }

@@ -5,7 +5,7 @@
 <meta name="google-site-verification" content="RTuDWbMdnKgbpRpl05eXh9epFwWRSxju4NOl8OtjMsI" />
 
 <script>
-window.DPS_BUILD_VERSION = "2607182100";
+window.DPS_BUILD_VERSION = "2607190000";
 window.APP_VERSION = window.DPS_BUILD_VERSION;
 (function(){
   'use strict';
@@ -184,14 +184,14 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 <meta content="https://sldbox.github.io/dps/" property="og:url"/>
 <meta content="개복디 특성 계산기" property="og:title"/>
 <meta content="특성 투자, 재화 사용량, 표기 스탯, 총데미지, DPS를 한 번에 계산할 수 있는 개복디 전용 계산기입니다." property="og:description"/>
-<meta content="https://sldbox.github.io/dps/logo.png?v=2607182100" property="og:image"/>
-<meta content="https://sldbox.github.io/dps/logo.png?v=2607182100" property="og:image:secure_url"/>
+<meta content="https://sldbox.github.io/dps/logo.png?v=2607190000" property="og:image"/>
+<meta content="https://sldbox.github.io/dps/logo.png?v=2607190000" property="og:image:secure_url"/>
 <meta content="image/png" property="og:image:type"/>
 <meta content="개복디 특성 계산기 로고" property="og:image:alt"/>
 <meta content="summary_large_image" name="twitter:card"/>
 <meta content="개복디 특성 계산기" name="twitter:title"/>
 <meta content="특성 투자, 재화 사용량, 표기 스탯, 총데미지, DPS를 한 번에 계산할 수 있는 개복디 전용 계산기입니다." name="twitter:description"/>
-<meta content="https://sldbox.github.io/dps/logo.png?v=2607182100" name="twitter:image"/>
+<meta content="https://sldbox.github.io/dps/logo.png?v=2607190000" name="twitter:image"/>
 <meta content="개복디 특성 계산기 로고" name="twitter:image:alt"/>
 <link href="https://cdn.jsdelivr.net" rel="preconnect"/>
 <link crossorigin="" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" rel="stylesheet"/>
@@ -250,7 +250,7 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
   root.style.setProperty('--mobile-vw', w + 'px');
   root.style.setProperty('--mobile-vh', h + 'px');
   root.style.setProperty('--mobile-header-h', mode==='is-mobile' ? '52px' : '44px');
-  root.style.setProperty('--mobile-tabs-h', (mode==='is-mobile'||mode==='is-tablet') ? '82px' : '0px');
+  root.style.setProperty('--mobile-tabs-h', (mode==='is-mobile'||mode==='is-tablet') ? '94px' : '0px');
 })();
 </script>
 <div id="dpsBootScreen" aria-live="polite"><div class="boot-card"><div class="boot-title">특성 계산기 적용 중</div><div class="boot-desc">최신 빌드와 스타일을 불러오는 중입니다.</div></div></div>
@@ -269,28 +269,12 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 </div>
 </div>
 <div class="hdr-meta">
-<div class="header-convenience">
-<button class="btn subtle ui-action-btn header-reference-btn header-convenience-toggle tone-reference" data-action="toggleConvenienceMenu" type="button" aria-label="메뉴 열기" aria-expanded="false" aria-controls="headerConvenienceMenu">☰ 메뉴</button>
-<div class="header-convenience-menu" id="headerConvenienceMenu" aria-label="메뉴" hidden>
-<button id="dpsTableMenuButton" class="btn subtle ui-action-btn header-reference-btn" data-action="openDpsTable" type="button">DPS표</button>
-<button class="btn subtle ui-action-btn header-reference-btn" data-action="openMonthRuneTab" data-month-rune-open-tab="runes" type="button">이달의룬</button>
-<button class="btn subtle ui-action-btn header-reference-btn" data-action="openMonthRuneTab" data-month-rune-open-tab="jewels" type="button">쥬얼</button>
-<a class="btn subtle ui-action-btn header-reference-btn header-convenience-link" href="https://sldbox.github.io/site/">넥서스 <span aria-hidden="true">↗</span></a>
-<div class="header-creator-panel" id="headerCreatorPanel">
-<div class="header-creator-grid">
-<div><span>문의</span><b>회장</b></div>
-<div><span>핸들값</span><b>3-S2-1-2461127</b></div>
-</div>
-<div class="header-creator-guide">
-<b>문의할 때 제작자에게 전달할 파일 및 내용</b>
-<ul>
-<li>웹버전 통합 프리셋 파일과 프리셋 명</li>
-<li>엑셀 파일 문제인 경우 엑셀 파일과 고행 시트 명</li>
-<li>어떤 문제인지, 원래 나와야 하는 값과 실제로 보인 값, 가능하면 스크린샷</li>
-</ul>
-</div>
-<div class="header-creator-discord"><span>개복디 오픈디스코드</span><a href="https://discord.gg/z7DwqvGeB5" target="_blank" rel="noopener noreferrer">입장하기</a></div>
-</div>
+<div class="header-convenience" aria-label="빠른 이동">
+<div class="header-reference-actions">
+<button id="dpsTableMenuButton" class="btn subtle ui-action-btn header-reference-btn header-pc-reference-btn" data-action="openDpsTable" type="button">DPS표</button>
+<button class="btn subtle ui-action-btn header-reference-btn header-pc-reference-btn" data-action="openMonthRuneTab" data-month-rune-open-tab="runes" type="button">이달의룬</button>
+<button class="btn subtle ui-action-btn header-reference-btn header-pc-reference-btn" data-action="openMonthRuneTab" data-month-rune-open-tab="jewels" type="button">쥬얼</button>
+<a class="btn subtle ui-action-btn header-reference-btn header-convenience-link header-nexus-link" href="https://sldbox.github.io/site/">넥서스 <span aria-hidden="true">↗</span></a>
 </div>
 </div>
 <div aria-label="글씨 크기 조절" class="font-scale-ctrl">

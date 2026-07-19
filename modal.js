@@ -152,7 +152,6 @@
 
   function openMonthRune(tabName='compare'){
     const next=typeof tabName==='string'?tabName:'compare';
-    closeConvenienceMenu();
     createMonthRuneModal();
     selectMonthRuneModalTab(next);
     setOpen('monthRuneModal','month-rune-modal-open',true);
