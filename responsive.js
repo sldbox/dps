@@ -23,6 +23,7 @@
     layoutPortrait: null,
     activeIndex: 0,
     activeKey: null,
+    referenceActionsVisible: null,
     resumeRaf: 0,
     resumeTimers: []
   };
@@ -66,7 +67,7 @@
     document.documentElement.classList.remove(...MODES);
     document.body.classList.add(mode);
     document.documentElement.classList.add(mode);
-    if (mode === 'is-mobile' || mode === 'is-tablet') {
+    if (mode === 'is-mobile' || mode === 'is-tablet' || mode === 'is-pc-portrait') {
       document.body.classList.add('is-tabbed');
       document.documentElement.classList.add('is-tabbed');
     }
@@ -128,12 +129,17 @@
       state.tabs.addEventListener('keydown', handleTabKeydown);
     }
     state.tabs.textContent = '';
-    const actionRow = document.createElement('div');
-    actionRow.className = 'mobile-section-action-row';
-    actionRow.setAttribute('aria-label', '빠른 기능');
-    TABBED_REFERENCE_ACTIONS.forEach(config => {
-      actionRow.appendChild(buildReferenceActionButton(config));
-    });
+    const showReferenceActions = !document.body.classList.contains('is-pc-portrait');
+    state.referenceActionsVisible = showReferenceActions;
+    if (showReferenceActions) {
+      const actionRow = document.createElement('div');
+      actionRow.className = 'mobile-section-action-row';
+      actionRow.setAttribute('aria-label', '빠른 기능');
+      TABBED_REFERENCE_ACTIONS.forEach(config => {
+        actionRow.appendChild(buildReferenceActionButton(config));
+      });
+      state.tabs.append(actionRow);
+    }
     const pageRow = document.createElement('div');
     pageRow.className = 'mobile-section-page-row';
     pageRow.setAttribute('role', 'tablist');
@@ -152,7 +158,7 @@
       btn.addEventListener('click', () => showTabbedPage(idx, true));
       pageRow.appendChild(btn);
     });
-    state.tabs.append(actionRow, pageRow);
+    state.tabs.append(pageRow);
   }
   function handleTabKeydown(event) {
     const tabs = Array.from(state.tabs?.querySelectorAll('.mobile-section-page-tab') || []);
@@ -227,6 +233,7 @@
     document.querySelector('.col-work')?.classList.remove('is-mobile-arranged');
     state.tabs = null;
     state.pages = [];
+    state.referenceActionsVisible = null;
     state.arrangedTabbed = false;
   }
   function syncTabbedLayout() {
@@ -234,7 +241,11 @@
     if (!colWork) return;
     if (document.body.classList.contains('is-tabbed')) {
       if (!state.arrangedTabbed) arrangeTabbed(colWork);
-      else showTabbedPage(getPageIndexByKey(state.activeKey));
+      else {
+        const showReferenceActions = !document.body.classList.contains('is-pc-portrait');
+        if (state.referenceActionsVisible !== showReferenceActions) buildTabs(colWork, state.pages);
+        showTabbedPage(getPageIndexByKey(state.activeKey));
+      }
     } else {
       restoreDesktop();
     }

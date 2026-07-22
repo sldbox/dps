@@ -5,7 +5,7 @@
 <meta name="google-site-verification" content="RTuDWbMdnKgbpRpl05eXh9epFwWRSxju4NOl8OtjMsI" />
 
 <script>
-window.DPS_BUILD_VERSION = "2607190000";
+window.DPS_BUILD_VERSION = "2607210000";
 window.APP_VERSION = window.DPS_BUILD_VERSION;
 (function(){
   'use strict';
@@ -142,7 +142,7 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
   }
   function dpsNeedsResponsiveBootHold(){
     var size=dpsGetBootViewport();
-    return size.shortSide <= 600 || (size.shortSide <= 1024 && size.longSide <= 1366);
+    return size.shortSide <= 600 || (size.shortSide <= 1024 && size.longSide <= 1366) || size.h > size.w;
   }
   function dpsReleaseBootScreen(){
     if(window.__dpsBootError) return;
@@ -184,14 +184,14 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 <meta content="https://sldbox.github.io/dps/" property="og:url"/>
 <meta content="개복디 특성 계산기" property="og:title"/>
 <meta content="특성 투자, 재화 사용량, 표기 스탯, 총데미지, DPS를 한 번에 계산할 수 있는 개복디 전용 계산기입니다." property="og:description"/>
-<meta content="https://sldbox.github.io/dps/logo.png?v=2607190000" property="og:image"/>
-<meta content="https://sldbox.github.io/dps/logo.png?v=2607190000" property="og:image:secure_url"/>
+<meta content="https://sldbox.github.io/dps/logo.png?v=2607210000" property="og:image"/>
+<meta content="https://sldbox.github.io/dps/logo.png?v=2607210000" property="og:image:secure_url"/>
 <meta content="image/png" property="og:image:type"/>
 <meta content="개복디 특성 계산기 로고" property="og:image:alt"/>
 <meta content="summary_large_image" name="twitter:card"/>
 <meta content="개복디 특성 계산기" name="twitter:title"/>
 <meta content="특성 투자, 재화 사용량, 표기 스탯, 총데미지, DPS를 한 번에 계산할 수 있는 개복디 전용 계산기입니다." name="twitter:description"/>
-<meta content="https://sldbox.github.io/dps/logo.png?v=2607190000" name="twitter:image"/>
+<meta content="https://sldbox.github.io/dps/logo.png?v=2607210000" name="twitter:image"/>
 <meta content="개복디 특성 계산기 로고" name="twitter:image:alt"/>
 <link href="https://cdn.jsdelivr.net" rel="preconnect"/>
 <link crossorigin="" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" rel="stylesheet"/>
@@ -244,13 +244,13 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
   var dir=h>w?' is-portrait-view':'';
   var device=(mode==='is-mobile')?' is-mobile-device':(mode==='is-tablet'?' is-tablet-device':'');
   var extra=(mode==='is-mobile'&&shortSide<=430)?' is-narrow-mobile':'';
-  var tabbed=(mode==='is-mobile'||mode==='is-tablet')?' is-tabbed':'';
+  var tabbed=(mode==='is-mobile'||mode==='is-tablet'||mode==='is-pc-portrait')?' is-tabbed':'';
   document.body.className=(document.body.className+' '+mode+dir+device+extra+tabbed).trim();
   root.className=(root.className+' '+mode+dir+device+extra+tabbed).trim();
   root.style.setProperty('--mobile-vw', w + 'px');
   root.style.setProperty('--mobile-vh', h + 'px');
   root.style.setProperty('--mobile-header-h', mode==='is-mobile' ? '52px' : '44px');
-  root.style.setProperty('--mobile-tabs-h', (mode==='is-mobile'||mode==='is-tablet') ? '94px' : '0px');
+  root.style.setProperty('--mobile-tabs-h', mode==='is-pc-portrait' ? '52px' : ((mode==='is-mobile'||mode==='is-tablet') ? '94px' : '0px'));
 })();
 </script>
 <div id="dpsBootScreen" aria-live="polite"><div class="boot-card"><div class="boot-title">특성 계산기 적용 중</div><div class="boot-desc">최신 빌드와 스타일을 불러오는 중입니다.</div></div></div>
