@@ -2,16 +2,16 @@
 function hasOwn(obj,key){
   return !!obj && Object.prototype.hasOwnProperty.call(obj,key);
 }
-function excelText(value){
+function dataText(value){
   return String(value??'').trim();
 }
-function excelNumber(value){
+function dataNumber(value){
   const number=Number(String(value??'').replace(/,/g,'').trim());
   return Number.isFinite(number) ? number : null;
 }
-function excelFlag(value){
-  const text=excelText(value).toLowerCase();
-  const number=excelNumber(value);
+function dataFlag(value){
+  const text=dataText(value).toLowerCase();
+  const number=dataNumber(value);
   return ['true','on','on+','yes','y'].includes(text) || (number!==null && number!==0);
 }
 function parseJsonObject(value){
@@ -106,7 +106,7 @@ function normalizePenanceValue(value, max=SOLO_PENANCE_MAX){
 function normalizePowerBlessRawValue(value){
   const raw=String(value ?? '').replace(/,/g,'').trim();
   if(raw==='' || raw==='없음') return '0';
-  const n=Math.max(0, Math.round(excelNumber(value) ?? (+raw || 0)));
+  const n=Math.max(0, Math.round(dataNumber(value) ?? (+raw || 0)));
   return POWER_BLESS_ALL_OPTIONS.includes(n) ? String(n) : '0';
 }
 function normalizeErosionControlValue(id, value){
@@ -1280,7 +1280,7 @@ function dpsBaseUnitAttackRate(unit, context){
 }
 function dpsBaseUnitSingleDpsParts(unit,context,jewelStats,jewelName='',limitBreakValue=0){
   const limitBreak=dpsBaseUnitLimitBreakStats(unit,limitBreakValue);
-  const unitExcelPierce=totalDpsPierce(context.basePierceBonus,context.rpPierce,context.unitPierceBonus);
+  const unitEffectivePierce=totalDpsPierce(context.basePierceBonus,context.rpPierce,context.unitPierceBonus);
   const privateAd=dpsBaseUnitPrivateAd(unit,context.totalQuantity,jewelStats,jewelName,limitBreakValue);
   const adTdMultiplier=(1+(context.globalAd+privateAd)/100)*((context.M11+limitBreak.td+(Number(jewelStats?.td)||0))/100);
   const raceCritBonus=dpsBaseUnitRaceCritBonus(unit,context.targetRound);
@@ -1288,14 +1288,14 @@ function dpsBaseUnitSingleDpsParts(unit,context,jewelStats,jewelName='',limitBre
   const critMultiplier=dps2(context.M8,context.M10,unitCd,context.M16,context.M17,context.M18,unit?.critFormula==='방사' ? 1 : 0);
   const attackRate=dpsBaseUnitAttackRate(unit,{attackSpeed:context.M7,flowerAttackSpeed:context.flowerAttackSpeed,difficultyAs:context.difficultyAs,ua:context.M13,dt:context.dt,jewelStats,limitBreak:limitBreakValue});
   const noPierceDps0=dps0(1,context.enemyArmor,context.M12,0,100);
-  const pierceDps0=dps0(1,context.enemyArmor,context.M12,unitExcelPierce,100);
+  const pierceDps0=dps0(1,context.enemyArmor,context.M12,unitEffectivePierce,100);
   const armorPierceMultiplier=noPierceDps0>0 ? pierceDps0/noPierceDps0 : 1;
   const uniqueDpsMultiplier=1+(Number(unit?.dpsMultiplier)||0);
   const singleTargetRawM19=context.weaponAttack*adTdMultiplier*critMultiplier*attackRate.rate*armorPierceMultiplier*uniqueDpsMultiplier;
   const rawM19=singleTargetRawM19*attackRate.targetsPerAttack;
   return {
     rawM19,singleTargetRawM19,AB3:armorPierceMultiplier,AB4:adTdMultiplier,AB5:critMultiplier,AB6:attackRate.rate,
-    excelPierce:unitExcelPierce,raceCritBonus,finalCooldown:attackRate.cooldown,targetsPerAttack:attackRate.targetsPerAttack,
+    effectivePierce:unitEffectivePierce,raceCritBonus,finalCooldown:attackRate.cooldown,targetsPerAttack:attackRate.targetsPerAttack,
     jewelName,jewelStats,limitBreak:Number(normalizeDpsBaseUnitLimitBreakValue(limitBreakValue))||0
   };
 }
@@ -1350,7 +1350,7 @@ function dpsBaseUnitArtifactDpsParts(unit,context){
   const perWaveDamage=context.weaponAttack*adTdMultiplier*critMultiplier;
   const rawM19=perWaveDamage*targetCount*timing.rate;
   return {
-    rawM19,perWaveDamage,AB3:1,AB4:adTdMultiplier,AB5:critMultiplier,AB6:timing.rate,excelPierce:0,
+    rawM19,perWaveDamage,AB3:1,AB4:adTdMultiplier,AB5:critMultiplier,AB6:timing.rate,effectivePierce:0,
     raceCritBonus:0,finalCooldown:timing.interval,jewelName:'',jewelStats:dpsJewelFinalStats(''),
     artifactWaveInterval:timing.interval,artifactWaveCount:timing.waveCount,artifactTargetCount:targetCount,
     artifactAcceleration:timing.accelerationMultiplier
@@ -1362,11 +1362,11 @@ function dpsBaseUnitArtifactDpsParts(unit,context){
 function computeSpecBoardResult(context){
   const {
     diff,targetRound,upperStats,M4,M7,M8,M10,M9,M16,M17,M18,M11,M12_dr,M13,
-    displayHR,displaySR,excelPierce,enemyData,specEnemyDamageRate,dt
+    displayHR,displaySR,effectivePierce,enemyData,specEnemyDamageRate,dt
   }=context;
   const ownTargetEffects={
     defenseReduce:M12_dr,
-    pierce:excelPierce,
+    pierce:effectivePierce,
     hpReduce:displayHR,
     shieldReduce:displaySR
   };
@@ -1379,7 +1379,7 @@ function computeSpecBoardResult(context){
   const shieldRatio=ownDurability.shieldRatio;
   const hpRemain=ownDurability.remain;
   const M12=M12_dr;
-  const actualM12=actualDrWithPierce(M12_dr,excelPierce);
+  const actualM12=actualDrWithPierce(M12_dr,effectivePierce);
   const specEnemyArmor=Number(enemyData.armorBase)||0;
   const AB3=battleTargetDps0Average(
     {...ownTargetEffects,hpRemain},
@@ -1421,7 +1421,7 @@ function computeDpsBaseUnitBoardResult(context){
       return {
         AB3:parts.AB3,AB4:parts.AB4,AB5:parts.AB5,AB6:parts.AB6,
         rawM19:parts.rawM19,M19:Math.round(parts.rawM19),baseRawM19:parts.rawM19,baseM19:Math.round(parts.rawM19),
-        excelPierce:0,unitPierceBonus:0,ownDurability:targetDurabilityRemain(enemyData,unitTargetEffects),
+        effectivePierce:0,unitPierceBonus:0,ownDurability:targetDurabilityRemain(enemyData,unitTargetEffects),
         actualM12:actualDrWithPierce(M12_dr,0),enhance:artifactWeapon.enhance,limitBreak:0,jewelName:'',
         jewelStats:dpsJewelFinalStats(''),jewelGroups:[],voidPower:false,raceCritBonus:0,
         finalCooldown:parts.finalCooldown,artifactAttackRate:parts.AB6,artifactWaveInterval:parts.artifactWaveInterval,
@@ -1457,7 +1457,7 @@ function computeDpsBaseUnitBoardResult(context){
     const unitSingleTargetRawM19=groupResults.reduce((sum,group)=>sum+group.singleTargetRawM19*group.count,0);
     const baseParts=dpsBaseUnitSingleDpsParts(unit,unitContext,dpsJewelFinalStats(''),'',0);
     const displayParts=groupResults[0] || baseParts;
-    const unitTargetEffects={defenseReduce:M12_dr,pierce:baseParts.excelPierce,hpReduce:displayHR,shieldReduce:displaySR};
+    const unitTargetEffects={defenseReduce:M12_dr,pierce:baseParts.effectivePierce,hpReduce:displayHR,shieldReduce:displaySR};
     return {
       AB3:displayParts.AB3,
       AB4:displayParts.AB4,
@@ -1471,10 +1471,10 @@ function computeDpsBaseUnitBoardResult(context){
       baseM19:Math.round(baseParts.rawM19),
       baseSingleTargetRawM19:baseParts.singleTargetRawM19,
       baseSingleTargetM19:Math.round(baseParts.singleTargetRawM19),
-      excelPierce:baseParts.excelPierce,
+      effectivePierce:baseParts.effectivePierce,
       unitPierceBonus,
       ownDurability:targetDurabilityRemain(enemyData,unitTargetEffects),
-      actualM12:actualDrWithPierce(M12_dr,baseParts.excelPierce),
+      actualM12:actualDrWithPierce(M12_dr,baseParts.effectivePierce),
       enhance:dpsBaseUnitEnhanceValue(unit),
       limitBreak:dpsBaseUnitLimitBreakValue(unit),
       jewelName,
@@ -1578,11 +1578,11 @@ function computeStatsRaw(){
   const displayHR = enchantAt(5).hr + additionalStats.hr;
   const basePierceBonus=SYSTEM_COMMON_BUFFS.basePierce;
   const rpPierce = rpPierceBonus();
-  const excelPierce=totalDpsPierce(basePierceBonus,rpPierce);
+  const effectivePierce=totalDpsPierce(basePierceBonus,rpPierce);
   const dt=personalUaDtMultiplier();
   const specBoard=computeSpecBoardResult({
     diff,targetRound,upperStats,M4,M7,M8,M10,M9,M16,M17,M18,M11,M12_dr,M13,
-    displayHR,displaySR,excelPierce,enemyData,specEnemyDamageRate,dt
+    displayHR,displaySR,effectivePierce,enemyData,specEnemyDamageRate,dt
   });
   const {hpRatio,shieldRatio,M12,actualM12,AB3,AB4,AB5,AB6,roundTime,rawM19,displayMultiplier,M19}=specBoard;
 
@@ -1610,7 +1610,7 @@ function computeStatsRaw(){
   const actualHR = displayHR * hpRatio;
   return {M4,M7,M8,M9,M10,M11,M12,actualM12,M13,M16,M17,M18,M19,rawM19,roundTime,displayMultiplier,rawCD,rawTD,diff,
           displayAD,displayAPS,displayAPU,actualAPU,displayUA,displaySR,displayHR,actualSR,actualHR,
-          spUsedTotal:spU+spO,spU,spO,epU,rpU,soulU,spBank:effectiveSpBankBonus(),spBankApplied:isSpBankApplied(),effectiveSP:effectiveSP(),excelPierce,enemyData,dpsBaseUnit};
+          spUsedTotal:spU+spO,spU,spO,epU,rpU,soulU,spBank:effectiveSpBankBonus(),spBankApplied:isSpBankApplied(),effectiveSP:effectiveSP(),effectivePierce,enemyData,dpsBaseUnit};
 }
 
 /* 유물 DPS */
@@ -2420,7 +2420,6 @@ function optimizeSP(){
 }
 
 /* 더제로 승단 */
-const ZERO_EXCEL_SHEET_NAME='더제로 승단';
 function zeroScoreNumber(value, min, max){
   const n=Number(value);
   if(!Number.isFinite(n)) return min;
@@ -2451,13 +2450,8 @@ function zeroHonorTowerScore(floor){
   if(f>=80) score+=(Math.min(f,90)-79)*2;
   return score;
 }
-function getZeroScoreSheetCells(workbook){
-  try{
-    return workbook?.sheets?.some(sheet=>sheet.name===ZERO_EXCEL_SHEET_NAME) ? workbook.getCells(ZERO_EXCEL_SHEET_NAME) : null;
-  }catch{ return null; }
-}
 function normalizeZeroHonorValue(value){
-  const text=excelText(value).toLowerCase().replace(/명예/g,'').trim();
+  const text=dataText(value).toLowerCase().replace(/명예/g,'').trim();
   const first=text.charAt(0);
   if(['b','a','s','x'].includes(first)) return first;
   if(['없음','none','off','n','0','-',''].includes(text)) return '0';
@@ -2482,29 +2476,6 @@ function zeroScoreHonorValue(row, kind){
 function zeroScoreTowerHonorValue(row, kind){
   return firstOwnedValue(row, kind==='current' ? ['honorCurrent','현재 명예탑'] : ['honorTarget','목표 명예탑'],
     row?.type==='honorTower' ? zeroScoreFieldValue(row,kind) : undefined);
-}
-function zeroScoreStateFromExcel(zeroCells){
-  if(!zeroCells) return null;
-  const rows=[];
-  ZERO_EXCEL_PENANCE_ROWS.forEach(({row})=>{
-    rows.push({
-      type:'penance',
-      current:String(Math.max(0,Math.min(20,Math.round(excelNumber(zeroCells[`B${row}`]) ?? 0)))),
-      target:String(Math.max(0,Math.min(20,Math.round(excelNumber(zeroCells[`C${row}`]) ?? 0)))),
-      star:excelFlag(zeroCells[`D${row}`]),
-      currentHonor:normalizeZeroHonorValue(zeroCells[`E${row}`]),
-      targetHonor:normalizeZeroHonorValue(zeroCells[`F${row}`])
-    });
-  });
-  rows.push({
-    type:'towerCombo',
-    current:String(Math.max(0,Math.min(90,Math.round(excelNumber(zeroCells.B27) ?? 0)))),
-    target:String(Math.max(0,Math.min(90,Math.round(excelNumber(zeroCells.C27) ?? 0)))),
-    honorCurrent:String(Math.max(0,Math.min(90,Math.round(excelNumber(zeroCells.B28) ?? 0)))),
-    honorTarget:String(Math.max(0,Math.min(90,Math.round(excelNumber(zeroCells.C28) ?? 0)))),
-    star:false,currentHonor:'0',targetHonor:'0'
-  });
-  return {rows};
 }
 function zeroScoreRowCalculation(row){
   const type=row?.type || 'penance';
@@ -2574,7 +2545,7 @@ function zeroTowerComboFromRows(rows, index=14){
 }
 function normalizeZeroScoreState(zeroScore){
   const sourceRows=Array.isArray(zeroScore?.rows) ? zeroScore.rows : [];
-  const rows=ZERO_EXCEL_PENANCE_ROWS.map((_,index)=>{
+  const rows=ZERO_PENANCE_ROWS.map((_,index)=>{
     const row=sourceRows[index] || {};
     return {
       type:'penance',

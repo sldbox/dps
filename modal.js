@@ -3,12 +3,11 @@
 
   /* 공통 모달 상태·쉘 */
   const MONTH_RUNE_MODAL_TITLES=Object.freeze({
-    compare:'프리셋 분석',
     runes:'이달의 룬',
     jewels:'쥬얼',
     dps:'DPS표'
   });
-  const MONTH_RUNE_MODAL_CLASS_NAMES=Object.freeze(['is-modal-compare','is-modal-runes','is-modal-jewels','is-modal-dps']);
+  const MONTH_RUNE_MODAL_CLASS_NAMES=Object.freeze(['is-modal-runes','is-modal-jewels','is-modal-dps']);
   const DPS_TABLE_MIN_DPS_INPUT_SELECTOR='#dpsTableMinDps,#dpsTableMinDpsMain';
   let eventsBound=false;
 
@@ -63,7 +62,7 @@
     dispatchUnitJewelModalEvent('dps:unitJewelModalCloseRequest');
   }
 
-  /* 분석·DPS표·룬·쥬얼 */
+  /* DPS표·룬·쥬얼 */
   function getDpsTableMinDpsInput(target){
     return target instanceof Element?target.closest(DPS_TABLE_MIN_DPS_INPUT_SELECTOR):null;
   }
@@ -76,14 +75,10 @@
     if(typeof fresh.setSelectionRange==='function') fresh.setSelectionRange(pos,pos);
   }
 
-  function buildCompareHeaderControls(){
-    return window.ExcelFeature?.renderCompareHeaderControls?.() || '';
-  }
-
   function renderMonthRuneModalHeader(tabName){
     const modal=document.getElementById('monthRuneModal');
     if(!modal) return;
-    const next=MONTH_RUNE_MODAL_TITLES[tabName]?tabName:'compare';
+    const next=MONTH_RUNE_MODAL_TITLES[tabName]?tabName:'runes';
     const title=next==='dps'?dpsTableDisplayTitle():MONTH_RUNE_MODAL_TITLES[next];
     const dialog=modal.querySelector('.month-rune-modal');
     const titleEl=document.getElementById('monthRuneTitle');
@@ -96,16 +91,10 @@
     if(titleEl) titleEl.textContent=title;
     if(closeButton) closeButton.setAttribute('aria-label',`${title} 닫기`);
     if(actions){
-      actions.innerHTML=next==='compare'
-        ?buildCompareHeaderControls()
-        :next==='dps'
-          ?`<div class="dps-table-tabs month-rune-header-tabs" id="dpsTableTabsMount" data-dps-table-tabs-mount role="tablist" aria-label="DPS 기준 선택">${renderDpsTableTabs()}</div>`
-          :'';
+      actions.innerHTML=next==='dps'
+        ?`<div class="dps-table-tabs month-rune-header-tabs" id="dpsTableTabsMount" data-dps-table-tabs-mount role="tablist" aria-label="DPS 기준 선택">${renderDpsTableTabs()}</div>`
+        :'';
     }
-  }
-
-  function buildCompareApplyPanel(){
-    return window.ExcelFeature?.renderComparePanel?.() || '<section class="dps-table-panel"></section>';
   }
 
   function renderDpsTablePanel(){
@@ -117,7 +106,7 @@
   function selectMonthRuneModalTab(tabName){
     const modal=document.getElementById('monthRuneModal');
     if(!modal) return;
-    const next=['compare','runes','jewels','dps'].includes(tabName)?tabName:'compare';
+    const next=['runes','jewels','dps'].includes(tabName)?tabName:'runes';
     modal.querySelectorAll('[data-month-rune-panel]').forEach(panel=>{
       const active=panel.dataset.monthRunePanel===next;
       setClassState(panel,'is-active',active);
@@ -125,7 +114,6 @@
     });
     renderMonthRuneModalHeader(next);
     if(next!=='dps') syncModeClasses(modal.querySelector('.month-rune-modal'),DPS_MODAL_MODES);
-    if(next==='compare') syncComparePanelAfterRender();
     if(next==='dps') renderDpsTablePanelContent();
   }
 
@@ -135,23 +123,22 @@
     const jewels=data.RAW_JEWEL_DATA||[];
     return createShell('monthRuneModal','month-rune-modal-shell',`
       <div class="month-rune-backdrop" data-month-rune-close="1"></div>
-      <section class="month-rune-modal is-modal-compare" role="dialog" aria-modal="true" aria-labelledby="monthRuneTitle">
+      <section class="month-rune-modal is-modal-runes" role="dialog" aria-modal="true" aria-labelledby="monthRuneTitle">
         <header class="month-rune-head">
-          <h2 id="monthRuneTitle" class="month-rune-title">프리셋 분석</h2>
+          <h2 id="monthRuneTitle" class="month-rune-title">이달의 룬</h2>
           <div class="month-rune-header-actions" id="monthRuneHeaderActions"></div>
-          <button type="button" class="ui-icon-btn month-rune-close" data-month-rune-close="1" aria-label="프리셋 분석 닫기">×</button>
+          <button type="button" class="ui-icon-btn month-rune-close" data-month-rune-close="1" aria-label="이달의 룬 닫기">×</button>
         </header>
         <div class="month-rune-body">
-          <section class="month-rune-panel is-active" data-month-rune-panel="compare" role="tabpanel" aria-labelledby="monthRuneTitle">${buildCompareApplyPanel()}</section>
-          ${renderMonthRuneModalPanel('runes',renderMonthRunePanelContent(info))}
+          ${renderMonthRuneModalPanel('runes',renderMonthRunePanelContent(info),true)}
           ${renderMonthRuneModalPanel('jewels',renderJewelPanelContent(jewels))}
           ${renderDpsTablePanel()}
         </div>
       </section>`);
   }
 
-  function openMonthRune(tabName='compare'){
-    const next=typeof tabName==='string'?tabName:'compare';
+  function openMonthRune(tabName='runes'){
+    const next=typeof tabName==='string'?tabName:'runes';
     createMonthRuneModal();
     selectMonthRuneModalTab(next);
     setOpen('monthRuneModal','month-rune-modal-open',true);

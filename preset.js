@@ -1052,7 +1052,7 @@ function traitPresetSortInfo(preset){
     updatedAt:+preset?.updatedAt || 0
   };
 }
-function compareTraitPresetForSelect(a,b,categoryKey){
+function comparePresetForSelect(a,b,categoryKey){
   const left=traitPresetSortInfo(a);
   const right=traitPresetSortInfo(b);
   const numberKeys=categoryKey==='tower'
@@ -1076,7 +1076,7 @@ function sortedTraitPresetBuckets(store){
     (buckets[key] || buckets.solo).push(preset);
   });
   TRAIT_PRESET_SELECT_GROUPS.forEach(group=>{
-    buckets[group.key].sort((a,b)=>compareTraitPresetForSelect(a,b,group.key));
+    buckets[group.key].sort((a,b)=>comparePresetForSelect(a,b,group.key));
   });
   return buckets;
 }
@@ -1239,7 +1239,7 @@ function refreshTraitPresetControls(selectedId){
   const currentId=select?.value || '';
   const current=store.presets.find(preset=>preset.id===currentId);
   dispatchTraitPresetStoreChanged({source:'selection', selectedTraitPresetId:current?.id || ''});
-  qsa('[data-action="loadTraitPreset"],[data-action="updateTraitPreset"],[data-action="renameTraitPreset"],[data-action="deleteTraitPreset"],[data-action="compareTraitPreset"]').forEach(btn=>{
+  qsa('[data-action="loadTraitPreset"],[data-action="updateTraitPreset"],[data-action="renameTraitPreset"],[data-action="deleteTraitPreset"]').forEach(btn=>{
     btn.disabled=!current;
   });
   qsa('[data-trait-preset-unit-jewel-open]').forEach(btn=>{
@@ -1889,7 +1889,7 @@ function traitPresetBackupDefaultFileName(plan){
 function traitPresetBackupFileNameControlHtml(plan){
   const baseName=traitPresetBackupDefaultFileName(plan);
   return `<section class="trait-preset-backup-file-box">
-    <label class="trait-preset-excel-field"><span>백업 파일명</span><input id="traitPresetBackupName" type="text" maxlength="80" autocomplete="off" placeholder="파일명을 입력하세요" value="${escapeHtml(baseName)}"/></label>
+    <label class="trait-preset-modal-field"><span>백업 파일명</span><input id="traitPresetBackupName" type="text" maxlength="80" autocomplete="off" placeholder="파일명을 입력하세요" value="${escapeHtml(baseName)}"/></label>
     <div class="trait-preset-backup-execute-row"><span>백업 실행</span><div class="trait-preset-backup-actions is-pending">
       <button class="btn subtle ui-action-btn" type="button" data-trait-preset-backup-run="stored">원본 통합프리셋 백업</button>
       <button class="btn pri ui-action-btn" type="button" data-trait-preset-backup-run="apply"${plan.hasPending ? '' : ' disabled'}>변경 적용 후 백업</button>
@@ -1897,14 +1897,14 @@ function traitPresetBackupFileNameControlHtml(plan){
   </section>`;
 }
 function createTraitPresetBackupModal(){
-  window.DpsModal.createShell('traitPresetBackupModal','trait-preset-excel-modal-shell',`
-    <div class="trait-preset-excel-backdrop" data-trait-preset-backup-close="1"></div>
-    <section class="trait-preset-excel-modal trait-preset-backup-modal" role="dialog" aria-modal="true" aria-labelledby="traitPresetBackupTitle">
-      <header class="trait-preset-excel-head">
+  window.DpsModal.createShell('traitPresetBackupModal','trait-preset-modal-shell',`
+    <div class="trait-preset-modal-backdrop" data-trait-preset-backup-close="1"></div>
+    <section class="trait-preset-modal trait-preset-backup-modal" role="dialog" aria-modal="true" aria-labelledby="traitPresetBackupTitle">
+      <header class="trait-preset-modal-head">
         <h2 id="traitPresetBackupTitle">특성 프리셋 백업</h2>
-        <button type="button" class="ui-icon-btn trait-preset-excel-close" data-trait-preset-backup-close="1" aria-label="특성 프리셋 백업 닫기">×</button>
+        <button type="button" class="ui-icon-btn trait-preset-modal-close" data-trait-preset-backup-close="1" aria-label="특성 프리셋 백업 닫기">×</button>
       </header>
-      <div class="trait-preset-excel-body trait-preset-backup-body" id="traitPresetBackupBody"></div>
+      <div class="trait-preset-modal-body trait-preset-backup-body" id="traitPresetBackupBody"></div>
     </section>`);
 }
 function renderTraitPresetBackupModal(plan){
@@ -1937,7 +1937,7 @@ function openTraitPresetBackupModal(){
     traitPresetBackupModalPlan=traitPresetBackupChangePlan(store,currentSnapshot);
     createTraitPresetBackupModal();
     renderTraitPresetBackupModal(traitPresetBackupModalPlan);
-    window.DpsModal.setOpen('traitPresetBackupModal','trait-preset-excel-modal-open',true);
+    window.DpsModal.setOpen('traitPresetBackupModal','trait-preset-modal-open',true);
     const body=$('traitPresetBackupBody');
     if(body) body.scrollTop=0;
     const input=$('traitPresetBackupName');
@@ -1952,7 +1952,7 @@ function openTraitPresetBackupModal(){
 function closeTraitPresetBackupModal(){
   if(traitPresetBackupLocked) return false;
   traitPresetBackupModalPlan=null;
-  window.DpsModal.setOpen('traitPresetBackupModal','trait-preset-excel-modal-open',false);
+  window.DpsModal.setOpen('traitPresetBackupModal','trait-preset-modal-open',false);
   return true;
 }
 function createTraitPresetBackupFile(customName=''){
@@ -2000,7 +2000,7 @@ function runTraitPresetBackup(mode='stored'){
     if(normalizedMode==='apply'){ clearTraitPresetDrafts(); notifyTraitPresetBackupComplete(); }
     notifyTraitPresetBackupFileComplete(fileName);
     traitPresetBackupModalPlan=null;
-    window.DpsModal.setOpen('traitPresetBackupModal','trait-preset-excel-modal-open',false);
+    window.DpsModal.setOpen('traitPresetBackupModal','trait-preset-modal-open',false);
     return true;
   }catch(e){
     if(normalizedMode==='apply'){
@@ -2067,7 +2067,36 @@ function mergeTraitPresetImport(imported,options={}){
   else clearTraitPresetUpdatedStatus('import');
   return {store,added,replaced,firstImportedPresetId};
 }
-/* 엑셀 가져오기·프리셋 비교 기능은 excel.js로 분리 */
+function isTraitPresetTextFile(file){
+  return /\.txt$/i.test(String(file?.name || ''));
+}
+function readTraitPresetFileAsText(file){
+  return new Promise((resolve,reject)=>{
+    const reader=new FileReader();
+    reader.addEventListener('load',()=>resolve(String(reader.result||'')),{once:true});
+    reader.addEventListener('error',()=>reject(new Error('파일을 읽지 못했습니다.')),{once:true});
+    reader.readAsText(file,'utf-8');
+  });
+}
+async function importTraitPresetFile(file){
+  try{
+    if(!isTraitPresetTextFile(file)) throw new Error('특성 프리셋 .txt 파일만 가져올 수 있습니다.');
+    const raw=await readTraitPresetFileAsText(file);
+    const parsed=safeJsonParse(raw);
+    const imported=normalizeTraitPresetImportData(parsed);
+    const result=mergeTraitPresetImport(imported);
+    const loadId=result.firstImportedPresetId || '';
+    if(loadId) loadTraitPresetById(loadId,{notifySuccess:false,preserveSharedValues:false});
+    else refreshTraitPresetControls('');
+    notifyStorageAction(`프리셋 가져오기 및 로드 완료 · 추가 ${result.added} / 갱신 ${result.replaced}`,'ok',{statusAction:'import'});
+    return true;
+  }catch(e){
+    rememberAppIssue('error','[trait preset import failed]',e);
+    if(isUnsupportedOldTraitPresetError(e)) showUnsupportedOldTraitPresetToast();
+    else notifyStorageAction(e?.message || '특성 프리셋 가져오기 실패','err');
+    return false;
+  }
+}
 let traitPresetUnitJewelReturnFocus=null;
 let traitPresetUnitJewelActivePanel='copy';
 let traitPresetUnitCopyAppliedTargetIds=new Set();
@@ -2416,7 +2445,6 @@ function bindTraitPresetEvents(){
       const file=e.target.files[0];
       importTraitPresetFile(file).finally(()=>{ e.target.value=''; });
     }
-    if(e.target?.id==='traitPresetExcelSheet') syncTraitPresetExcelImportMode();
     if(e.target?.id==='traitPresetUnitCopySourceSelect'){
       traitPresetUnitCopyAppliedTargetIds=new Set();
       traitPresetUnitCopySelectedTargetIds=new Set();
@@ -2434,9 +2462,6 @@ function bindTraitPresetEvents(){
       traitPresetUnitCopySelectedTargetIds.delete(String(e.target.value || ''));
       renderTraitPresetUnitCopyPanel({keepSelection:true});
     }
-  });
-  document.addEventListener('input',e=>{
-    if(e.target?.id==='traitPresetExcelName') e.target.dataset.autofill='0';
   });
   document.addEventListener('click',e=>{
     const customButton=e.target.closest('[data-trait-preset-custom-button]');
@@ -2496,8 +2521,6 @@ function bindTraitPresetEvents(){
       applyTraitPresetUnitBoardCopy();
       return;
     }
-    if(e.target.closest('[data-trait-preset-excel-close]')) closeTraitPresetExcelImportModal();
-    if(e.target.closest('[data-trait-preset-excel-save]')) saveSelectedExcelSheetAsTraitPreset();
     if(e.target.closest('[data-trait-preset-backup-close]')) closeTraitPresetBackupModal();
     const backupRun=e.target.closest('[data-trait-preset-backup-run]');
     if(backupRun){
@@ -2532,7 +2555,6 @@ function bindTraitPresetEvents(){
       return;
     }
     if(e.key==='Escape'){
-      if($('traitPresetExcelImportModal')?.classList.contains('is-open')) closeTraitPresetExcelImportModal();
       if($('traitPresetBackupModal')?.classList.contains('is-open')) closeTraitPresetBackupModal();
       if($('traitPresetUnitJewelModal')?.classList.contains('is-open')) closeTraitPresetUnitJewelModal({restoreFocus:true});
     }
@@ -2559,6 +2581,5 @@ window.DpsPreset=Object.freeze({
   deleteCurrent:deleteTraitPreset,
   resetAll:requestTraitPresetFullReset,
   openImport:openTraitPresetImportPicker,
-  openBackup:openTraitPresetBackupModal,
-  openAnalysis:compareTraitPreset
+  openBackup:openTraitPresetBackupModal
 });

@@ -40,6 +40,11 @@ const DPS_CONFIG={
 const $=id=>document.getElementById(id);
 const qs=selector=>document.querySelector(selector);
 const qsa=selector=>document.querySelectorAll(selector);
+function escapeHtml(value){
+  return String(value ?? '').replace(/[&<>"']/g, char=>({
+    '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'
+  }[char]));
+}
 
 const INV={};
 TRAITS.forEach(t=>{INV[t[0]]=0;});
@@ -446,7 +451,7 @@ const STAT_COMPARE_ROWS=[
   ['DR', s=>fmt(s.M12,0), s=>fmt(s.actualM12,0)],
   ['DR2P', ()=>fmt(coopPassengerDefenseReduceValue('coopPassenger2Dr'),0), ()=>fmt(coopPassengerDefenseReduceValue('coopPassenger2Dr'),0)],
   ['DR3P', ()=>fmt(coopPassengerDefenseReduceValue('coopPassenger3Dr'),0), ()=>fmt(coopPassengerDefenseReduceValue('coopPassenger3Dr'),0)],
-  ['PIERCE', s=>`${fmt(s.excelPierce,0)}%`, s=>`${fmt(s.excelPierce,0)}%`],
+  ['PIERCE', s=>`${fmt(s.effectivePierce,0)}%`, s=>`${fmt(s.effectivePierce,0)}%`],
   ['UA', s=>fmt(s.displayUA,4), s=>fmt(s.M13,4)],
   ['SR', s=>fmt(s.displaySR,2), s=>fmt(s.actualSR ?? s.displaySR,2)],
   ['HR', s=>fmt(s.displayHR,2), s=>fmt(s.actualHR ?? s.displayHR,2)],
@@ -1022,119 +1027,104 @@ function renderJewelPanelContent(items){
 function renderMonthRuneModalPanel(name,content,active=false){
   return `<section class="month-rune-panel${active?' is-active':''}" data-month-rune-panel="${name}" role="tabpanel" aria-labelledby="monthRuneTitle"${active?'':' hidden'}>${content}</section>`;
 }
-function syncComparePanelAfterRender(){
-  if(window.ExcelFeature?.isBlocked?.()){
-    window.ExcelFeature?.showEnded?.();
-    window.ExcelFeature?.guard?.();
-    return;
-  }
-  hydrateCompareControls();
-  if(compareState.lastResult) renderExcelComparison(compareState.lastResult,{preserveFilter:true});
-  else if(compareState.sourceType==='json' && compareState.backupState) renderJsonComparison(compareState.backupState);
-  else if(compareState.sourceType==='traitPreset' && compareState.traitPresetBundle) compareSelectedTraitPreset({preserveRestore:true});
-  else if(compareState.workbook && compareState.sourceType==='excel') compareSelectedExcelSheet({preserveRestore:true});
-  else updateCompareActionButtons();
-}
-/* 엑셀·프리셋 비교 기능은 excel.js로 분리 */
-
 const FIELD_REGISTRY={
-  sp:{kind:'기본 정보',name:'시작 SP',compare:true,save:true,excel:'number'},
-  xp:{kind:'기본 정보',name:'보유 XP',compare:true,save:true,excel:'number'},
-  bxp:{kind:'기본 정보',name:'보유 BXP',compare:true,save:true,excel:'number'},
-  rp:{kind:'기본 정보',name:'보유 RP',compare:true,save:true,excel:'number'},
-  soul:{kind:'기본 정보',name:'본인 심연의혼',compare:true,save:true,excel:'number'},
-  coralShard:{kind:'기본 정보',name:'코랄의 파편',compare:true,save:true,excel:'number'},
-  aiurShard:{kind:'기본 정보',name:'아이어의 파편',compare:true,save:true,excel:'number'},
-  xerusShard:{kind:'기본 정보',name:'제루스의 파편',compare:true,save:true,excel:'number'},
-  diff:{kind:'기본 정보',name:'난이도',compare:true,save:true,excel:'select'},
-  round:{kind:'기본 정보',name:'목표 라운드',compare:true,save:true,excel:'number'},
-  challengeTowerFloor:{kind:'기본 정보',name:'도전의탑 층',compare:true,save:true,excel:'number'},
-  soloMode:{kind:'기본 정보',name:'개인',compare:true,save:true,excel:'select'},
-  coopMode:{kind:'기본 정보',name:'협동',compare:true,save:true,excel:'select'},
-  coopPassenger2Dr:{kind:'기본 정보',name:'승객 2P 방어력 감소',compare:true,save:true,excel:'select'},
-  coopPassenger3Dr:{kind:'기본 정보',name:'승객 3P 방어력 감소',compare:true,save:true,excel:'select'},
-  team:{kind:'기본 정보',name:'출발 지원 인원수',compare:true,save:true,excel:'number'},
-  pbless:{kind:'기본 정보',name:'파워 블레스',compare:true,save:true,excel:'select'},
-  spBankApply:{kind:'기본 정보',name:'SP 은행',compare:true,save:true},
-  penance:{kind:'기본 정보',name:'고행 단계',compare:true,save:true,excel:'number'},
-  titleTdBonus:{kind:'기본 정보',name:'타이틀 총 데미지',compare:true,save:true,excel:'number'},
-  dpsTableMinDps:{kind:'기본 정보',name:'도전할 최소 DPS',compare:true,save:true,excel:'number'},
-  specDpsSpeedMode:{kind:'스펙 보드',name:'스피드 모드',compare:true,save:true},
+  sp:{kind:'기본 정보',name:'시작 SP',save:true},
+  xp:{kind:'기본 정보',name:'보유 XP',save:true},
+  bxp:{kind:'기본 정보',name:'보유 BXP',save:true},
+  rp:{kind:'기본 정보',name:'보유 RP',save:true},
+  soul:{kind:'기본 정보',name:'본인 심연의혼',save:true},
+  coralShard:{kind:'기본 정보',name:'코랄의 파편',save:true},
+  aiurShard:{kind:'기본 정보',name:'아이어의 파편',save:true},
+  xerusShard:{kind:'기본 정보',name:'제루스의 파편',save:true},
+  diff:{kind:'기본 정보',name:'난이도',save:true},
+  round:{kind:'기본 정보',name:'목표 라운드',save:true},
+  challengeTowerFloor:{kind:'기본 정보',name:'도전의탑 층',save:true},
+  soloMode:{kind:'기본 정보',name:'개인',save:true},
+  coopMode:{kind:'기본 정보',name:'협동',save:true},
+  coopPassenger2Dr:{kind:'기본 정보',name:'승객 2P 방어력 감소',save:true},
+  coopPassenger3Dr:{kind:'기본 정보',name:'승객 3P 방어력 감소',save:true},
+  team:{kind:'기본 정보',name:'출발 지원 인원수',save:true},
+  pbless:{kind:'기본 정보',name:'파워 블레스',save:true},
+  spBankApply:{kind:'기본 정보',name:'SP 은행',save:true},
+  penance:{kind:'기본 정보',name:'고행 단계',save:true},
+  titleTdBonus:{kind:'기본 정보',name:'타이틀 총 데미지',save:true},
+  dpsTableMinDps:{kind:'기본 정보',name:'도전할 최소 DPS',save:true},
+  specDpsSpeedMode:{kind:'스펙 보드',name:'스피드 모드',save:true},
   dpsBaseUnits:{kind:'유닛 보드',name:'유닛 구성',save:true},
   dpsBaseUnitSlots:{kind:'유닛 보드',name:'유닛 선택 위치',save:true},
   dpsJewelSettings:{kind:'쥬얼 설정',name:'전설·신화 쥬얼',save:true},
   dpsBaseUnitExtraSettings:{kind:'유닛 보드',name:'추가 유닛 쥬얼 & 한계 돌파',save:true},
   dpsBaseUnitSlotExpansions:{kind:'유닛 보드',name:'슬롯 확장',save:true},
-  dpsBaseUnitSpeedMode:{kind:'유닛 보드',name:'스피드 모드',compare:true,save:true},
-  dpsBaseUnitShieldOff:{kind:'유닛 보드',name:'적버프 제거 · 쉴드오프',compare:true,save:true},
-  dpsBaseUnitShieldMaster:{kind:'유닛 보드',name:'슈퍼실드 주기변경 · 쉴드마스',compare:true,save:true},
-  erosionStack:{kind:'기본 정보',name:'침식 스텍',compare:true,save:true,excel:'number'},
-  jewelErosionRes:{kind:'기본 정보',name:'심연 내성',compare:true,save:true,excel:'number'},
-  aprRuneNormal:{kind:'룬효과 버프',name:'4월 일반',compare:true,save:true},
-  aprRunePlus:{kind:'룬효과 버프',name:'4월 강화(+)',compare:true,save:true},
-  sepRuneNormal:{kind:'룬효과 버프',name:'9월 일반',compare:true,save:true},
-  sepRunePlus:{kind:'룬효과 버프',name:'9월 강화(+)',compare:true,save:true},
-  overEnhance:{kind:'룬효과 버프',name:'오버핸스',compare:true,save:true},
-  repairEnhance:{kind:'룬효과 버프',name:'리페핸스',compare:true,save:true},
-  enhanceMaster:{kind:'룬효과 버프',name:'강화의 달인',compare:true,save:true},
-  prodArtifact:{kind:'룬효과 버프',name:'유물',compare:true,save:true},
-  prodNova:{kind:'룬효과 버프',name:'비밀 작전 노바',compare:true,save:true},
-  prodTeratron:{kind:'룬효과 버프',name:'테라트론',compare:true,save:true},
-  prodAmon:{kind:'룬효과 버프',name:'아몬',compare:true,save:true},
-  prodAdun:{kind:'룬효과 버프',name:'아둔의 창',compare:true,save:true},
-  prodKerrigan:{kind:'룬효과 버프',name:'불새 케리건',compare:true,save:true},
-  prodOvermind:{kind:'룬효과 버프',name:'초월체',compare:true,save:true},
-  prodNarud:{kind:'룬효과 버프',name:'나루드',compare:true,save:true},
-  flowerSkill1:{kind:'룬효과 버프',name:'근성의 꽃가루',compare:true,save:true},
-  flowerSkill2:{kind:'룬효과 버프',name:'바람의 꽃가루',compare:true,save:true},
-  flowerSkill3:{kind:'룬효과 버프',name:'안개의 꽃가루',compare:true,save:true},
-  rAD:{kind:'룬정보',name:'공격력',compare:true,save:true,excel:'number'},
-  rModAD:{kind:'룬정보',name:'공격력 개조',compare:true,save:true,excel:'number'},
-  runeChoiceType:{kind:'룬정보',name:'룬 특수 옵션',compare:true,save:true,excel:'select'},
-  runeChoiceValue:{kind:'룬정보',name:'룬 특수 옵션',compare:true,save:true,excel:'number'},
-  rAS:{kind:'룬정보',name:'공격속도',compare:true,save:true,excel:'number'},
-  rModAS:{kind:'룬정보',name:'공격속도 개조',compare:true,save:true,excel:'number'},
-  rCD:{kind:'룬정보',name:'크리티컬 데미지',compare:true,save:true,excel:'number'},
-  rModCD:{kind:'룬정보',name:'크리티컬 데미지 개조',compare:true,save:true,excel:'number'},
-  rCRI:{kind:'룬정보',name:'크리티컬 확률',compare:true,save:true,excel:'number'},
-  rModCRI:{kind:'룬정보',name:'크리티컬 확률 개조',compare:true,save:true,excel:'number'},
-  rReinf:{kind:'룬정보',name:'룬 강화 수',compare:true,save:true,excel:'number'},
-  rAsc:{kind:'룬정보',name:'룬 각성',compare:true,save:true,excel:'select'},
-  raceOpt:{kind:'룬정보',name:'종족 업그레이드',compare:true,save:true,excel:'select'},
-  opt10:{kind:'룬정보',name:'10강 옵션',compare:true,save:true,excel:'select'},
-  opt15:{kind:'룬정보',name:'15강 옵션',compare:true,save:true,excel:'select'},
-  transOpt:{kind:'룬정보',name:'초월 옵션',compare:true,save:true,excel:'select'},
-  addAD:{kind:'에디셔널',name:'공격력',compare:true,save:true,excel:'number'},
-  addAS:{kind:'에디셔널',name:'공격속도',compare:true,save:true,excel:'number'},
-  addCD:{kind:'에디셔널',name:'크리티컬 데미지',compare:true,save:true,excel:'number'},
-  addCRI:{kind:'에디셔널',name:'크리티컬 확률',compare:true,save:true,excel:'number'},
-  addAP:{kind:'에디셔널',name:'마법공격력',compare:true,save:true,excel:'number'},
-  addTD:{kind:'에디셔널',name:'총 데미지',compare:true,save:true,excel:'number'},
-  addUA:{kind:'에디셔널',name:'유닛 가속',compare:true,save:true,excel:'number'},
-  enchAD:{kind:'인챈트 레벨 / 결과',name:'공격력',save:true,excel:'number'},
-  enchCRI:{kind:'인챈트 레벨 / 결과',name:'크리티컬 확률',save:true,excel:'number'},
-  enchUA:{kind:'인챈트 레벨 / 결과',name:'유닛 가속',save:true,excel:'number'},
-  enchTD:{kind:'인챈트 레벨 / 결과',name:'총 데미지',save:true,excel:'number'},
-  enchSR:{kind:'인챈트 레벨 / 결과',name:'실드 감소',save:true,excel:'number'},
-  enchHR:{kind:'인챈트 레벨 / 결과',name:'체력 감소',save:true,excel:'number'},
+  dpsBaseUnitSpeedMode:{kind:'유닛 보드',name:'스피드 모드',save:true},
+  dpsBaseUnitShieldOff:{kind:'유닛 보드',name:'적버프 제거 · 쉴드오프',save:true},
+  dpsBaseUnitShieldMaster:{kind:'유닛 보드',name:'슈퍼실드 주기변경 · 쉴드마스',save:true},
+  erosionStack:{kind:'기본 정보',name:'침식 스텍',save:true},
+  jewelErosionRes:{kind:'기본 정보',name:'심연 내성',save:true},
+  aprRuneNormal:{kind:'룬효과 버프',name:'4월 일반',save:true},
+  aprRunePlus:{kind:'룬효과 버프',name:'4월 강화(+)',save:true},
+  sepRuneNormal:{kind:'룬효과 버프',name:'9월 일반',save:true},
+  sepRunePlus:{kind:'룬효과 버프',name:'9월 강화(+)',save:true},
+  overEnhance:{kind:'룬효과 버프',name:'오버핸스',save:true},
+  repairEnhance:{kind:'룬효과 버프',name:'리페핸스',save:true},
+  enhanceMaster:{kind:'룬효과 버프',name:'강화의 달인',save:true},
+  prodArtifact:{kind:'룬효과 버프',name:'유물',save:true},
+  prodNova:{kind:'룬효과 버프',name:'비밀 작전 노바',save:true},
+  prodTeratron:{kind:'룬효과 버프',name:'테라트론',save:true},
+  prodAmon:{kind:'룬효과 버프',name:'아몬',save:true},
+  prodAdun:{kind:'룬효과 버프',name:'아둔의 창',save:true},
+  prodKerrigan:{kind:'룬효과 버프',name:'불새 케리건',save:true},
+  prodOvermind:{kind:'룬효과 버프',name:'초월체',save:true},
+  prodNarud:{kind:'룬효과 버프',name:'나루드',save:true},
+  flowerSkill1:{kind:'룬효과 버프',name:'근성의 꽃가루',save:true},
+  flowerSkill2:{kind:'룬효과 버프',name:'바람의 꽃가루',save:true},
+  flowerSkill3:{kind:'룬효과 버프',name:'안개의 꽃가루',save:true},
+  rAD:{kind:'룬정보',name:'공격력',save:true},
+  rModAD:{kind:'룬정보',name:'공격력 개조',save:true},
+  runeChoiceType:{kind:'룬정보',name:'룬 특수 옵션',save:true},
+  runeChoiceValue:{kind:'룬정보',name:'룬 특수 옵션',save:true},
+  rAS:{kind:'룬정보',name:'공격속도',save:true},
+  rModAS:{kind:'룬정보',name:'공격속도 개조',save:true},
+  rCD:{kind:'룬정보',name:'크리티컬 데미지',save:true},
+  rModCD:{kind:'룬정보',name:'크리티컬 데미지 개조',save:true},
+  rCRI:{kind:'룬정보',name:'크리티컬 확률',save:true},
+  rModCRI:{kind:'룬정보',name:'크리티컬 확률 개조',save:true},
+  rReinf:{kind:'룬정보',name:'룬 강화 수',save:true},
+  rAsc:{kind:'룬정보',name:'룬 각성',save:true},
+  raceOpt:{kind:'룬정보',name:'종족 업그레이드',save:true},
+  opt10:{kind:'룬정보',name:'10강 옵션',save:true},
+  opt15:{kind:'룬정보',name:'15강 옵션',save:true},
+  transOpt:{kind:'룬정보',name:'초월 옵션',save:true},
+  addAD:{kind:'에디셔널',name:'공격력',save:true},
+  addAS:{kind:'에디셔널',name:'공격속도',save:true},
+  addCD:{kind:'에디셔널',name:'크리티컬 데미지',save:true},
+  addCRI:{kind:'에디셔널',name:'크리티컬 확률',save:true},
+  addAP:{kind:'에디셔널',name:'마법공격력',save:true},
+  addTD:{kind:'에디셔널',name:'총 데미지',save:true},
+  addUA:{kind:'에디셔널',name:'유닛 가속',save:true},
+  enchAD:{kind:'인챈트 레벨 / 결과',name:'공격력',save:true},
+  enchCRI:{kind:'인챈트 레벨 / 결과',name:'크리티컬 확률',save:true},
+  enchUA:{kind:'인챈트 레벨 / 결과',name:'유닛 가속',save:true},
+  enchTD:{kind:'인챈트 레벨 / 결과',name:'총 데미지',save:true},
+  enchSR:{kind:'인챈트 레벨 / 결과',name:'실드 감소',save:true},
+  enchHR:{kind:'인챈트 레벨 / 결과',name:'체력 감소',save:true},
   enchantCode:{kind:'인챈트 레벨 / 결과',name:'인챈트 코드',save:true},
-  optTier:{kind:'특성 보드',name:'특성 최적화',compare:true,save:true},
-  utilOptTier:{kind:'특성 보드',name:'유틸 마스터',compare:true,save:true},
-  traitLimitAD:{kind:'특성 투자 제한',name:'공격력',compare:true,save:true},
-  traitLimitAS:{kind:'특성 투자 제한',name:'공격속도',compare:true,save:true},
-  traitLimitCRI:{kind:'특성 투자 제한',name:'크리티컬 확률',compare:true,save:true},
-  traitLimitCD:{kind:'특성 투자 제한',name:'크리티컬 데미지',compare:true,save:true},
-  traitLimitMC:{kind:'특성 투자 제한',name:'다중 크리',compare:true,save:true},
-  traitLimitDR:{kind:'특성 투자 제한',name:'방어력 감소',compare:true,save:true},
-  traitLimitTD:{kind:'특성 투자 제한',name:'총 데미지',compare:true,save:true},
-  traitLimitUA:{kind:'특성 투자 제한',name:'유닛 가속',compare:true,save:true},
-  traitLimitMultiTarget:{kind:'특성 투자 제한',name:'멀티타겟',compare:true,save:true},
-  traitLimitInfinite:{kind:'특성 투자 제한',name:'무한특성',compare:true,save:true},
-  skillDouble:{kind:'성소 보드',name:'더블스페',compare:true,save:true,excel:'number'},
-  skillMode:{kind:'성소 보드',name:'모드',compare:true,save:true},
-  skillRound:{kind:'성소 보드',name:'라운드',compare:true,save:true,excel:'number'},
-  unitGrade:{kind:'룬효과 버프',name:'유닛 등급',compare:true},
-  unitLevel:{kind:'룬효과 버프',name:'유닛 레벨',compare:true},
+  optTier:{kind:'특성 보드',name:'특성 최적화',save:true},
+  utilOptTier:{kind:'특성 보드',name:'유틸 마스터',save:true},
+  traitLimitAD:{kind:'특성 투자 제한',name:'공격력',save:true},
+  traitLimitAS:{kind:'특성 투자 제한',name:'공격속도',save:true},
+  traitLimitCRI:{kind:'특성 투자 제한',name:'크리티컬 확률',save:true},
+  traitLimitCD:{kind:'특성 투자 제한',name:'크리티컬 데미지',save:true},
+  traitLimitMC:{kind:'특성 투자 제한',name:'다중 크리',save:true},
+  traitLimitDR:{kind:'특성 투자 제한',name:'방어력 감소',save:true},
+  traitLimitTD:{kind:'특성 투자 제한',name:'총 데미지',save:true},
+  traitLimitUA:{kind:'특성 투자 제한',name:'유닛 가속',save:true},
+  traitLimitMultiTarget:{kind:'특성 투자 제한',name:'멀티타겟',save:true},
+  traitLimitInfinite:{kind:'특성 투자 제한',name:'무한특성',save:true},
+  skillDouble:{kind:'성소 보드',name:'더블스페',save:true},
+  skillMode:{kind:'성소 보드',name:'모드',save:true},
+  skillRound:{kind:'성소 보드',name:'라운드',save:true},
+  unitGrade:{kind:'룬효과 버프',name:'유닛 등급'},
+  unitLevel:{kind:'룬효과 버프',name:'유닛 레벨'},
 };
 
 /* 유닛 보드 상태·표시 */
@@ -1142,14 +1132,14 @@ function dpsBaseUnitFieldEntries(){
   const units=dpsBaseUnitList();
   const quantityEntries=units.filter(dpsBaseUnitHasQuantity).map(unit=>[
     dpsBaseUnitQuantityInputId(unit),
-    {kind:'유닛 보드',name:`${unit.label || unit.id} 수량`,compare:true,save:true}
+    {kind:'유닛 보드',name:`${unit.label || unit.id} 수량`,save:true}
   ]);
   const settingEntries=units.flatMap(unit=>{
-    const entries=[[dpsBaseUnitEnhanceInputId(unit),{kind:'유닛 보드',name:`${unit.label || unit.id} 강화 기대값`,compare:true,save:true}]];
+    const entries=[[dpsBaseUnitEnhanceInputId(unit),{kind:'유닛 보드',name:`${unit.label || unit.id} 강화 기대값`,save:true}]];
     if(dpsBaseUnitSupportsAdvancedOptions(unit)) entries.push(
-      [dpsBaseUnitLimitBreakInputId(unit),{kind:'유닛 보드',name:`${unit.label || unit.id} 한계 돌파`,compare:true,save:true}],
-      [dpsBaseUnitJewelInputId(unit),{kind:'유닛 보드',name:`${unit.label || unit.id} 전설·신화 쥬얼`,compare:true,save:true}],
-      [dpsBaseUnitVoidPowerInputId(unit),{kind:'유닛 보드',name:`${unit.label || unit.id} 공허의 힘`,compare:true,save:true}]
+      [dpsBaseUnitLimitBreakInputId(unit),{kind:'유닛 보드',name:`${unit.label || unit.id} 한계 돌파`,save:true}],
+      [dpsBaseUnitJewelInputId(unit),{kind:'유닛 보드',name:`${unit.label || unit.id} 전설·신화 쥬얼`,save:true}],
+      [dpsBaseUnitVoidPowerInputId(unit),{kind:'유닛 보드',name:`${unit.label || unit.id} 공허의 힘`,save:true}]
     );
     return entries;
   });
@@ -1162,9 +1152,6 @@ const DPS_BASE_UNIT_LIMIT_BREAK_IDS=new Set(DPS_BASE_UNIT_ADVANCED_OPTION_UNITS.
 const DPS_BASE_UNIT_JEWEL_IDS=new Set(DPS_BASE_UNIT_ADVANCED_OPTION_UNITS.map(dpsBaseUnitJewelInputId));
 const DPS_BASE_UNIT_VOID_POWER_IDS=new Set(DPS_BASE_UNIT_ADVANCED_OPTION_UNITS.map(dpsBaseUnitVoidPowerInputId));
 const fieldEntriesByFlag=flag=>Object.entries(FIELD_REGISTRY).filter(([,field])=>field[flag]).map(([id])=>id);
-const EXCEL_NUMERIC_INPUT_IDS=new Set(Object.entries(FIELD_REGISTRY).filter(([,field])=>field.excel==='number').map(([id])=>id));
-const EXCEL_SELECT_INPUT_IDS=new Set(Object.entries(FIELD_REGISTRY).filter(([,field])=>field.excel==='select').map(([id])=>id));
-const COMPARE_VALUE_META=Object.fromEntries(Object.entries(FIELD_REGISTRY).filter(([,field])=>field.compare).map(([id,field])=>[id,{kind:field.kind,name:field.name}]));
 const USER_STATE_VALUE_IDS=new Set(fieldEntriesByFlag('save'));
 function normalizeDpsBaseUnitSlotExpansions(value){
   let source=value;
@@ -1641,7 +1628,7 @@ function dpsBaseUnitSlotHtml(unitId, slotIndex, slots){
   const selectControl=`<div class="dps-base-unit-select-wrap"><button class="ui-icon-btn dps-base-unit-clear-btn" data-dps-base-unit-clear-slot="${slotIndex}" type="button" aria-label="유닛 선택 해제"${empty?' disabled':''}>×</button><select class="dps-base-unit-select" id="${selectId}" data-dps-base-unit-slot="${slotIndex}" aria-label="유닛 선택">${dpsBaseUnitSelectOptionsHtml(unitId,slots)}</select></div>`;
   const result=unit ? dpsBaseUnitResultDisplayMap.get(String(unit.id || '')) || null : null;
   const attack=result ? dpsBaseUnitAttackText(result) : '—';
-  const pierce=result ? dpsBaseUnitPercentText(result.excelPierce) : (unit ? (dpsBaseUnitIsArtifact(unit) ? '0%' : dpsBaseUnitPercentText(dpsBaseUnitBoardBasePierce + dpsBaseUnitPierceBonus(unit))) : '—');
+  const pierce=result ? dpsBaseUnitPercentText(result.effectivePierce) : (unit ? (dpsBaseUnitIsArtifact(unit) ? '0%' : dpsBaseUnitPercentText(dpsBaseUnitBoardBasePierce + dpsBaseUnitPierceBonus(unit))) : '—');
   const dps=result ? dpsBaseUnitDpsText(result) : '—';
   const entry=`<div class="dps-base-unit-entry dps-base-unit-slot${empty ? ' is-empty' : ''}${unit && dpsBaseUnitHasQuantity(unit) ? ' has-quantity' : ' is-fixed'}" data-dps-base-unit-slot-row="${slotIndex}">${dpsBaseUnitFieldHtml('유닛명','dps-base-unit-name-field',selectControl)}${dpsBaseUnitFieldHtml('공격력','dps-base-unit-attack-field',`<span class="dps-base-unit-board-cell dps-base-unit-board-attack">${escapeHtml(attack)}</span>`)}${dpsBaseUnitFieldHtml('방어력 관통','dps-base-unit-pierce-field',`<span class="dps-base-unit-board-cell dps-base-unit-board-pierce">${escapeHtml(pierce)}</span>`)}${dpsBaseUnitFieldHtml(unit && dpsBaseUnitIsArtifact(unit)?'파장 총 DPS':'총 DPS','dps-base-unit-dps-field',`<b class="dps-base-unit-board-cell dps-base-unit-board-dps">${escapeHtml(dps)}</b>`)}${dpsBaseUnitFieldHtml('수량','dps-base-unit-quantity-field',`<div class="dps-base-unit-board-cell dps-base-unit-board-quantity">${dpsBaseUnitQuantityControlHtml(unit,slotIndex)}</div>`)}</div>`;
   return `<div class="dps-base-unit-card${empty?' is-empty':''}">${entry}${dpsBaseUnitSettingsHtml(unit,slotIndex)}</div>`;
@@ -1913,8 +1900,6 @@ function bindDpsBaseUnitControlEvents(){
     if(limitBreak?.closest?.('[data-dps-base-unit-control]')) syncDpsBaseUnitLimitBreakControl(limitBreak);
   }, true);
 }
-
-/* 엑셀 입력·비교 처리 기능은 excel.js로 분리 */
 
 /* 특성 보드 */
 const INFINITE_TRAIT_TIER='무한∞';
@@ -2298,7 +2283,7 @@ function bindAppTitleVersion(){
 }
 /* 더제로 승단 */
 
-const ZERO_EXCEL_PENANCE_ROWS=[
+const ZERO_PENANCE_ROWS=[
   'Practice','Very Easy','Easy','Normal','Hard','Very Hard','Hell','Inferno','Lunatic','Holic','Epic','Ultimate','Impossible','The Final'
 ].map((name,index)=>({name,row:13+index}));
 function buildZeroPenanceCalcRow(name){
@@ -2328,76 +2313,10 @@ function buildZeroTowerCalcRow(){
 function renderZeroScoreCalculatorRows(){
   const rows=$('zeroScoreRows');
   if(!rows || rows.dataset.rendered==='1') return;
-  rows.innerHTML=ZERO_EXCEL_PENANCE_ROWS.map(({name})=>buildZeroPenanceCalcRow(name)).join('') + buildZeroTowerCalcRow();
+  rows.innerHTML=ZERO_PENANCE_ROWS.map(({name})=>buildZeroPenanceCalcRow(name)).join('') + buildZeroTowerCalcRow();
   rows.dataset.rendered='1';
 }
 
-function compareZeroTextRow(name, changeValue, currentValue){
-  return buildCompareTextRow('더제로 승단 정보',name,changeValue,currentValue);
-}
-function compareZeroNumberRow(kind,name,changeValue,currentValue){
-  return buildCompareNumberRow(kind,name,changeValue,currentValue,0.0001);
-}
-
-function addZeroPenanceCompareRows(rows,name,change={},current={}){
-  const currentCalc=zeroScoreRowCalculation(current);
-  const changeCalc=zeroScoreRowCalculation(change);
-  rows.push(compareZeroNumberRow('더제로 승단 정보',`${name} 현재 일반`,change.current ?? 0,current.current ?? 0));
-  rows.push(compareZeroNumberRow('더제로 승단 정보',`${name} 목표 일반`,change.target ?? 0,current.target ?? 0));
-  rows.push(compareZeroTextRow(`${name} 24스타`,change.star?'ON':'OFF',current.star?'ON':'OFF'));
-  rows.push(compareZeroTextRow(`${name} 현재 명예`,zeroHonorDisplay(change.currentHonor||''),zeroHonorDisplay(current.currentHonor||'')));
-  rows.push(compareZeroTextRow(`${name} 목표 명예`,zeroHonorDisplay(change.targetHonor||''),zeroHonorDisplay(current.targetHonor||'')));
-  rows.push(compareZeroNumberRow('더제로 승단 정보',`${name} 목표 추가점수`,changeCalc.score,currentCalc.score));
-}
-function addZeroTowerComboCompareRows(rows,label,change={},current={}){
-  rows.push(compareZeroNumberRow('더제로 승단 정보',`${label} 현재 일반`,change.current ?? 0,current.current ?? 0));
-  rows.push(compareZeroNumberRow('더제로 승단 정보',`${label} 목표 일반`,change.target ?? 0,current.target ?? 0));
-  rows.push(compareZeroTextRow(`${label} 24스타`,'비활성화','비활성화'));
-  rows.push(compareZeroNumberRow('더제로 승단 정보',`${label} 현재 명예`,change.honorCurrent ?? 0,current.honorCurrent ?? 0));
-  rows.push(compareZeroNumberRow('더제로 승단 정보',`${label} 목표 명예`,change.honorTarget ?? 0,current.honorTarget ?? 0));
-  rows.push(compareZeroNumberRow('더제로 승단 정보',`${label} 목표 추가점수`,zeroScoreRowCalculation(change).score,zeroScoreRowCalculation(current).score));
-}
-function buildSavedZeroScoreCompareRows(changeZeroScore,currentZeroScore,options={}){
-  const onlyDiffs=options.onlyDiffs!==false;
-  const changeState=normalizeZeroScoreState(changeZeroScore);
-  const currentState=normalizeZeroScoreState(currentZeroScore);
-  const changeRows=changeState.rows;
-  const currentRows=currentState.rows;
-  const rows=[];
-  ZERO_EXCEL_PENANCE_ROWS.forEach(({name},index)=>addZeroPenanceCompareRows(rows,name,changeRows[index] || {},currentRows[index] || {}));
-  addZeroTowerComboCompareRows(rows,'도전의탑',changeRows[14] || {},currentRows[14] || {});
-  const changeSummary=zeroScoreSummaryFromState(changeState);
-  const currentSummary=zeroScoreSummaryFromState(currentState);
-  rows.push(compareZeroNumberRow('더제로 승단 정보','현재 승단점수',changeSummary.currentTotal,currentSummary.currentTotal));
-  rows.push(compareZeroNumberRow('더제로 승단 정보','목표 추가점수',changeSummary.total,currentSummary.total));
-  rows.push(compareZeroNumberRow('더제로 승단 정보','목표 완료',changeSummary.targetScore,currentSummary.targetScore));
-  rows.push(compareZeroTextRow('현재 / 목표 승단',`${zeroRankName(changeSummary.currentTotal)} → ${zeroRankName(changeSummary.targetScore)}`,`${zeroRankName(currentSummary.currentTotal)} → ${zeroRankName(currentSummary.targetScore)}`));
-  return onlyDiffs ? rows.filter(row=>row.status!=='same') : rows;
-}
-function buildZeroScoreCompareRows(zeroCells){
-  if(!zeroCells) return [];
-  const webState=collectZeroScoreState() || {rows:[]};
-  const rows=[];
-  ZERO_EXCEL_PENANCE_ROWS.forEach(({name,row},index)=>{
-    const web=webState.rows[index] || {};
-    const webCalc=zeroScoreRowCalculation(web);
-    rows.push(compareZeroNumberRow('더제로 승단 정보',`${name} 현재 일반`,zeroCells[`B${row}`],web.current ?? 0));
-    rows.push(compareZeroNumberRow('더제로 승단 정보',`${name} 목표 일반`,zeroCells[`C${row}`],web.target ?? 0));
-    rows.push(compareZeroTextRow(`${name} 24스타`,excelFlag(zeroCells[`D${row}`])?'ON':'OFF',web.star?'ON':'OFF'));
-    rows.push(compareZeroTextRow(`${name} 현재 명예`,zeroHonorDisplay(normalizeZeroHonorValue(zeroCells[`E${row}`])),zeroHonorDisplay(web.currentHonor||'')));
-    rows.push(compareZeroTextRow(`${name} 목표 명예`,zeroHonorDisplay(normalizeZeroHonorValue(zeroCells[`F${row}`])),zeroHonorDisplay(web.targetHonor||'')));
-    rows.push(compareZeroNumberRow('더제로 승단 정보',`${name} 목표 추가점수`,zeroCells[`G${row}`],webCalc.score));
-  });
-  const comboExcel=zeroTowerComboFromRows(zeroScoreStateFromExcel(zeroCells).rows);
-  const comboWeb=zeroTowerComboFromRows(webState.rows);
-  addZeroTowerComboCompareRows(rows,'도전의탑',comboExcel,comboWeb);
-  const webSummary=zeroScoreSummaryFromState(webState);
-  rows.push(compareZeroNumberRow('더제로 승단 정보','현재 승단점수',zeroCells.H28,webSummary.currentTotal));
-  rows.push(compareZeroNumberRow('더제로 승단 정보','목표 추가점수',(excelNumber(zeroCells.I28) ?? 0)-(excelNumber(zeroCells.H28) ?? 0),webSummary.total));
-  rows.push(compareZeroNumberRow('더제로 승단 정보','목표 완료',zeroCells.I28,webSummary.targetScore));
-  rows.push(compareZeroTextRow('현재 / 목표 승단',`${zeroRankName(excelNumber(zeroCells.H28) ?? 0)} → ${zeroRankName(excelNumber(zeroCells.I28) ?? 0)}`,`${zeroRankName(webSummary.currentTotal)} → ${zeroRankName(webSummary.targetScore)}`));
-  return rows;
-}
 const ZERO_RANK_FALLBACK_TABLE=[
   {name:'입문',score:0},{name:'견습',score:100},{name:'숙련',score:150},{name:'전문',score:200},
   {name:'장인',score:250},{name:'명장',score:300},{name:'명장+',score:350},{name:'도인',score:400},
@@ -2406,8 +2325,8 @@ const ZERO_RANK_FALLBACK_TABLE=[
 ];
 function getZeroRankTable(){
   const rows=[...qsa('.zero-rank-entry')].map(row=>{
-    const name=excelText(row.dataset.rankName);
-    const score=excelNumber(row.dataset.rankScore);
+    const name=dataText(row.dataset.rankName);
+    const score=dataNumber(row.dataset.rankScore);
     return name && score!==null ? {name,score,row} : null;
   }).filter(Boolean);
   return rows.length ? rows : ZERO_RANK_FALLBACK_TABLE;
@@ -2421,10 +2340,10 @@ function zeroRankName(score){
   return zeroRankEntry(score)?.name || '입문';
 }
 function updateZeroRankHighlights(currentRank, targetRank){
-  const current=excelText(currentRank);
-  const target=excelText(targetRank);
+  const current=dataText(currentRank);
+  const target=dataText(targetRank);
   qsa('.zero-rank-entry').forEach(row=>{
-    const name=excelText(row.dataset.rankName);
+    const name=dataText(row.dataset.rankName);
     row.classList.toggle('zero-rank-current', !!current && name===current);
     row.classList.toggle('zero-rank-target', !!target && name===target);
     row.classList.toggle('zero-rank-same', !!current && current===target && name===current);
@@ -2570,7 +2489,6 @@ const ACTION_HANDLERS={
   resetAllTraitPresetState:(...args)=>window.DpsPreset.resetAll(...args),
   backupTraitPresets:(...args)=>window.DpsPreset.openBackup(...args),
   importTraitPresets:(...args)=>window.DpsPreset.openImport(...args),
-  compareTraitPreset:(...args)=>window.DpsPreset.openAnalysis(...args),
   openDpsTable,
   openMonthRuneTab:(trigger)=>window.DpsModal.openMonthRune(trigger?.dataset?.monthRuneOpenTab || 'compare'),
   zeroRankTab:(trigger)=>setZeroRankTab(trigger),
@@ -2599,9 +2517,6 @@ function bindActionEvents(){
   });
 }
 const REACTIVE_INPUT_EXCLUDED_IDS=new Set([
-  'excelCompareFile',
-  'excelCompareSheet',
-  'excelCompareBasePreset',
   'traitPresetName',
   'traitPresetSelect',
   'traitPresetImportFile',
@@ -2696,7 +2611,7 @@ function bindAppEvents(){
   appEventsBound=true;
   [
     bindFontScaleViewportGuard, bindActionEvents, bindTraitHoldEvents, bindTraitInputEvents,
-    ()=>window.DpsModal.bindEvents(), bindExcelCompareEvents, ()=>window.DpsPreset.bindEvents(), bindJewelImageEvents,
+    ()=>window.DpsModal.bindEvents(), ()=>window.DpsPreset.bindEvents(), bindJewelImageEvents,
     bindZeroScoreCalculator, bindTraitLimitDisplayEvents, bindDpsBaseUnitControlEvents, bindReactiveInputs,
     bindButtonPressFeedback, bindDamageBoardSwitchEvents, bindDpsBaseUnitConditionEvents, bindAppTitleVersion
   ].forEach(fn=>fn());
