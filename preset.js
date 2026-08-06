@@ -1204,7 +1204,8 @@ function refreshTraitPresetControls(selectedId){
     btn.disabled=!current;
   });
   qsa('[data-trait-preset-unit-jewel-open]').forEach(btn=>{
-    btn.disabled=!current && !store.presets.length;
+    const panel=btn.dataset.traitPresetUnitJewelOpen==='jewel' ? 'jewel' : 'copy';
+    btn.disabled=panel==='copy' && !store.presets.length;
   });
   qsa('[data-action="backupTraitPresets"]').forEach(btn=>{ btn.disabled=!store.presets.length; });
   renderTraitPresetStatus(status, store);
@@ -2233,13 +2234,13 @@ function closeTraitPresetUnitJewelModal(options={}){
 }
 function openTraitPresetUnitJewelModal(trigger=null,panel='copy'){
   const store=loadTraitPresetStore();
-  if(!store.presets.length){
+  const next=panel==='jewel' ? 'jewel' : 'copy';
+  if(next==='copy' && !store.presets.length){
     notifyStorageAction('저장된 프리셋이 없습니다.','err');
     refreshTraitPresetControls('');
     return false;
   }
   traitPresetUnitJewelReturnFocus=trigger instanceof HTMLElement ? trigger : (document.activeElement instanceof HTMLElement ? document.activeElement : null);
-  const next=panel==='jewel' ? 'jewel' : 'copy';
   createTraitPresetUnitJewelModal(next);
   traitPresetUnitCopyAppliedTargetIds=new Set();
   traitPresetUnitCopySelectedTargetIds=new Set();
