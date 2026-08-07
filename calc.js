@@ -1115,8 +1115,14 @@ function nonNegativeNumber(value){
 function totalDpsPierce(...values){
   return values.reduce((sum,value)=>sum + nonNegativeNumber(value), 0);
 }
+function dpsBaseUnitDehakaShardDpsMultiplier(unit){
+  return unit?.id==='prodDehaka' && shardValue('xerusShard')>=1000 ? 1.25 : 1;
+}
+function dpsBaseUnitDehakaShardPierceBonus(unit){
+  return unit?.id==='prodDehaka' && shardValue('xerusShard')>=3000 ? 10 : 0;
+}
 function dpsBaseUnitPierceBonus(unit){
-  return nonNegativeNumber(unit?.armorPierceBonus);
+  return nonNegativeNumber(unit?.armorPierceBonus)+dpsBaseUnitDehakaShardPierceBonus(unit);
 }
 const DPS_BASE_UNIT_RACE_SHARD_RULES=Object.freeze({
   '테란 바이오닉':Object.freeze({inputId:'coralShard',minimum:2500}),
@@ -1315,7 +1321,7 @@ function dpsBaseUnitSingleDpsParts(unit,context,jewelStats,jewelName='',limitBre
   const noPierceDps0=dps0(1,context.enemyArmor,context.M12,0,100);
   const pierceDps0=dps0(1,context.enemyArmor,context.M12,unitEffectivePierce,100);
   const armorPierceMultiplier=noPierceDps0>0 ? pierceDps0/noPierceDps0 : 1;
-  const uniqueDpsMultiplier=1+(Number(unit?.dpsMultiplier)||0);
+  const uniqueDpsMultiplier=(1+(Number(unit?.dpsMultiplier)||0))*dpsBaseUnitDehakaShardDpsMultiplier(unit);
   const singleTargetRawM19=context.weaponAttack*adTdMultiplier*critMultiplier*attackRate.rate*armorPierceMultiplier*uniqueDpsMultiplier;
   const rawM19=singleTargetRawM19*attackRate.targetsPerAttack;
   return {
