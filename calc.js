@@ -236,6 +236,10 @@ function currentEnchantStats(syncInputs=true){
 
 /* 특성 비용 */
 const FIXED_STEP_AFTER_150={93:76000,94:76000,95:114000};
+const STEP_COST_PREFIX=Object.freeze(Object.fromEntries(Object.entries(STEP_COST).map(([row,steps])=>{
+  let total=0;
+  return [row,Object.freeze([0,...steps.map(value=>(total+=Number(value)||0))])];
+})));
 function fixedStepAfter150(row){return FIXED_STEP_AFTER_150[row] || 0;}
 function nextCost(row){
   const step=STEP_COST[row];
@@ -256,8 +260,8 @@ function nextCost(row){
 }
 function cumCost(row, investment=INV[row]||0){
   const n=Math.min(Math.max(0,Math.round(+investment||0)),TMAX[row]||999);
-  const step=STEP_COST[row];
-  if(step) return step.slice(0,n).reduce((a,b)=>a+(+b||0),0);
+  const step=STEP_COST_PREFIX[row];
+  if(step) return step[Math.min(n,step.length-1)] || 0;
   const p=COST[row];
   if(!p) return 0;
   const [a,d,mx]=p; const nn=Math.min(n,mx);
@@ -427,11 +431,14 @@ function dps2(cri,mc,cd,md,mp,mcp,radiation=0){
 }
 function lookupFloor(table, round){
   const r=Math.max(1,Math.round(+round||1));
-  let last=null;
-  for(const row of table){
-    if(row[0] <= r) last=row; else break;
+  if(!Array.isArray(table) || !table.length) return undefined;
+  let low=0,high=table.length-1,best=0;
+  while(low<=high){
+    const mid=(low+high)>>1;
+    if(table[mid][0]<=r){best=mid;low=mid+1;}
+    else high=mid-1;
   }
-  return last || table[0];
+  return table[best];
 }
 function isTowerDifficulty(value=vs('diff')){return difficultyName(value)===TOWER_DIFFICULTY_NAME;}
 function battleDataModeKeyForDifficulty(diffName=vs('diff')){
@@ -655,25 +662,31 @@ function syncExclusiveRuneOptions(){
     });
   });
 }
+const reinforceSuccessOddsCache=new Map();
 function reinforceSuccessOdds(tries, basePower, isTheZero, upRev, upFRev){
   const count=clampInt(tries,0,999);
   const upP=basePower + (isTheZero ? 20 : 0) + upRev * 2;
   const failStep=4 + 2 * upFRev;
+  const cacheKey=`${count}|${upP}|${failStep}`;
+  const cached=reinforceSuccessOddsCache.get(cacheKey);
+  if(cached) return cached;
   const streakChance=[];
-  for(let i=0;i<=count;i++) streakChance[i]=1 - 70 / (upP + i * failStep);
+  const failPrefix=[1];
+  for(let i=0;i<=count;i++){
+    streakChance[i]=1 - 70 / (upP + i * failStep);
+    failPrefix[i+1]=failPrefix[i]*(1-streakChance[i]);
+  }
   const upOdds=[];
   for(let i=0;i<=count;i++){
     if(i===0){ upOdds[i]=1; continue; }
     if(i===1){ upOdds[i]=streakChance[0]; continue; }
     let chance=upOdds[i-1] * streakChance[0];
-    for(let j=1;j<=i-1;j++){
-      let inter=1;
-      for(let f=0;f<=j-1;f++) inter *= 1 - streakChance[f];
-      chance += inter * streakChance[j] * upOdds[i-1-j];
-    }
+    for(let j=1;j<=i-1;j++) chance += failPrefix[j] * streakChance[j] * upOdds[i-1-j];
     upOdds[i]=chance;
   }
-  return {count,streakChance,upOdds};
+  const result={count,streakChance,upOdds};
+  reinforceSuccessOddsCache.set(cacheKey,result);
+  return result;
 }
 function averageReinforceSuccessChance(odds){
   if(!odds || odds.count<=0) return 0;
@@ -917,10 +930,12 @@ function jewelSettingsObject(elementId,normalizeSettings){
 function normalizeDpsJewelSettings(value){return normalizeJewelSettings(value,dpsJewelNames(),normalizeDpsJewelSetting);}
 function serializeDpsJewelSettings(value){return serializeJewelSettings(value,normalizeDpsJewelSettings);}
 function dpsJewelSettingsObject(){return jewelSettingsObject('dpsJewelSettings',normalizeDpsJewelSettings);}
-function dpsJewelFinalStats(name,settings=dpsJewelSettingsObject()){
+const DPS_EMPTY_JEWEL_STATS=Object.freeze({name:'',ad:0,as:0,td:0,ua:0,resist:0,enhance:0,mythic:'N'});
+function dpsJewelFinalStats(name,settings=null){
   const jewelName=normalizeDpsJewelName(name);
-  if(!jewelName) return {name:'',ad:0,as:0,td:0,ua:0,resist:0,enhance:0,mythic:'N'};
-  const input=normalizeDpsJewelSetting(settings?.[jewelName]);
+  if(!jewelName) return DPS_EMPTY_JEWEL_STATS;
+  const source=settings || dpsJewelSettingsObject();
+  const input=normalizeDpsJewelSetting(source?.[jewelName]);
   const effectKey=input.mythic==='Y' ? 'mythic' : 'legendary';
   const effect=window.DPS_DATA?.DPS_JEWEL_EFFECTS?.[jewelName]?.[effectKey] || {};
   const ignoresBase=jewelName==='크리소베릴';
@@ -965,9 +980,8 @@ function dpsBaseUnitExtraSettingsObject(){
   const el=typeof $==='function' ? $('dpsBaseUnitExtraSettings') : null;
   return normalizeDpsBaseUnitExtraSettings(el?.value || '{}');
 }
-function dpsBaseUnitExtraSlotSettings(unitOrId){
+function dpsBaseUnitExtraSlotSettings(unitOrId,settings=dpsBaseUnitExtraSettingsObject()){
   const unit=resolveDpsBaseUnit(unitOrId);
-  const settings=dpsBaseUnitExtraSettingsObject();
   const items=unit ? settings[unit.id] : null;
   return Array.from({length:DPS_BASE_UNIT_EXTRA_SLOT_COUNT},(_,index)=>normalizeDpsBaseUnitExtraSlotSetting(items?.[index]));
 }
@@ -976,7 +990,7 @@ function dpsBaseUnitJewelName(unitOrId){
   const el=typeof $==='function' ? $(dpsBaseUnitJewelInputId(unitOrId)) : null;
   return normalizeDpsJewelName(el?.value || '');
 }
-function dpsBaseUnitInstanceGroups(unitOrId,quantityOverride){
+function dpsBaseUnitInstanceGroups(unitOrId,quantityOverride,jewelSettings=dpsJewelSettingsObject(),extraSettings=dpsBaseUnitExtraSettingsObject()){
   const unit=resolveDpsBaseUnit(unitOrId);
   if(!unit) return [];
   const quantity=Math.max(1,Number(quantityOverride)||dpsBaseUnitQuantity(unit)||1);
@@ -988,12 +1002,12 @@ function dpsBaseUnitInstanceGroups(unitOrId,quantityOverride){
       unitNumber,
       limitBreak:Number(normalizeDpsBaseUnitLimitBreakValue(limitBreak))||0,
       name,
-      stats:dpsJewelFinalStats(name),
+      stats:dpsJewelFinalStats(name,jewelSettings),
       type:name ? 'named' : 'none'
     });
   };
   addGroup(1,dpsBaseUnitLimitBreakValue(unit),dpsBaseUnitJewelName(unit));
-  const extras=dpsBaseUnitExtraSlotSettings(unit);
+  const extras=dpsBaseUnitExtraSlotSettings(unit,extraSettings);
   const extraCount=Math.min(DPS_BASE_UNIT_EXTRA_SLOT_COUNT,Math.max(0,quantity-1));
   for(let index=0;index<extraCount;index++){
     const extra=extras[index];
@@ -1003,8 +1017,8 @@ function dpsBaseUnitInstanceGroups(unitOrId,quantityOverride){
   if(bareCount>0) addGroup(groups.length+1,0,'',bareCount);
   return groups;
 }
-function dpsBaseUnitJewelStats(unitOrId){
-  return dpsJewelFinalStats(dpsBaseUnitJewelName(unitOrId));
+function dpsBaseUnitJewelStats(unitOrId,settings=null){
+  return dpsJewelFinalStats(dpsBaseUnitJewelName(unitOrId),settings);
 }
 function dpsBaseUnitQuantityLimit(){
   return vs('coopMode')==='ON' ? 16 : 8;
@@ -1274,7 +1288,8 @@ function dpsBaseUnitAttackRate(unit, context){
   const dt=Math.max(0.000001,Number(context?.dt)||1);
   const jewelStats=context?.jewelStats || dpsBaseUnitJewelStats(unit);
   const privateUa=(1+limitBreak.ua/100)*(1+(Number(jewelStats?.ua)||0)/100);
-  const voidPowerAs=dpsBaseUnitVoidPowerOn(unit) ? 50 : 0;
+  const voidPowerEnabled=context && hasOwn(context,'voidPower') ? context.voidPower===true : dpsBaseUnitVoidPowerOn(unit);
+  const voidPowerAs=voidPowerEnabled ? 50 : 0;
   const speedStat=(Number(context?.attackSpeed)||0)+(Number(jewelStats?.as)||0);
   const flowerAs=Number(context?.flowerAttackSpeed)||0;
   const uniqueSpeed=Math.max(0.000001,1+(Number(unit?.attackSpeedMultiplier)||0));
@@ -1296,7 +1311,7 @@ function dpsBaseUnitSingleDpsParts(unit,context,jewelStats,jewelName='',limitBre
   const raceCritBonus=dpsBaseUnitRaceCritBonus(unit,context.targetRound);
   const unitCd=context.M9*(1+raceCritBonus);
   const critMultiplier=dps2(context.M8,context.M10,unitCd,context.M16,context.M17,context.M18,unit?.critFormula==='방사' ? 1 : 0);
-  const attackRate=dpsBaseUnitAttackRate(unit,{attackSpeed:context.M7,flowerAttackSpeed:context.flowerAttackSpeed,difficultyAs:context.difficultyAs,ua:context.M13,dt:context.dt,jewelStats,limitBreak:limitBreakValue});
+  const attackRate=dpsBaseUnitAttackRate(unit,{attackSpeed:context.M7,flowerAttackSpeed:context.flowerAttackSpeed,difficultyAs:context.difficultyAs,ua:context.M13,dt:context.dt,jewelStats,limitBreak:limitBreakValue,voidPower:context.voidPower});
   const noPierceDps0=dps0(1,context.enemyArmor,context.M12,0,100);
   const pierceDps0=dps0(1,context.enemyArmor,context.M12,unitEffectivePierce,100);
   const armorPierceMultiplier=noPierceDps0>0 ? pierceDps0/noPierceDps0 : 1;
@@ -1419,6 +1434,10 @@ function computeDpsBaseUnitBoardResult(context){
   const dpsBaseUnits=Array.isArray(unitListOverride)
     ? unitListOverride.filter(unit=>unit && !dpsBaseUnitIsArtifact(unit))
     : selectedDpsBaseUnits(dpsBaseUnitSelection);
+  const hasStandardUnits=dpsBaseUnits.some(unit=>!dpsBaseUnitIsArtifact(unit));
+  const jewelSettings=hasStandardUnits ? dpsJewelSettingsObject() : null;
+  const extraSettings=hasStandardUnits ? dpsBaseUnitExtraSettingsObject() : null;
+  const voidPowerEnabledIds=hasStandardUnits ? dpsBaseUnitVoidPowerEnabledIds() : new Set();
   const dpsBaseUnitResults=dpsBaseUnits.map(unit=>{
     if(dpsBaseUnitIsArtifact(unit)){
       const artifactWeapon=dpsBaseUnitArtifactWeaponStats(displayAP);
@@ -1435,7 +1454,7 @@ function computeDpsBaseUnitBoardResult(context){
         rawM19:parts.rawM19,M19:Math.round(parts.rawM19),baseRawM19:parts.rawM19,baseM19:Math.round(parts.rawM19),
         effectivePierce:0,unitPierceBonus:0,ownDurability:targetDurabilityRemain(enemyData,unitTargetEffects),
         actualM12:actualDrWithPierce(M12_dr,0),enhance:artifactWeapon.enhance,limitBreak:0,jewelName:'',
-        jewelStats:dpsJewelFinalStats(''),jewelGroups:[],voidPower:false,raceCritBonus:0,
+        jewelStats:DPS_EMPTY_JEWEL_STATS,jewelGroups:[],voidPower:false,raceCritBonus:0,
         finalCooldown:parts.finalCooldown,artifactAttackRate:parts.AB6,artifactWaveInterval:parts.artifactWaveInterval,
         artifactWaveCount:parts.artifactWaveCount,artifactTargetCount:parts.artifactTargetCount,
         artifactAcceleration:parts.artifactAcceleration,perWaveDamage:parts.perWaveDamage,
@@ -1462,12 +1481,12 @@ function computeDpsBaseUnitBoardResult(context){
       attackCount:Number(unit.attackCount)||0
     };
     const jewelName=dpsBaseUnitJewelName(unit);
-    const groups=dpsBaseUnitInstanceGroups(unit,quantityMultiplier);
-    const unitContext={basePierceBonus,rpPierce,unitPierceBonus,totalQuantity:quantityMultiplier,globalAd:M4-unitADBonus,M11,M8,M10,M9,M16,M17,M18,M7,M13,dt,flowerAttackSpeed:upperStats.actualAs,difficultyAs:diff.as,enemyArmor:enemyData.armor,M12:M12_dr,targetRound,weaponAttack,enhanceStats};
+    const groups=dpsBaseUnitInstanceGroups(unit,quantityMultiplier,jewelSettings,extraSettings);
+    const unitContext={basePierceBonus,rpPierce,unitPierceBonus,totalQuantity:quantityMultiplier,globalAd:M4-unitADBonus,M11,M8,M10,M9,M16,M17,M18,M7,M13,dt,flowerAttackSpeed:upperStats.actualAs,difficultyAs:diff.as,enemyArmor:enemyData.armor,M12:M12_dr,targetRound,weaponAttack,enhanceStats,voidPower:voidPowerEnabledIds.has(unit.id)};
     const groupResults=groups.map(group=>({...group,...dpsBaseUnitSingleDpsParts(unit,unitContext,group.stats,group.name,group.limitBreak)}));
     const unitRawM19=groupResults.reduce((sum,group)=>sum+group.rawM19*group.count,0);
     const unitSingleTargetRawM19=groupResults.reduce((sum,group)=>sum+group.singleTargetRawM19*group.count,0);
-    const baseParts=dpsBaseUnitSingleDpsParts(unit,unitContext,dpsJewelFinalStats(''),'',0);
+    const baseParts=dpsBaseUnitSingleDpsParts(unit,unitContext,DPS_EMPTY_JEWEL_STATS,'',0);
     const displayParts=groupResults[0] || baseParts;
     const unitTargetEffects={defenseReduce:M12_dr,pierce:baseParts.effectivePierce,hpReduce:displayHR,shieldReduce:displaySR};
     return {
@@ -1490,9 +1509,9 @@ function computeDpsBaseUnitBoardResult(context){
       enhance:dpsBaseUnitEnhanceValue(unit),
       limitBreak:dpsBaseUnitLimitBreakValue(unit),
       jewelName,
-      jewelStats:dpsJewelFinalStats(jewelName),
+      jewelStats:dpsJewelFinalStats(jewelName,jewelSettings),
       jewelGroups:groupResults.map(group=>({unitNumber:group.unitNumber,name:group.name,type:group.type,limitBreak:group.limitBreak,count:group.count,dps:Math.round(group.rawM19*group.count)})),
-      voidPower:dpsBaseUnitVoidPowerOn(unit),
+      voidPower:voidPowerEnabledIds.has(unit.id),
       raceCritBonus:displayParts.raceCritBonus,
       finalCooldown:displayParts.finalCooldown,
       attacksPerSecond:displayParts.AB6,
@@ -1701,29 +1720,6 @@ function calculateArtifactDpsRaw(stats=computeLightweightStatsRaw()){
 }
 /* 계산 미리보기 상태 */
 const ARTIFACT_DPS_PREVIEW_IDS=['diff','penance','round','challengeTowerFloor','soloMode','coopMode','coopPassenger2Dr','coopPassenger3Dr','team','prodArtifact','pbless',...EROSION_CONTROL_IDS];
-function capturePreviewElementStates(ids){
-  return ids.map(id=>{
-    const el=$(id);
-    return {
-      el,
-      checked:el && el.type==='checkbox' ? el.checked : null,
-      value:el ? el.value : null,
-      innerHTML:el && el.tagName==='SELECT' ? el.innerHTML : null,
-      dataset:el ? {...el.dataset} : null
-    };
-  });
-}
-function restorePreviewElementStates(saved){
-  saved.forEach(state=>{
-    const el=state.el;
-    if(!el) return;
-    if(state.innerHTML!==null) el.innerHTML=state.innerHTML;
-    if(state.checked!==null) el.checked=state.checked;
-    else el.value=state.value;
-    Object.keys(el.dataset).forEach(key=>{ delete el.dataset[key]; });
-    Object.entries(state.dataset || {}).forEach(([key,value])=>{ el.dataset[key]=value; });
-  });
-}
 function applyPreviewPenanceState(penEl, penanceLevel, battleMode, signaturePrefix){
   if(!penEl) return;
   const maxForPreview=battleMode==='coop' ? COOP_DPS_TABLE_PENANCE_MAX : DPS_TABLE_PENANCE_MAX;
@@ -1805,13 +1801,10 @@ function prepareDpsPreviewControls(diffName, penanceLevel, round, options={}, si
   return controls;
 }
 function withPreparedDpsPreview(elementIds,diffName,penanceLevel,round,options,signaturePrefix,callback){
-  const saved=capturePreviewElementStates(elementIds);
-  try{
+  return withCalculationElementOverrides(elementIds,()=>{
     prepareDpsPreviewControls(diffName,penanceLevel,round,options,signaturePrefix);
     return callback();
-  }finally{
-    restorePreviewElementStates(saved);
-  }
+  });
 }
 function calculateArtifactDpsPreview(diffName, penanceLevel, round, options={}){
   try{
@@ -1884,15 +1877,17 @@ function nextRpCost(row){
 function isUtilitySpTrait(trait){
   return trait[3]==='유틸' || trait[3]==='경험치';
 }
+const RESOURCE_TRAIT_ROWS=Object.freeze({
+  SP:Object.freeze(TRAITS.filter(t=>SP_ROWS.has(t[0])).map(t=>t[0])),
+  EP:Object.freeze(TRAITS.filter(t=>EP_ROWS.has(t[0])).map(t=>t[0])),
+  RP:Object.freeze(TRAITS.filter(t=>RP_ROWS.has(t[0])).map(t=>t[0])),
+  SOUL:Object.freeze(TRAITS.filter(t=>SOUL_ROWS.has(t[0])).map(t=>t[0]))
+});
 function resourceUsed(kind){
+  const rows=RESOURCE_TRAIT_ROWS[kind] || [];
   let total=0;
-  TRAITS.forEach(t=>{
-    const row=t[0];
-    if(kind==='SP' && SP_ROWS.has(row)) total+=cumCost(row);
-    if(kind==='EP' && EP_ROWS.has(row)) total+=cumCost(row);
-    if(kind==='RP' && RP_ROWS.has(row)) total+=rpCost(row, INV[row]||0);
-    if(kind==='SOUL' && SOUL_ROWS.has(row)) total+=cumCost(row);
-  });
+  if(kind==='RP') for(const row of rows) total+=rpCost(row,INV[row]||0);
+  else for(const row of rows) total+=cumCost(row);
   return total;
 }
 function resourceKindForRow(row){return SP_ROWS.has(row)?'SP':EP_ROWS.has(row)?'EP':RP_ROWS.has(row)?'RP':SOUL_ROWS.has(row)?'SOUL':null;}
@@ -2104,7 +2099,7 @@ function computeDpsPreview(diffName, penanceLevel, round, options={}){
   }
 }
 
-/* 특성 효율 */
+/* 특성 계산·자동 최적화 */
 const STAT_KO={
   AD:'공격력', AS:'공격속도', AP:'마법공격력', CRI:'크리티컬 확률', CD:'크리티컬 데미지',
   MC:'다중 크리티컬', TD:'총 데미지', DR:'방어력 감소', PIERCE:'방어력 관통', UA:'유닛 가속',
@@ -2134,9 +2129,6 @@ const TRAIT_LIMIT_DEFAULTS={
 const TRAIT_LIMIT_INPUT_IDS=new Set(TRAIT_LIMIT_CONFIG.map(item=>item.id));
 const TRAIT_LIMIT_MULTI_TYPES=new Set(['MD','MP','MCP']);
 const TRAIT_LIMIT_UNLIMITED_TEXT='제한없음';
-const TRAIT_RECOMMENDATION_MULTI_BUNDLE_ROWS=new Set([100,101,102]);
-const TRAIT_RECOMMENDATION_MAX_ATTACK_COOLDOWN=0.0625;
-const TRAIT_RECOMMENDATION_MAX_ATTACK_COOLDOWN_EPSILON=0.000001;
 function normalizeTraitLimitStorageValue(value){
   const text=String(value ?? '').replace(/,/g,'').trim();
   if(text==='' || text==='0' || text===TRAIT_LIMIT_UNLIMITED_TEXT || text==='∞' || /^inf(inity)?$/i.test(text)) return '0';
@@ -2259,28 +2251,6 @@ function isTraitOptimizationTarget(t){
   if(info.kind==='SP') return allowedRowsByTier().has(row);
   return true;
 }
-function bestTraitOptimizationCandidateForRow(base, kind, rem, row){
-  const mx=TMAX[row]||999;
-  const maxAdd=Math.max(0, mx-(INV[row]||0));
-  if(maxAdd<=0 || rem<=0) return null;
-  let affordable=0;
-  let lo=1, hi=maxAdd;
-  while(lo<=hi){
-    const mid=Math.floor((lo+hi)/2);
-    const cost=traitOptimizationDeltaCost(row, mid);
-    if(Number.isFinite(cost) && cost>0 && cost<=rem){
-      affordable=mid;
-      lo=mid+1;
-    }else{
-      hi=mid-1;
-    }
-  }
-  for(let add=affordable; add>=1; add--){
-    const cand=evaluateTraitOptimizationCandidate(base, kind, rem, [[row,add]], traitName(row));
-    if(cand) return cand;
-  }
-  return null;
-}
 function evaluateTraitOptimizationCandidate(base, kind, rem, changes, label, options={}){
   let cost=0;
   for(const [row,add] of changes){
@@ -2295,9 +2265,9 @@ function evaluateTraitOptimizationCandidate(base, kind, rem, changes, label, opt
   const limitsOk=traitLimitStatsOk(ns);
   if(!limitsOk) return null;
   const gain=ns.M19-base.M19;
-  if(gain<=0 || (options.visibleGain!==false && !traitRecommendationGainIsVisible(gain))) return null;
+  if(gain<=0) return null;
   const primaryRow=changes[0]?.[0];
-  return {changes,primaryRow,kind,score:gain/cost,gain,cost,label:label||traitName(primaryRow)};
+  return {changes,primaryRow,kind,score:gain/cost,gain,cost,label:label||traitName(primaryRow),nextStats:ns};
 }
 function critTraitOptimizationCandidate(base, kind, rem, row, rate, options={}){
   if((INV[row]||0)>=(TMAX[row]||999)) return null;
@@ -2309,157 +2279,6 @@ function critTraitOptimizationCandidate(base, kind, rem, row, rate, options={}){
   if(add<=0 || (INV[row]||0)+add>(TMAX[row]||999)) return null;
   return evaluateTraitOptimizationCandidate(base, kind, rem, [[row,add]], options.label || traitName(row), options);
 }
-function traitRowIsUnitSpeed(row){
-  const type=traitByRow(row)?.[3];
-  return type==='AS' || type==='UA';
-}
-function traitChangesIncludeUnitSpeed(changes){
-  return Array.isArray(changes) && changes.some(([row])=>traitRowIsUnitSpeed(row));
-}
-function traitRecommendationUnitResults(stats){
-  return Array.isArray(stats?.dpsBaseUnit?.results)
-    ? stats.dpsBaseUnit.results.filter(item=>item && item.kind!=='artifact')
-    : [];
-}
-function traitRecommendationGeneralUnitList(){
-  return dpsBaseUnitList().filter(unit=>unit && !dpsBaseUnitIsArtifact(unit));
-}
-function traitRecommendationUnitSpeedContext(baseStats){
-  const selectedResults=traitRecommendationUnitResults(baseStats);
-  if(selectedResults.length) return {baseStats,unitListOverride:null,mode:'selected'};
-  const generalUnits=traitRecommendationGeneralUnitList();
-  if(!generalUnits.length) return {baseStats,unitListOverride:null,mode:'empty'};
-  const previewStats=computeStatsRaw({extended:true,syncDerived:false,dpsBaseUnitListOverride:generalUnits});
-  const previewResults=traitRecommendationUnitResults(previewStats);
-  const maxSpeedIds=new Set(previewResults.filter(traitRecommendationUnitHasMaxAttackSpeed).map(item=>String(item?.unitId || '')).filter(Boolean));
-  const maxSpeedUnits=generalUnits.filter(unit=>maxSpeedIds.has(String(unit.id || '')));
-  if(maxSpeedUnits.length){
-    return {
-      baseStats:computeStatsRaw({extended:true,syncDerived:false,dpsBaseUnitListOverride:maxSpeedUnits}),
-      unitListOverride:maxSpeedUnits,
-      previewStats,
-      mode:'unselectedMaxSpeed'
-    };
-  }
-  return {baseStats:previewStats,unitListOverride:generalUnits,previewStats,mode:'unselectedAll'};
-}
-function traitRecommendationComputeUnitSpeedStats(changes, unitListOverride){
-  return withTemporaryTraitInvestments(changes,()=>computeStatsRaw({
-    extended:true,
-    syncDerived:false,
-    dpsBaseUnitListOverride:unitListOverride || null
-  }));
-}
-function traitRecommendationUnitExpectedDps(stats){
-  const value=Number(stats?.dpsBaseUnit?.expectedDps);
-  return Number.isFinite(value) ? value : 0;
-}
-function traitRecommendationUnitHasMaxAttackSpeed(result){
-  const cooldown=Number(result?.finalCooldown);
-  const weaponSpeed=Number(result?.weaponSpeed);
-  return weaponSpeed>0 && Number.isFinite(cooldown) && cooldown<=TRAIT_RECOMMENDATION_MAX_ATTACK_COOLDOWN+TRAIT_RECOMMENDATION_MAX_ATTACK_COOLDOWN_EPSILON;
-}
-function traitRecommendationUnitCanGainAttackSpeed(result){
-  const cooldown=Number(result?.finalCooldown);
-  const weaponSpeed=Number(result?.weaponSpeed);
-  return weaponSpeed>0 && Number.isFinite(cooldown) && cooldown>TRAIT_RECOMMENDATION_MAX_ATTACK_COOLDOWN+TRAIT_RECOMMENDATION_MAX_ATTACK_COOLDOWN_EPSILON;
-}
-function traitRecommendationAllUnitsKeepMaxAttackSpeed(stats){
-  const results=traitRecommendationUnitResults(stats);
-  return results.length>0 && results.every(traitRecommendationUnitHasMaxAttackSpeed);
-}
-function traitAttackSpeedCandidateImprovesUnitBoard(speedContext, changes){
-  const baseStats=speedContext?.baseStats;
-  const baseResults=traitRecommendationUnitResults(baseStats);
-  if(!baseResults.length) return false;
-  if(!baseResults.some(traitRecommendationUnitCanGainAttackSpeed)) return false;
-  const baseExpected=traitRecommendationUnitExpectedDps(baseStats);
-  const nextStats=traitRecommendationComputeUnitSpeedStats(changes,speedContext?.unitListOverride);
-  return traitRecommendationUnitExpectedDps(nextStats)>baseExpected+1e-9;
-}
-function traitEfficiencyCandidateAllowedByUnitSpeed(candidate, speedContext){
-  if(!candidate || !traitChangesIncludeUnitSpeed(candidate.changes)) return true;
-  return traitAttackSpeedCandidateImprovesUnitBoard(speedContext,candidate.changes);
-}
-function pushTraitEfficiencyCandidate(candidates, candidate, speedContext){
-  if(candidate && traitEfficiencyCandidateAllowedByUnitSpeed(candidate,speedContext)) candidates.push(candidate);
-}
-function traitOptimizationDeltaRefund(row, remove){
-  row=+row;
-  remove=Math.max(0,Math.round(+remove||0));
-  const current=Math.max(0,Math.round(INV[row]||0));
-  if(remove<=0 || current<=0) return 0;
-  const next=Math.max(0,current-remove);
-  if(RP_ROWS.has(row)) return Math.max(0,rpCost(row,current)-rpCost(row,next));
-  return Math.max(0,cumCost(row,current)-cumCost(row,next));
-}
-function traitRecommendationDeductKeepsUnitBoard(speedContext, changes){
-  const baseStats=speedContext?.baseStats;
-  const baseExpected=traitRecommendationUnitExpectedDps(baseStats);
-  const nextStats=traitRecommendationComputeUnitSpeedStats(changes,speedContext?.unitListOverride);
-  return traitRecommendationAllUnitsKeepMaxAttackSpeed(nextStats)
-    && traitRecommendationUnitExpectedDps(nextStats)>=baseExpected-1e-6;
-}
-function traitRecommendationMaxSafeDeductAmount(row, speedContext, priorChanges=[]){
-  row=+row;
-  const current=Math.max(0,Math.round(INV[row]||0));
-  if(current<=0 || !traitRowIsUnitSpeed(row) || !traitRecommendationAllUnitsKeepMaxAttackSpeed(speedContext?.baseStats)) return 0;
-  const pendingRemove=(Array.isArray(priorChanges)?priorChanges:[]).reduce((sum,[changeRow,delta])=>{
-    return +changeRow===row && delta<0 ? sum+Math.abs(Math.round(delta)) : sum;
-  },0);
-  const available=Math.max(0,current-pendingRemove);
-  if(available<=0) return 0;
-  let best=0, lo=1, hi=available;
-  const baseChanges=Array.isArray(priorChanges) ? priorChanges.filter(([changeRow,delta])=>+changeRow!==row && delta) : [];
-  while(lo<=hi){
-    const mid=Math.floor((lo+hi)/2);
-    if(traitRecommendationDeductKeepsUnitBoard(speedContext,[...baseChanges,[row,-(pendingRemove+mid)]])){
-      best=mid;
-      lo=mid+1;
-    }else{
-      hi=mid-1;
-    }
-  }
-  return best;
-}
-function buildTraitEfficiencyDeductionRecommendations(speedContext){
-  if(!traitRecommendationAllUnitsKeepMaxAttackSpeed(speedContext?.baseStats)) return [];
-  const rows=[];
-  for(const t of TRAITS){
-    const row=+t[0];
-    if(!traitRowIsUnitSpeed(row) || (INV[row]||0)<=0) continue;
-    const kind=traitOptimizationResourceInfo(row)?.kind;
-    if(!kind) continue;
-    rows.push({row,kind,current:Math.max(0,Math.round(INV[row]||0))});
-  }
-  rows.sort((a,b)=>b.current-a.current || String(traitName(a.row)).localeCompare(String(traitName(b.row)),'ko'));
-  const candidates=[];
-  for(const item of rows){
-    const remove=traitRecommendationMaxSafeDeductAmount(item.row,speedContext);
-    if(remove<=0) continue;
-    const refund=traitOptimizationDeltaRefund(item.row,remove);
-    if(!Number.isFinite(refund) || refund<=0) continue;
-    candidates.push({
-      changes:[[item.row,-remove]],
-      primaryRow:item.row,
-      kind:item.kind,
-      score:refund,
-      refund,
-      cost:refund,
-      gain:0,
-      label:traitName(item.row),
-      action:'deduct',
-      current:item.current,
-      remove
-    });
-  }
-  candidates.sort((a,b)=>b.current-a.current || a.remove-b.remove || b.refund-a.refund || String(a.label).localeCompare(String(b.label),'ko'));
-  return candidates;
-}
-function traitRecommendationIsDeduction(cand){
-  return cand?.action==='deduct';
-}
-
 function traitOptimizationMultiTargetBundleCandidate(base, rem, options={}){
   if(!traitLimitSwitchOn('traitLimitMultiTarget')) return null;
   const changes=[[100,100],[101,70],[102,80]];
@@ -2473,106 +2292,17 @@ function traitOptimizationMultiTargetBundleCandidate(base, rem, options={}){
   if(options.fullCost){
     let cost=0;
     for(const [row,add] of changes){
-      cost+=withTemporaryTraitInvestments([[row,add]], ()=>cumCost(row));
+      cost+=cumCost(row,(INV[row]||0)+add);
     }
     if(!Number.isFinite(cost) || cost<=0 || cost>rem) return null;
     const ns=withTemporaryTraitInvestments(changes, computeLightweightStatsRaw);
     const limitsOk=traitLimitStatsOk(ns);
     const gain=ns.M19-base.M19;
-    if(!limitsOk || gain<=0 || (options.visibleGain!==false && !traitRecommendationGainIsVisible(gain))) return null;
-    return {changes,kind:'SP',score:gain/cost,gain,cost,label:'멀티 타겟 분기점'};
+    if(!limitsOk || gain<=0) return null;
+    return {changes,kind:'SP',score:gain/cost,gain,cost,label:'멀티 타겟 분기점',nextStats:ns};
   }
   return evaluateTraitOptimizationCandidate(base, 'SP', rem, changes, '멀티 타겟 분기점', options);
 }
-function buildTraitEfficiencyRecommendations(limit=5){
-  const base=computeStatsRaw({extended:true,syncDerived:false});
-  const speedContext=traitRecommendationUnitSpeedContext(base);
-  const deductionCandidates=buildTraitEfficiencyDeductionRecommendations(speedContext);
-  const candidates=[];
-  for(const kind of ['SP','EP','RP','SOUL']){
-    const rem=traitOptimizationRemaining(kind);
-    if(rem<=0) continue;
-    for(const t of TRAITS){
-      const row=t[0];
-      const info=traitOptimizationResourceInfo(row);
-      if(!info || info.kind!==kind || !isTraitOptimizationTarget(t)) continue;
-      if(kind==='SP' && TRAIT_RECOMMENDATION_MULTI_BUNDLE_ROWS.has(row)) continue;
-      if((INV[row]||0)>=(TMAX[row]||999)) continue;
-      const cand=bestTraitOptimizationCandidateForRow(base, kind, rem, row);
-      pushTraitEfficiencyCandidate(candidates,cand,speedContext);
-    }
-    if(kind==='SP'){
-      const c=critTraitOptimizationCandidate(base, kind, rem, 95, 0.5);
-      pushTraitEfficiencyCandidate(candidates,c,speedContext);
-      const mt=traitOptimizationMultiTargetBundleCandidate(base, rem);
-      pushTraitEfficiencyCandidate(candidates,mt,speedContext);
-    }
-    if(kind==='EP'){
-      const c=critTraitOptimizationCandidate(base, kind, rem, 119, 1);
-      pushTraitEfficiencyCandidate(candidates,c,speedContext);
-    }
-    if(kind==='RP'){
-      const c=critTraitOptimizationCandidate(base, kind, rem, 127, 2);
-      pushTraitEfficiencyCandidate(candidates,c,speedContext);
-    }
-  }
-  const makeUnique=(source, maxCount, mode)=>{
-    const unique=[];
-    const seen=new Set();
-    source.forEach(cand=>{
-      const key=`${mode}:${String(cand?.primaryRow || cand?.label || '')}`;
-      if(!cand || seen.has(key) || unique.length>=maxCount) return;
-      seen.add(key);
-      unique.push(cand);
-    });
-    return unique;
-  };
-  candidates.sort((a,b)=>b.score-a.score);
-  return [
-    ...makeUnique(deductionCandidates,1,'deduct'),
-    ...makeUnique(candidates,limit,'apply')
-  ];
-}
-function traitRecommendationSignedAmountText(amount){
-  const n=Math.round(Number(amount)||0);
-  if(n===0) return '0';
-  return `${n>0?'+':'-'}${Math.abs(n)}`;
-}
-function traitRecommendationInvestText(cand){
-  if(!cand?.changes?.length) return '—';
-  if(cand.changes.length===1) return traitRecommendationSignedAmountText(cand.changes[0][1]);
-  return cand.changes.map(([row,add])=>`${traitName(row)} ${traitRecommendationSignedAmountText(add)}`).join(' / ');
-}
-function traitRecommendationResourceLabel(kind){
-  if(kind==='SOUL') return '심연';
-  return kind || '';
-}
-function traitRecommendationCostText(cand){
-  const label=traitRecommendationResourceLabel(cand?.kind);
-  const cost=cand?.kind==='SP' ? big(cand?.cost||0) : fullNumber(cand?.cost||0);
-  const suffix=traitRecommendationIsDeduction(cand) ? ' 회수' : '';
-  return label ? `${label} ${cost}${suffix}` : `${cost}${suffix}`;
-}
-function traitRecommendationRoundedGainValue(gain){
-  const n=Number(gain);
-  if(!Number.isFinite(n)) return NaN;
-  const decimals=Math.abs(n)>=10 ? 2 : 4;
-  return parseFloat(n.toFixed(decimals));
-}
-function traitRecommendationGainIsVisible(gain){
-  const n=traitRecommendationRoundedGainValue(gain);
-  return Number.isFinite(n) && n>0;
-}
-function traitRecommendationGainText(gain,cand=null){
-  if(traitRecommendationIsDeduction(cand)) return '최대공속 유지';
-  const n=traitRecommendationRoundedGainValue(gain);
-  if(!Number.isFinite(n)) return '—';
-  return `+${n.toLocaleString('ko-KR')}`;
-}
-function traitRecommendationActionText(cand){
-  return traitRecommendationIsDeduction(cand) ? '차감' : '적용';
-}
-
 /* 특성 자동 최적화 */
 function optimizeSP(){
   function normalAddCount(row, kind, rem){
@@ -2594,10 +2324,11 @@ function optimizeSP(){
   for(const kind of kinds){
     const targetTraits=TRAITS.filter(t=>traitOptimizationResourceInfo(t[0])?.kind===kind && isTraitOptimizationTarget(t));
     const passLimit=targetTraits.reduce((sum,t)=>sum+Math.max(0,(TMAX[t[0]]||999)-(INV[t[0]]||0)),0)+1;
-    for(let pass=0;pass<passLimit;pass++){
-      const base=computeLightweightStatsRaw();
-      const rem=traitOptimizationRemaining(kind);
-      if(rem<=0) break;
+    let used=resourceUsed(kind);
+    let rem=resourceOwn(kind)-used;
+    if(rem<=0) continue;
+    let base=computeLightweightStatsRaw();
+    for(let pass=0;pass<passLimit && rem>0;pass++){
       const candidates=[];
       for(const t of targetTraits){
         const [row]=t;
@@ -2624,9 +2355,12 @@ function optimizeSP(){
       }
       const best=candidates.reduce((current,candidate)=>!current || candidate.score>current.score ? candidate : current,null);
       if(!best) break;
-      for(const [row,add] of best.changes){
-        INV[row]=Math.min(TMAX[row]||999,(INV[row]||0)+add);
-      }
+      let actualCost=0;
+      for(const [row,add] of best.changes) actualCost+=traitOptimizationDeltaCost(row,add);
+      for(const [row,add] of best.changes) INV[row]=Math.min(TMAX[row]||999,(INV[row]||0)+add);
+      used+=actualCost;
+      rem=Math.max(0,resourceOwn(kind)-used);
+      base=best.nextStats || computeLightweightStatsRaw();
     }
   }
   commitAppUpdate({recalculate:'now'});

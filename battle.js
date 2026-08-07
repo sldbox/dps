@@ -104,10 +104,15 @@ body:is(.is-mobile,.is-narrow-mobile) .battle-enemy-status-track{height:6px;}
   let refreshQueued=false;
   let stateUpdateQueued=false;
   let stateRetryCount=0;
-  let stateObserver=null;
   let battleFrameRequested=false;
   let lastBattleFrameAt=0;
-  const BATTLE_FRAME_INTERVAL_MS=1000/30;
+  const BATTLE_FRAME_INTERVAL_MS=1000/24;
+  const BATTLE_FRAME_INTERVAL_LOW_POWER_MS=1000/18;
+  function battleFrameIntervalMs(){
+    if(prefersReducedMotion()) return 1000/12;
+    const width=Number(battleScene?.width)||window.innerWidth||0;
+    return width>0 && width<600 ? BATTLE_FRAME_INTERVAL_LOW_POWER_MS : BATTLE_FRAME_INTERVAL_MS;
+  }
 
   const SVG_SOURCES=Object.freeze({
     hero:`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 210">
@@ -505,8 +510,7 @@ body:is(.is-mobile,.is-narrow-mobile) .battle-enemy-status-track{height:6px;}
     if(typeof fn!=='function') return undefined;
     try{return fn(...args);}catch{return undefined;}
   }
-  function currentBattleDataFromState(){
-    const stats=safeCall('computeStatsRaw');
+  function currentBattleDataFromStats(stats){
     if(!stats) return null;
     const info=stats?.dpsBaseUnit;
     const enemy=stats?.enemyData || {};
@@ -544,14 +548,18 @@ body:is(.is-mobile,.is-narrow-mobile) .battle-enemy-status-track{height:6px;}
       artifactWaveInterval:Number(artifactResult?.artifactWaveInterval)||0
     };
   }
+  function currentBattleDataFromState(){
+    return currentBattleDataFromStats(safeCall('computeStatsRaw'));
+  }
+  function updateBattleFromStats(stats){
+    const data=currentBattleDataFromStats(stats);
+    if(!data) return false;
+    stateRetryCount=0;
+    updateBattle(data);
+    return true;
+  }
   function updateBattleFromState(){
-    const data=currentBattleDataFromState();
-    if(data){
-      stateRetryCount=0;
-      updateBattle(data);
-      return true;
-    }
-    return false;
+    return updateBattleFromStats(safeCall('computeStatsRaw'));
   }
   function queueStateUpdate(){
     if(stateUpdateQueued) return;
@@ -565,17 +573,7 @@ body:is(.is-mobile,.is-narrow-mobile) .battle-enemy-status-track{height:6px;}
       }
     });
   }
-  function bindStateUpdateTriggers(){
-    document.addEventListener('input',queueStateUpdate,true);
-    document.addEventListener('change',queueStateUpdate,true);
-    document.addEventListener('click',queueStateUpdate,true);
-    document.addEventListener('keyup',queueStateUpdate,true);
-    const target=document.getElementById('dpsVal') || document.body;
-    if(target&&window.MutationObserver){
-      stateObserver=new MutationObserver(queueStateUpdate);
-      stateObserver.observe(target,{childList:true,characterData:true,subtree:true});
-    }
-  }
+
   function prefersReducedMotion(){return Boolean(window.matchMedia?.('(prefers-reduced-motion: reduce)').matches);}
   function qualityFor(width,height){
     if(prefersReducedMotion()) return .42;
@@ -1813,7 +1811,7 @@ body:is(.is-mobile,.is-narrow-mobile) .battle-enemy-status-track{height:6px;}
   function tick(now){
     battleFrameRequested=false;
     if(shouldRunBattleLoop()){
-      if(!lastBattleFrameAt||now-lastBattleFrameAt>=BATTLE_FRAME_INTERVAL_MS){
+      if(!lastBattleFrameAt||now-lastBattleFrameAt>=battleFrameIntervalMs()){
         lastBattleFrameAt=now;
         battleScene.draw(now);
       }
@@ -1857,7 +1855,6 @@ body:is(.is-mobile,.is-narrow-mobile) .battle-enemy-status-track{height:6px;}
     paused=document.hidden;
     document.addEventListener('visibilitychange',onVisibilityChange);
     document.addEventListener('click',onDocumentClick,true);
-    bindStateUpdateTriggers();
     window.addEventListener('resize',queueRefresh,{passive:true});
     window.addEventListener('orientationchange',queueRefresh,{passive:true});
     window.addEventListener('pageshow',queueStateUpdate,{passive:true});
@@ -1884,5 +1881,5 @@ body:is(.is-mobile,.is-narrow-mobile) .battle-enemy-status-track{height:6px;}
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot,{once:true});
   else requestAnimationFrame(boot);
 
-  window.DpsAnimation=Object.freeze({init,updateBattle,refresh:queueStateUpdate});
+  window.DpsAnimation=Object.freeze({init,updateBattle,updateFromStats:updateBattleFromStats,refresh:queueStateUpdate});
 })();

@@ -24,7 +24,6 @@ const DPS_CONFIG={
 
   ui:{
     updateDelay:16,
-    traitEfficiencyDelay:180,
     confirmDelayMs:1600,
     traitHoldInitialDelay:320,
     traitHoldRepeatMs:55,
@@ -38,7 +37,24 @@ const DPS_CONFIG={
   }
 };
 
-const $=id=>document.getElementById(id);
+let calculationElementOverrides=null;
+function withCalculationElementOverrides(ids,callback){
+  const previous=calculationElementOverrides;
+  const next=previous ? new Map(previous) : new Map();
+  (ids || []).forEach(id=>{
+    const real=document.getElementById(id);
+    if(!real) return;
+    const clone=real.cloneNode(true);
+    if('value' in real) clone.value=real.value;
+    if('checked' in real) clone.checked=real.checked;
+    if('indeterminate' in real) clone.indeterminate=real.indeterminate;
+    next.set(id,clone);
+  });
+  calculationElementOverrides=next;
+  try{return callback();}
+  finally{calculationElementOverrides=previous;}
+}
+const $=id=>calculationElementOverrides?.get(id) || document.getElementById(id);
 const qs=selector=>document.querySelector(selector);
 const qsa=selector=>document.querySelectorAll(selector);
 function escapeHtml(value){
@@ -559,7 +575,6 @@ function renderCalculatedViews(s){
   renderEnhanceSummary(s.enhanceStats);
   renderResourceSummary(s);
   updateTraits();
-  scheduleTraitEfficiencyRender();
 }
 /* 계산 실행·예약 */
 let appCalculationRevision=0;
@@ -575,6 +590,7 @@ function recalc(options={}){
       const stats=computeStatsRaw();
       invalidateAppCalculations();
       renderCalculatedViews(stats);
+      window.DpsAnimation?.updateFromStats?.(stats);
     });
     if(options.save!==false) saveState({silent:true});
   }catch(e){rememberAppIssue('error','recalc',e);}
@@ -1330,19 +1346,6 @@ function dpsBaseUnitHasMaxAttackSpeed(unit){
   const result=dpsBaseUnitResultDisplayMap.get(String(unit.id || ''));
   return dpsBaseUnitResultHasMaxAttackSpeed(result);
 }
-function dpsBaseUnitPreviewResultEntries(){
-  if(typeof computeStatsRaw!=='function') return [];
-  const units=dpsBaseUnitList().filter(unit=>unit && !dpsBaseUnitIsArtifact(unit));
-  if(!units.length) return [];
-  try{
-    const stats=computeStatsRaw({extended:true,syncDerived:false,dpsBaseUnitListOverride:units});
-    const results=Array.isArray(stats?.dpsBaseUnit?.results) ? stats.dpsBaseUnit.results : [];
-    return results.map(item=>[String(item?.unitId || ''),item]).filter(([id])=>id);
-  }catch(e){
-    rememberAppIssue('warn','[dps base unit preview failed]', e);
-    return [];
-  }
-}
 function dpsBaseUnitDisplayLabel(unit){
   return dpsBaseUnitLabel(unit);
 }
@@ -1415,7 +1418,7 @@ function renderDpsBaseUnitSummary(s,hidden=false){
   const basePierce=Number(info?.basePierceBonus)||0;
   dpsBaseUnitBoardBasePierce=basePierce+rpPierce;
   const selectedResultEntries=(hidden ? [] : results).map(item=>[String(item?.unitId || ''),item]).filter(([id])=>id);
-  dpsBaseUnitResultDisplayMap=new Map(hidden ? selectedResultEntries : [...dpsBaseUnitPreviewResultEntries(), ...selectedResultEntries]);
+  dpsBaseUnitResultDisplayMap=new Map(selectedResultEntries);
   syncDpsBaseUnitControl();
   const requiredDps=Number(info?.requiredDps);
   if(hidden || !Number.isFinite(requiredDps) || requiredDps<=0){
@@ -1733,8 +1736,7 @@ function dpsBaseUnitSelectOptionsHtml(selectedId, selectedIds){
     const options=units.map(unit=>{
       const selected=unit.id===selectedId;
       const disabled=!selected && selectedSet.has(unit.id);
-      const maxSpeed=dpsBaseUnitHasMaxAttackSpeed(unit);
-      return `<option class="${maxSpeed?'is-max-attack-speed':''}" value="${escapeHtml(unit.id)}"${selected ? ' selected' : ''}${disabled ? ' disabled' : ''}>${escapeHtml(dpsBaseUnitDisplayLabel(unit))}</option>`;
+      return `<option value="${escapeHtml(unit.id)}"${selected ? ' selected' : ''}${disabled ? ' disabled' : ''}>${escapeHtml(dpsBaseUnitDisplayLabel(unit))}</option>`;
     }).join('');
     return `<optgroup label="${escapeHtml(grade)}">${options}</optgroup>`;
   }).join('');
@@ -2330,93 +2332,6 @@ function clearUtility(){
   if(!changed) showToast('초기화할 유틸 특성이 없습니다','warn');
   return changed>0;
 }
-function renderTraitEfficiencyItem(cand,idx){
-  const isDeduct=traitRecommendationIsDeduction(cand);
-  const actionText=traitRecommendationActionText(cand);
-  return `
-    <div class="trait-efficiency-grid trait-efficiency-row${isDeduct?' is-deduction':''}">
-      <span class="trait-eff-name">${escapeHtml(cand.label)}</span>
-      <span>${escapeHtml(traitRecommendationInvestText(cand))}</span>
-      <span>${escapeHtml(traitRecommendationGainText(cand.gain,cand))}</span>
-      <span>${escapeHtml(traitRecommendationCostText(cand))}</span>
-      <button type="button" class="ui-action-btn mini-btn master trait-eff-apply${isDeduct?' trait-eff-deduct':''}" data-action="applyTraitEfficiencyTop" data-rank="${idx}">${actionText}</button>
-    </div>`;
-}
-function renderTraitEfficiencyGroup(items,mode){
-  const visibleItems=items.filter(item=>item?.cand);
-  if(!visibleItems.length) return '';
-  return `<div class="trait-efficiency-group is-${mode}">${visibleItems.map(item=>renderTraitEfficiencyItem(item.cand,item.index)).join('')}</div>`;
-}
-let traitEfficiencyRenderTimer=0;
-let traitEfficiencyCache={revision:-1,list:[]};
-function currentTraitEfficiencyRecommendations(){
-  if(traitEfficiencyCache.revision!==appCalculationRevision){
-    traitEfficiencyCache={revision:appCalculationRevision,list:buildTraitEfficiencyRecommendations(5)};
-  }
-  return traitEfficiencyCache.list;
-}
-function renderTraitEfficiencyTop5(){
-  if(traitEfficiencyRenderTimer){
-    clearTimeout(traitEfficiencyRenderTimer);
-    traitEfficiencyRenderTimer=0;
-  }
-  const body=$('traitEfficiencyTop5Body');
-  if(!body) return;
-  body.setAttribute('aria-busy','true');
-  try{
-    const list=currentTraitEfficiencyRecommendations();
-    const indexed=list.map((cand,index)=>({cand,index}));
-    const deductions=indexed.filter(item=>traitRecommendationIsDeduction(item.cand));
-    const applications=indexed.filter(item=>!traitRecommendationIsDeduction(item.cand));
-    const html=[
-      renderTraitEfficiencyGroup(deductions,'deduction'),
-      renderTraitEfficiencyGroup(applications,'application')
-    ].filter(Boolean).join('');
-    body.innerHTML=html || '<div class="trait-efficiency-empty">현재 적용 가능한 추천 항목이 없습니다.</div>';
-  }catch(e){
-    rememberAppIssue('error','[trait top5 failed]', e);
-    traitEfficiencyCache={revision:appCalculationRevision,list:[]};
-    body.innerHTML='<div class="trait-efficiency-empty">추천 항목 계산 실패</div>';
-  }finally{
-    body.removeAttribute('aria-busy');
-  }
-}
-function scheduleTraitEfficiencyRender(options={}){
-  if(traitEfficiencyRenderTimer) clearTimeout(traitEfficiencyRenderTimer);
-  if(options.immediate===true){
-    traitEfficiencyRenderTimer=0;
-    renderTraitEfficiencyTop5();
-    return;
-  }
-  traitEfficiencyRenderTimer=setTimeout(renderTraitEfficiencyTop5,DPS_CONFIG.ui.traitEfficiencyDelay||180);
-}
-function applyTraitEfficiencyTop(trigger){
-  const rank=Math.max(0, Math.round(+trigger?.dataset?.rank||0));
-  const cand=currentTraitEfficiencyRecommendations()[rank];
-  if(!cand){
-    showToast('적용/차감할 추천 항목이 없습니다','warn');
-    return false;
-  }
-  if(traitRecommendationIsDeduction(cand)){
-    for(const [row,delta] of cand.changes){
-      INV[row]=Math.max(0,Math.min(TMAX[row]||999,(INV[row]||0)+delta));
-    }
-    commitTraitInvestmentChange();
-    return true;
-  }
-  const currentCost=cand.changes.reduce((sum,[row,add])=>sum+traitOptimizationDeltaCost(row,add),0);
-  const rem=traitOptimizationRemaining(cand.kind);
-  if(!Number.isFinite(currentCost) || currentCost<=0 || currentCost>rem){
-    showToast('보유 재화가 부족합니다','warn');
-    scheduleTraitEfficiencyRender({immediate:true});
-    return false;
-  }
-  for(const [row,add] of cand.changes){
-    INV[row]=Math.min(TMAX[row]||999,(INV[row]||0)+add);
-  }
-  commitTraitInvestmentChange();
-  return true;
-}
 function clearAll(){
   try{
     const changed=clearTraitInvestmentsBy(isSpAttackClearTrait);
@@ -2695,7 +2610,6 @@ const ACTION_HANDLERS={
   optimizeSP,
   optimizeUtility,
   clearUtility:()=>requestConfirmAction('clearUtility','한 번 더 누르면 유틸 초기화', clearUtility),
-  applyTraitEfficiencyTop,
   clearAll:()=>requestConfirmAction('clearAll','한 번 더 누르면 유틸 제외 특성 초기화', clearAll),
   saveTraitPreset:(...args)=>window.DpsPreset.saveCurrent(...args),
   loadTraitPreset:(...args)=>window.DpsPreset.loadSelected(...args),
