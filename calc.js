@@ -859,7 +859,7 @@ function dpsBaseUnitLabel(unitOrId){
   return unit?.label || String(unitOrId || '');
 }
 function dpsBaseUnitGradeOrder(){
-  return dpsDataArray('DPS_BASE_UNIT_GRADE_ORDER',['특수','슈퍼히든','히든','레전드']);
+  return dpsDataArray('DPS_BASE_UNIT_GRADE_ORDER',['슈퍼히든','히든','레전드','헬','특수']);
 }
 function dpsBaseUnitRaceOrder(){
   return dpsDataArray('DPS_BASE_UNIT_RACE_ORDER',['테바','테메','프바','프메','저그','중립','혼종']);

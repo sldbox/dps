@@ -277,7 +277,7 @@ const DPS_JEWEL_NAMES=Object.freeze(RAW_JEWEL_DATA.map(row=>row[0]));
 
 const DPS_BASE_UNIT_ALL_ID='all';
 const DPS_BASE_UNIT_RACE_ORDER=Object.freeze(['특수','테바','테메','프바','프메','저그','중립','혼종']);
-const DPS_BASE_UNIT_GRADE_ORDER=Object.freeze(['슈퍼히든','히든','레전드','특수']);
+const DPS_BASE_UNIT_GRADE_ORDER=Object.freeze(['슈퍼히든','히든','레전드','헬','특수']);
 const DPS_BASE_UNIT_RACE_CRIT_BONUS=Object.freeze({
   테바:Object.freeze([0,0,-0.25,0.35,0]),
   테메:Object.freeze([0.35,0,0,0,-0.25]),
@@ -310,10 +310,16 @@ const DPS_BASE_UNITS=Object.freeze([
   Object.freeze({id:'prodNydusDestroyer',label:'땅굴 파괴자',grade:'히든',raceGroup:'중립',upgradeRace:'중립',quantityEnabled:true,quantityId:'dpsQtyNydusDestroyer',weaponSpeed:1.39,asLimit:0,targetCount:1,attackCount:1,armorPierceBonus:25,critFormula:'일반',weaponAttack:2527.29,weaponAttackTiers:Object.freeze([2527.29,2780.27,3058.57])}),
   Object.freeze({id:'prodSarahKerrigan',label:'사라 케리건',grade:'히든',raceGroup:'혼종',raceCritKey:'테바저그',upgradeRace:'테란 바이오닉&저그',quantityEnabled:true,quantityId:'dpsQtySarahKerrigan',weaponSpeed:1,asLimit:0,targetCount:1,attackCount:1,armorPierceBonus:0,critFormula:'일반',weaponAttack:1163.75,weaponAttackTiers:Object.freeze([1163.75,1221.99,1283.15,1347.37,1414.81])}),
   Object.freeze({id:'prodXelnagaCreature',label:'아몬의 젤나가 피조물',grade:'히든',raceGroup:'혼종',raceCritKey:'프바프메',upgradeRace:'플토 바이오닉&플토 메카닉',quantityEnabled:true,quantityId:'dpsQtyXelnagaCreature',weaponSpeed:0.55,asLimit:0,targetCount:1,attackCount:1,armorPierceBonus:15,critFormula:'일반',weaponAttack:1939.59,weaponAttackTiers:Object.freeze([1939.59,2036.66,2138.6,2245.63,2358.03])}),
+  Object.freeze({id:'prodDehaka',label:'데하카',grade:'히든',raceGroup:'저그',upgradeRace:'저그',quantityEnabled:true,quantityId:'dpsQtyDehaka',weaponSpeed:0.7,asLimit:0,targetCount:1,attackCount:1,armorPierceBonus:25,critFormula:'일반',weaponAttack:1053.031,weaponAttackTiers:Object.freeze([1053.031,1158.440,1274.399])}),
+  Object.freeze({id:'prodPurifierObserver',label:'정화자 감시자',grade:'히든',raceGroup:'프메',upgradeRace:'플토 메카닉',quantityEnabled:true,quantityId:'dpsQtyPurifierObserver',weaponSpeed:2,asLimit:0,targetCount:1,attackCount:1,armorPierceBonus:15,critFormula:'일반',weaponAttack:2257.710,weaponAttackTiers:Object.freeze([2257.710,2483.700,2732.320])}),
+  Object.freeze({id:'prodKhaydarinMonolith',label:'케이다린 초석',grade:'히든',raceGroup:'프메',upgradeRace:'플토 메카닉',quantityEnabled:true,quantityId:'dpsQtyKhaydarinMonolith',weaponSpeed:3,asLimit:0,targetCount:1,attackCount:1,armorPierceBonus:0,critFormula:'일반',weaponAttack:667.200,weaponAttackTiers:Object.freeze([667.200,733.980,807.450])}),
+  Object.freeze({id:'prodHybridBehemoth',label:'혼종 베히모스',grade:'히든',raceGroup:'혼종',raceCritKey:'테바프바',upgradeRace:'테란 바이오닉&플토 바이오닉',quantityEnabled:true,quantityId:'dpsQtyHybridBehemoth',weaponSpeed:1,asLimit:0,targetCount:1,attackCount:2,armorPierceBonus:5,critFormula:'일반',weaponAttack:867.510,weaponAttackTiers:Object.freeze([867.510,910.92,956.520,1004.390,1054.660])}),
   Object.freeze({id:'prodRaynor',label:'특공대 레이너',grade:'레전드',raceGroup:'테바',upgradeRace:'테란 바이오닉',quantityEnabled:true,quantityId:'dpsQtyRaynor',weaponSpeed:1.3,asLimit:0,targetCount:1,attackCount:1,armorPierceBonus:0,critFormula:'일반',weaponAttack:545.89,weaponAttackTiers:Object.freeze([545.89,600.53,660.64]),attackSpeedMultiplier:0.5}),
   Object.freeze({id:'prodGorgon',label:'고르곤 전투순양함',grade:'레전드',raceGroup:'테메',upgradeRace:'테란 메카닉',quantityEnabled:true,quantityId:'dpsQtyGorgon',weaponSpeed:1.25,asLimit:0,targetCount:1,attackCount:1,armorPierceBonus:0,critFormula:'일반',weaponAttack:977.21,weaponAttackTiers:Object.freeze([977.21,1075.03,1182.63])}),
   Object.freeze({id:'prodSelendis',label:'셀렌디스',grade:'레전드',raceGroup:'프메',upgradeRace:'플토 메카닉',quantityEnabled:true,quantityId:'dpsQtySelendis',weaponSpeed:1.3,asLimit:0,targetCount:1,attackCount:1,armorPierceBonus:0,critFormula:'일반',weaponAttack:1010.91,weaponAttackTiers:Object.freeze([1010.91,1112.1,1223.42])}),
   Object.freeze({id:'prodPrimalKerrigan',label:'원시 케리건',grade:'레전드',raceGroup:'저그',upgradeRace:'저그',quantityEnabled:true,quantityId:'dpsQtyPrimalKerrigan',weaponSpeed:1.65,asLimit:0,targetCount:1,attackCount:1,armorPierceBonus:0,critFormula:'일반',weaponAttack:707.64,weaponAttackTiers:Object.freeze([707.64,778.47,856.39]),attackSpeedMultiplier:0.75}),
+  Object.freeze({id:'prodHybridRof',label:'하이브리드로프',grade:'레전드',raceGroup:'중립',upgradeRace:'중립',quantityEnabled:true,quantityId:'dpsQtyHybridRof',weaponSpeed:1,asLimit:0,targetCount:1,attackCount:1,armorPierceBonus:10,critFormula:'일반',weaponAttack:876.120,weaponAttackTiers:Object.freeze([876.120,963.810,1060.290])}),
+  Object.freeze({id:'prodHellNova',label:'노바',grade:'헬',raceGroup:'테바',upgradeRace:'테란 바이오닉',quantityEnabled:true,quantityId:'dpsQtyHellNova',weaponSpeed:1.25,asLimit:0,targetCount:1,attackCount:1,armorPierceBonus:0,critFormula:'일반',weaponAttack:358.53,weaponAttackTiers:Object.freeze([358.53,394.42,433.90])}),
   Object.freeze({id:'artifactUnit',label:'유물',grade:'특수',kind:'artifact',raceGroup:'특수',productionUnit:true,quantityEnabled:false,armorPierceBonus:0,critFormula:'방사'}),
 ]);
 
