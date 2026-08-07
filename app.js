@@ -590,7 +590,6 @@ function recalc(options={}){
       const stats=computeStatsRaw();
       invalidateAppCalculations();
       renderCalculatedViews(stats);
-      window.DpsAnimation?.updateFromStats?.(stats);
     });
     if(options.save!==false) saveState({silent:true});
   }catch(e){rememberAppIssue('error','recalc',e);}
