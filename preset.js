@@ -1,3 +1,4 @@
+/* 버전·상태 정규화 */
 const STORAGE_VERSION=DPS_CONFIG.storage.version;
 const STORAGE_SCOPE=DPS_CONFIG.storage.scope;
 const STORAGE_KEY=DPS_CONFIG.storage.key;
@@ -153,6 +154,7 @@ function getClientId(){
     return id;
   }catch{ return 'dps_memory_only'; }
 }
+
 function makePublicDefaultState(){
   const values={};
   userStateElementIds().forEach(id=>{
@@ -275,6 +277,7 @@ function sanitizeSavedValues(values){
   normalizeMoneyStorageValues(out);
   return out;
 }
+
 function makeNormalizedStateEnvelope(source,values,inv,{requireRawValues=false,requireContent=true}={}){
   const hasRawValues=Object.keys(source?.values || {}).some(id=>isUserStateValueId(id) || id==='dpsTableMinDps');
   const hasZeroScore=!!(source?.zeroScore && Array.isArray(source.zeroScore.rows));
@@ -299,6 +302,7 @@ function normalizeSavedState(data){
   syncSpBankPresetState(values, inv);
   return makeNormalizedStateEnvelope(data,values,inv,{requireRawValues:true,requireContent:false});
 }
+
 function sanitizeTraitPresetValues(values){
   const out={...sanitizeSavedValues(values)};
   Object.keys(out).forEach(id=>{
@@ -322,6 +326,8 @@ function normalizeTraitPresetState(data){
 function makeTraitPresetStateObject(sourceState=makeStateObject()){
   return normalizeTraitPresetState(sourceState);
 }
+
+/* 유닛 보드 프리셋 상태 */
 function normalizeTraitPresetUnitBoardState(value){
   const source=value && typeof value==='object' && !Array.isArray(value) ? value : {};
   const validUnits=new Set(dpsBaseUnitList().map(unit=>unit.id));
@@ -439,6 +445,7 @@ function applyTraitPresetUnitBoardState(value,options={}){
   if(options.recalculate!==false) recalc({save:options.save});
   return state;
 }
+/* 프리셋 쥬얼 설정 */
 function normalizeTraitPresetJewelSettings(value){
   if(!value || typeof value!=='object' || Array.isArray(value)) return null;
   const legendarySource=value.legendaryMythicJewels || value.legendaryMythic || value.jewelSettings;
@@ -508,6 +515,7 @@ function resetTraitPresetUnitBoardValues(values){
   out.dpsBaseUnitExtraSettings='{}';
   return out;
 }
+/* 프리셋 상태 병합·화면 적용 */
 function mergeTraitPresetWithLocalState(presetState, localState, options={}){
   const preset=normalizeTraitPresetState(presetState);
   if(!preset) return null;
@@ -615,6 +623,7 @@ function normalizeTraitPresetStatusData(data){
     : [];
   return {updatedPresetIds,backupNeeded,lastAction,selectedTraitPresetId,pendingJewelSettings,pendingUnitBoardPresetIds,pendingCommonChangeKeys,pendingSingleChangeKeys};
 }
+/* 프리셋 상태 */
 function loadTraitPresetStatusData(){
   try{
     const raw=localStorage.getItem(TRAIT_PRESET_STATUS_STORAGE_KEY);
@@ -769,6 +778,8 @@ function loadState(){
     resetToFactoryState();
   }
 }
+/* 프리셋 저장소·선택·편집 */
+
 function normalizeTraitPresetName(value){
   return String(value ?? '').replace(/\s+/g,' ').trim().slice(0,40);
 }
@@ -848,6 +859,7 @@ function traitPresetMetaFromState(){
 function traitPresetMetaFromSavedState(state){
   return traitPresetMetaFromValues(traitPresetStateValues(state));
 }
+
 function normalizeTraitPresetItem(item,index=0){
   if(!item || typeof item!=='object') return null;
   if(!item.state || typeof item.state!=='object') return null;
@@ -967,6 +979,7 @@ function selectedTraitPresetContext(message){
   if(!preset){ notifyStorageAction(message,'err'); return null; }
   return {id,store,preset};
 }
+
 const TRAIT_PRESET_SELECT_GROUPS=[
   {key:'solo', label:'개인'},
   {key:'coop', label:'협동'},
@@ -1198,6 +1211,7 @@ function refreshTraitPresetControls(selectedId){
   renderTraitPresetUpdateStatus(store);
   if(nameInput) nameInput.placeholder=TRAIT_PRESET_NAME_PLACEHOLDER;
 }
+
 function saveTraitPreset(){
   const input=$('traitPresetName');
   const name=normalizeTraitPresetName(input?.value || '');
@@ -1343,6 +1357,7 @@ function traitPresetStateChangeSummary(previousState,currentState){
     changedValueIds
   };
 }
+/* 프리셋 업데이트 상태 */
 function traitPresetUpdateStatus(store=loadTraitPresetStore()){
   const id=selectedTraitPresetId();
   const preset=store.presets.find(item=>item.id===id);
@@ -1528,6 +1543,8 @@ function requestTraitPresetFullReset(trigger){
   notifyStorageAction('한 번 더 누르면 전체 초기화','warn');
   return false;
 }
+/* 가져오기·백업 */
+
 function makeTraitPresetFileName(customName=''){
   const cleaned=cleanTraitPresetFileBaseName(customName);
   if(cleaned) return `${cleaned}.txt`;
@@ -2423,6 +2440,8 @@ function bindTraitPresetEvents(){
     closeTraitPresetUnitJewelModal({restoreFocus:true});
   });
 }
+
+/* 공개 API */
 window.DpsPreset=Object.freeze({
   init:function(){
     refreshTraitPresetControls();

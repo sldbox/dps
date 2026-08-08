@@ -1,3 +1,4 @@
+/* 설정·공통 상태 */
 const DPS_CONFIG={
   storage:{
     version:(window.DPS_BUILD_VERSION || 'dev'),
@@ -8,9 +9,11 @@ const DPS_CONFIG={
     traitPresetKey:'gbd_dps_calculator:trait_presets',
     traitPresetStatusKey:'gbd_dps_calculator:trait_preset_status'
   },
+
   state:{
     skipElementIds:['dpsTableMinDpsMain','ep','artifactDpsViewToggle']
   },
+
   dpsTable:{
     difficulties:['Practice','Very Easy','Easy','Normal','Hard','Very Hard','Hell','Inferno','Lunatic','Holic','Epic','Ultimate','Impossible','The Final','Hall Of Fame','Abyss road','Deep Abyss'],
     tower:{minFloor:1,maxFloor:90},
@@ -18,6 +21,7 @@ const DPS_CONFIG={
     penanceMax:20,
     decimals:1
   },
+
   ui:{
     updateDelay:16,
     confirmDelayMs:1600,
@@ -32,6 +36,7 @@ const DPS_CONFIG={
     mobileMaxWidth:600
   }
 };
+
 let calculationElementOverrides=null;
 function withCalculationElementOverrides(ids,callback){
   const previous=calculationElementOverrides;
@@ -57,12 +62,15 @@ function escapeHtml(value){
     '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'
   }[char]));
 }
+
 const INV={};
 TRAITS.forEach(t=>{INV[t[0]]=0;});
 Object.assign(INV,{116:1});
 const AUTO_INVEST_EXCLUDED_ROWS=new Set([45,87]);
 const ENCHANT_INPUT_IDS=['enchAD','enchCRI','enchUA','enchTD','enchSR','enchHR'];
 const ENCHANT_INPUT_ID_SET=new Set(ENCHANT_INPUT_IDS);
+
+/* 공통 UI·입력 유틸 */
 function rememberAppIssue(kind,label,error){
   window.DPS_LAST_ISSUE={kind,label,error,time:Date.now()};
 }
@@ -124,6 +132,7 @@ function requestConfirmAction(key,message,run){
   };
   return false;
 }
+
 function v(id){
   const el=$(id); if(!el) return 0;
   if(id==='round') return normalizedRoundNumber(targetRoundStoredValue());
@@ -188,6 +197,8 @@ function setTextMap(map){
   Object.entries(map).forEach(([id,value])=>setText(id,value));
 }
 const RUNE_CHOICE_TARGETS=[['ap','rAP'],['ua','rUA'],['td','rTD'],['harmony','rHarmony']];
+
+/* 입력·화면 동기화 */
 function renderEnemyData(data){
   if(!data) return;
   setText('enemyArmorQuick', fullNumber(data.armor));
@@ -361,6 +372,7 @@ function formatAllMoneyInputs(){
     if(el) el.value=normalizeDecimalDisplayValue(el.value);
   });
 }
+
 function currentArtifactDpsResult(){
   const diff=vs('diff');
   const battleMode=isCoopMode() ? 'coop' : 'solo';
@@ -487,6 +499,7 @@ function renderCalculatedViews(s){
   renderResourceSummary(s);
   updateTraits();
 }
+/* 계산 실행·예약 */
 let appCalculationRevision=0;
 let appUpdateTimer=0;
 let pendingAppUpdateSave=false;
@@ -548,6 +561,7 @@ function renderEnchantPreview(){
     if(out) out.textContent=val;
   });
 }
+
 const XP_CUT_DIVISOR_GROUPS=[
   {
     label:'협동 2인',
@@ -580,6 +594,7 @@ function renderXpCut(){
     return `<div class="bus-cut-group"><span class="bus-cut-mode">${group.label}</span><div class="bus-cut-group-rows">${rows}</div></div>`;
   }).join('');
 }
+
 function isArtifactDpsViewEnabled(){
   const toggle=$('artifactDpsViewToggle');
   return toggle?.getAttribute('aria-checked')==='true';
@@ -639,6 +654,7 @@ function toggleSpecDpsSpeedMode(){
   if(toggle?.disabled || disabled) return false;
   return applyUnifiedDpsSpeedModeToggle(active);
 }
+/* 유닛 보드 전투 모드·적 방어 효과 스위치 */
 function syncDpsBaseUnitConditionSwitch(toggle){
   if(!toggle) return;
   const inputId=toggle.dataset.dpsBaseUnitConditionToggle || '';
@@ -694,6 +710,7 @@ function renderSkillDamage(s){
   if(!el) return;
   el.innerHTML=rows.items.map(row=>`<tr><td>${row.name}</td><td>${fmt(row.total,1)}%</td><td>AP ${fmt(ap,0)} / 더블 ${fmt(rows.doubleSpace,2)}</td></tr>`).join('');
 }
+/* 모달·비교·DPS표 */
 const DPS_TABLE_DIFFICULTIES=DPS_CONFIG.dpsTable.difficulties;
 const COOP_DPS_TABLE_DIFFICULTIES=DPS_TABLE_DIFFICULTIES.slice(0, DPS_TABLE_DIFFICULTIES.indexOf('Hall Of Fame') + 1);
 const COOP_DPS_TABLE_PENANCE_MIN=0;
@@ -747,6 +764,7 @@ function updateDpsRiskViews(currentDps){
   card.classList.toggle('is-dps-risk', isRisk);
   if(badge) badge.setAttribute('aria-hidden', String(!isRisk));
 }
+
 let dpsPreviewCacheRevision=-1;
 const dpsPreviewValueCache=new Map();
 function dpsTablePreviewValue(diff, penance, round, options={}){
@@ -774,6 +792,7 @@ function syncDpsTableLabels(){
   const closeBtn=$('monthRuneModal')?.querySelector('.month-rune-close');
   if(closeBtn && isDpsTableOpen()) closeBtn.setAttribute('aria-label', `${label} 닫기`);
 }
+
 function dpsTableCellHtml(value, active){
   const minDps=parseDpsTableMinDps();
   const danger=minDps!==null && dpsTableRiskCompareValue(value)<=minDps;
@@ -1117,6 +1136,8 @@ const FIELD_REGISTRY={
   unitGrade:{kind:'룬효과 버프',name:'유닛 등급'},
   unitLevel:{kind:'룬효과 버프',name:'유닛 레벨'},
 };
+
+/* 유닛 보드 상태·표시 */
 function dpsBaseUnitFieldEntries(){
   const units=dpsBaseUnitList();
   const quantityEntries=units.filter(dpsBaseUnitHasQuantity).map(unit=>[
@@ -1226,6 +1247,7 @@ function sortedDpsBaseUnits(){
 let dpsBaseUnitResultDisplayMap=new Map();
 let dpsBaseUnitBoardBasePierce=10;
 const DPS_BASE_UNIT_MAX_SPEED_EPSILON=0.000001;
+
 function dpsBaseUnitResultHasMaxAttackSpeed(result){
   if(result?.isMaxAttackSpeed===true) return true;
   const cooldown=Number(result?.finalCooldown);
@@ -1254,6 +1276,7 @@ function dpsBaseUnitNameFieldLabelHtml(unit){
   const speedHtml=speedText ? `<span class="dps-base-unit-speed-value">(${speedLabel}: ${escapeHtml(speedText)})</span>` : '';
   return `<span class="dps-base-unit-name-label${maxSpeed?' is-max-attack-speed':''}">유닛명${speedHtml}</span>`;
 }
+
 function dpsBaseUnitPercentText(value){
   const num=Number(value);
   if(!Number.isFinite(num)) return '—';
@@ -1731,6 +1754,7 @@ function sanitizeDpsBaseUnitVoidPowerAvailability(selectedIds=null){
   }
   return available;
 }
+
 function dpsBaseUnitSettingsHtml(unit,slotIndex){
   if(!unit) return '';
   const unitId=escapeHtml(unit.id);
@@ -2002,6 +2026,7 @@ function applyDpsBaseUnitAddDefaults(unitId){
   if(enhance) enhance.value=dpsBaseUnitDefaultEnhanceValue(unit);
   return true;
 }
+
 function bindDpsBaseUnitControlEvents(){
   if(document.documentElement.dataset.dpsBaseUnitControlBound==='1') return;
   document.documentElement.dataset.dpsBaseUnitControlBound='1';
@@ -2075,6 +2100,8 @@ function bindDpsBaseUnitControlEvents(){
     }
   }, true);
 }
+
+/* 특성 보드 */
 const INFINITE_TRAIT_TIER='무한∞';
 const TIERS=['루키','비기너','아마추어','프로','엑스퍼트','마스터','디바인','더원1','더원2',INFINITE_TRAIT_TIER,'EP특성','RP특성','심연특성'];
 function updateTraits(){
@@ -2329,6 +2356,7 @@ function clearAll(){
     return false;
   }
 }
+/* 화면 설정 */
 function isFontScaleLockedViewport(){
   const w=window.innerWidth || document.documentElement.clientWidth || 0;
   const h=window.innerHeight || document.documentElement.clientHeight || 0;
@@ -2399,6 +2427,8 @@ function bindAppTitleVersion(){
     }
   });
 }
+/* 더제로 승단 */
+
 const ZERO_PENANCE_ROWS=[
   'Practice','Very Easy','Easy','Normal','Hard','Very Hard','Hell','Inferno','Lunatic','Holic','Epic','Ultimate','Impossible','The Final'
 ].map((name,index)=>({name,row:13+index}));
@@ -2437,6 +2467,7 @@ function renderZeroScoreCalculatorRows(){
   rows.innerHTML=ZERO_PENANCE_ROWS.map(({name})=>buildZeroPenanceCalcRow(name)).join('') + buildZeroTowerCalcRow();
   rows.dataset.rendered='1';
 }
+
 const ZERO_RANK_FALLBACK_TABLE=[
   {name:'입문',score:0},{name:'견습',score:100},{name:'숙련',score:150},{name:'전문',score:200},
   {name:'장인',score:250},{name:'명장',score:300},{name:'명장+',score:350},{name:'도인',score:400},
@@ -2585,6 +2616,8 @@ function bindZeroScoreCalculator(){
   document.addEventListener('input', e=>updateAndSave(e.target), true);
   document.addEventListener('change', e=>updateAndSave(e.target), true);
 }
+
+/* 이벤트·초기화 */
 let appEventsBound=false;
 const ACTION_HANDLERS={
   optimizeSP,

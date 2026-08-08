@@ -1,3 +1,4 @@
+/* 공통 계산 유틸 */
 function hasOwn(obj,key){
   return !!obj && Object.prototype.hasOwnProperty.call(obj,key);
 }
@@ -18,6 +19,7 @@ function parseJsonObject(value){
     return {};
   }
 }
+
 const ROUND_INPUT_MIN=1;
 const ROUND_INPUT_MAX=300;
 const DPS_BATTLE_BASE_ROUND=300;
@@ -71,6 +73,7 @@ function normalizeRuneChoiceValues(values={}){
   out.runeChoiceValue=String(normalizeRuneChoiceValue(out.runeChoiceValue));
   return out;
 }
+
 const POWER_BLESS_ALL_OPTIONS=[0,20,30,40,60,90];
 const COOP_PASSENGER_DEFENSE_REDUCE_OPTIONS=[0,15,25,50,60];
 const EROSION_CONTROL_DEFAULTS={erosionStack:'500',jewelErosionRes:'30'};
@@ -118,6 +121,8 @@ function normalizeDecimalDisplayValue(value, digits=6){
   const fixed=n.toFixed(digits);
   return String(parseFloat(fixed));
 }
+
+/* 입력 상태 */
 function normalizedStoredControlValue(id,dataKey,fallback,normalize){
   const element=$(id);
   return element ? normalize(element.value || element.dataset[dataKey] || fallback) : String(fallback);
@@ -153,6 +158,8 @@ function erosionStoredValue(id){
   if(!el) return EROSION_CONTROL_DEFAULTS[id] || '0';
   return normalizeErosionControlValue(id, el.value || el.dataset.erosionValue || EROSION_CONTROL_DEFAULTS[id]);
 }
+
+/* DPS표·스킬 표시값 */
 function calculateSkillDamageRows({ap=535,doubleSpace=1,round=1,mode='normal'}={}){
   const skillAp=Number.isFinite(Number(ap)) ? Number(ap) : 535;
   const doubleValue=Number.isFinite(Number(doubleSpace)) ? Number(doubleSpace) : 1;
@@ -216,6 +223,8 @@ function towerEnemySummaryItems(floor){
     ['물량', big(unitRow ? unitRow[1] : 0)]
   ];
 }
+
+/* 인첸트 */
 function currentEnchantStats(syncInputs=true){
   if(syncInputs) syncEnchantCodeFromInputs(false);
   const code=($('enchantCode')?.value||'999999').padEnd(6,'0').slice(0,6);
@@ -224,6 +233,8 @@ function currentEnchantStats(syncInputs=true){
     return ENCHANT_TABLE[level];
   });
 }
+
+/* 특성 비용 */
 const FIXED_STEP_AFTER_150={93:76000,94:76000,95:114000};
 const STEP_COST_PREFIX=Object.freeze(Object.fromEntries(Object.entries(STEP_COST).map(([row,steps])=>{
   let total=0;
@@ -265,6 +276,8 @@ function cumCost(row, investment=INV[row]||0){
   if(nn>400){const ov=nn-400,x0=a+400*d;s+=(ov*(2*x0+(ov-1)*(d/2)))/2;}
   return s;
 }
+
+/* 난이도·적 데이터 */
 const TOWER_DIFFICULTY_NAME='도전의 탑';
 const ABYSS_DIFFICULTIES=new Set(['Abyss road','Deep Abyss']);
 const COOP_DISABLED_DIFFICULTIES=new Set([TOWER_DIFFICULTY_NAME,...ABYSS_DIFFICULTIES]);
@@ -392,6 +405,7 @@ function battleTargetDps0Average(ownTarget,passengerTargets,enemyArmor,dmgReduce
   const playerCount=battleEnemyCountMultiplier();
   const ownDps0=dps0(ownTarget.hpRemain, enemyArmor, ownTarget.defenseReduce, ownTarget.pierce, dmgReduce);
   if(playerCount<=1) return ownDps0;
+
   const targets=Array.isArray(passengerTargets) ? passengerTargets : [passengerTargets];
   let totalDps0=ownDps0;
   for(let i=0;i<playerCount-1;i++){
@@ -561,6 +575,7 @@ function enemyDisplayCountText(round){
   if(isTowerDifficulty()) return fullNumber(enemyRoundData(round).count);
   return `${fullNumber(enemyRoundDisplayCount(round))} / ${fullNumber(enemyTotalDisplayCount(round))}`;
 }
+
 function enemyBurdenDurability(enemyData, displayHR, displaySR){
   const hpReduce=Math.max(0, Number(displayHR)||0) / 100;
   const shieldReduce=Math.max(0, Number(displaySR)||0) / 100;
@@ -606,6 +621,8 @@ function contentDpsDisplayMultiplier(diffName, round, displayHR, displaySR){
     ? towerDpsDisplayMultiplier(round, displayHR, displaySR)
     : battleDpsDisplayMultiplier(diffName, round, displayHR, displaySR);
 }
+
+/* 룬·강화 */
 function on(id){const el=$(id); return !!(el && el.checked);}
 function clampInt(n,min,max){return Math.max(min,Math.min(max,Math.round(+n||0)));}
 const OVER_ENHANCE_ALLOWED=new Set([0,3,5,6]);
@@ -798,6 +815,9 @@ function effectiveAdditionalStats(){
 function growthGraduationAttackBonus(){
   return effectiveXpValue()>=2000000 ? 20 : 0;
 }
+
+/* 메인 스탯·DPS */
+
 const DPS_BASE_UNIT_STORAGE_SEPARATOR=',';
 const DPS_BASE_UNIT_SETTING_PREFIXES=Object.freeze({
   enhance:'dpsEnhance',
@@ -1135,6 +1155,7 @@ function selectedDpsBaseUnits(value=dpsBaseUnitStorageValue()){
   const idSet=new Set(ids);
   return units.filter(unit=>idSet.has(unit.id));
 }
+
 function nonNegativeNumber(value){
   return Math.max(0, Number(value) || 0);
 }
@@ -1180,6 +1201,7 @@ function dpsBaseUnitWeaponAttack(unit){
   let attack=nonNegativeNumber(tiers[tierIndex]);
   return attack;
 }
+/* 유닛 보드 전투 모드·적 방어 효과 */
 const DPS_BASE_UNIT_ENEMY_BUFF_DIFFICULTIES=new Set(['Hell','Inferno','Lunatic','Holic','Epic','Ultimate','Impossible','The Final','Hall Of Fame','Abyss road','Deep Abyss','도전의 탑']);
 const DPS_BASE_UNIT_FIXED_INVULNERABILITY_DIFFICULTIES=new Set(['Hall Of Fame','Abyss road','Deep Abyss']);
 const DPS_BASE_UNIT_INVULNERABILITY_TIME_LOSS=4;
@@ -1278,6 +1300,7 @@ function dpsBaseUnitRequiredDps({enemyData,defenseReduce,dmgReduce,round,display
   },0);
   return requiredWork/clearTime;
 }
+
 const DPS_BASE_UNIT_LIMIT_BREAK_STATS=Object.freeze([
   Object.freeze({ad:0,ua:0,td:0}),Object.freeze({ad:50,ua:0,td:0}),Object.freeze({ad:100,ua:0,td:0}),
   Object.freeze({ad:175,ua:10,td:0}),Object.freeze({ad:300,ua:20,td:0}),Object.freeze({ad:500,ua:30,td:0}),
@@ -1363,6 +1386,7 @@ function dpsBaseUnitSingleDpsParts(unit,context,jewelStats,jewelName='',limitBre
     jewelName,jewelStats,limitBreak:Number(normalizeDpsBaseUnitLimitBreakValue(limitBreakValue))||0
   };
 }
+
 function dpsBaseUnitArtifactConfig(){
   return window.DPS_DATA?.ARTIFACT_DPS_CONFIG || {};
 }
@@ -1419,6 +1443,9 @@ function dpsBaseUnitArtifactDpsParts(unit,context){
     artifactAcceleration:timing.accelerationMultiplier
   };
 }
+
+
+/* 스펙 보드 / 유닛 보드 계산 결과 분리 */
 function computeSpecBoardResult(context){
   const {
     diff,targetRound,upperStats,M4,M7,M8,M10,M9,M16,M17,M18,M11,M12_dr,M13,
@@ -1587,6 +1614,7 @@ function computeDpsBaseUnitBoardResult(context){
     results:dpsBaseUnitResults
   };
 }
+
 function computeStatsRaw(options={}){
   const extendedResults=options.extended!==false;
   const syncDerivedViews=options.syncDerived!==false;
@@ -1656,6 +1684,7 @@ function computeStatsRaw(options={}){
     displayHR,displaySR,effectivePierce,enemyData,specEnemyDamageRate,dt
   });
   const {hpRatio,shieldRatio,M12,actualM12,AB3,AB4,AB5,AB6,roundTime,rawM19,displayMultiplier,M19}=specBoard;
+
   const enhanceStats=extendedResults ? unitEnhanceStats() : null;
   const dpsBaseUnit=extendedResults ? computeDpsBaseUnitBoardResult({
     displayAP,basePierceBonus,rpPierce,unitADBonus,upperStats,diff,targetRound,M4,M7,M8,M10,M9,M16,M17,M18,M11,M12_dr,M13,dt,
@@ -1687,6 +1716,8 @@ function computeStatsRaw(options={}){
 function computeLightweightStatsRaw(){
   return computeStatsRaw({extended:false,syncDerived:false});
 }
+
+/* 유물 DPS */
 function currentPenaltyContext(){
   const diff=DIFF[vs('diff')]||DIFF['The Final'];
   const targetRound=effectiveTargetRound();
@@ -1744,6 +1775,7 @@ function calculateArtifactDpsRaw(stats=computeLightweightStatsRaw()){
     round:ctx.targetRound
   };
 }
+/* 계산 미리보기 상태 */
 const ARTIFACT_DPS_PREVIEW_IDS=['diff','penance','round','challengeTowerFloor','soloMode','coopMode','coopPassenger2Dr','coopPassenger3Dr','team','prodArtifact','pbless',...EROSION_CONTROL_IDS];
 function applyPreviewPenanceState(penEl, penanceLevel, battleMode, signaturePrefix){
   if(!penEl) return;
@@ -1908,8 +1940,11 @@ const RESOURCE_TRAIT_ROWS=Object.freeze({
   RP:Object.freeze(TRAITS.filter(t=>RP_ROWS.has(t[0])).map(t=>t[0])),
   SOUL:Object.freeze(TRAITS.filter(t=>SOUL_ROWS.has(t[0])).map(t=>t[0]))
 });
+
 const SP_UTILITY_TRAIT_ROWS=Object.freeze(TRAITS.filter(t=>SP_ROWS.has(t[0]) && isUtilitySpTrait(t)).map(t=>t[0]));
+
 const SP_OFFENSE_TRAIT_ROWS=Object.freeze(TRAITS.filter(t=>SP_ROWS.has(t[0]) && !isUtilitySpTrait(t)).map(t=>t[0]));
+
 function sumTraitRowCosts(rows, costFn=cumCost){
   let total=0;
   for(const row of rows || []) total+=costFn(row);
@@ -1919,6 +1954,7 @@ function resourceUsed(kind){
   const rows=RESOURCE_TRAIT_ROWS[kind] || [];
   return kind==='RP' ? sumTraitRowCosts(rows,row=>rpCost(row,INV[row]||0)) : sumTraitRowCosts(rows);
 }
+
 function resourceUsageSnapshot(){
   const spU=sumTraitRowCosts(SP_UTILITY_TRAIT_ROWS);
   const spO=sumTraitRowCosts(SP_OFFENSE_TRAIT_ROWS);
@@ -2118,6 +2154,8 @@ function updateDpsContextSummary(){
     dpsContextDiffDetail:ctx.difficultyDetail
   });
 }
+
+/* DPS표 미리보기 */
 const DPS_PREVIEW_IDS=['diff','penance','round','challengeTowerFloor','soloMode','coopMode','team','pbless',...EROSION_CONTROL_IDS];
 function computeDpsPreview(diffName, penanceLevel, round, options={}){
   try{
@@ -2130,6 +2168,8 @@ function computeDpsPreview(diffName, penanceLevel, round, options={}){
     return 0;
   }
 }
+
+/* 특성 계산·자동 최적화 */
 const STAT_KO={
   AD:'공격력', AS:'공격속도', AP:'마법공격력', CRI:'크리티컬 확률', CD:'크리티컬 데미지',
   MC:'다중 크리티컬', TD:'총 데미지', DR:'방어력 감소', PIERCE:'방어력 관통', UA:'유닛 가속',
@@ -2326,6 +2366,7 @@ function traitOptimizationMultiTargetBundleCandidate(base, rem, options={}){
   }
   return evaluateTraitOptimizationCandidate(base, 'SP', rem, changes, '멀티 타겟 분기점', options);
 }
+/* 특성 자동 최적화 */
 function optimizeSP(){
   function normalAddCount(row, kind, rem){
     if(kind!=='SP') return 1;
@@ -2387,6 +2428,8 @@ function optimizeSP(){
   }
   commitAppUpdate({recalculate:'now'});
 }
+
+/* 더제로 승단 */
 function zeroScoreNumber(value, min, max){
   const n=Number(value);
   if(!Number.isFinite(n)) return min;

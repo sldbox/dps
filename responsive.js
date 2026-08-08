@@ -1,5 +1,7 @@
 (() => {
   'use strict';
+
+  /* 반응형 상태·측정 헬퍼 */
   const MODES = ['is-pc-landscape', 'is-pc-portrait', 'is-tablet', 'is-mobile', 'is-portrait-view', 'is-mobile-device', 'is-tablet-device', 'is-narrow-mobile', 'is-tabbed'];
   const TABBED_REFERENCE_ACTIONS = [
     { key: 'dps', label: 'DPS표', action: 'openDpsTable' },
@@ -25,6 +27,7 @@
     resumeRaf: 0,
     initialized: false
   };
+  /* 뷰포트 판정 */
   function getViewportSize() {
     const root = document.documentElement;
     return {
@@ -85,6 +88,7 @@
     syncTabbedLayout();
     updateMobileOffsets();
   }
+  /* 탭 레이아웃 */
   function rememberPosition(el) {
     if (!el || state.restore.has(el)) return;
     const marker = document.createComment(`mobile-restore:${el.className || el.tagName}`);
@@ -254,6 +258,7 @@
       restoreDesktop();
     }
   }
+
   function isTextInput(el) {
     if (!el || el.disabled || el.readOnly) return false;
     if (el.tagName === 'TEXTAREA') return true;
@@ -271,6 +276,7 @@
       });
     });
   }
+  /* 갱신·초기화 */
   function scheduleApply() {
     if (state.raf) cancelAnimationFrame(state.raf);
     state.raf = requestAnimationFrame(() => {
@@ -296,6 +302,7 @@
       window.dpsMarkResponsiveLayoutReady();
     }
   }
+
   function initializeResponsiveLayout() {
     if (state.initialized) {
       markResponsiveReady();
