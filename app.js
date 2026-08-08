@@ -971,6 +971,13 @@ function renderMonthRuneCard(item){
     </article>
   `;
 }
+function renderMonthRunePanelContent(info){
+  const months=Array.isArray(info?.months)?info.months:[];
+  const content=months.length ? months.map(renderMonthRuneCard).join('') : '<div class="month-rune-empty">이달룬 데이터가 없습니다.</div>';
+  const noteText=String(info?.note || '').trim();
+  const noteHtml=noteText ? `<div class="month-rune-note">${escapeHtml(noteText)}</div>` : '';
+  return `${noteHtml}<div class="month-rune-grid">${content}</div>`;
+}
 function getJewelImageSources(name){
   const safeName=encodeURIComponent(String(name||'').trim());
   const key=`jw/${String(name||'').trim()}.png`;
