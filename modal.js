@@ -4,10 +4,9 @@
   /* 공통 모달 상태·쉘 */
   const MONTH_RUNE_MODAL_TITLES=Object.freeze({
     runes:'이달의 룬',
-    jewels:'쥬얼',
     dps:'DPS표'
   });
-  const MONTH_RUNE_MODAL_CLASS_NAMES=Object.freeze(['is-modal-runes','is-modal-jewels','is-modal-dps']);
+  const MONTH_RUNE_MODAL_CLASS_NAMES=Object.freeze(['is-modal-runes','is-modal-dps']);
   const DPS_TABLE_MIN_DPS_INPUT_SELECTOR='#dpsTableMinDps,#dpsTableMinDpsMain';
   const BOARD_MODAL_IDS=Object.freeze(['sanctuarySkillModal','busPassengerModal','zeroRankInfoModal']);
   let eventsBound=false;
@@ -138,7 +137,7 @@
     return BOARD_MODAL_IDS.find(isOpen) || '';
   }
 
-  /* DPS표·룬·쥬얼 */
+  /* DPS표·룬 */
   function getDpsTableMinDpsInput(target){
     return target instanceof Element?target.closest(DPS_TABLE_MIN_DPS_INPUT_SELECTOR):null;
   }
@@ -189,7 +188,7 @@
   function selectMonthRuneModalTab(tabName){
     const modal=document.getElementById('monthRuneModal');
     if(!modal) return;
-    const next=['runes','jewels','dps'].includes(tabName)?tabName:'runes';
+    const next=['runes','dps'].includes(tabName)?tabName:'runes';
     modal.querySelectorAll('[data-month-rune-panel]').forEach(panel=>{
       const active=panel.dataset.monthRunePanel===next;
       setClassState(panel,'is-active',active);
@@ -203,7 +202,6 @@
   function createMonthRuneModal(){
     const data=window.DPS_DATA||{};
     const info=data.MONTHLY_RUNE_INFO||{months:[]};
-    const jewels=data.RAW_JEWEL_DATA||[];
     return createShell('monthRuneModal','month-rune-modal-shell',`
       <div class="month-rune-backdrop" data-month-rune-close="1"></div>
       <section class="month-rune-modal is-modal-runes" role="dialog" aria-modal="true" aria-labelledby="monthRuneTitle">
@@ -214,7 +212,6 @@
         </header>
         <div class="month-rune-body">
           ${renderMonthRuneModalPanel('runes',renderMonthRunePanelContent(info),true)}
-          ${renderMonthRuneModalPanel('jewels',renderJewelPanelContent(jewels))}
           ${renderDpsTablePanel()}
         </div>
       </section>`);

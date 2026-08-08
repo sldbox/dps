@@ -6,7 +6,7 @@
   const TABBED_REFERENCE_ACTIONS = [
     { key: 'dps', label: 'DPS표', action: 'openDpsTable' },
     { key: 'runes', label: '이달의룬', action: 'openMonthRuneTab', monthRuneTab: 'runes' },
-    { key: 'jewels', label: '쥬얼', action: 'openMonthRuneTab', monthRuneTab: 'jewels' }
+    { key: 'nexus', label: '넥서스 ↗', href: 'https://sldbox.github.io/site/' }
   ];
   const TABBED_PAGES = [
     { key: 'basic', label: '기본 정보', selectors: ['.trait-preset-panel', '.col-left'] },
@@ -112,6 +112,13 @@
     return state.pages.findIndex(page => page.key === key);
   }
   function buildReferenceActionButton(config) {
+    if (config.href) {
+      const link = document.createElement('a');
+      link.className = 'mobile-section-tab mobile-section-action-tab tone-reference';
+      link.href = config.href;
+      link.textContent = config.label;
+      return link;
+    }
     const btn = document.createElement('button');
     btn.type = 'button';
     btn.className = 'mobile-section-tab mobile-section-action-tab tone-reference';

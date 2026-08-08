@@ -234,7 +234,6 @@ body.month-rune-modal-open:is(.is-dps-mode-solo,.is-dps-mode-coop,.is-dps-mode-t
 .month-rune-backdrop{position:absolute;inset:0;background:rgba(3,7,14,.72);backdrop-filter:blur(7px);}
 .month-rune-modal{position:relative;width:min(980px,calc(100vw - 36px));height:auto;max-height:calc(100vh - 36px);overflow:hidden;display:flex;flex-direction:column;border:1px solid #2a3b56;border-radius:16px;background:linear-gradient(180deg,#0b111c 0%,#101827 100%);box-shadow:0 22px 70px rgba(0,0,0,.48),inset 0 1px 0 rgba(255,255,255,.06);}
 .month-rune-modal.is-modal-dps{width:min(1440px,calc(100vw - 24px));height:auto;max-height:calc(100vh - 28px);}
-.month-rune-modal.is-modal-jewels{width:min(1040px,calc(100vw - 36px));}
 .month-rune-modal.is-modal-runes{width:min(1080px,calc(100vw - 36px));}
 .month-rune-head{position:relative;display:flex;align-items:center;gap:12px;min-height:60px;padding:12px 58px 12px 16px;border-bottom:1px solid #2a3b56;background:linear-gradient(135deg,#121d2e 0%,#0b111c 62%,#10233d 100%);}
 .month-rune-title{flex:0 0 auto;margin:0;color:#f8fbff;font-size:calc(15px * var(--app-font-scale));font-weight:1000;line-height:1;white-space:nowrap;text-shadow:0 1px 0 rgba(0,0,0,.24);}
@@ -250,10 +249,6 @@ body.month-rune-modal-open:is(.is-dps-mode-solo,.is-dps-mode-coop,.is-dps-mode-t
 .month-rune-panel[hidden]{display:none;}
 .month-rune-note, .month-rune-empty{margin:0 0 12px;padding:11px 13px;border:1px solid #26364d;border-radius:12px;background:#121d2e;color:#cfe0ff;font-size:calc(12px * var(--app-font-scale));font-weight:900;line-height:1.4;box-shadow:inset 0 1px 0 rgba(255,255,255,.05);}
 .month-rune-empty{text-align:center;color:#93a4b9;background:#111a28;border-style:dashed;}
-.jewel-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;}
-.jewel-card{min-width:0;overflow:hidden;border:1px solid #26364d;border-radius:14px;background:#111a28;box-shadow:0 12px 30px rgba(0,0,0,.18),inset 0 1px 0 rgba(255,255,255,.05);}
-.jewel-card-head{display:flex;align-items:center;gap:12px;padding:12px;border-bottom:1px solid #26364d;background:linear-gradient(135deg,#121d2e 0%,#111a28 100%);}
-.jewel-card-head > b{min-width:0;color:#f8fbff;font-size:calc(13.5px * var(--app-font-scale));font-weight:1000;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .jewel-card-visual{position:relative;display:inline-flex;align-items:center;justify-content:center;flex:0 0 58px;width:58px;height:58px;border:1px solid #3a4d67;border-radius:14px;background:radial-gradient(circle at 50% 35%,#172438 0%,#020617 72%);color:#f6c77a;font-size:calc(16px * var(--app-font-scale));font-weight:1000;overflow:hidden;box-shadow:inset 0 1px 0 rgba(255,255,255,.08);}
 .jewel-card-visual img{display:block;position:relative;width:auto;height:auto;max-width:88%;max-height:88%;object-fit:contain;background:transparent;}
 .jewel-card-visual span{display:none;}
@@ -483,8 +478,6 @@ body.is-mobile .month-rune-close{top:8px;right:9px;width:30px;height:30px;}
 body.is-mobile .month-rune-body{max-height:calc(var(--mobile-vh, 100vh) - 74px);padding:8px;}
 body.is-mobile .month-rune-grid{grid-template-columns:1fr;gap:8px;}
 body.is-mobile .month-rune-note, body.is-mobile .month-rune-empty{margin-bottom:8px;padding:8px;font-size:calc(11px * var(--app-font-scale));}
-body.is-mobile .jewel-grid{grid-template-columns:1fr;gap:8px;}
-body.is-mobile .jewel-card-head{padding:8px;}
 body.is-mobile .jewel-card-visual{flex-basis:64px;width:64px;height:64px;border-radius:12px;}
 body.is-mobile .jewel-card-visual img{max-width:88%;max-height:88%;width:auto;height:auto;}
 body.is-mobile .jewel-ability-list{padding:8px;gap:6px;}
@@ -517,7 +510,6 @@ body.is-tablet .month-rune-modal.is-modal-dps .dps-table-body{max-height:calc(10
 body.is-tablet .month-rune-modal.is-modal-dps .dps-table-mode-panel, body.is-tablet .month-rune-modal.is-modal-dps .dps-table-scroll, body.is-tablet .month-rune-modal.is-modal-dps .dps-coop-panel{max-height:calc(100vh - 126px);}
 body.is-pc-portrait .dps-tower-grid, body.is-tablet .dps-tower-grid{grid-template-columns:repeat(3,minmax(0,1fr));}
 body.is-tablet .month-rune-grid{grid-template-columns:repeat(2,minmax(0,1fr));}
-body.is-tablet .jewel-grid{grid-template-columns:repeat(3,minmax(0,1fr));}
 body.is-tablet .month-rune-head{gap:8px;padding:10px 54px 10px 10px;}
 /* 협동·데미지 보드 */
 .bus-cut-card{overflow:hidden;}
@@ -720,7 +712,7 @@ body.is-tabbed .hdr{flex:0 0 auto;position:sticky;top:0;z-index:50;}
 body.is-tabbed .mobile-section-tabs{grid-column:1/-1;grid-row:2;position:sticky;top:var(--mobile-header-h, 56px);z-index:45;display:grid;grid-template-columns:1fr;grid-template-rows:repeat(2,auto);align-items:center;flex:0 0 auto;width:100%;gap:6px;padding:8px 10px;border-bottom:1px solid var(--ui-line,#26364d);background:rgba(12,18,29,.96);box-shadow:0 3px 10px rgba(0,0,0,.26);}
 body.is-pc-portrait .mobile-section-tabs{grid-template-rows:auto;}
 body.is-tabbed .mobile-section-action-row, body.is-tabbed .mobile-section-page-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));align-items:center;gap:7px;width:100%;min-width:0;}
-body.is-tabbed .mobile-section-tab{width:100%;min-width:0;height:36px;min-height:36px;padding:0 8px;font-size:calc(11px * var(--app-font-scale));font-weight:900;letter-spacing:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;}
+body.is-tabbed .mobile-section-tab{display:flex;align-items:center;justify-content:center;width:100%;min-width:0;height:36px;min-height:36px;padding:0 8px;box-sizing:border-box;font-size:calc(11px * var(--app-font-scale));font-weight:900;line-height:1;text-align:center;text-decoration:none;letter-spacing:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;}
 body.is-tabbed .mobile-section-action-tab{font-size:calc(10.8px * var(--app-font-scale));}
 body.is-tabbed .col-work{grid-column:1/-1;grid-row:3;display:block;flex:1 1 auto;width:var(--mobile-vw, 100vw);max-width:var(--mobile-vw, 100vw);min-width:0;height:calc(var(--mobile-vh, 100dvh) - var(--mobile-header-h, 56px) - var(--mobile-tabs-h, 82px));min-height:0;max-height:calc(var(--mobile-vh, 100dvh) - var(--mobile-header-h, 56px) - var(--mobile-tabs-h, 82px));padding:8px;overflow:hidden;overscroll-behavior-x:none;touch-action:pan-y;background:transparent;}
 body.is-tabbed .mobile-page{display:none;width:100%;max-width:100%;min-width:0;height:100%;min-height:0;max-height:100%;overflow-x:hidden;overflow-y:auto;overscroll-behavior-y:auto;-webkit-overflow-scrolling:touch;margin:0;padding:0;touch-action:pan-y;}
@@ -1168,18 +1160,25 @@ body .trait-preset-unit-jewel-settings-panel{overflow:hidden;}
 body .trait-preset-unit-jewel-settings-body{height:100%;min-height:0;padding:0;overflow:auto;}
 body .dps-jewel-settings-body{min-height:0;padding:12px;overflow:auto;box-sizing:border-box;}
 body .dps-jewel-config-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;min-width:0;width:100%;padding:0;box-sizing:border-box;}
-body .dps-jewel-card{display:grid;grid-template-columns:minmax(0,1fr);gap:5px;min-width:0;padding:7px;border:1px solid var(--ui-button-border,#60a5fa);border-radius:8px;background:transparent;box-sizing:border-box;}
-body .dps-jewel-card header{display:flex;align-items:center;justify-content:center;gap:6px;min-width:0;}
-body .dps-jewel-card header b{min-width:0;overflow:hidden;color:#eaf2ff;font-size:calc(10px * var(--app-font-scale));font-weight:950;line-height:1.2;text-align:center;text-overflow:ellipsis;white-space:nowrap;}
-body .dps-jewel-card header b.is-legendary{color:#93c5fd;}
-body .dps-jewel-card header b.is-mythic{color:#fde047;}
+body .dps-jewel-card{display:grid;grid-template-columns:minmax(0,1fr);gap:7px;min-width:0;padding:8px;border:1px solid var(--ui-button-border,#60a5fa);border-radius:10px;background:rgba(7,17,31,.52);box-sizing:border-box;}
+body .dps-jewel-card-head{display:grid;grid-template-columns:46px minmax(0,1fr);align-items:center;gap:8px;min-width:0;}
+body .dps-jewel-card .jewel-card-visual{flex-basis:46px;width:46px;height:46px;border-radius:11px;}
+body .dps-jewel-title-block{display:grid;grid-template-columns:minmax(0,1fr);justify-items:start;gap:3px;min-width:0;}
+body .dps-jewel-title-block b{min-width:0;max-width:100%;overflow:hidden;color:#eaf2ff;font-size:calc(10.6px * var(--app-font-scale));font-weight:950;line-height:1.2;text-align:left;text-overflow:ellipsis;white-space:nowrap;}
+body .dps-jewel-title-block b.is-legendary{color:#93c5fd;}
+body .dps-jewel-title-block b.is-mythic{color:#fde047;}
+body .dps-jewel-ability-list{padding:0;gap:5px;}
+body .dps-jewel-ability-list .jewel-ability{grid-template-columns:38px minmax(0,1fr);min-height:30px;padding:6px;font-size:calc(9.2px * var(--app-font-scale));}
+body .dps-jewel-ability-list .jewel-ability>b{min-height:20px;font-size:calc(8.8px * var(--app-font-scale));}
 body .dps-jewel-fields{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px;min-width:0;}
 body .dps-jewel-field{display:grid;grid-template-columns:minmax(0,1fr);gap:2px;min-width:0;}
 body .dps-jewel-field span{color:#f8fbff;font-size:calc(7.8px * var(--app-font-scale));font-weight:900;text-align:center;white-space:nowrap;}
 body .dps-jewel-field select{width:100%;min-width:0;height:31px;min-height:31px;padding:0 18px 0 5px;border:1px solid var(--role-interactive-bd);border-radius:var(--ui-control-radius);background:var(--role-interactive-bg);color:var(--color-text-main);font-size:calc(9.8px * var(--app-font-scale));font-weight:900;line-height:1;text-align:center;text-align-last:center;box-sizing:border-box;}
-body .dps-jewel-final{display:inline-grid;grid-template-columns:auto repeat(4,auto);justify-content:center;align-items:center;gap:0 7px;min-width:0;margin:0;color:#dbeafe;font-size:calc(8.5px * var(--app-font-scale));font-weight:900;text-align:center;}
-body .dps-jewel-final span{min-width:0;text-align:center;}
-body .dps-jewel-final b{min-width:0;color:#eaf2ff;font-family:Consolas,monospace;font-size:calc(9.3px * var(--app-font-scale));font-weight:950;line-height:1.15;text-align:center;white-space:nowrap;}
+body .dps-jewel-final{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));align-items:stretch;gap:4px;min-width:0;margin:0;text-align:center;}
+body .dps-jewel-final-label{grid-column:1/-1;display:flex;align-items:center;justify-content:center;color:#dbeafe;font-size:calc(8.6px * var(--app-font-scale));font-weight:950;line-height:1;}
+body .dps-jewel-final-item{display:grid;grid-template-columns:minmax(0,1fr);gap:2px;min-width:0;padding:5px 3px;border:1px solid rgba(96,165,250,.2);border-radius:8px;background:rgba(16,35,61,.34);box-sizing:border-box;}
+body .dps-jewel-final-item em{color:#93a4b9;font-size:calc(7.2px * var(--app-font-scale));font-style:normal;font-weight:900;line-height:1;white-space:nowrap;}
+body .dps-jewel-final-item b{min-width:0;color:#eaf2ff;font-family:Consolas,monospace;font-size:calc(9.2px * var(--app-font-scale));font-weight:950;line-height:1.15;text-align:center;white-space:nowrap;}
 body .dps-base-unit-slot-stack{display:grid;grid-template-columns:minmax(0,1fr);gap:14px;min-width:0;width:100%;padding:3px 4px 0;}
 body .dps-base-unit-entry{display:grid;grid-template-columns:var(--dps-base-unit-columns);gap:7px;align-items:stretch;min-width:0;min-height:49px;border:0;border-radius:0;background:transparent;}
 body .dps-base-unit-card{--dps-base-unit-columns:minmax(0,2.35fr) minmax(0,.90fr) minmax(0,1.02fr) minmax(0,.82fr) minmax(0,1.08fr);--dps-base-unit-clear-size:31px;--dps-base-unit-select-gap:4px;display:grid;grid-template-columns:minmax(0,1fr);gap:10px;min-width:0;padding:4px 0 14px;border:0;}
@@ -1230,6 +1229,7 @@ body .dps-base-unit-extra-slot-title{display:block;width:100%;color:#dbeafe;font
 body .dps-base-unit-extra-slot label{display:grid;grid-template-columns:minmax(0,1fr);gap:3px;min-width:0;}
 body .dps-base-unit-extra-slot label>span{color:var(--ui-unified-muted);font-size:calc(8px * var(--app-font-scale));font-weight:900;line-height:1;text-align:center;white-space:nowrap;}
 body .dps-base-unit-extra-slot select{width:100%;min-width:0;height:31px;min-height:31px;padding:0 18px 0 5px;border:1px solid var(--role-interactive-bd);border-radius:var(--ui-control-radius);background:var(--role-interactive-bg);color:var(--color-text-main);font-size:calc(9.8px * var(--app-font-scale));font-weight:900;line-height:1;text-align:center;text-align-last:center;box-sizing:border-box;}
+body.is-mobile .dps-jewel-card, body.is-narrow-mobile .dps-jewel-card{gap:6px;padding:7px;}
 body.is-mobile .dps-base-unit-panel, body.is-narrow-mobile .dps-base-unit-panel{gap:6px;padding:0;margin-top:8px;}
 body.is-mobile .dps-base-unit-panel-title, body.is-narrow-mobile .dps-base-unit-panel-title{height:var(--dps-card-head-h);min-height:var(--dps-card-head-h);font-size:calc(12px * var(--app-font-scale));}
 body.is-mobile .dps-base-unit-title-actions, body.is-narrow-mobile .dps-base-unit-title-actions{gap:4px;}
@@ -1519,5 +1519,4 @@ body .trait-board-panel .trait-group .tr-type{color:var(--color-slate-500);}
 .header-convenience-link span{display:inline-flex;align-items:center;justify-content:center;margin-left:3px;font-size:.9em;line-height:1;}
 body.is-tablet .font-scale-ctrl, body.is-mobile .font-scale-ctrl, body.is-tablet .header-pc-reference-btn, body.is-mobile .header-pc-reference-btn{display:none;}
 body.is-tablet .header-reference-actions, body.is-mobile .header-reference-actions{gap:0;}
-body.is-tablet .header-nexus-link, body.is-mobile .header-nexus-link{height:32px;min-height:32px;min-width:74px;padding:0 10px;font-size:calc(11.5px * var(--app-font-scale));}
 body.is-mobile .damage-board-round-time-row .sc-val{font-size:calc(10px * var(--app-font-scale));}

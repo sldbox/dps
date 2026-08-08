@@ -576,7 +576,6 @@ function applyStateObject(data, options={}){
     else hydrateRuneChoiceFromHidden();
     applyZeroScoreState(data.zeroScore ? normalizeZeroScoreState(data.zeroScore) : data.zeroScore);
     syncEnchantCodeFromInputs(true);
-    reconcileSelectedUnitBuffsWithDpsBaseUnits(sanitizedValues);
     syncControlDisplays();
     syncDpsBaseUnitControl();
     if(options.recalculate!==false) recalc({save:options.save});

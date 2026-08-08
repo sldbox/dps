@@ -848,6 +848,29 @@ function dpsBaseUnitSupportsAdvancedOptions(unitOrId){
   const unit=resolveDpsBaseUnit(unitOrId);
   return !!unit && !dpsBaseUnitIsArtifact(unit);
 }
+function dpsBaseUnitGradeIndex(grade){
+  const index=dpsBaseUnitGradeOrder().indexOf(String(grade || ''));
+  return index>=0 ? index : Number.POSITIVE_INFINITY;
+}
+function dpsBaseUnitIsBelowHellGrade(unitOrId){
+  const unit=resolveDpsBaseUnit(unitOrId);
+  if(!unit) return false;
+  const hellIndex=dpsBaseUnitGradeIndex('헬');
+  if(!Number.isFinite(hellIndex)) return false;
+  return dpsBaseUnitGradeIndex(unit.grade)>hellIndex;
+}
+function dpsBaseUnitHasTanzaniteException(unitOrId){
+  return dpsBaseUnitIsBelowHellGrade(unitOrId) && dpsBaseUnitJewelName(unitOrId)==='탄자나이트';
+}
+function dpsBaseUnitCanUseEnhance(unitOrId){
+  const unit=resolveDpsBaseUnit(unitOrId);
+  if(!unit) return false;
+  if(dpsBaseUnitIsArtifact(unit)) return true;
+  return !dpsBaseUnitIsBelowHellGrade(unit) || dpsBaseUnitHasTanzaniteException(unit);
+}
+function dpsBaseUnitCanUseLimitBreak(unitOrId){
+  return dpsBaseUnitSupportsAdvancedOptions(unitOrId) && (!dpsBaseUnitIsBelowHellGrade(unitOrId) || dpsBaseUnitHasTanzaniteException(unitOrId));
+}
 function dpsBaseUnitAllId(){
   return window.DPS_DATA?.DPS_BASE_UNIT_ALL_ID || 'all';
 }
@@ -859,7 +882,7 @@ function dpsBaseUnitLabel(unitOrId){
   return unit?.label || String(unitOrId || '');
 }
 function dpsBaseUnitGradeOrder(){
-  return dpsDataArray('DPS_BASE_UNIT_GRADE_ORDER',['슈퍼히든','히든','레전드','헬','특수']);
+  return dpsDataArray('DPS_BASE_UNIT_GRADE_ORDER',['슈퍼히든','히든','레전드','헬','제작자 장난감']);
 }
 function dpsBaseUnitRaceOrder(){
   return dpsDataArray('DPS_BASE_UNIT_RACE_ORDER',['테바','테메','프바','프메','저그','중립','혼종']);
@@ -900,6 +923,16 @@ function normalizeJewelName(value,names){
   return names.includes(name) ? name : '';
 }
 function normalizeDpsJewelName(value){return normalizeJewelName(value,dpsJewelNames());}
+const DPS_CHRYSOBERYL_NAME='크리소베릴';
+const DPS_CHRYSOBERYL_FIXED_STATS=Object.freeze({ad:50,as:25,td:5,ua:10});
+const DPS_CHRYSOBERYL_EMPTY_STATS=Object.freeze({ad:0,as:0,td:0,ua:0});
+function dpsJewelIsChrysoberyl(name){return String(name || '')===DPS_CHRYSOBERYL_NAME;}
+function dpsChrysoberylSettingIsFixed(setting){
+  return ['ad','as','td','ua'].every(key=>Number(setting?.[key])===Number(DPS_CHRYSOBERYL_FIXED_STATS[key]));
+}
+function dpsChrysoberylSettingWithStats(setting,stats){
+  return {...setting,ad:stats.ad,as:stats.as,td:stats.td,ua:stats.ua};
+}
 function normalizeDpsJewelOption(key,value){
   const options=window.DPS_DATA?.DPS_JEWEL_INPUT_OPTIONS?.[key];
   if(!Array.isArray(options) || !options.length) return key==='mythic' ? 'N' : 0;
@@ -918,49 +951,62 @@ function normalizeDpsJewelSetting(value){
     mythic:normalizeDpsJewelOption('mythic',source.mythic)
   };
 }
+function normalizeDpsJewelSettingForName(name,value){
+  const setting=normalizeDpsJewelSetting(value);
+  if(!dpsJewelIsChrysoberyl(name)) return setting;
+  const stats=dpsChrysoberylSettingIsFixed(setting) ? DPS_CHRYSOBERYL_FIXED_STATS : DPS_CHRYSOBERYL_EMPTY_STATS;
+  return dpsChrysoberylSettingWithStats(setting,stats);
+}
 function normalizeJewelSettings(value,names,normalizeSetting){
   const source=parseJsonObject(value);
-  return Object.fromEntries(names.map(name=>[name,normalizeSetting(source[name])]));
+  return Object.fromEntries(names.map(name=>[name,normalizeSetting(source[name],name)]));
 }
 function serializeJewelSettings(value,normalizeSettings){return JSON.stringify(normalizeSettings(value));}
 function jewelSettingsObject(elementId,normalizeSettings){
   const element=typeof $==='function' ? $(elementId) : null;
   return normalizeSettings(element?.value || '{}');
 }
-function normalizeDpsJewelSettings(value){return normalizeJewelSettings(value,dpsJewelNames(),normalizeDpsJewelSetting);}
+function normalizeDpsJewelSettings(value){return normalizeJewelSettings(value,dpsJewelNames(),(raw,name)=>normalizeDpsJewelSettingForName(name,raw));}
 function serializeDpsJewelSettings(value){return serializeJewelSettings(value,normalizeDpsJewelSettings);}
 function dpsJewelSettingsObject(){return jewelSettingsObject('dpsJewelSettings',normalizeDpsJewelSettings);}
-const DPS_EMPTY_JEWEL_STATS=Object.freeze({name:'',ad:0,as:0,td:0,ua:0,resist:0,enhance:0,mythic:'N'});
+const DPS_EMPTY_JEWEL_STATS=Object.freeze({name:'',ad:0,as:0,td:0,ua:0,resist:0,enhance:0,enhanceFlat:0,mythic:'N'});
 function dpsJewelFinalStats(name,settings=null){
   const jewelName=normalizeDpsJewelName(name);
   if(!jewelName) return DPS_EMPTY_JEWEL_STATS;
   const source=settings || dpsJewelSettingsObject();
-  const input=normalizeDpsJewelSetting(source?.[jewelName]);
+  const input=normalizeDpsJewelSettingForName(jewelName,source?.[jewelName]);
+  if(dpsJewelIsChrysoberyl(jewelName) && !dpsChrysoberylSettingIsFixed(input)){
+    return {...DPS_EMPTY_JEWEL_STATS,name:jewelName,enhance:input.enhance,mythic:input.mythic};
+  }
   const effectKey=input.mythic==='Y' ? 'mythic' : 'legendary';
   const effect=window.DPS_DATA?.DPS_JEWEL_EFFECTS?.[jewelName]?.[effectKey] || {};
-  const ignoresBase=jewelName==='크리소베릴';
   const enhanceTd=input.enhance*(jewelName==='올리빈' ? 6 : 2);
   return {
     name:jewelName,
-    ad:(ignoresBase ? 0 : input.ad)+(Number(effect.ad)||0),
-    as:(ignoresBase ? 0 : input.as)+(Number(effect.as)||0),
-    td:(ignoresBase ? 0 : input.td)+(Number(effect.td)||0)+enhanceTd,
-    ua:(ignoresBase ? 0 : input.ua)+(Number(effect.ua)||0),
+    ad:input.ad+(Number(effect.ad)||0),
+    as:input.as+(Number(effect.as)||0),
+    td:input.td+(Number(effect.td)||0)+enhanceTd,
+    ua:input.ua+(Number(effect.ua)||0),
     resist:30,
     enhance:input.enhance,
+    enhanceFlat:Number(effect.enhanceFlat)||0,
     mythic:input.mythic
   };
 }
 const DPS_BASE_UNIT_EXTRA_SLOT_COUNT=4;
 function dpsBaseUnitAllowsSlotExpansion(unitOrId){
   const unit=resolveDpsBaseUnit(unitOrId);
-  return !!unit && !dpsBaseUnitIsArtifact(unit) && unit.grade!=='슈퍼히든';
+  return !!unit && !dpsBaseUnitIsArtifact(unit) && unit.grade!=='슈퍼히든' && unit.id!=='prodJimRaynor' && !dpsBaseUnitHasTanzaniteException(unit);
 }
-function normalizeDpsBaseUnitExtraSlotSetting(value){
+function normalizeDpsBaseUnitExtraSlotSetting(value,unitOrId=null){
+  const unit=resolveDpsBaseUnit(unitOrId);
   const source=value && typeof value==='object' && !Array.isArray(value) ? value : {};
+  const belowHell=dpsBaseUnitIsBelowHellGrade(unit);
+  const limitBreak=belowHell ? 0 : Number(normalizeDpsBaseUnitLimitBreakValue(source.limitBreak ?? source.limit ?? 0))||0;
+  const jewelName=normalizeDpsJewelName(source.legendaryMythicJewel ?? source.jewel ?? '');
   return {
-    limitBreak:Number(normalizeDpsBaseUnitLimitBreakValue(source.limitBreak ?? source.limit ?? 0))||0,
-    legendaryMythicJewel:normalizeDpsJewelName(source.legendaryMythicJewel ?? source.jewel ?? '')
+    limitBreak,
+    legendaryMythicJewel:belowHell && jewelName==='탄자나이트' ? '' : jewelName
   };
 }
 function normalizeDpsBaseUnitExtraSettings(value){
@@ -970,7 +1016,7 @@ function normalizeDpsBaseUnitExtraSettings(value){
     const unit=dpsBaseUnitById(unitId);
     if(!dpsBaseUnitAllowsSlotExpansion(unit)) return;
     const items=Array.isArray(raw) ? raw : (Array.isArray(raw?.slots) ? raw.slots : []);
-    const slots=Array.from({length:DPS_BASE_UNIT_EXTRA_SLOT_COUNT},(_,index)=>normalizeDpsBaseUnitExtraSlotSetting(items[index]));
+    const slots=Array.from({length:DPS_BASE_UNIT_EXTRA_SLOT_COUNT},(_,index)=>normalizeDpsBaseUnitExtraSlotSetting(items[index],unit));
     if(slots.some(item=>item.limitBreak>0 || item.legendaryMythicJewel)) out[unit.id]=slots;
   });
   return out;
@@ -983,7 +1029,7 @@ function dpsBaseUnitExtraSettingsObject(){
 function dpsBaseUnitExtraSlotSettings(unitOrId,settings=dpsBaseUnitExtraSettingsObject()){
   const unit=resolveDpsBaseUnit(unitOrId);
   const items=unit ? settings[unit.id] : null;
-  return Array.from({length:DPS_BASE_UNIT_EXTRA_SLOT_COUNT},(_,index)=>normalizeDpsBaseUnitExtraSlotSetting(items?.[index]));
+  return Array.from({length:DPS_BASE_UNIT_EXTRA_SLOT_COUNT},(_,index)=>normalizeDpsBaseUnitExtraSlotSetting(items?.[index],unit));
 }
 function dpsBaseUnitJewelName(unitOrId){
   if(!dpsBaseUnitSupportsAdvancedOptions(unitOrId)) return '';
@@ -1000,7 +1046,7 @@ function dpsBaseUnitInstanceGroups(unitOrId,quantityOverride,jewelSettings=dpsJe
     groups.push({
       count:Math.max(1,Number(count)||1),
       unitNumber,
-      limitBreak:Number(normalizeDpsBaseUnitLimitBreakValue(limitBreak))||0,
+      limitBreak:dpsBaseUnitCanUseLimitBreak(unit) ? Number(normalizeDpsBaseUnitLimitBreakValue(limitBreak))||0 : 0,
       name,
       stats:dpsJewelFinalStats(name,jewelSettings),
       type:name ? 'named' : 'none'
@@ -1020,11 +1066,11 @@ function dpsBaseUnitInstanceGroups(unitOrId,quantityOverride,jewelSettings=dpsJe
 function dpsBaseUnitJewelStats(unitOrId,settings=null){
   return dpsJewelFinalStats(dpsBaseUnitJewelName(unitOrId),settings);
 }
-function dpsBaseUnitQuantityLimit(){
-  return vs('coopMode')==='ON' ? 16 : 8;
+function dpsBaseUnitQuantityLimit(unitOrId=null){
+  return dpsBaseUnitHasTanzaniteException(unitOrId) ? 1 : (vs('coopMode')==='ON' ? 16 : 8);
 }
-function normalizeDpsBaseUnitQuantityValue(value){
-  const limit=dpsBaseUnitQuantityLimit();
+function normalizeDpsBaseUnitQuantityValue(value,unitOrId=null){
+  const limit=dpsBaseUnitQuantityLimit(unitOrId);
   return String(Math.max(0, Math.min(limit, Math.round(Number(value) || 0))));
 }
 function normalizeDpsBaseUnitEnhanceValue(value, fallback=0){
@@ -1040,14 +1086,15 @@ function dpsBaseUnitQuantity(unitOrId){
   const unit=resolveDpsBaseUnit(unitOrId);
   if(!dpsBaseUnitHasQuantity(unit)) return 1;
   const el=typeof $==='function' ? $(dpsBaseUnitQuantityInputId(unit)) : null;
-  return Number(normalizeDpsBaseUnitQuantityValue(el?.value ?? 0));
+  return Number(normalizeDpsBaseUnitQuantityValue(el?.value ?? 0,unit));
 }
 function dpsBaseUnitEnhanceValue(unitOrId){
+  if(!dpsBaseUnitCanUseEnhance(unitOrId)) return 0;
   const el=typeof $==='function' ? $(dpsBaseUnitEnhanceInputId(unitOrId)) : null;
   return Number(normalizeDpsBaseUnitEnhanceValue(el?.value, 0));
 }
 function dpsBaseUnitLimitBreakValue(unitOrId){
-  if(!dpsBaseUnitSupportsAdvancedOptions(unitOrId)) return 0;
+  if(!dpsBaseUnitCanUseLimitBreak(unitOrId)) return 0;
   const el=typeof $==='function' ? $(dpsBaseUnitLimitBreakInputId(unitOrId)) : null;
   return Number(normalizeDpsBaseUnitLimitBreakValue(el?.value));
 }
@@ -1120,6 +1167,9 @@ function dpsBaseUnitDehakaShardDpsMultiplier(unit){
 }
 function dpsBaseUnitDehakaShardPierceBonus(unit){
   return unit?.id==='prodDehaka' && shardValue('xerusShard')>=3000 ? 10 : 0;
+}
+function dpsBaseUnitIgnoresArmorPierce(unit){
+  return unit?.id==='prodJimRaynor';
 }
 function dpsBaseUnitPierceBonus(unit){
   return nonNegativeNumber(unit?.armorPierceBonus)+dpsBaseUnitDehakaShardPierceBonus(unit);
@@ -1276,7 +1326,7 @@ function dpsBaseUnitUniqueAdBonus(unit,totalQuantity,enhanceStats=unitEnhanceSta
 }
 function dpsBaseUnitPrivateAd(unit, quantity, jewelStats=dpsBaseUnitJewelStats(unit), jewelName=dpsBaseUnitJewelName(unit), limitBreakValue=dpsBaseUnitLimitBreakValue(unit), enhanceStats=null){
   const limitBreak=dpsBaseUnitLimitBreakStats(unit,limitBreakValue);
-  const enhance=dpsBaseUnitEnhanceValue(unit);
+  const enhance=dpsBaseUnitEnhanceValue(unit)+(Number(jewelStats?.enhanceFlat)||0);
   const uniqueBuff=dpsBaseUnitUniqueAdBonus(unit,quantity,enhanceStats || undefined);
   const duplicatePenalty=Math.max(Math.max(1,Number(quantity)||1)-8,0)*10;
   const jewelStackAd=jewelName==='라피스' ? 200 : (jewelName==='헬리오도르' ? -200 : 0);
@@ -1316,7 +1366,7 @@ function dpsBaseUnitAttackRate(unit, context){
 }
 function dpsBaseUnitSingleDpsParts(unit,context,jewelStats,jewelName='',limitBreakValue=0){
   const limitBreak=dpsBaseUnitLimitBreakStats(unit,limitBreakValue);
-  const unitEffectivePierce=totalDpsPierce(context.basePierceBonus,context.rpPierce,context.unitPierceBonus);
+  const unitEffectivePierce=dpsBaseUnitIgnoresArmorPierce(unit) ? 0 : totalDpsPierce(context.basePierceBonus,context.rpPierce,context.unitPierceBonus);
   const privateAd=dpsBaseUnitPrivateAd(unit,context.totalQuantity,jewelStats,jewelName,limitBreakValue,context.enhanceStats);
   const adTdMultiplier=(1+(context.globalAd+privateAd)/100)*((context.M11+limitBreak.td+(Number(jewelStats?.td)||0))/100);
   const raceCritBonus=dpsBaseUnitRaceCritBonus(unit,context.targetRound);
@@ -1493,6 +1543,7 @@ function computeDpsBaseUnitBoardResult(context){
       attackCount:Number(unit.attackCount)||0
     };
     const jewelName=dpsBaseUnitJewelName(unit);
+    const primaryJewelStats=dpsJewelFinalStats(jewelName,jewelSettings);
     const groups=dpsBaseUnitInstanceGroups(unit,quantityMultiplier,jewelSettings,extraSettings);
     const unitContext={basePierceBonus,rpPierce,unitPierceBonus,totalQuantity:quantityMultiplier,globalAd:M4-unitADBonus,M11,M8,M10,M9,M16,M17,M18,M7,M13,dt,flowerAttackSpeed:upperStats.actualAs,difficultyAs:diff.as,enemyArmor:enemyData.armor,M12:M12_dr,targetRound,weaponAttack,enhanceStats,voidPower:voidPowerEnabledIds.has(unit.id)};
     const groupResults=groups.map(group=>({...group,...dpsBaseUnitSingleDpsParts(unit,unitContext,group.stats,group.name,group.limitBreak)}));
@@ -1518,10 +1569,10 @@ function computeDpsBaseUnitBoardResult(context){
       unitPierceBonus,
       ownDurability:targetDurabilityRemain(enemyData,unitTargetEffects),
       actualM12:actualDrWithPierce(M12_dr,baseParts.effectivePierce),
-      enhance:dpsBaseUnitEnhanceValue(unit),
+      enhance:dpsBaseUnitEnhanceValue(unit)+(Number(primaryJewelStats?.enhanceFlat)||0),
       limitBreak:dpsBaseUnitLimitBreakValue(unit),
       jewelName,
-      jewelStats:dpsJewelFinalStats(jewelName,jewelSettings),
+      jewelStats:primaryJewelStats,
       jewelGroups:groupResults.map(group=>({unitNumber:group.unitNumber,name:group.name,type:group.type,limitBreak:group.limitBreak,count:group.count,dps:Math.round(group.rawM19*group.count)})),
       voidPower:voidPowerEnabledIds.has(unit.id),
       raceCritBonus:displayParts.raceCritBonus,

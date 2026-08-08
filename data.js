@@ -212,9 +212,9 @@ const RAW_JEWEL_DATA=[
   ["아쿠아마린", "RXD 등급 부여", "2마리 동시 장착 SXD 등급 부여"],
   ["다이아몬드", "한계돌파 파괴X 0한돌 & 강화15%하락", "한게돌파 파괴X 0한돌 & 가스 40 환급"],
   ["에메랄드", "5한돌 이상 총 데미지 +30%", "3한돌 이상 총 데미지 +45%"],
-  ["펄", "유닛 강화 수치 +100%", "유닛 강화 수치 +225%"],
+  ["펄", "유닛 강화 수치 +100", "유닛 강화 수치 +225"],
   ["루비", "공격력 +150% & 이동속도 -75%", "공격력 +300% & 이동속도 +100%"],
-  ["페리도트", "탐지 부여 (범위 8)", "탐지 부여 (범위 12) & 공격력 +100%"],
+  ["페리도트", "은폐 탐지 부여 (범위 8)", "은폐 탐지 부여 (범위 12) & 공격력 +100%"],
   ["사파이어", "60분 가속 2배", "90분 가속 2배 후 가속 +33% 영구 적용"],
   ["오팔", "쥬얼 장착 횟수 +3", "쥬얼 장착 횟수 +6 & 공격력 +125%"],
   ["토파즈", "공격속도 +15% & 2마리 동시적용", "총데미지 +15% & 2마리 동시적용"],
@@ -249,10 +249,10 @@ const DPS_JEWEL_EFFECTS=Object.freeze({
   '아쿠아마린':Object.freeze({legendary:Object.freeze({ad:0,as:0,td:0,ua:0}),mythic:Object.freeze({ad:0,as:0,td:0,ua:0})}),
   '다이아몬드':Object.freeze({legendary:Object.freeze({ad:0,as:0,td:0,ua:0}),mythic:Object.freeze({ad:0,as:0,td:0,ua:0})}),
   '에메랄드':Object.freeze({legendary:Object.freeze({ad:0,as:0,td:30,ua:0}),mythic:Object.freeze({ad:0,as:0,td:45,ua:0})}),
-  '펄':Object.freeze({legendary:Object.freeze({ad:100,as:0,td:0,ua:0}),mythic:Object.freeze({ad:225,as:0,td:0,ua:0})}),
+  '펄':Object.freeze({legendary:Object.freeze({ad:0,as:0,td:0,ua:0,enhanceFlat:100}),mythic:Object.freeze({ad:0,as:0,td:0,ua:0,enhanceFlat:225})}),
   '루비':Object.freeze({legendary:Object.freeze({ad:150,as:0,td:0,ua:0}),mythic:Object.freeze({ad:300,as:0,td:0,ua:0})}),
   '페리도트':Object.freeze({legendary:Object.freeze({ad:0,as:0,td:0,ua:0}),mythic:Object.freeze({ad:100,as:0,td:0,ua:0})}),
-  '사파이어':Object.freeze({legendary:Object.freeze({ad:0,as:0,td:0,ua:100}),mythic:Object.freeze({ad:0,as:0,td:0,ua:33})}),
+  '사파이어':Object.freeze({legendary:Object.freeze({ad:0,as:0,td:0,ua:0}),mythic:Object.freeze({ad:0,as:0,td:0,ua:33})}),
   '오팔':Object.freeze({legendary:Object.freeze({ad:0,as:0,td:0,ua:0}),mythic:Object.freeze({ad:125,as:0,td:0,ua:0})}),
   '토파즈':Object.freeze({legendary:Object.freeze({ad:0,as:15,td:0,ua:0}),mythic:Object.freeze({ad:0,as:0,td:15,ua:0})}),
   '터쿼이즈':Object.freeze({legendary:Object.freeze({ad:0,as:0,td:0,ua:0}),mythic:Object.freeze({ad:0,as:0,td:0,ua:0})}),
@@ -265,7 +265,7 @@ const DPS_JEWEL_EFFECTS=Object.freeze({
   '아게이트':Object.freeze({legendary:Object.freeze({ad:0,as:0,td:0,ua:9}),mythic:Object.freeze({ad:0,as:0,td:0,ua:0})}),
   '올리빈':Object.freeze({legendary:Object.freeze({ad:0,as:0,td:0,ua:0}),mythic:Object.freeze({ad:0,as:0,td:0,ua:0})}),
   '히아신스':Object.freeze({legendary:Object.freeze({ad:150,as:0,td:0,ua:0}),mythic:Object.freeze({ad:0,as:0,td:0,ua:0})}),
-  '크리소베릴':Object.freeze({legendary:Object.freeze({ad:50,as:25,td:5,ua:10}),mythic:Object.freeze({ad:0,as:0,td:0,ua:0})}),
+  '크리소베릴':Object.freeze({legendary:Object.freeze({ad:0,as:0,td:0,ua:0}),mythic:Object.freeze({ad:0,as:0,td:0,ua:0})}),
   '파파라챠':Object.freeze({legendary:Object.freeze({ad:0,as:0,td:33,ua:0}),mythic:Object.freeze({ad:0,as:0,td:0,ua:0})}),
   '탄자나이트':Object.freeze({legendary:Object.freeze({ad:0,as:0,td:0,ua:0}),mythic:Object.freeze({ad:0,as:0,td:0,ua:0})}),
   '루벨라이트':Object.freeze({legendary:Object.freeze({ad:0,as:0,td:25,ua:25}),mythic:Object.freeze({ad:0,as:0,td:0,ua:0})})
@@ -276,8 +276,8 @@ const DPS_JEWEL_NAMES=Object.freeze(RAW_JEWEL_DATA.map(row=>row[0]));
 /* 유닛 보드 */
 
 const DPS_BASE_UNIT_ALL_ID='all';
-const DPS_BASE_UNIT_RACE_ORDER=Object.freeze(['특수','테바','테메','프바','프메','저그','중립','혼종']);
-const DPS_BASE_UNIT_GRADE_ORDER=Object.freeze(['슈퍼히든','히든','레전드','헬','특수']);
+const DPS_BASE_UNIT_RACE_ORDER=Object.freeze(['테바','테메','프바','프메','저그','중립','혼종']);
+const DPS_BASE_UNIT_GRADE_ORDER=Object.freeze(['슈퍼히든','히든','레전드','헬','제작자 장난감']);
 const DPS_BASE_UNIT_RACE_CRIT_BONUS=Object.freeze({
   테바:Object.freeze([0,0,-0.25,0.35,0]),
   테메:Object.freeze([0.35,0,0,0,-0.25]),
@@ -320,7 +320,8 @@ const DPS_BASE_UNITS=Object.freeze([
   Object.freeze({id:'prodPrimalKerrigan',label:'원시 케리건',grade:'레전드',raceGroup:'저그',upgradeRace:'저그',quantityEnabled:true,quantityId:'dpsQtyPrimalKerrigan',weaponSpeed:1.65,asLimit:0,maxCooldown:0.0625,targetCount:1,attackCount:1,armorPierceBonus:0,critFormula:'일반',weaponAttack:707.64,weaponAttackTiers:Object.freeze([707.64,778.47,856.39]),attackSpeedMultiplier:0.75}),
   Object.freeze({id:'prodHybridRof',label:'하이브리드로프',grade:'레전드',raceGroup:'중립',upgradeRace:'중립',quantityEnabled:true,quantityId:'dpsQtyHybridRof',weaponSpeed:1,asLimit:0,maxCooldown:0.0625,targetCount:1,attackCount:1,armorPierceBonus:10,critFormula:'일반',weaponAttack:876.120,weaponAttackTiers:Object.freeze([876.120,963.810,1060.290])}),
   Object.freeze({id:'prodHellNova',label:'노바',grade:'헬',raceGroup:'테바',upgradeRace:'테란 바이오닉',quantityEnabled:true,quantityId:'dpsQtyHellNova',weaponSpeed:1.25,asLimit:0,maxCooldown:0.0625,targetCount:1,attackCount:1,armorPierceBonus:0,critFormula:'일반',weaponAttack:358.53,weaponAttackTiers:Object.freeze([358.53,394.42,433.90])}),
-  Object.freeze({id:'artifactUnit',label:'유물',grade:'특수',kind:'artifact',raceGroup:'특수',productionUnit:true,quantityEnabled:false,armorPierceBonus:0,critFormula:'방사'}),
+  Object.freeze({id:'prodJimRaynor',label:'짐 레이너',grade:'제작자 장난감',raceGroup:'테바',upgradeRace:'테란 바이오닉',quantityEnabled:true,quantityId:'dpsQtyJimRaynor',weaponSpeed:1,asLimit:0,maxCooldown:0.0625,targetCount:1,attackCount:1,armorPierceBonus:0,critFormula:'일반',weaponAttack:52.56,weaponAttackTiers:Object.freeze([52.56,57.82,63.60])}),
+  Object.freeze({id:'artifactUnit',label:'유물',grade:'히든',kind:'artifact',raceGroup:'특수',productionUnit:true,quantityEnabled:false,armorPierceBonus:0,critFormula:'방사'}),
 ]);
 
 /* 유물 DPS */
