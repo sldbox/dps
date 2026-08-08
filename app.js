@@ -1916,6 +1916,7 @@ function changeDpsBaseUnitSlot(slotIndex, unitId, options={}){
   }
   slots[index]=next;
   if(previous && previous!==next && dpsBaseUnitHasQuantity(previous) && !slots.includes(previous)) setDpsBaseUnitQuantity(previous,0);
+  if(next && previous!==next) applyDpsBaseUnitAddDefaults(next);
   if(next && dpsBaseUnitHasQuantity(next)) setDpsBaseUnitQuantity(next,Math.max(1,Number(dpsBaseUnitQuantityText(next))||1));
   setDpsBaseUnitStoredValue(slots.filter(Boolean),options.notify!==false,{slots});
 }
@@ -1979,7 +1980,6 @@ function syncDpsBaseUnitControl(options={}){
       restoreDpsBaseUnitViewState(stack,viewState);
     }
   }
-  syncDpsBaseUnitQuickAddButtons(slots);
 }
 function adjustDpsBaseUnitQuantity(unitId, delta, options={}){
   const unit=dpsBaseUnitById(unitId);
@@ -1988,75 +1988,23 @@ function adjustDpsBaseUnitQuantity(unitId, delta, options={}){
   setDpsBaseUnitQuantity(unitId, current + Number(delta || 0));
   syncDpsBaseUnitSelectionFromQuantities(options.notify!==false);
 }
-const DPS_BASE_UNIT_QUICK_ADD_PRESETS=Object.freeze({
-  fireOnly:['prodKerrigan'],
-  narudOnly:['prodNarud'],
-  amonOnly:['prodAmon'],
-  nydusOnly:['prodNydusDestroyer'],
-  artifactOnly:['artifactUnit']
-});
-function syncDpsBaseUnitQuickAddButtons(slots=currentDpsBaseUnitSlots()){
-  const selected=new Set(slots.filter(Boolean));
-  qsa('[data-dps-base-unit-quick-add]').forEach(button=>{
-    const ids=dpsBaseUnitSelectionIds(DPS_BASE_UNIT_QUICK_ADD_PRESETS[String(button.getAttribute('data-dps-base-unit-quick-add') || '')] || []);
-    const disabled=ids.length>0 && ids.some(id=>selected.has(id));
-    button.disabled=disabled;
-    button.classList.toggle('is-disabled',disabled);
-    button.setAttribute('aria-disabled',disabled ? 'true' : 'false');
-    button.title=disabled ? '이미 추가된 유닛입니다' : '';
-  });
+function dpsBaseUnitDefaultEnhanceValue(unitOrId){
+  const unit=dpsBaseUnitById(unitOrId);
+  if(!unit || unit.id==='prodJimRaynor') return '0';
+  return '500';
 }
 function applyDpsBaseUnitAddDefaults(unitId){
   const unit=dpsBaseUnitById(unitId);
   if(!unit) return false;
   const enhance=dpsBaseUnitStoreInput('enhance',unit);
-  if(enhance) enhance.value='500';
-  if(dpsBaseUnitHasQuantity(unit)) setDpsBaseUnitQuantity(unit.id,1);
+  if(enhance) enhance.value=dpsBaseUnitDefaultEnhanceValue(unit);
   return true;
-}
-function addDpsBaseUnitsToEmptySlots(unitIds){
-  const slots=currentDpsBaseUnitSlots();
-  let added=0;
-  let skipped=0;
-  let full=false;
-  dpsBaseUnitSelectionIds(unitIds).forEach(unitId=>{
-    if(!dpsBaseUnitById(unitId) || slots.includes(unitId)){
-      skipped++;
-      return;
-    }
-    const index=slots.indexOf('');
-    if(index<0){
-      full=true;
-      return;
-    }
-    slots[index]=unitId;
-    applyDpsBaseUnitAddDefaults(unitId);
-    added++;
-  });
-  if(added>0){
-    setDpsBaseUnitStoredValue(slots.filter(Boolean),false,{slots});
-    commitAppUpdate();
-    showToast(`${added}개 유닛을 빈 슬롯에 추가했습니다${full?' · 슬롯 부족':''}`,'success');
-    return true;
-  }
-  showToast(full ? '유닛 보드 슬롯이 가득 찼습니다' : (skipped ? '이미 추가된 유닛입니다' : '추가할 유닛이 없습니다'),'warn');
-  return false;
-}
-function addDpsBaseUnitQuickPreset(presetKey){
-  const ids=DPS_BASE_UNIT_QUICK_ADD_PRESETS[String(presetKey || '')];
-  return Array.isArray(ids) ? addDpsBaseUnitsToEmptySlots(ids) : false;
 }
 
 function bindDpsBaseUnitControlEvents(){
   if(document.documentElement.dataset.dpsBaseUnitControlBound==='1') return;
   document.documentElement.dataset.dpsBaseUnitControlBound='1';
   document.addEventListener('click', e=>{
-    const quickAdd=e.target?.closest?.('[data-dps-base-unit-quick-add]');
-    if(quickAdd?.closest?.('[data-dps-base-unit-control]')){
-      e.preventDefault();
-      addDpsBaseUnitQuickPreset(quickAdd.getAttribute('data-dps-base-unit-quick-add') || '');
-      return;
-    }
     const clearUnit=e.target?.closest?.('[data-dps-base-unit-clear-slot]');
     if(clearUnit?.closest?.('[data-dps-base-unit-control]')){
       e.preventDefault();
