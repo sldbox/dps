@@ -1,7 +1,5 @@
 (() => {
   'use strict';
-
-  /* 공통 모달 상태·쉘 */
   const MONTH_RUNE_MODAL_TITLES=Object.freeze({
     runes:'이달의 룬',
     dps:'DPS표'
@@ -10,7 +8,6 @@
   const DPS_TABLE_MIN_DPS_INPUT_SELECTOR='#dpsTableMinDps,#dpsTableMinDpsMain';
   const BOARD_MODAL_IDS=Object.freeze(['sanctuarySkillModal','busPassengerModal','zeroRankInfoModal']);
   let eventsBound=false;
-
   function createShell(id,className,innerHtml){
     const existing=document.getElementById(id);
     if(existing) return existing;
@@ -22,7 +19,6 @@
     document.body.appendChild(modal);
     return modal;
   }
-
   function setOpen(id,bodyClass,open,options={}){
     const modal=document.getElementById(id);
     if(!modal) return null;
@@ -35,11 +31,9 @@
     }
     return modal;
   }
-
   function isOpen(id){
     return document.getElementById(id)?.classList.contains('is-open')===true;
   }
-
   function syncModeClasses(dialog,modes,activeMode=''){
     const variants=Array.isArray(modes)?modes:[];
     variants.forEach(mode=>{
@@ -50,20 +44,15 @@
     dialog?.classList.add(`is-dps-mode-${activeMode}`);
     document.body?.classList.add(`is-dps-mode-${activeMode}`);
   }
-
   function dispatchUnitJewelModalEvent(type,detail){
     window.dispatchEvent(new CustomEvent(type,detail===undefined ? undefined : {detail}));
   }
   function openJewelSettings(){
     dispatchUnitJewelModalEvent('dps:unitJewelModalRequest',{panel:'jewel'});
   }
-
   function closeJewelSettings(){
     dispatchUnitJewelModalEvent('dps:unitJewelModalCloseRequest');
   }
-
-
-  /* 앱 입력 모달 */
   let appInputModalState=null;
   function createAppInputModal(){
     return createShell('appInputModal','app-input-modal-shell',`
@@ -113,9 +102,6 @@
       });
     });
   }
-
-
-  /* 보드 분리 모달 */
   function closeBoardModal(id=''){
     const ids=BOARD_MODAL_IDS.includes(id) ? [id] : BOARD_MODAL_IDS;
     ids.forEach(modalId=>setOpen(modalId,'board-modal-open',false,{rootClass:true}));
@@ -136,19 +122,15 @@
   function getOpenBoardModalId(){
     return BOARD_MODAL_IDS.find(isOpen) || '';
   }
-
-  /* DPS표·룬 */
   function getDpsTableMinDpsInput(target){
     return target instanceof Element?target.closest(DPS_TABLE_MIN_DPS_INPUT_SELECTOR):null;
   }
-
   function withDpsTableMinDpsInput(event, handler){
     const minInput=getDpsTableMinDpsInput(event.target);
     if(!minInput) return false;
     handler(minInput,event);
     return true;
   }
-
   function syncFreshDpsTableMinDpsFocus(input){
     const fresh=document.getElementById(input.id);
     if(!fresh) return;
@@ -156,7 +138,6 @@
     const pos=fresh.value.length;
     if(typeof fresh.setSelectionRange==='function') fresh.setSelectionRange(pos,pos);
   }
-
   function renderMonthRuneModalHeader(tabName){
     const modal=document.getElementById('monthRuneModal');
     if(!modal) return;
@@ -178,13 +159,11 @@
         :'';
     }
   }
-
   function renderDpsTablePanel(){
     return `<section class="month-rune-panel dps-table-inline-panel" data-month-rune-panel="dps" role="tabpanel" aria-labelledby="monthRuneTitle" hidden>
       <div class="dps-table-body" id="dpsTableMount" data-dps-table-mount></div>
     </section>`;
   }
-
   function selectMonthRuneModalTab(tabName){
     const modal=document.getElementById('monthRuneModal');
     if(!modal) return;
@@ -198,7 +177,6 @@
     if(next!=='dps') syncModeClasses(modal.querySelector('.month-rune-modal'),DPS_MODAL_MODES);
     if(next==='dps') renderDpsTablePanelContent();
   }
-
   function createMonthRuneModal(){
     const data=window.DPS_DATA||{};
     const info=data.MONTHLY_RUNE_INFO||{months:[]};
@@ -216,22 +194,18 @@
         </div>
       </section>`);
   }
-
   function openMonthRune(tabName='runes'){
     const next=typeof tabName==='string'?tabName:'runes';
     createMonthRuneModal();
     selectMonthRuneModalTab(next);
     setOpen('monthRuneModal','month-rune-modal-open',true);
   }
-
   function closeMonthRune(){
     if(!isOpen('monthRuneModal')) return;
     const modal=document.getElementById('monthRuneModal');
     setOpen('monthRuneModal','month-rune-modal-open',false);
     syncModeClasses(modal?.querySelector('.month-rune-modal'),DPS_MODAL_MODES);
   }
-
-  /* 통합 이벤트·공개 API */
   function handleDocumentClick(event){
     const target=event.target instanceof Element?event.target:null;
     if(!target) return;
@@ -256,7 +230,6 @@
     const modeTarget=target.closest('[data-dps-table-mode]');
     if(modeTarget) switchDpsTableMode(modeTarget.getAttribute('data-dps-table-mode'));
   }
-
   function handleDocumentKeydown(event){
     if(event.key==='Escape'){
       if(isOpen('appInputModal')){
@@ -293,18 +266,15 @@
       }
     });
   }
-
   function handleDocumentInput(event){
     withDpsTableMinDpsInput(event,(minInput)=>{
       setDpsTableMinDps(minInput.value);
       syncFreshDpsTableMinDpsFocus(minInput);
     });
   }
-
   function handleDocumentFocusOut(event){
     withDpsTableMinDpsInput(event,(minInput)=>setDpsTableMinDps(minInput.value,{format:true}));
   }
-
   function bindEvents(){
     if(eventsBound) return;
     eventsBound=true;
@@ -313,7 +283,6 @@
     document.addEventListener('input',handleDocumentInput);
     document.addEventListener('focusout',handleDocumentFocusOut,true);
   }
-
   window.DpsModal=Object.freeze({
     createShell,
     setOpen,
