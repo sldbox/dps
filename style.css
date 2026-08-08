@@ -4,7 +4,7 @@
 *::-webkit-scrollbar{width:0;height:0;display:none;}
 body{font-size:calc(13px * var(--app-font-scale));line-height:1.55;min-height:100vh;overflow:hidden;letter-spacing:-.01em;}
 /* 앱 프레임·카드 */
-.wrap{grid-template-columns:minmax(0,35fr) minmax(0,35fr) minmax(0,30fr);max-width:none;margin:0;display:grid;height:100vh;width:100vw;overflow:hidden;gap:0;}
+.wrap{grid-template-columns:minmax(0,35fr) minmax(0,30fr) minmax(0,35fr);max-width:none;margin:0;display:grid;height:100vh;width:100vw;overflow:hidden;gap:0;}
 .hdr{display:flex;align-items:center;gap:12px;grid-column:1/-1;grid-row:1;height:52px;z-index:5;}
 .hdr h1{font-size:calc(15px * var(--app-font-scale));font-weight:900;letter-spacing:-.2px;color:#e6edf7;}
 .hdr-logo{display:flex;align-items:center;justify-content:center;width:36px;height:30px;padding:0;border:1px solid var(--btn-action-border);border-radius:10px;background-color:#10233d;background-image:linear-gradient(145deg,#0b1220 0%,#10233d 48%,var(--btn-action-bg) 100%);color:#f8fbff;box-shadow:0 0 0 1px rgba(96,165,250,.16),0 7px 16px rgba(0,0,0,.30),inset 0 1px 0 rgba(255,255,255,.10);font-family:Consolas,monospace;font-size:calc(12px * var(--app-font-scale));font-weight:900;overflow:hidden;}
@@ -632,14 +632,14 @@ button:disabled, .ui-action-btn:disabled, .ui-choice-btn:disabled, .ui-tab-btn:d
 .btn.subtle.tone-reference:hover:not(:disabled),
 .mobile-section-tab.tone-reference:hover:not(.active){background:var(--tone-bg-hover);border-color:var(--tone-border-hover);color:var(--tone-text-hover);}
 button, select{touch-action:manipulation;}
-body.is-pc-landscape .wrap, body:not(.is-mobile):not(.is-tablet):not(.is-pc-portrait) .wrap{grid-template-columns:minmax(0,35fr) minmax(0,35fr) minmax(0,30fr);min-width:0;background:var(--ui-bg);}
+body.is-pc-landscape .wrap, body:not(.is-mobile):not(.is-tablet):not(.is-pc-portrait) .wrap{grid-template-columns:minmax(0,35fr) minmax(0,30fr) minmax(0,35fr);min-width:0;background:var(--ui-bg);}
 body.is-pc-landscape .col-left, body.is-pc-landscape .col-mid, body.is-pc-landscape .col-right, body:not(.is-mobile):not(.is-tablet):not(.is-pc-portrait) .col-left, body:not(.is-mobile):not(.is-tablet):not(.is-pc-portrait) .col-mid, body:not(.is-mobile):not(.is-tablet):not(.is-pc-portrait) .col-right{min-width:0;width:auto;}
 .xp-sp-panel, .rune-basic-card, .rune-option-card, .additional-editor, .enchant-combined{box-shadow:none;}
 .rune-panel-title, .skill-list-head{color:#24447d;}
 .ir label, .mini-ir label, .rune-stat-row label, .rune-option-grid label, .additional-row label, .enchant-combined-row label{border-color:var(--ui-line-strong);}
 input[readonly], input:disabled, select:disabled, body:not(.is-mobile) .enchant-result-value{border-radius:var(--ui-control-radius);}
 @media (max-width:1320px) and (min-width:1025px){
-body.is-pc-landscape .wrap, body:not(.is-mobile):not(.is-tablet):not(.is-pc-portrait) .wrap{grid-template-columns:minmax(0,35fr) minmax(0,35fr) minmax(0,30fr);}
+body.is-pc-landscape .wrap, body:not(.is-mobile):not(.is-tablet):not(.is-pc-portrait) .wrap{grid-template-columns:minmax(0,35fr) minmax(0,30fr) minmax(0,35fr);}
 .xp-sp-card .xp-sp-split, .clean-rune-card .rune-panel.tidy-rune-panel{grid-template-columns:1fr;}
 }
 @media (max-width:600px){
@@ -1186,9 +1186,9 @@ body .dps-base-unit-card{--dps-base-unit-columns:minmax(0,2.35fr) minmax(0,.90fr
 body .dps-base-unit-card.is-empty{gap:0;padding:4px 0 14px;}
 body .dps-base-unit-field{display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:13px 31px;gap:5px;align-items:stretch;min-width:0;box-sizing:border-box;}
 body .dps-base-unit-field-label{display:flex;align-items:center;justify-content:center;min-width:0;color:#dbeafe;font-size:calc(9.4px * var(--app-font-scale));font-weight:900;line-height:1;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-body .dps-base-unit-name-label{display:inline-flex;align-items:center;justify-content:center;gap:2px;max-width:100%;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+body .dps-base-unit-name-label{display:inline-flex;align-items:center;justify-content:center;gap:3px;max-width:100%;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 body .dps-base-unit-name-label.is-max-attack-speed{color:#facc15;text-shadow:0 0 8px rgba(250,204,21,.28);}
-body .dps-base-unit-max-speed-label{flex:0 0 auto;color:inherit;font-weight:1000;}
+body .dps-base-unit-speed-value{flex:0 0 auto;color:inherit;font-weight:1000;}
 body .dps-base-unit-select-wrap{display:grid;grid-template-columns:var(--dps-base-unit-clear-size) minmax(0,1fr);gap:var(--dps-base-unit-select-gap);align-items:center;min-width:0;height:31px;}
 body .dps-base-unit-select, body .dps-base-unit-fixed-qty, body .dps-base-unit-qty-btn, body .dps-base-unit-qty-input, body .dps-base-unit-board-attack, body .dps-base-unit-board-pierce, body .dps-base-unit-board-dps{width:100%;min-width:0;min-height:31px;padding:0 7px;font-size:calc(10.3px * var(--app-font-scale));font-weight:900;text-align:center;text-align-last:center;box-sizing:border-box;}
 body .dps-base-unit-select, body .dps-base-unit-qty-btn, body .dps-base-unit-qty-input{height:31px;}

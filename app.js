@@ -1332,25 +1332,35 @@ function sortedDpsBaseUnits(){
 }
 let dpsBaseUnitResultDisplayMap=new Map();
 let dpsBaseUnitBoardBasePierce=10;
-const DPS_BASE_UNIT_MAX_SPEED_LABEL_COOLDOWN=0.0625;
-const DPS_BASE_UNIT_MAX_SPEED_LABEL_EPSILON=0.000001;
+const DPS_BASE_UNIT_MAX_SPEED_EPSILON=0.000001;
 
 function dpsBaseUnitResultHasMaxAttackSpeed(result){
+  if(result?.isMaxAttackSpeed===true) return true;
   const cooldown=Number(result?.finalCooldown);
-  const weaponSpeed=Number(result?.weaponSpeed);
-  return weaponSpeed>0 && Number.isFinite(cooldown) && cooldown<=DPS_BASE_UNIT_MAX_SPEED_LABEL_COOLDOWN+DPS_BASE_UNIT_MAX_SPEED_LABEL_EPSILON;
-}
-function dpsBaseUnitHasMaxAttackSpeed(unit){
-  if(!unit || dpsBaseUnitIsArtifact(unit)) return false;
-  const result=dpsBaseUnitResultDisplayMap.get(String(unit.id || ''));
-  return dpsBaseUnitResultHasMaxAttackSpeed(result);
+  const maxSpeedCooldown=Number(result?.maxSpeedCooldown);
+  return Number.isFinite(cooldown) && Number.isFinite(maxSpeedCooldown) && maxSpeedCooldown>0 && cooldown<=maxSpeedCooldown+DPS_BASE_UNIT_MAX_SPEED_EPSILON;
 }
 function dpsBaseUnitDisplayLabel(unit){
   return dpsBaseUnitLabel(unit);
 }
+function dpsBaseUnitCooldownText(value){
+  const cooldown=Number(value);
+  if(!Number.isFinite(cooldown) || cooldown<=0) return '';
+  return cooldown.toLocaleString('ko-KR',{minimumFractionDigits:4,maximumFractionDigits:4});
+}
+function dpsBaseUnitFinalCooldownText(result){
+  return dpsBaseUnitCooldownText(result?.finalCooldown);
+}
+function dpsBaseUnitMaxCooldownText(result){
+  return dpsBaseUnitCooldownText(result?.maxSpeedCooldown);
+}
 function dpsBaseUnitNameFieldLabelHtml(unit){
-  const maxSpeed=dpsBaseUnitHasMaxAttackSpeed(unit);
-  return `<span class="dps-base-unit-name-label${maxSpeed?' is-max-attack-speed':''}">유닛명${maxSpeed?'<span class="dps-base-unit-max-speed-label">[최대공속]</span>':''}</span>`;
+  const result=unit ? dpsBaseUnitResultDisplayMap.get(String(unit.id || '')) || null : null;
+  const maxSpeed=unit && !dpsBaseUnitIsArtifact(unit) && dpsBaseUnitResultHasMaxAttackSpeed(result);
+  const speedText=unit && !dpsBaseUnitIsArtifact(unit) ? (maxSpeed ? dpsBaseUnitMaxCooldownText(result) : dpsBaseUnitFinalCooldownText(result)) : '';
+  const speedLabel=maxSpeed ? '공속MAX' : '공속';
+  const speedHtml=speedText ? `<span class="dps-base-unit-speed-value">(${speedLabel}: ${escapeHtml(speedText)})</span>` : '';
+  return `<span class="dps-base-unit-name-label${maxSpeed?' is-max-attack-speed':''}">유닛명${speedHtml}</span>`;
 }
 
 function dpsBaseUnitPercentText(value){

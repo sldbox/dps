@@ -1287,7 +1287,9 @@ function dpsBaseUnitAttackRate(unit, context){
   const weaponSpeed=Number(unit?.weaponSpeed) || 0;
   const targetsPerAttack=Number(unit?.targetCount) || 0;
   const attackCount=Number(unit?.attackCount) || 0;
-  if(weaponSpeed<=0 || targetsPerAttack<=0 || attackCount<=0) return {rate:0,cooldown:0,targetsPerAttack:0};
+  if(weaponSpeed<=0 || targetsPerAttack<=0 || attackCount<=0){
+    return {rate:0,cooldown:0,targetsPerAttack:0,maxSpeedCooldown:0,isMaxAttackSpeed:false};
+  }
   const limitBreak=dpsBaseUnitLimitBreakStats(unit,context?.limitBreak ?? 0);
   const difficultySlow=Math.max(0.000001,1-(Number(context?.difficultyAs)||0)/100);
   const ua=Math.max(0.000001,Number(context?.ua)||1);
@@ -1303,11 +1305,14 @@ function dpsBaseUnitAttackRate(unit, context){
   const speedModeMultiplier=dpsBaseUnitSpeedModeEnabled() ? SPEED_MODE_MULTIPLIER : 1;
   const adjustedCooldown=Math.round((weaponSpeed/(speedMultiplier*speedModeMultiplier))*10000)/10000;
   const asLimit=Math.max(0,Number(unit?.asLimit)||0);
+  const configuredMaxCooldown=Math.max(0,Number(unit?.maxCooldown)||0);
   const limitMultiplier=Math.max(0.000001,difficultySlow*ua*dt*privateUa);
   const limitCooldown=asLimit>0 ? asLimit/limitMultiplier : 0;
-  const cooldown=Math.max(0.0625,adjustedCooldown,limitCooldown);
+  const maxSpeedCooldown=configuredMaxCooldown>0 ? configuredMaxCooldown : Math.max(0.0625,limitCooldown);
+  const cooldown=Math.max(adjustedCooldown,maxSpeedCooldown);
+  const isMaxAttackSpeed=adjustedCooldown<=maxSpeedCooldown+0.000001;
   const rate=attackCount/Math.max(0.000001,cooldown);
-  return {rate,cooldown,targetsPerAttack};
+  return {rate,cooldown,targetsPerAttack,maxSpeedCooldown,isMaxAttackSpeed};
 }
 function dpsBaseUnitSingleDpsParts(unit,context,jewelStats,jewelName='',limitBreakValue=0){
   const limitBreak=dpsBaseUnitLimitBreakStats(unit,limitBreakValue);
@@ -1326,7 +1331,8 @@ function dpsBaseUnitSingleDpsParts(unit,context,jewelStats,jewelName='',limitBre
   const rawM19=singleTargetRawM19*attackRate.targetsPerAttack;
   return {
     rawM19,singleTargetRawM19,AB3:armorPierceMultiplier,AB4:adTdMultiplier,AB5:critMultiplier,AB6:attackRate.rate,
-    effectivePierce:unitEffectivePierce,raceCritBonus,finalCooldown:attackRate.cooldown,targetsPerAttack:attackRate.targetsPerAttack,
+    effectivePierce:unitEffectivePierce,raceCritBonus,finalCooldown:attackRate.cooldown,maxSpeedCooldown:attackRate.maxSpeedCooldown,
+    isMaxAttackSpeed:attackRate.isMaxAttackSpeed,targetsPerAttack:attackRate.targetsPerAttack,
     jewelName,jewelStats,limitBreak:Number(normalizeDpsBaseUnitLimitBreakValue(limitBreakValue))||0
   };
 }
@@ -1382,7 +1388,7 @@ function dpsBaseUnitArtifactDpsParts(unit,context){
   const rawM19=perWaveDamage*targetCount*timing.rate;
   return {
     rawM19,perWaveDamage,AB3:1,AB4:adTdMultiplier,AB5:critMultiplier,AB6:timing.rate,effectivePierce:0,
-    raceCritBonus:0,finalCooldown:timing.interval,jewelName:'',jewelStats:dpsJewelFinalStats(''),
+    raceCritBonus:0,finalCooldown:timing.interval,maxSpeedCooldown:timing.interval,isMaxAttackSpeed:false,jewelName:'',jewelStats:dpsJewelFinalStats(''),
     artifactWaveInterval:timing.interval,artifactWaveCount:timing.waveCount,artifactTargetCount:targetCount,
     artifactAcceleration:timing.accelerationMultiplier
   };
@@ -1461,7 +1467,7 @@ function computeDpsBaseUnitBoardResult(context){
         effectivePierce:0,unitPierceBonus:0,ownDurability:targetDurabilityRemain(enemyData,unitTargetEffects),
         actualM12:actualDrWithPierce(M12_dr,0),enhance:artifactWeapon.enhance,limitBreak:0,jewelName:'',
         jewelStats:DPS_EMPTY_JEWEL_STATS,jewelGroups:[],voidPower:false,raceCritBonus:0,
-        finalCooldown:parts.finalCooldown,artifactAttackRate:parts.AB6,artifactWaveInterval:parts.artifactWaveInterval,
+        finalCooldown:parts.finalCooldown,maxSpeedCooldown:parts.maxSpeedCooldown,isMaxAttackSpeed:parts.isMaxAttackSpeed,artifactAttackRate:parts.AB6,artifactWaveInterval:parts.artifactWaveInterval,
         artifactWaveCount:parts.artifactWaveCount,artifactTargetCount:parts.artifactTargetCount,
         artifactAcceleration:parts.artifactAcceleration,perWaveDamage:parts.perWaveDamage,
         unitId:unit.id,kind:'artifact',quantity:1,baseWeaponAttack:artifactWeapon.baseWeaponAttack,
@@ -1520,6 +1526,8 @@ function computeDpsBaseUnitBoardResult(context){
       voidPower:voidPowerEnabledIds.has(unit.id),
       raceCritBonus:displayParts.raceCritBonus,
       finalCooldown:displayParts.finalCooldown,
+      maxSpeedCooldown:displayParts.maxSpeedCooldown,
+      isMaxAttackSpeed:displayParts.isMaxAttackSpeed,
       attacksPerSecond:displayParts.AB6,
       targetsPerAttack:displayParts.targetsPerAttack,
       ...unitMeta
