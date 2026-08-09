@@ -276,7 +276,7 @@ const DPS_JEWEL_NAMES=Object.freeze(RAW_JEWEL_DATA.map(row=>row[0]));
 
 const DPS_BASE_UNIT_ALL_ID='all';
 const DPS_BASE_UNIT_RACE_ORDER=Object.freeze(['테바','테메','프바','프메','저그','중립','혼종']);
-const DPS_BASE_UNIT_GRADE_ORDER=Object.freeze(['슈퍼히든','히든','레전드','헬','제작자 장난감']);
+const DPS_BASE_UNIT_GRADE_ORDER=Object.freeze(['슈퍼히든','히든','레전드','헬']);
 const DPS_BASE_UNIT_RACE_CRIT_BONUS=Object.freeze({
   테바:Object.freeze([0,0,-0.25,0.35,0]),
   테메:Object.freeze([0.35,0,0,0,-0.25]),
@@ -319,7 +319,6 @@ const DPS_BASE_UNITS=Object.freeze([
   Object.freeze({id:'prodPrimalKerrigan',label:'원시 케리건',grade:'레전드',raceGroup:'저그',upgradeRace:'저그',quantityEnabled:true,quantityId:'dpsQtyPrimalKerrigan',weaponSpeed:1.65,asLimit:0,maxCooldown:0.0625,targetCount:1,attackCount:1,armorPierceBonus:0,critFormula:'일반',weaponAttack:707.64,weaponAttackTiers:Object.freeze([707.64,778.47,856.39]),attackSpeedMultiplier:0.75}),
   Object.freeze({id:'prodHybridRof',label:'하이브리드로프',grade:'레전드',raceGroup:'중립',upgradeRace:'중립',quantityEnabled:true,quantityId:'dpsQtyHybridRof',weaponSpeed:1,asLimit:0,maxCooldown:0.0625,targetCount:1,attackCount:1,armorPierceBonus:10,critFormula:'일반',weaponAttack:876.120,weaponAttackTiers:Object.freeze([876.120,963.810,1060.290])}),
   Object.freeze({id:'prodHellNova',label:'노바',grade:'헬',raceGroup:'테바',upgradeRace:'테란 바이오닉',quantityEnabled:true,quantityId:'dpsQtyHellNova',weaponSpeed:1.25,asLimit:0,maxCooldown:0.0625,targetCount:1,attackCount:1,armorPierceBonus:0,critFormula:'일반',weaponAttack:358.53,weaponAttackTiers:Object.freeze([358.53,394.42,433.90])}),
-  Object.freeze({id:'prodJimRaynor',label:'짐 레이너',grade:'제작자 장난감',raceGroup:'테바',upgradeRace:'테란 바이오닉',quantityEnabled:true,quantityId:'dpsQtyJimRaynor',weaponSpeed:1,asLimit:0,maxCooldown:0.0625,targetCount:1,attackCount:1,armorPierceBonus:0,critFormula:'일반',weaponAttack:52.56,weaponAttackTiers:Object.freeze([52.56,57.82,63.60])}),
   Object.freeze({id:'artifactUnit',label:'유물',grade:'히든',kind:'artifact',raceGroup:'특수',productionUnit:true,quantityEnabled:false,armorPierceBonus:0,critFormula:'방사'}),
 ]);
 
