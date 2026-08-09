@@ -271,7 +271,6 @@ const DPS_JEWEL_EFFECTS=Object.freeze({
 });
 const DPS_JEWEL_NAMES=Object.freeze(RAW_JEWEL_DATA.map(row=>row[0]));
 
-
 /* 유닛 보드 */
 
 const DPS_BASE_UNIT_ALL_ID='all';

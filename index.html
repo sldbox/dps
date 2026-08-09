@@ -4,7 +4,7 @@
 <meta charset="UTF-8"/>
 <meta name="google-site-verification" content="RTuDWbMdnKgbpRpl05eXh9epFwWRSxju4NOl8OtjMsI" />
 <script>
-window.DPS_BUILD_VERSION = "2608090001";
+window.DPS_BUILD_VERSION = "2608090013";
 window.APP_VERSION = window.DPS_BUILD_VERSION;
 (function(){
   'use strict';
@@ -186,14 +186,14 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 <meta content="https://sldbox.github.io/dps/" property="og:url"/>
 <meta content="개복디 특성 계산기" property="og:title"/>
 <meta content="특성 투자, 재화 사용량, 표기 스탯, 총데미지, DPS를 한 번에 계산할 수 있는 개복디 전용 계산기입니다." property="og:description"/>
-<meta content="https://sldbox.github.io/dps/logo.png?v=2608090001" property="og:image"/>
-<meta content="https://sldbox.github.io/dps/logo.png?v=2608090001" property="og:image:secure_url"/>
+<meta content="https://sldbox.github.io/dps/logo.png?v=2608090013" property="og:image"/>
+<meta content="https://sldbox.github.io/dps/logo.png?v=2608090013" property="og:image:secure_url"/>
 <meta content="image/png" property="og:image:type"/>
 <meta content="개복디 특성 계산기 로고" property="og:image:alt"/>
 <meta content="summary_large_image" name="twitter:card"/>
 <meta content="개복디 특성 계산기" name="twitter:title"/>
 <meta content="특성 투자, 재화 사용량, 표기 스탯, 총데미지, DPS를 한 번에 계산할 수 있는 개복디 전용 계산기입니다." name="twitter:description"/>
-<meta content="https://sldbox.github.io/dps/logo.png?v=2608090001" name="twitter:image"/>
+<meta content="https://sldbox.github.io/dps/logo.png?v=2608090013" name="twitter:image"/>
 <meta content="개복디 특성 계산기 로고" name="twitter:image:alt"/>
 <link href="https://cdn.jsdelivr.net" rel="preconnect"/>
 <link crossorigin="" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" rel="stylesheet"/>
@@ -251,17 +251,44 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 })();
 </script>
 <div id="dpsBootScreen" aria-live="polite"><div class="boot-card"><div class="boot-title">특성 계산기 적용 중</div><div class="boot-desc">최신 빌드와 스타일을 불러오는 중입니다.</div></div></div>
+<div id="dpsProfileGate" class="profile-gate" role="dialog" aria-modal="true" aria-labelledby="dpsProfileGateTitle" aria-hidden="true">
+<div class="profile-gate-card">
+<div class="profile-gate-head">
+<div class="profile-gate-head-copy">
+<span class="profile-gate-kicker">PLAYER VERIFICATION</span>
+<strong id="dpsProfileGateTitle">신원조회</strong>
+<p>스타2 핸들값을 입력해주세요</p>
+</div>
+</div>
+<form id="dpsProfileGateForm" class="profile-gate-form" autocomplete="off">
+<div class="profile-gate-field">
+<div class="profile-handle-input-wrap">
+<span>3-S2-1-</span>
+<input id="dpsProfileHandleInput" inputmode="numeric" pattern="[0-9]{6,8}" placeholder="2461127" required type="text" aria-label="스타2 핸들 뒷자리 숫자 입력"/>
+</div>
+</div>
+<div id="dpsProfileStatus" class="profile-lookup-status" aria-live="polite">핸들 뒷자리 숫자 6~8자리를 입력해 주세요.</div>
+<div id="dpsProfileResult" class="profile-verified-user is-empty" aria-live="polite">
+<span id="dpsProfileRoleView" class="profile-verified-role">플레이어</span>
+<strong id="dpsProfileNicknameView">인증 전</strong>
+</div>
+<div class="profile-gate-actions">
+<button class="btn subtle profile-gate-cancel" data-action="closeProfileGate" type="button">닫기</button>
+<button class="btn pri profile-gate-submit" type="submit">시작하기</button>
+</div>
+</form>
+</div>
+</div>
 <div class="wrap">
 <div class="hdr app-header">
 <div class="hdr-brand">
-<div aria-label="DPS 로고" class="hdr-logo">DPS</div>
 <div class="hdr-title-wrap">
 <div class="hdr-title-line">
 <h1 id="appTitleView" role="button" tabindex="0" aria-label="앱 버전 보기">개복디 특성 계산기</h1>
 </div>
-<div aria-label="제작자 정보" class="hdr-creator-line">
-<span>제작자 <b>회장</b></span>
-<span>3-S2-1-2461127</span>
+<div id="dpsUserProfileBadge" class="hdr-user-profile is-empty" aria-label="사용자 신원 정보">
+<span id="dpsUserWelcomeView">신원 확인 전</span>
+<span id="dpsUserHandleView">핸들을 입력해 주세요</span>
 </div>
 </div>
 </div>

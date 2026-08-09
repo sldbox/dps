@@ -6,12 +6,19 @@ const DPS_CONFIG={
     key:'gbd_dps_calculator:personal_state',
     fontKey:'gbd_dps_calculator:font_scale',
     clientKey:'gbd_dps_calculator:client_id',
+    profileKey:'gbd_dps_calculator:user_profile_auth',
     traitPresetKey:'gbd_dps_calculator:trait_presets',
     traitPresetStatusKey:'gbd_dps_calculator:trait_preset_status'
   },
 
   state:{
-    skipElementIds:['dpsTableMinDpsMain','ep','artifactDpsViewToggle']
+    skipElementIds:['dpsTableMinDpsMain','ep','artifactDpsViewToggle','dpsProfileHandleInput']
+  },
+
+  profileLookup:{
+    previewDelayMs:120,
+    timeoutMs:12000,
+    endpoint:'https://script.google.com/macros/s/AKfycby1qmCsLPtDgj1I3TY7OSIkW8pKitfnwMUAKdLwBmXhf2ZeYYXkIiiG4THTPJ70Iqvg/exec'
   },
 
   dpsTable:{
@@ -196,6 +203,390 @@ function setTogglePressed(el, active, options={}){
 function setTextMap(map){
   Object.entries(map).forEach(([id,value])=>setText(id,value));
 }
+
+const SC2_HANDLE_PREFIX='3-S2-1-';
+const SC2_CREATOR_HANDLE='3-S2-1-2461127';
+const SC2_HANDLE_DIGITS_PATTERN=/^\d{6,8}$/;
+const SC2_PROFILE_LOOKUP_REVISION=1;
+const PROFILE_HEADER_ROTATION_MS=5000;
+const PROFILE_HEADER_TRANSITION_MS=180;
+const profileLookupSessionCache=new Map();
+const profileLookupPendingRequests=new Map();
+let profileLookupTimer=0;
+let profileLookupRequestSeq=0;
+let profileLookupCache=null;
+let profileHeaderRotationTimer=0;
+let profileHeaderTransitionTimer=0;
+let userProfileMemoryCache=null;
+let userProfileMemoryLoaded=false;
+function sc2ProfileStorageKey(){
+  return DPS_CONFIG.storage.profileKey || 'gbd_dps_calculator:user_profile_auth';
+}
+function sc2HandleDigits(value){
+  const text=String(value ?? '').trim().replace(/^3\s*-\s*S2\s*-\s*1\s*-/i,'');
+  return text.replace(/[^0-9]/g,'').slice(0,8);
+}
+function normalizeSc2Handle(value){
+  const digits=sc2HandleDigits(value);
+  return digits ? `${SC2_HANDLE_PREFIX}${digits}` : '';
+}
+function isValidSc2Handle(value){
+  return SC2_HANDLE_DIGITS_PATTERN.test(sc2HandleDigits(value));
+}
+function normalizeSc2Nickname(value){
+  let text=String(value ?? '').replace(/[\u0000-\u001f\u007f]/g,'').trim();
+  if(!text) return '';
+  text=text.replace(/<[^>]*>/g,' ').replace(/\s+/g,' ').trim();
+  return text.slice(0,24);
+}
+function normalizeUserProfile(value){
+  const source=value && typeof value==='object' ? value : {};
+  if(source.guest===true || source.status==='guest'){
+    return {handle:'',nickname:'게스트',status:'guest',verifiedAt:Number(source.verifiedAt) || Date.now(),source:'guest'};
+  }
+  const handle=normalizeSc2Handle(source.handle || source.sc2Handle || source.id || '');
+  const nickname=normalizeSc2Nickname(source.nickname || source.name || source.displayName || '');
+  const lookupRevision=Math.max(0,Math.trunc(Number(source.lookupRevision) || 0));
+  if(!isValidSc2Handle(handle) || !nickname) return null;
+  return {handle,nickname,status:'verified',verifiedAt:Number(source.verifiedAt) || Date.now(),source:'donation-lookup-server',lookupRevision};
+}
+function isCurrentProfileVerification(profile){
+  return profile?.status==='verified' && profile.lookupRevision===SC2_PROFILE_LOOKUP_REVISION;
+}
+function readUserProfile(){
+  if(userProfileMemoryLoaded) return userProfileMemoryCache;
+  try{userProfileMemoryCache=normalizeUserProfile(JSON.parse(localStorage.getItem(sc2ProfileStorageKey()) || 'null'));}
+  catch(error){rememberAppIssue('warn','사용자 프로필 읽기',error);userProfileMemoryCache=null;}
+  userProfileMemoryLoaded=true;
+  return userProfileMemoryCache;
+}
+function writeUserProfile(profile){
+  const normalized=normalizeUserProfile({...profile,lookupRevision:SC2_PROFILE_LOOKUP_REVISION});
+  if(!normalized) return false;
+  try{
+    localStorage.setItem(sc2ProfileStorageKey(), JSON.stringify(normalized));
+    userProfileMemoryCache=normalized;
+    userProfileMemoryLoaded=true;
+    return true;
+  }catch(error){
+    rememberAppIssue('warn','사용자 프로필 저장',error);
+    showToast('프로필 저장에 실패했습니다. 브라우저 저장소를 확인해 주세요.','err');
+    return false;
+  }
+}
+function writeGuestProfile(){
+  return writeUserProfile({guest:true,status:'guest',nickname:'게스트',verifiedAt:Date.now(),source:'guest'});
+}
+function setProfileStatus(message,type='muted'){
+  const status=$('dpsProfileStatus');
+  if(!status) return;
+  status.textContent=message;
+  status.dataset.status=type;
+}
+function setProfileResultProfile(nickname,handle=''){
+  const result=$('dpsProfileResult');
+  const view=$('dpsProfileNicknameView');
+  const role=$('dpsProfileRoleView');
+  const text=normalizeSc2Nickname(nickname);
+  const creator=!!text && normalizeSc2Handle(handle)===SC2_CREATOR_HANDLE;
+  if(view) view.textContent=text || '인증 전';
+  if(role) role.textContent=creator ? '제작자' : '플레이어';
+  if(result){
+    result.classList.toggle('is-empty', !text);
+    result.classList.toggle('is-creator', creator);
+  }
+}
+function setProfileLookupBusy(busy){
+  const input=$('dpsProfileHandleInput');
+  const submit=$('dpsProfileGateForm')?.querySelector('.profile-gate-submit');
+  if(input) input.setAttribute('aria-busy',busy ? 'true' : 'false');
+  if(submit){
+    submit.disabled=!!busy;
+    submit.textContent=busy ? '조회 중...' : '시작하기';
+  }
+}
+function userProfileWelcomeText(profile){
+  if(!profile) return '신원 확인 전';
+  if(profile.status==='guest') return '어서오세요, 게스트 님';
+  if(!isCurrentProfileVerification(profile)) return profile.handle===SC2_CREATOR_HANDLE ? '제작자 확인 중' : '신원 정보 확인 중';
+  if(profile.handle===SC2_CREATOR_HANDLE) return `제작자 ${profile.nickname} 님`;
+  return `어서오세요, ${profile.nickname} 님`;
+}
+function clearProfileHeaderTimers(){
+  if(profileHeaderRotationTimer){
+    clearTimeout(profileHeaderRotationTimer);
+    profileHeaderRotationTimer=0;
+  }
+  if(profileHeaderTransitionTimer){
+    clearTimeout(profileHeaderTransitionTimer);
+    profileHeaderTransitionTimer=0;
+  }
+}
+function renderUserProfileBadge(profile,showCreatorCredit=false){
+  const badge=$('dpsUserProfileBadge');
+  const welcome=showCreatorCredit ? '제작자 | 회장' : (profile ? userProfileWelcomeText(profile) : '신원 확인 전');
+  const profileTriggerActive=!showCreatorCredit && !!profile && (profile.status==='guest' || isCurrentProfileVerification(profile));
+  if(badge){
+    badge.classList.toggle('is-empty', !profile);
+    badge.classList.toggle('is-guest', profile?.status==='guest' && !showCreatorCredit);
+    badge.classList.toggle('is-creator', profile?.handle===SC2_CREATOR_HANDLE);
+    badge.classList.toggle('is-creator-credit', !!profile && showCreatorCredit);
+    badge.classList.toggle('is-profile-trigger', profileTriggerActive);
+    if(profileTriggerActive){
+      badge.setAttribute('role','button');
+      badge.setAttribute('tabindex','0');
+      badge.setAttribute('aria-label',`${welcome} · 신원 정보 변경`);
+      badge.setAttribute('aria-haspopup','dialog');
+      badge.setAttribute('aria-controls','dpsProfileGate');
+    }else{
+      badge.removeAttribute('role');
+      badge.removeAttribute('tabindex');
+      badge.setAttribute('aria-label','사용자 신원 정보');
+      badge.removeAttribute('aria-haspopup');
+      badge.removeAttribute('aria-controls');
+    }
+  }
+  const handle=showCreatorCredit ? SC2_CREATOR_HANDLE : (profile?.status==='guest' ? '게스트 모드' : (profile ? profile.handle : '핸들을 입력해 주세요'));
+  setText('dpsUserWelcomeView',welcome);
+  setText('dpsUserHandleView',handle);
+}
+function startProfileHeaderRotation(profile){
+  clearProfileHeaderTimers();
+  renderUserProfileBadge(profile,false);
+  if(!profile || (profile.status==='verified' && !isCurrentProfileVerification(profile)) || profile.handle===SC2_CREATOR_HANDLE) return;
+  let showCreatorCredit=false;
+  const rotate=()=>{
+    const badge=$('dpsUserProfileBadge');
+    showCreatorCredit=!showCreatorCredit;
+    badge?.classList.add('is-transitioning');
+    profileHeaderTransitionTimer=setTimeout(()=>{
+      renderUserProfileBadge(profile,showCreatorCredit);
+      badge?.classList.remove('is-transitioning');
+      profileHeaderTransitionTimer=0;
+    },PROFILE_HEADER_TRANSITION_MS);
+    profileHeaderRotationTimer=setTimeout(rotate,PROFILE_HEADER_ROTATION_MS);
+  };
+  profileHeaderRotationTimer=setTimeout(rotate,PROFILE_HEADER_ROTATION_MS);
+}
+function syncUserProfileBadge(){
+  const profile=readUserProfile();
+  startProfileHeaderRotation(profile);
+  return profile;
+}
+function fillProfileGate(profile){
+  const handleInput=$('dpsProfileHandleInput');
+  const verifiedProfile=profile?.status==='verified' ? profile : null;
+  const cachedProfile=isCurrentProfileVerification(verifiedProfile) ? verifiedProfile : null;
+  if(handleInput) handleInput.value=verifiedProfile ? sc2HandleDigits(verifiedProfile.handle) : '';
+  profileLookupCache=cachedProfile ? {handle:cachedProfile.handle,nickname:cachedProfile.nickname,source:'local-profile'} : null;
+  if(cachedProfile) profileLookupSessionCache.set(cachedProfile.handle,{nickname:cachedProfile.nickname,source:'local-profile'});
+  setProfileLookupBusy(false);
+  setProfileResultProfile(cachedProfile?.nickname || '',verifiedProfile?.handle || '');
+  setProfileStatus(cachedProfile ? '' : (verifiedProfile ? '저장된 인증 정보를 다시 확인합니다.' : '핸들을 인증하거나 닫기를 눌러 게스트로 이용하세요.'),cachedProfile ? 'ok' : 'muted');
+}
+function setProfileGateOpen(open){
+  const gate=$('dpsProfileGate');
+  if(!gate) return false;
+  gate.classList.toggle('is-open', !!open);
+  gate.setAttribute('aria-hidden', open ? 'false' : 'true');
+  return true;
+}
+function openProfileGate(){
+  const profile=readUserProfile();
+  fillProfileGate(profile);
+  setProfileGateOpen(true);
+  if(profile?.status==='verified' && !isCurrentProfileVerification(profile)) queueProfileLookupPreview();
+  setTimeout(()=>$('dpsProfileHandleInput')?.focus(), 30);
+}
+function closeProfileGate(){
+  const profile=readUserProfile();
+  const digits=sc2HandleDigits($('dpsProfileHandleInput')?.value || '');
+  if(!profile && digits){
+    setProfileStatus('핸들을 비우고 닫으면 게스트로 이용할 수 있습니다.','warn');
+    return false;
+  }
+  if(!profile){
+    if(!writeGuestProfile()) return false;
+    syncUserProfileBadge();
+    showToast('게스트로 시작합니다. 변경에서 언제든 인증할 수 있습니다.','ok',3600);
+  }
+  return setProfileGateOpen(false);
+}
+function clearProfileLookupTimer(){
+  if(profileLookupTimer){
+    clearTimeout(profileLookupTimer);
+    profileLookupTimer=0;
+  }
+}
+async function requestSc2Nickname(normalized){
+  const endpoint=String(DPS_CONFIG.profileLookup?.endpoint || '').trim();
+  if(!endpoint) return {found:false,reason:'lookup_unavailable',message:'닉네임 조회 서버가 설정되지 않았습니다.'};
+  const controller=typeof AbortController==='function' ? new AbortController() : null;
+  const timeout=Math.max(3000, Number(DPS_CONFIG.profileLookup?.timeoutMs) || 12000);
+  const timer=controller ? setTimeout(()=>controller.abort(), timeout) : 0;
+  try{
+    const url=new URL(endpoint);
+    url.searchParams.set('action','lookupNickname');
+    url.searchParams.set('handle',normalized);
+    const response=await fetch(url.href,{cache:'no-store',credentials:'omit',signal:controller?.signal,headers:{Accept:'application/json'}});
+    if(!response.ok) throw new Error(`HTTP ${response.status}`);
+    const result=await response.json();
+    const nickname=normalizeSc2Nickname(result?.nickname);
+    if(result?.found && nickname){
+      profileLookupSessionCache.set(normalized,{nickname,source:'donation-lookup-server'});
+      return {found:true,nickname,source:'donation-lookup-server'};
+    }
+    return {found:false,reason:String(result?.reason || 'not_found'),message:String(result?.message || '핸들을 확인할 수 없습니다.')};
+  }catch(error){
+    rememberAppIssue('warn','스타2 닉네임 조회',error);
+    return {found:false,reason:'lookup_error',message:error?.name==='AbortError' ? '닉네임 조회 시간이 초과되었습니다. 다시 시도해 주세요.' : '닉네임 조회 중 오류가 발생했습니다. 다시 시도해 주세요.'};
+  }finally{
+    if(timer) clearTimeout(timer);
+  }
+}
+async function lookupSc2Nickname(handle){
+  const normalized=normalizeSc2Handle(handle);
+  if(!isValidSc2Handle(normalized)) return {found:false,reason:'invalid_handle',message:'뒷자리 숫자 6~8자리를 입력해 주세요.'};
+  const cached=profileLookupSessionCache.get(normalized);
+  if(cached?.nickname) return {found:true,nickname:cached.nickname,source:cached.source || 'session-cache'};
+  const pending=profileLookupPendingRequests.get(normalized);
+  if(pending) return pending;
+  const request=requestSc2Nickname(normalized);
+  profileLookupPendingRequests.set(normalized,request);
+  try{
+    return await request;
+  }finally{
+    if(profileLookupPendingRequests.get(normalized)===request) profileLookupPendingRequests.delete(normalized);
+  }
+}
+async function runProfileLookupPreview(handle){
+  const normalized=normalizeSc2Handle(handle);
+  const seq=++profileLookupRequestSeq;
+  if(!isValidSc2Handle(normalized)){
+    profileLookupCache=null;
+    setProfileLookupBusy(false);
+    setProfileResultProfile('',normalized);
+    setProfileStatus('핸들 뒷자리 숫자 6~8자리를 입력해 주세요.','warn');
+    return null;
+  }
+  setProfileLookupBusy(true);
+  setProfileResultProfile('',normalized);
+  setProfileStatus(`${normalized} 인증서버 확인 중입니다.`,'muted');
+  const result=await lookupSc2Nickname(normalized);
+  if(seq!==profileLookupRequestSeq || normalizeSc2Handle($('dpsProfileHandleInput')?.value || '')!==normalized) return null;
+  setProfileLookupBusy(false);
+  if(result.found && result.nickname){
+    profileLookupCache={handle:normalized,nickname:result.nickname,source:result.source};
+    setProfileResultProfile(result.nickname,normalized);
+    setProfileStatus('','ok');
+    return profileLookupCache;
+  }
+  profileLookupCache=null;
+  setProfileResultProfile('',normalized);
+  setProfileStatus(result.message || '핸들을 확인할 수 없습니다.','err');
+  return null;
+}
+function queueProfileLookupPreview(){
+  clearProfileLookupTimer();
+  const handle=normalizeSc2Handle($('dpsProfileHandleInput')?.value || '');
+  profileLookupCache=null;
+  profileLookupRequestSeq+=1;
+  setProfileLookupBusy(false);
+  setProfileResultProfile('',handle);
+  if(!handle){
+    setProfileStatus('핸들 뒷자리 숫자 6~8자리를 입력해 주세요.','muted');
+    return;
+  }
+  if(!isValidSc2Handle(handle)){
+    setProfileStatus('뒷자리 숫자 6~8자리를 입력해 주세요.','warn');
+    return;
+  }
+  const saved=readUserProfile();
+  const cached=profileLookupSessionCache.get(handle) || (isCurrentProfileVerification(saved) && saved.handle===handle ? {nickname:saved.nickname,source:'local-profile'} : null);
+  if(cached?.nickname){
+    profileLookupSessionCache.set(handle,cached);
+    profileLookupCache={handle,nickname:cached.nickname,source:cached.source || 'session-cache'};
+    setProfileResultProfile(cached.nickname,handle);
+    setProfileStatus('','ok');
+    return;
+  }
+  setProfileStatus(`${handle} 입력됨 · 잠시 후 인증서버를 조회합니다.`,'muted');
+  const delay=Math.max(0, Number(DPS_CONFIG.profileLookup?.previewDelayMs) || 120);
+  profileLookupTimer=setTimeout(()=>runProfileLookupPreview(handle), delay);
+}
+async function submitUserProfileGate(event){
+  if(event) event.preventDefault();
+  clearProfileLookupTimer();
+  const handleInput=$('dpsProfileHandleInput');
+  const handle=normalizeSc2Handle(handleInput?.value || '');
+  if(!isValidSc2Handle(handle)){
+    setProfileStatus('핸들 뒷자리 숫자 6~8자리를 입력해 주세요.','err');
+    handleInput?.focus();
+    return false;
+  }
+  if(handleInput) handleInput.value=sc2HandleDigits(handle);
+  const lookup=profileLookupCache?.handle===handle ? profileLookupCache : await runProfileLookupPreview(handle);
+  const nickname=normalizeSc2Nickname(lookup?.nickname);
+  if(!nickname){
+    setProfileStatus('닉네임 확인 후 시작할 수 있습니다. 다시 시도해 주세요.','err');
+    handleInput?.focus();
+    return false;
+  }
+  if(!writeUserProfile({handle,nickname,verifiedAt:Date.now(),source:lookup.source})) return false;
+  const profile=syncUserProfileBadge();
+  setProfileGateOpen(false);
+  setProfileStatus('','ok');
+  showToast(userProfileWelcomeText(profile),'ok');
+  return true;
+}
+function bindUserProfileEvents(){
+  const form=$('dpsProfileGateForm');
+  if(form && form.dataset.bound!=='1'){
+    form.dataset.bound='1';
+    form.addEventListener('submit',submitUserProfileGate);
+  }
+  const handleInput=$('dpsProfileHandleInput');
+  if(handleInput && handleInput.dataset.bound!=='1'){
+    handleInput.dataset.bound='1';
+    handleInput.addEventListener('input',()=>{
+      const digits=sc2HandleDigits(handleInput.value);
+      if(handleInput.value!==digits) handleInput.value=digits;
+      queueProfileLookupPreview();
+    });
+    handleInput.addEventListener('blur',()=>{
+      handleInput.value=sc2HandleDigits(handleInput.value);
+      const handle=normalizeSc2Handle(handleInput.value);
+      if(handle && profileLookupCache?.handle!==handle) queueProfileLookupPreview();
+    });
+  }
+  const profileBadge=$('dpsUserProfileBadge');
+  if(profileBadge && profileBadge.dataset.profileTriggerBound!=='1'){
+    profileBadge.dataset.profileTriggerBound='1';
+    const openFromProfileBadge=()=>{
+      if(profileBadge.classList.contains('is-profile-trigger')) openProfileGate();
+    };
+    profileBadge.addEventListener('click',openFromProfileBadge);
+    profileBadge.addEventListener('keydown',event=>{
+      if(event.key!=='Enter' && event.key!==' ') return;
+      if(!profileBadge.classList.contains('is-profile-trigger')) return;
+      event.preventDefault();
+      openFromProfileBadge();
+    });
+  }
+}
+async function refreshStoredUserProfile(profile){
+  if(!profile || isCurrentProfileVerification(profile)) return profile;
+  const result=await lookupSc2Nickname(profile.handle);
+  if(!result.found || !result.nickname) return profile;
+  if(!writeUserProfile({handle:profile.handle,nickname:result.nickname,verifiedAt:Date.now(),source:result.source})) return profile;
+  return syncUserProfileBadge();
+}
+function initUserProfileGate(){
+  const profile=syncUserProfileBadge();
+  if(!profile) openProfileGate();
+  else if(profile.status==='verified' && !isCurrentProfileVerification(profile)) refreshStoredUserProfile(profile);
+}
+
 const RUNE_CHOICE_TARGETS=[['ap','rAP'],['ua','rUA'],['td','rTD'],['harmony','rHarmony']];
 
 /* 입력·화면 동기화 */
@@ -1005,9 +1396,10 @@ function getJewelImageSources(name){
   const remoteUrl=typeof window.dpsRemoteAssetUrl==='function'
     ? window.dpsRemoteAssetUrl(key, key)
     : `https://sldbox.github.io/dps/jw/${safeName}.png?v=${version}`;
+  const localUrl=assetUrl ? assetUrl(`./jw/${safeName}.png`, key) : `./jw/${safeName}.png?v=${version}`;
   return {
-    src:assetUrl ? assetUrl(`./jw/${safeName}.png`, key) : `./jw/${safeName}.png?v=${version}`,
-    fallback:remoteUrl
+    src:remoteUrl,
+    fallback:localUrl
   };
 }
 function handleJewelImageError(img){
@@ -1437,7 +1829,7 @@ function dpsJewelConfigCardHtml(name,settings){
   const imageSources=getJewelImageSources(name);
   const fallbackAttr=imageSources.fallback && imageSources.fallback!==imageSources.src ? ` data-fallback-src="${escapeHtml(imageSources.fallback)}"` : '';
   const ability=dpsJewelAbilityTexts(name);
-  return `<article class="dps-jewel-card" data-dps-jewel-card="${escapeHtml(name)}">
+  return `<article class="dps-jewel-card${mythic?' is-mythic':''}" data-dps-jewel-card="${escapeHtml(name)}">
     <header class="dps-jewel-card-head">
       <div class="jewel-card-visual" aria-hidden="true">
         <img src="${escapeHtml(imageSources.src)}"${fallbackAttr} data-jewel-image="1" alt="" loading="lazy">
@@ -1464,6 +1856,7 @@ function refreshDpsJewelConfigCard(name,settings=null,focusKey=''){
   const input=typeof normalizeDpsJewelSettingForName==='function' ? normalizeDpsJewelSettingForName(name,normalized?.[name]) : normalizeDpsJewelSetting(normalized?.[name]);
   const finalStats=dpsJewelFinalStats(name,normalized);
   const mythic=finalStats.mythic==='Y';
+  card.classList.toggle('is-mythic',mythic);
   const title=card.querySelector('.dps-jewel-title-block b');
   if(title){
     const titleText=`${mythic?'신화':'전설'} ${name}`;
@@ -2636,6 +3029,7 @@ const ACTION_HANDLERS={
   openSanctuarySkillModal:()=>window.DpsModal.openBoardModal('sanctuarySkillModal'),
   openBusPassengerModal:()=>window.DpsModal.openBoardModal('busPassengerModal'),
   openZeroRankInfoModal:()=>window.DpsModal.openBoardModal('zeroRankInfoModal'),
+  closeProfileGate,
   zeroScoreStar:(trigger)=>toggleZeroScoreStar(trigger),
   decreaseFont:()=>changeFontScale(-DPS_CONFIG.ui.fontScaleStep),
   increaseFont:()=>changeFontScale(DPS_CONFIG.ui.fontScaleStep),
@@ -2667,7 +3061,8 @@ const REACTIVE_INPUT_EXCLUDED_IDS=new Set([
   'traitPresetBackupName',
   'dpsTableMinDps',
   'dpsTableMinDpsMain',
-  'artifactDpsViewToggle'
+  'artifactDpsViewToggle',
+  'dpsProfileHandleInput'
 ]);
 const RUNE_CHOICE_SYNC_IDS=new Set(['runeChoiceType','runeChoiceValue']);
 const DEDICATED_DPS_BASE_UNIT_REACTIVE_SELECTOR=[
@@ -2764,7 +3159,7 @@ function bindAppEvents(){
     bindFontScaleViewportGuard, bindActionEvents, bindTraitHoldEvents, bindTraitInputEvents,
     ()=>window.DpsModal.bindEvents(), ()=>window.DpsPreset.bindEvents(), bindJewelImageEvents,
     bindZeroScoreCalculator, bindTraitLimitDisplayEvents, bindDpsBaseUnitControlEvents, bindReactiveInputs,
-    bindButtonPressFeedback, bindDamageBoardSwitchEvents, bindDpsBaseUnitConditionEvents, bindAppTitleVersion
+    bindButtonPressFeedback, bindDamageBoardSwitchEvents, bindDpsBaseUnitConditionEvents, bindUserProfileEvents, bindAppTitleVersion
   ].forEach(fn=>fn());
 }
 function initApp(){
@@ -2781,6 +3176,7 @@ function initApp(){
   syncTraitLimitInputs();
   loadState();
   window.DpsPreset.init();
+  initUserProfileGate();
 }
 function markAppReady(){
   try{
