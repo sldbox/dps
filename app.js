@@ -204,21 +204,14 @@ function setTextMap(map){
   Object.entries(map).forEach(([id,value])=>setText(id,value));
 }
 
-const SC2_HANDLE_PREFIX='3-S2-1-';
-const SC2_CREATOR_HANDLE='3-S2-1-2461127';
-const SC2_HANDLE_DIGITS_PATTERN=/^\d{6,8}$/;
-const SC2_PROFILE_LOOKUP_REVISION=1;
-const PROFILE_HEADER_ROTATION_MS=5000;
-const PROFILE_HEADER_TRANSITION_MS=180;
-const profileLookupSessionCache=new Map();
-const profileLookupPendingRequests=new Map();
-let profileLookupTimer=0;
-let profileLookupRequestSeq=0;
-let profileLookupCache=null;
-let profileHeaderRotationTimer=0;
-let profileHeaderTransitionTimer=0;
-let userProfileMemoryCache=null;
-let userProfileMemoryLoaded=false;
+const SC2_PROFILE_RULES=Object.freeze({
+  prefix:'3-S2-1-',creatorHandle:'3-S2-1-2461127',digitsPattern:/^\d{6,8}$/,
+  revision:1,rotationMs:5000,transitionMs:180,invalidMessage:'뒷자리 숫자 6~8자리를 입력해 주세요.'
+});
+const userProfileState={
+  memory:undefined,lookup:null,lookupTimer:null,requestSeq:0,rotationTimer:null,transitionTimer:null,
+  cache:new Map(),pending:new Map()
+};
 function sc2ProfileStorageKey(){
   return DPS_CONFIG.storage.profileKey || 'gbd_dps_calculator:user_profile_auth';
 }
@@ -228,67 +221,56 @@ function sc2HandleDigits(value){
 }
 function normalizeSc2Handle(value){
   const digits=sc2HandleDigits(value);
-  return digits ? `${SC2_HANDLE_PREFIX}${digits}` : '';
+  return digits ? `${SC2_PROFILE_RULES.prefix}${digits}` : '';
 }
 function isValidSc2Handle(value){
-  return SC2_HANDLE_DIGITS_PATTERN.test(sc2HandleDigits(value));
+  return SC2_PROFILE_RULES.digitsPattern.test(sc2HandleDigits(value));
 }
 function normalizeSc2Nickname(value){
   let text=String(value ?? '').replace(/[\u0000-\u001f\u007f]/g,'').trim();
-  if(!text) return '';
-  text=text.replace(/<[^>]*>/g,' ').replace(/\s+/g,' ').trim();
-  return text.slice(0,24);
+  return text ? text.replace(/<[^>]*>/g,' ').replace(/\s+/g,' ').trim().slice(0,24) : '';
 }
 function normalizeUserProfile(value){
   const source=value && typeof value==='object' ? value : {};
-  if(source.guest===true || source.status==='guest'){
-    return {handle:'',nickname:'게스트',status:'guest',verifiedAt:Number(source.verifiedAt) || Date.now(),source:'guest'};
-  }
+  const verifiedAt=Number(source.verifiedAt) || Date.now();
+  if(source.guest===true || source.status==='guest') return {handle:'',nickname:'게스트',status:'guest',verifiedAt,source:'guest'};
   const handle=normalizeSc2Handle(source.handle || source.sc2Handle || source.id || '');
   const nickname=normalizeSc2Nickname(source.nickname || source.name || source.displayName || '');
   const lookupRevision=Math.max(0,Math.trunc(Number(source.lookupRevision) || 0));
   if(!isValidSc2Handle(handle) || !nickname) return null;
-  return {handle,nickname,status:'verified',verifiedAt:Number(source.verifiedAt) || Date.now(),source:'donation-lookup-server',lookupRevision};
+  return {handle,nickname,status:'verified',verifiedAt,source:'donation-lookup-server',lookupRevision};
 }
 function isCurrentProfileVerification(profile){
-  return profile?.status==='verified' && profile.lookupRevision===SC2_PROFILE_LOOKUP_REVISION;
+  return profile?.status==='verified' && profile.lookupRevision===SC2_PROFILE_RULES.revision;
 }
 function readUserProfile(){
-  if(userProfileMemoryLoaded) return userProfileMemoryCache;
-  try{userProfileMemoryCache=normalizeUserProfile(JSON.parse(localStorage.getItem(sc2ProfileStorageKey()) || 'null'));}
-  catch(error){rememberAppIssue('warn','사용자 프로필 읽기',error);userProfileMemoryCache=null;}
-  userProfileMemoryLoaded=true;
-  return userProfileMemoryCache;
+  if(userProfileState.memory!==undefined) return userProfileState.memory;
+  try{userProfileState.memory=normalizeUserProfile(JSON.parse(localStorage.getItem(sc2ProfileStorageKey()) || 'null'));}
+  catch(error){rememberAppIssue('warn','사용자 프로필 읽기',error);userProfileState.memory=null;}
+  return userProfileState.memory;
 }
 function writeUserProfile(profile){
-  const normalized=normalizeUserProfile({...profile,lookupRevision:SC2_PROFILE_LOOKUP_REVISION});
-  if(!normalized) return false;
+  const normalized=normalizeUserProfile({...profile,lookupRevision:SC2_PROFILE_RULES.revision});
+  if(!normalized) return null;
   try{
     localStorage.setItem(sc2ProfileStorageKey(), JSON.stringify(normalized));
-    userProfileMemoryCache=normalized;
-    userProfileMemoryLoaded=true;
-    return true;
+    userProfileState.memory=normalized;
+    return normalized;
   }catch(error){
     rememberAppIssue('warn','사용자 프로필 저장',error);
     showToast('프로필 저장에 실패했습니다. 브라우저 저장소를 확인해 주세요.','err');
-    return false;
+    return null;
   }
-}
-function writeGuestProfile(){
-  return writeUserProfile({guest:true,status:'guest',nickname:'게스트',verifiedAt:Date.now(),source:'guest'});
 }
 function setProfileStatus(message,type='muted'){
   const status=$('dpsProfileStatus');
-  if(!status) return;
-  status.textContent=message;
-  status.dataset.status=type;
+  if(status){status.textContent=message;status.dataset.status=type;}
 }
 function setProfileResultProfile(nickname,handle=''){
   const result=$('dpsProfileResult');
-  const view=$('dpsProfileNicknameView');
-  const role=$('dpsProfileRoleView');
   const text=normalizeSc2Nickname(nickname);
-  const creator=!!text && normalizeSc2Handle(handle)===SC2_CREATOR_HANDLE;
+  const creator=!!text && normalizeSc2Handle(handle)===SC2_PROFILE_RULES.creatorHandle;
+  const view=$('dpsProfileNicknameView'),role=$('dpsProfileRoleView');
   if(view) view.textContent=text || '인증 전';
   if(role) role.textContent=creator ? '제작자' : '플레이어';
   if(result){
@@ -308,65 +290,48 @@ function setProfileLookupBusy(busy){
 function userProfileWelcomeText(profile){
   if(!profile) return '신원 확인 전';
   if(profile.status==='guest') return '어서오세요, 게스트 님';
-  if(!isCurrentProfileVerification(profile)) return profile.handle===SC2_CREATOR_HANDLE ? '제작자 확인 중' : '신원 정보 확인 중';
-  if(profile.handle===SC2_CREATOR_HANDLE) return `제작자 ${profile.nickname} 님`;
+  if(!isCurrentProfileVerification(profile)) return profile.handle===SC2_PROFILE_RULES.creatorHandle ? '제작자 확인 중' : '신원 정보 확인 중';
+  if(profile.handle===SC2_PROFILE_RULES.creatorHandle) return `제작자 ${profile.nickname} 님`;
   return `어서오세요, ${profile.nickname} 님`;
 }
 function clearProfileHeaderTimers(){
-  if(profileHeaderRotationTimer){
-    clearTimeout(profileHeaderRotationTimer);
-    profileHeaderRotationTimer=0;
-  }
-  if(profileHeaderTransitionTimer){
-    clearTimeout(profileHeaderTransitionTimer);
-    profileHeaderTransitionTimer=0;
-  }
+  ['rotationTimer','transitionTimer'].forEach(key=>{
+    if(userProfileState[key]) clearTimeout(userProfileState[key]);
+    userProfileState[key]=null;
+  });
 }
 function renderUserProfileBadge(profile,showCreatorCredit=false){
   const badge=$('dpsUserProfileBadge');
   const welcome=showCreatorCredit ? '제작자 | 회장' : (profile ? userProfileWelcomeText(profile) : '신원 확인 전');
-  const profileTriggerActive=!showCreatorCredit && !!profile && (profile.status==='guest' || isCurrentProfileVerification(profile));
+  const interactive=!showCreatorCredit && !!profile && (profile.status==='guest' || isCurrentProfileVerification(profile));
   if(badge){
-    badge.classList.toggle('is-empty', !profile);
-    badge.classList.toggle('is-guest', profile?.status==='guest' && !showCreatorCredit);
-    badge.classList.toggle('is-creator', profile?.handle===SC2_CREATOR_HANDLE);
-    badge.classList.toggle('is-creator-credit', !!profile && showCreatorCredit);
-    badge.classList.toggle('is-profile-trigger', profileTriggerActive);
-    if(profileTriggerActive){
-      badge.setAttribute('role','button');
-      badge.setAttribute('tabindex','0');
-      badge.setAttribute('aria-label',`${welcome} · 신원 정보 변경`);
-      badge.setAttribute('aria-haspopup','dialog');
-      badge.setAttribute('aria-controls','dpsProfileGate');
-    }else{
-      badge.removeAttribute('role');
-      badge.removeAttribute('tabindex');
-      badge.setAttribute('aria-label','사용자 신원 정보');
-      badge.removeAttribute('aria-haspopup');
-      badge.removeAttribute('aria-controls');
-    }
+    [['is-empty',!profile],['is-guest',profile?.status==='guest' && !showCreatorCredit],['is-creator',profile?.handle===SC2_PROFILE_RULES.creatorHandle],['is-creator-credit',!!profile && showCreatorCredit],['is-profile-trigger',interactive]]
+      .forEach(([name,active])=>badge.classList.toggle(name,!!active));
+    const attrs={role:'button',tabindex:'0','aria-haspopup':'dialog','aria-controls':'dpsProfileGate'};
+    Object.entries(attrs).forEach(([name,value])=>interactive ? badge.setAttribute(name,value) : badge.removeAttribute(name));
+    badge.setAttribute('aria-label',interactive ? `${welcome} · 신원 정보 변경` : '사용자 신원 정보');
   }
-  const handle=showCreatorCredit ? SC2_CREATOR_HANDLE : (profile?.status==='guest' ? '게스트 모드' : (profile ? profile.handle : '핸들을 입력해 주세요'));
+  const handle=showCreatorCredit ? SC2_PROFILE_RULES.creatorHandle : (profile?.status==='guest' ? '게스트 모드' : (profile?.handle || '핸들을 입력해 주세요'));
   setText('dpsUserWelcomeView',welcome);
   setText('dpsUserHandleView',handle);
 }
 function startProfileHeaderRotation(profile){
   clearProfileHeaderTimers();
   renderUserProfileBadge(profile,false);
-  if(!profile || (profile.status==='verified' && !isCurrentProfileVerification(profile)) || profile.handle===SC2_CREATOR_HANDLE) return;
+  if(!profile || (profile.status==='verified' && !isCurrentProfileVerification(profile)) || profile.handle===SC2_PROFILE_RULES.creatorHandle) return;
   let showCreatorCredit=false;
   const rotate=()=>{
     const badge=$('dpsUserProfileBadge');
     showCreatorCredit=!showCreatorCredit;
     badge?.classList.add('is-transitioning');
-    profileHeaderTransitionTimer=setTimeout(()=>{
+    userProfileState.transitionTimer=setTimeout(()=>{
       renderUserProfileBadge(profile,showCreatorCredit);
       badge?.classList.remove('is-transitioning');
-      profileHeaderTransitionTimer=0;
-    },PROFILE_HEADER_TRANSITION_MS);
-    profileHeaderRotationTimer=setTimeout(rotate,PROFILE_HEADER_ROTATION_MS);
+      userProfileState.transitionTimer=null;
+    },SC2_PROFILE_RULES.transitionMs);
+    userProfileState.rotationTimer=setTimeout(rotate,SC2_PROFILE_RULES.rotationMs);
   };
-  profileHeaderRotationTimer=setTimeout(rotate,PROFILE_HEADER_ROTATION_MS);
+  userProfileState.rotationTimer=setTimeout(rotate,SC2_PROFILE_RULES.rotationMs);
 }
 function syncUserProfileBadge(){
   const profile=readUserProfile();
@@ -378,8 +343,8 @@ function fillProfileGate(profile){
   const verifiedProfile=profile?.status==='verified' ? profile : null;
   const cachedProfile=isCurrentProfileVerification(verifiedProfile) ? verifiedProfile : null;
   if(handleInput) handleInput.value=verifiedProfile ? sc2HandleDigits(verifiedProfile.handle) : '';
-  profileLookupCache=cachedProfile ? {handle:cachedProfile.handle,nickname:cachedProfile.nickname,source:'local-profile'} : null;
-  if(cachedProfile) profileLookupSessionCache.set(cachedProfile.handle,{nickname:cachedProfile.nickname,source:'local-profile'});
+  userProfileState.lookup=cachedProfile ? {handle:cachedProfile.handle,nickname:cachedProfile.nickname,source:'local-profile'} : null;
+  if(cachedProfile) userProfileState.cache.set(cachedProfile.handle,userProfileState.lookup);
   setProfileLookupBusy(false);
   setProfileResultProfile(cachedProfile?.nickname || '',verifiedProfile?.handle || '');
   setProfileStatus(cachedProfile ? '' : (verifiedProfile ? '저장된 인증 정보를 다시 확인합니다.' : '핸들을 인증하거나 닫기를 눌러 게스트로 이용하세요.'),cachedProfile ? 'ok' : 'muted');
@@ -406,82 +371,79 @@ function closeProfileGate(){
     return false;
   }
   if(!profile){
-    if(!writeGuestProfile()) return false;
+    if(!writeUserProfile({guest:true,status:'guest',nickname:'게스트',verifiedAt:Date.now(),source:'guest'})) return false;
     syncUserProfileBadge();
     showToast('게스트로 시작합니다. 변경에서 언제든 인증할 수 있습니다.','ok',3600);
   }
+  clearProfileLookupTimer();
+  userProfileState.requestSeq+=1;
   return setProfileGateOpen(false);
 }
 function clearProfileLookupTimer(){
-  if(profileLookupTimer){
-    clearTimeout(profileLookupTimer);
-    profileLookupTimer=0;
-  }
-}
-async function requestSc2Nickname(normalized){
-  const endpoint=String(DPS_CONFIG.profileLookup?.endpoint || '').trim();
-  if(!endpoint) return {found:false,reason:'lookup_unavailable',message:'닉네임 조회 서버가 설정되지 않았습니다.'};
-  const controller=typeof AbortController==='function' ? new AbortController() : null;
-  const timeout=Math.max(3000, Number(DPS_CONFIG.profileLookup?.timeoutMs) || 12000);
-  const timer=controller ? setTimeout(()=>controller.abort(), timeout) : 0;
-  try{
-    const url=new URL(endpoint);
-    url.searchParams.set('action','lookupNickname');
-    url.searchParams.set('handle',normalized);
-    const response=await fetch(url.href,{cache:'no-store',credentials:'omit',signal:controller?.signal,headers:{Accept:'application/json'}});
-    if(!response.ok) throw new Error(`HTTP ${response.status}`);
-    const result=await response.json();
-    const nickname=normalizeSc2Nickname(result?.nickname);
-    if(result?.found && nickname){
-      profileLookupSessionCache.set(normalized,{nickname,source:'donation-lookup-server'});
-      return {found:true,nickname,source:'donation-lookup-server'};
-    }
-    return {found:false,reason:String(result?.reason || 'not_found'),message:String(result?.message || '핸들을 확인할 수 없습니다.')};
-  }catch(error){
-    rememberAppIssue('warn','스타2 닉네임 조회',error);
-    return {found:false,reason:'lookup_error',message:error?.name==='AbortError' ? '닉네임 조회 시간이 초과되었습니다. 다시 시도해 주세요.' : '닉네임 조회 중 오류가 발생했습니다. 다시 시도해 주세요.'};
-  }finally{
-    if(timer) clearTimeout(timer);
-  }
+  if(userProfileState.lookupTimer) clearTimeout(userProfileState.lookupTimer);
+  userProfileState.lookupTimer=null;
 }
 async function lookupSc2Nickname(handle){
   const normalized=normalizeSc2Handle(handle);
-  if(!isValidSc2Handle(normalized)) return {found:false,reason:'invalid_handle',message:'뒷자리 숫자 6~8자리를 입력해 주세요.'};
-  const cached=profileLookupSessionCache.get(normalized);
+  if(!isValidSc2Handle(normalized)) return {found:false,reason:'invalid_handle',message:SC2_PROFILE_RULES.invalidMessage};
+  const cached=userProfileState.cache.get(normalized);
   if(cached?.nickname) return {found:true,nickname:cached.nickname,source:cached.source || 'session-cache'};
-  const pending=profileLookupPendingRequests.get(normalized);
+  const pending=userProfileState.pending.get(normalized);
   if(pending) return pending;
-  const request=requestSc2Nickname(normalized);
-  profileLookupPendingRequests.set(normalized,request);
+  const request=(async()=>{
+    const endpoint=String(DPS_CONFIG.profileLookup?.endpoint || '').trim();
+    if(!endpoint) return {found:false,reason:'lookup_unavailable',message:'닉네임 조회 서버가 설정되지 않았습니다.'};
+    const controller=typeof AbortController==='function' ? new AbortController() : null;
+    const timer=controller ? setTimeout(()=>controller.abort(),Math.max(3000,Number(DPS_CONFIG.profileLookup?.timeoutMs) || 12000)) : null;
+    try{
+      const url=new URL(endpoint);
+      url.searchParams.set('action','lookupNickname');
+      url.searchParams.set('handle',normalized);
+      const response=await fetch(url.href,{cache:'no-store',credentials:'omit',signal:controller?.signal,headers:{Accept:'application/json'}});
+      if(!response.ok) throw new Error(`HTTP ${response.status}`);
+      const result=await response.json();
+      const nickname=normalizeSc2Nickname(result?.nickname);
+      if(!result?.found || !nickname) return {found:false,reason:String(result?.reason || 'not_found'),message:String(result?.message || '핸들을 확인할 수 없습니다.')};
+      const resolved={nickname,source:'donation-lookup-server'};
+      userProfileState.cache.set(normalized,resolved);
+      return {found:true,...resolved};
+    }catch(error){
+      rememberAppIssue('warn','스타2 닉네임 조회',error);
+      return {found:false,reason:'lookup_error',message:error?.name==='AbortError' ? '닉네임 조회 시간이 초과되었습니다. 다시 시도해 주세요.' : '닉네임 조회 중 오류가 발생했습니다. 다시 시도해 주세요.'};
+    }finally{
+      if(timer) clearTimeout(timer);
+    }
+  })();
+  userProfileState.pending.set(normalized,request);
   try{
     return await request;
   }finally{
-    if(profileLookupPendingRequests.get(normalized)===request) profileLookupPendingRequests.delete(normalized);
+    if(userProfileState.pending.get(normalized)===request) userProfileState.pending.delete(normalized);
   }
 }
 async function runProfileLookupPreview(handle){
   const normalized=normalizeSc2Handle(handle);
-  const seq=++profileLookupRequestSeq;
+  const seq=++userProfileState.requestSeq;
   if(!isValidSc2Handle(normalized)){
-    profileLookupCache=null;
+    userProfileState.lookup=null;
     setProfileLookupBusy(false);
     setProfileResultProfile('',normalized);
-    setProfileStatus('핸들 뒷자리 숫자 6~8자리를 입력해 주세요.','warn');
+    setProfileStatus(SC2_PROFILE_RULES.invalidMessage,'warn');
     return null;
   }
   setProfileLookupBusy(true);
   setProfileResultProfile('',normalized);
   setProfileStatus(`${normalized} 인증서버 확인 중입니다.`,'muted');
   const result=await lookupSc2Nickname(normalized);
-  if(seq!==profileLookupRequestSeq || normalizeSc2Handle($('dpsProfileHandleInput')?.value || '')!==normalized) return null;
+  if(seq!==userProfileState.requestSeq || normalizeSc2Handle($('dpsProfileHandleInput')?.value || '')!==normalized) return null;
   setProfileLookupBusy(false);
   if(result.found && result.nickname){
-    profileLookupCache={handle:normalized,nickname:result.nickname,source:result.source};
+    userProfileState.lookup={handle:normalized,nickname:result.nickname,source:result.source};
     setProfileResultProfile(result.nickname,normalized);
     setProfileStatus('','ok');
-    return profileLookupCache;
+    return userProfileState.lookup;
   }
-  profileLookupCache=null;
+  userProfileState.lookup=null;
   setProfileResultProfile('',normalized);
   setProfileStatus(result.message || '핸들을 확인할 수 없습니다.','err');
   return null;
@@ -489,8 +451,8 @@ async function runProfileLookupPreview(handle){
 function queueProfileLookupPreview(){
   clearProfileLookupTimer();
   const handle=normalizeSc2Handle($('dpsProfileHandleInput')?.value || '');
-  profileLookupCache=null;
-  profileLookupRequestSeq+=1;
+  userProfileState.lookup=null;
+  userProfileState.requestSeq+=1;
   setProfileLookupBusy(false);
   setProfileResultProfile('',handle);
   if(!handle){
@@ -498,21 +460,21 @@ function queueProfileLookupPreview(){
     return;
   }
   if(!isValidSc2Handle(handle)){
-    setProfileStatus('뒷자리 숫자 6~8자리를 입력해 주세요.','warn');
+    setProfileStatus(SC2_PROFILE_RULES.invalidMessage,'warn');
     return;
   }
   const saved=readUserProfile();
-  const cached=profileLookupSessionCache.get(handle) || (isCurrentProfileVerification(saved) && saved.handle===handle ? {nickname:saved.nickname,source:'local-profile'} : null);
+  const cached=userProfileState.cache.get(handle) || (isCurrentProfileVerification(saved) && saved.handle===handle ? {nickname:saved.nickname,source:'local-profile'} : null);
   if(cached?.nickname){
-    profileLookupSessionCache.set(handle,cached);
-    profileLookupCache={handle,nickname:cached.nickname,source:cached.source || 'session-cache'};
+    userProfileState.cache.set(handle,cached);
+    userProfileState.lookup={handle,nickname:cached.nickname,source:cached.source || 'session-cache'};
     setProfileResultProfile(cached.nickname,handle);
     setProfileStatus('','ok');
     return;
   }
   setProfileStatus(`${handle} 입력됨 · 잠시 후 인증서버를 조회합니다.`,'muted');
   const delay=Math.max(0, Number(DPS_CONFIG.profileLookup?.previewDelayMs) || 120);
-  profileLookupTimer=setTimeout(()=>runProfileLookupPreview(handle), delay);
+  userProfileState.lookupTimer=setTimeout(()=>runProfileLookupPreview(handle), delay);
 }
 async function submitUserProfileGate(event){
   if(event) event.preventDefault();
@@ -520,12 +482,12 @@ async function submitUserProfileGate(event){
   const handleInput=$('dpsProfileHandleInput');
   const handle=normalizeSc2Handle(handleInput?.value || '');
   if(!isValidSc2Handle(handle)){
-    setProfileStatus('핸들 뒷자리 숫자 6~8자리를 입력해 주세요.','err');
+    setProfileStatus(SC2_PROFILE_RULES.invalidMessage,'err');
     handleInput?.focus();
     return false;
   }
   if(handleInput) handleInput.value=sc2HandleDigits(handle);
-  const lookup=profileLookupCache?.handle===handle ? profileLookupCache : await runProfileLookupPreview(handle);
+  const lookup=userProfileState.lookup?.handle===handle ? userProfileState.lookup : await runProfileLookupPreview(handle);
   const nickname=normalizeSc2Nickname(lookup?.nickname);
   if(!nickname){
     setProfileStatus('닉네임 확인 후 시작할 수 있습니다. 다시 시도해 주세요.','err');
@@ -541,13 +503,9 @@ async function submitUserProfileGate(event){
 }
 function bindUserProfileEvents(){
   const form=$('dpsProfileGateForm');
-  if(form && form.dataset.bound!=='1'){
-    form.dataset.bound='1';
-    form.addEventListener('submit',submitUserProfileGate);
-  }
+  form?.addEventListener('submit',submitUserProfileGate);
   const handleInput=$('dpsProfileHandleInput');
-  if(handleInput && handleInput.dataset.bound!=='1'){
-    handleInput.dataset.bound='1';
+  if(handleInput){
     handleInput.addEventListener('input',()=>{
       const digits=sc2HandleDigits(handleInput.value);
       if(handleInput.value!==digits) handleInput.value=digits;
@@ -556,12 +514,11 @@ function bindUserProfileEvents(){
     handleInput.addEventListener('blur',()=>{
       handleInput.value=sc2HandleDigits(handleInput.value);
       const handle=normalizeSc2Handle(handleInput.value);
-      if(handle && profileLookupCache?.handle!==handle) queueProfileLookupPreview();
+      if(handle && userProfileState.lookup?.handle!==handle) queueProfileLookupPreview();
     });
   }
   const profileBadge=$('dpsUserProfileBadge');
-  if(profileBadge && profileBadge.dataset.profileTriggerBound!=='1'){
-    profileBadge.dataset.profileTriggerBound='1';
+  if(profileBadge){
     const openFromProfileBadge=()=>{
       if(profileBadge.classList.contains('is-profile-trigger')) openProfileGate();
     };
@@ -574,17 +531,13 @@ function bindUserProfileEvents(){
     });
   }
 }
-async function refreshStoredUserProfile(profile){
-  if(!profile || isCurrentProfileVerification(profile)) return profile;
-  const result=await lookupSc2Nickname(profile.handle);
-  if(!result.found || !result.nickname) return profile;
-  if(!writeUserProfile({handle:profile.handle,nickname:result.nickname,verifiedAt:Date.now(),source:result.source})) return profile;
-  return syncUserProfileBadge();
-}
-function initUserProfileGate(){
+async function initUserProfileGate(){
   const profile=syncUserProfileBadge();
-  if(!profile) openProfileGate();
-  else if(profile.status==='verified' && !isCurrentProfileVerification(profile)) refreshStoredUserProfile(profile);
+  if(!profile) return openProfileGate();
+  if(profile.status!=='verified' || isCurrentProfileVerification(profile)) return profile;
+  const result=await lookupSc2Nickname(profile.handle);
+  if(result.found && result.nickname && writeUserProfile({handle:profile.handle,nickname:result.nickname,verifiedAt:Date.now(),source:result.source})) syncUserProfileBadge();
+  return readUserProfile();
 }
 
 const RUNE_CHOICE_TARGETS=[['ap','rAP'],['ua','rUA'],['td','rTD'],['harmony','rHarmony']];
