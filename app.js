@@ -6,19 +6,12 @@ const DPS_CONFIG={
     key:'gbd_dps_calculator:personal_state',
     fontKey:'gbd_dps_calculator:font_scale',
     clientKey:'gbd_dps_calculator:client_id',
-    profileKey:'gbd_dps_calculator:user_profile_auth',
     traitPresetKey:'gbd_dps_calculator:trait_presets',
     traitPresetStatusKey:'gbd_dps_calculator:trait_preset_status'
   },
 
   state:{
-    skipElementIds:['dpsTableMinDpsMain','ep','artifactDpsViewToggle','dpsProfileHandleInput']
-  },
-
-  profileLookup:{
-    previewDelayMs:120,
-    timeoutMs:12000,
-    endpoint:'https://script.google.com/macros/s/AKfycby1qmCsLPtDgj1I3TY7OSIkW8pKitfnwMUAKdLwBmXhf2ZeYYXkIiiG4THTPJ70Iqvg/exec'
+    skipElementIds:['dpsTableMinDpsMain','ep','artifactDpsViewToggle']
   },
 
   dpsTable:{
@@ -202,342 +195,6 @@ function setTogglePressed(el, active, options={}){
 }
 function setTextMap(map){
   Object.entries(map).forEach(([id,value])=>setText(id,value));
-}
-
-const SC2_PROFILE_RULES=Object.freeze({
-  prefix:'3-S2-1-',creatorHandle:'3-S2-1-2461127',digitsPattern:/^\d{6,8}$/,
-  revision:1,rotationMs:5000,transitionMs:180,invalidMessage:'뒷자리 숫자 6~8자리를 입력해 주세요.'
-});
-const userProfileState={
-  memory:undefined,lookup:null,lookupTimer:null,requestSeq:0,rotationTimer:null,transitionTimer:null,
-  cache:new Map(),pending:new Map()
-};
-function sc2ProfileStorageKey(){
-  return DPS_CONFIG.storage.profileKey || 'gbd_dps_calculator:user_profile_auth';
-}
-function sc2HandleDigits(value){
-  const text=String(value ?? '').trim().replace(/^3\s*-\s*S2\s*-\s*1\s*-/i,'');
-  return text.replace(/[^0-9]/g,'').slice(0,8);
-}
-function normalizeSc2Handle(value){
-  const digits=sc2HandleDigits(value);
-  return digits ? `${SC2_PROFILE_RULES.prefix}${digits}` : '';
-}
-function isValidSc2Handle(value){
-  return SC2_PROFILE_RULES.digitsPattern.test(sc2HandleDigits(value));
-}
-function normalizeSc2Nickname(value){
-  let text=String(value ?? '').replace(/[\u0000-\u001f\u007f]/g,'').trim();
-  return text ? text.replace(/<[^>]*>/g,' ').replace(/\s+/g,' ').trim().slice(0,24) : '';
-}
-function normalizeUserProfile(value){
-  const source=value && typeof value==='object' ? value : {};
-  const verifiedAt=Number(source.verifiedAt) || Date.now();
-  if(source.guest===true || source.status==='guest') return {handle:'',nickname:'게스트',status:'guest',verifiedAt,source:'guest'};
-  const handle=normalizeSc2Handle(source.handle || source.sc2Handle || source.id || '');
-  const nickname=normalizeSc2Nickname(source.nickname || source.name || source.displayName || '');
-  const lookupRevision=Math.max(0,Math.trunc(Number(source.lookupRevision) || 0));
-  if(!isValidSc2Handle(handle) || !nickname) return null;
-  return {handle,nickname,status:'verified',verifiedAt,source:'donation-lookup-server',lookupRevision};
-}
-function isCurrentProfileVerification(profile){
-  return profile?.status==='verified' && profile.lookupRevision===SC2_PROFILE_RULES.revision;
-}
-function readUserProfile(){
-  if(userProfileState.memory!==undefined) return userProfileState.memory;
-  try{userProfileState.memory=normalizeUserProfile(JSON.parse(localStorage.getItem(sc2ProfileStorageKey()) || 'null'));}
-  catch(error){rememberAppIssue('warn','사용자 프로필 읽기',error);userProfileState.memory=null;}
-  return userProfileState.memory;
-}
-function writeUserProfile(profile){
-  const normalized=normalizeUserProfile({...profile,lookupRevision:SC2_PROFILE_RULES.revision});
-  if(!normalized) return null;
-  try{
-    localStorage.setItem(sc2ProfileStorageKey(), JSON.stringify(normalized));
-    userProfileState.memory=normalized;
-    return normalized;
-  }catch(error){
-    rememberAppIssue('warn','사용자 프로필 저장',error);
-    showToast('프로필 저장에 실패했습니다. 브라우저 저장소를 확인해 주세요.','err');
-    return null;
-  }
-}
-function setProfileStatus(message,type='muted'){
-  const status=$('dpsProfileStatus');
-  if(status){status.textContent=message;status.dataset.status=type;}
-}
-function setProfileResultProfile(nickname,handle=''){
-  const result=$('dpsProfileResult');
-  const text=normalizeSc2Nickname(nickname);
-  const creator=!!text && normalizeSc2Handle(handle)===SC2_PROFILE_RULES.creatorHandle;
-  const view=$('dpsProfileNicknameView'),role=$('dpsProfileRoleView');
-  if(view) view.textContent=text || '인증 전';
-  if(role) role.textContent=creator ? '제작자' : '플레이어';
-  if(result){
-    result.classList.toggle('is-empty', !text);
-    result.classList.toggle('is-creator', creator);
-  }
-}
-function setProfileLookupBusy(busy){
-  const input=$('dpsProfileHandleInput');
-  const submit=$('dpsProfileGateForm')?.querySelector('.profile-gate-submit');
-  if(input) input.setAttribute('aria-busy',busy ? 'true' : 'false');
-  if(submit){
-    submit.disabled=!!busy;
-    submit.textContent=busy ? '조회 중...' : '시작하기';
-  }
-}
-function userProfileWelcomeText(profile){
-  if(!profile) return '신원 확인 전';
-  if(profile.status==='guest') return '어서오세요, 게스트 님';
-  if(!isCurrentProfileVerification(profile)) return profile.handle===SC2_PROFILE_RULES.creatorHandle ? '제작자 확인 중' : '신원 정보 확인 중';
-  if(profile.handle===SC2_PROFILE_RULES.creatorHandle) return `제작자 ${profile.nickname} 님`;
-  return `어서오세요, ${profile.nickname} 님`;
-}
-function clearProfileHeaderTimers(){
-  ['rotationTimer','transitionTimer'].forEach(key=>{
-    if(userProfileState[key]) clearTimeout(userProfileState[key]);
-    userProfileState[key]=null;
-  });
-}
-function renderUserProfileBadge(profile,showCreatorCredit=false){
-  const badge=$('dpsUserProfileBadge');
-  const welcome=showCreatorCredit ? '제작자 | 회장' : (profile ? userProfileWelcomeText(profile) : '신원 확인 전');
-  const interactive=!showCreatorCredit && !!profile && (profile.status==='guest' || isCurrentProfileVerification(profile));
-  if(badge){
-    [['is-empty',!profile],['is-guest',profile?.status==='guest' && !showCreatorCredit],['is-creator',profile?.handle===SC2_PROFILE_RULES.creatorHandle],['is-creator-credit',!!profile && showCreatorCredit],['is-profile-trigger',interactive]]
-      .forEach(([name,active])=>badge.classList.toggle(name,!!active));
-    const attrs={role:'button',tabindex:'0','aria-haspopup':'dialog','aria-controls':'dpsProfileGate'};
-    Object.entries(attrs).forEach(([name,value])=>interactive ? badge.setAttribute(name,value) : badge.removeAttribute(name));
-    badge.setAttribute('aria-label',interactive ? `${welcome} · 신원 정보 변경` : '사용자 신원 정보');
-  }
-  const handle=showCreatorCredit ? SC2_PROFILE_RULES.creatorHandle : (profile?.status==='guest' ? '게스트 모드' : (profile?.handle || '핸들을 입력해 주세요'));
-  setText('dpsUserWelcomeView',welcome);
-  setText('dpsUserHandleView',handle);
-}
-function startProfileHeaderRotation(profile){
-  clearProfileHeaderTimers();
-  renderUserProfileBadge(profile,false);
-  if(!profile || (profile.status==='verified' && !isCurrentProfileVerification(profile)) || profile.handle===SC2_PROFILE_RULES.creatorHandle) return;
-  let showCreatorCredit=false;
-  const rotate=()=>{
-    const badge=$('dpsUserProfileBadge');
-    showCreatorCredit=!showCreatorCredit;
-    badge?.classList.add('is-transitioning');
-    userProfileState.transitionTimer=setTimeout(()=>{
-      renderUserProfileBadge(profile,showCreatorCredit);
-      badge?.classList.remove('is-transitioning');
-      userProfileState.transitionTimer=null;
-    },SC2_PROFILE_RULES.transitionMs);
-    userProfileState.rotationTimer=setTimeout(rotate,SC2_PROFILE_RULES.rotationMs);
-  };
-  userProfileState.rotationTimer=setTimeout(rotate,SC2_PROFILE_RULES.rotationMs);
-}
-function syncUserProfileBadge(){
-  const profile=readUserProfile();
-  startProfileHeaderRotation(profile);
-  return profile;
-}
-function fillProfileGate(profile){
-  const handleInput=$('dpsProfileHandleInput');
-  const verifiedProfile=profile?.status==='verified' ? profile : null;
-  const cachedProfile=isCurrentProfileVerification(verifiedProfile) ? verifiedProfile : null;
-  if(handleInput) handleInput.value=verifiedProfile ? sc2HandleDigits(verifiedProfile.handle) : '';
-  userProfileState.lookup=cachedProfile ? {handle:cachedProfile.handle,nickname:cachedProfile.nickname,source:'local-profile'} : null;
-  if(cachedProfile) userProfileState.cache.set(cachedProfile.handle,userProfileState.lookup);
-  setProfileLookupBusy(false);
-  setProfileResultProfile(cachedProfile?.nickname || '',verifiedProfile?.handle || '');
-  setProfileStatus(cachedProfile ? '' : (verifiedProfile ? '저장된 인증 정보를 다시 확인합니다.' : '핸들을 인증하거나 닫기를 눌러 게스트로 이용하세요.'),cachedProfile ? 'ok' : 'muted');
-}
-function setProfileGateOpen(open){
-  const gate=$('dpsProfileGate');
-  if(!gate) return false;
-  gate.classList.toggle('is-open', !!open);
-  gate.setAttribute('aria-hidden', open ? 'false' : 'true');
-  return true;
-}
-function openProfileGate(){
-  const profile=readUserProfile();
-  fillProfileGate(profile);
-  setProfileGateOpen(true);
-  if(profile?.status==='verified' && !isCurrentProfileVerification(profile)) queueProfileLookupPreview();
-  setTimeout(()=>$('dpsProfileHandleInput')?.focus(), 30);
-}
-function closeProfileGate(){
-  const profile=readUserProfile();
-  const digits=sc2HandleDigits($('dpsProfileHandleInput')?.value || '');
-  if(!profile && digits){
-    setProfileStatus('핸들을 비우고 닫으면 게스트로 이용할 수 있습니다.','warn');
-    return false;
-  }
-  if(!profile){
-    if(!writeUserProfile({guest:true,status:'guest',nickname:'게스트',verifiedAt:Date.now(),source:'guest'})) return false;
-    syncUserProfileBadge();
-    showToast('게스트로 시작합니다. 변경에서 언제든 인증할 수 있습니다.','ok',3600);
-  }
-  clearProfileLookupTimer();
-  userProfileState.requestSeq+=1;
-  return setProfileGateOpen(false);
-}
-function clearProfileLookupTimer(){
-  if(userProfileState.lookupTimer) clearTimeout(userProfileState.lookupTimer);
-  userProfileState.lookupTimer=null;
-}
-async function lookupSc2Nickname(handle){
-  const normalized=normalizeSc2Handle(handle);
-  if(!isValidSc2Handle(normalized)) return {found:false,reason:'invalid_handle',message:SC2_PROFILE_RULES.invalidMessage};
-  const cached=userProfileState.cache.get(normalized);
-  if(cached?.nickname) return {found:true,nickname:cached.nickname,source:cached.source || 'session-cache'};
-  const pending=userProfileState.pending.get(normalized);
-  if(pending) return pending;
-  const request=(async()=>{
-    const endpoint=String(DPS_CONFIG.profileLookup?.endpoint || '').trim();
-    if(!endpoint) return {found:false,reason:'lookup_unavailable',message:'닉네임 조회 서버가 설정되지 않았습니다.'};
-    const controller=typeof AbortController==='function' ? new AbortController() : null;
-    const timer=controller ? setTimeout(()=>controller.abort(),Math.max(3000,Number(DPS_CONFIG.profileLookup?.timeoutMs) || 12000)) : null;
-    try{
-      const url=new URL(endpoint);
-      url.searchParams.set('action','lookupNickname');
-      url.searchParams.set('handle',normalized);
-      const response=await fetch(url.href,{cache:'no-store',credentials:'omit',signal:controller?.signal,headers:{Accept:'application/json'}});
-      if(!response.ok) throw new Error(`HTTP ${response.status}`);
-      const result=await response.json();
-      const nickname=normalizeSc2Nickname(result?.nickname);
-      if(!result?.found || !nickname) return {found:false,reason:String(result?.reason || 'not_found'),message:String(result?.message || '핸들을 확인할 수 없습니다.')};
-      const resolved={nickname,source:'donation-lookup-server'};
-      userProfileState.cache.set(normalized,resolved);
-      return {found:true,...resolved};
-    }catch(error){
-      rememberAppIssue('warn','스타2 닉네임 조회',error);
-      return {found:false,reason:'lookup_error',message:error?.name==='AbortError' ? '닉네임 조회 시간이 초과되었습니다. 다시 시도해 주세요.' : '닉네임 조회 중 오류가 발생했습니다. 다시 시도해 주세요.'};
-    }finally{
-      if(timer) clearTimeout(timer);
-    }
-  })();
-  userProfileState.pending.set(normalized,request);
-  try{
-    return await request;
-  }finally{
-    if(userProfileState.pending.get(normalized)===request) userProfileState.pending.delete(normalized);
-  }
-}
-async function runProfileLookupPreview(handle){
-  const normalized=normalizeSc2Handle(handle);
-  const seq=++userProfileState.requestSeq;
-  if(!isValidSc2Handle(normalized)){
-    userProfileState.lookup=null;
-    setProfileLookupBusy(false);
-    setProfileResultProfile('',normalized);
-    setProfileStatus(SC2_PROFILE_RULES.invalidMessage,'warn');
-    return null;
-  }
-  setProfileLookupBusy(true);
-  setProfileResultProfile('',normalized);
-  setProfileStatus(`${normalized} 인증서버 확인 중입니다.`,'muted');
-  const result=await lookupSc2Nickname(normalized);
-  if(seq!==userProfileState.requestSeq || normalizeSc2Handle($('dpsProfileHandleInput')?.value || '')!==normalized) return null;
-  setProfileLookupBusy(false);
-  if(result.found && result.nickname){
-    userProfileState.lookup={handle:normalized,nickname:result.nickname,source:result.source};
-    setProfileResultProfile(result.nickname,normalized);
-    setProfileStatus('','ok');
-    return userProfileState.lookup;
-  }
-  userProfileState.lookup=null;
-  setProfileResultProfile('',normalized);
-  setProfileStatus(result.message || '핸들을 확인할 수 없습니다.','err');
-  return null;
-}
-function queueProfileLookupPreview(){
-  clearProfileLookupTimer();
-  const handle=normalizeSc2Handle($('dpsProfileHandleInput')?.value || '');
-  userProfileState.lookup=null;
-  userProfileState.requestSeq+=1;
-  setProfileLookupBusy(false);
-  setProfileResultProfile('',handle);
-  if(!handle){
-    setProfileStatus('핸들 뒷자리 숫자 6~8자리를 입력해 주세요.','muted');
-    return;
-  }
-  if(!isValidSc2Handle(handle)){
-    setProfileStatus(SC2_PROFILE_RULES.invalidMessage,'warn');
-    return;
-  }
-  const saved=readUserProfile();
-  const cached=userProfileState.cache.get(handle) || (isCurrentProfileVerification(saved) && saved.handle===handle ? {nickname:saved.nickname,source:'local-profile'} : null);
-  if(cached?.nickname){
-    userProfileState.cache.set(handle,cached);
-    userProfileState.lookup={handle,nickname:cached.nickname,source:cached.source || 'session-cache'};
-    setProfileResultProfile(cached.nickname,handle);
-    setProfileStatus('','ok');
-    return;
-  }
-  setProfileStatus(`${handle} 입력됨 · 잠시 후 인증서버를 조회합니다.`,'muted');
-  const delay=Math.max(0, Number(DPS_CONFIG.profileLookup?.previewDelayMs) || 120);
-  userProfileState.lookupTimer=setTimeout(()=>runProfileLookupPreview(handle), delay);
-}
-async function submitUserProfileGate(event){
-  if(event) event.preventDefault();
-  clearProfileLookupTimer();
-  const handleInput=$('dpsProfileHandleInput');
-  const handle=normalizeSc2Handle(handleInput?.value || '');
-  if(!isValidSc2Handle(handle)){
-    setProfileStatus(SC2_PROFILE_RULES.invalidMessage,'err');
-    handleInput?.focus();
-    return false;
-  }
-  if(handleInput) handleInput.value=sc2HandleDigits(handle);
-  const lookup=userProfileState.lookup?.handle===handle ? userProfileState.lookup : await runProfileLookupPreview(handle);
-  const nickname=normalizeSc2Nickname(lookup?.nickname);
-  if(!nickname){
-    setProfileStatus('닉네임 확인 후 시작할 수 있습니다. 다시 시도해 주세요.','err');
-    handleInput?.focus();
-    return false;
-  }
-  if(!writeUserProfile({handle,nickname,verifiedAt:Date.now(),source:lookup.source})) return false;
-  const profile=syncUserProfileBadge();
-  setProfileGateOpen(false);
-  setProfileStatus('','ok');
-  showToast(userProfileWelcomeText(profile),'ok');
-  return true;
-}
-function bindUserProfileEvents(){
-  const form=$('dpsProfileGateForm');
-  form?.addEventListener('submit',submitUserProfileGate);
-  const handleInput=$('dpsProfileHandleInput');
-  if(handleInput){
-    handleInput.addEventListener('input',()=>{
-      const digits=sc2HandleDigits(handleInput.value);
-      if(handleInput.value!==digits) handleInput.value=digits;
-      queueProfileLookupPreview();
-    });
-    handleInput.addEventListener('blur',()=>{
-      handleInput.value=sc2HandleDigits(handleInput.value);
-      const handle=normalizeSc2Handle(handleInput.value);
-      if(handle && userProfileState.lookup?.handle!==handle) queueProfileLookupPreview();
-    });
-  }
-  const profileBadge=$('dpsUserProfileBadge');
-  if(profileBadge){
-    const openFromProfileBadge=()=>{
-      if(profileBadge.classList.contains('is-profile-trigger')) openProfileGate();
-    };
-    profileBadge.addEventListener('click',openFromProfileBadge);
-    profileBadge.addEventListener('keydown',event=>{
-      if(event.key!=='Enter' && event.key!==' ') return;
-      if(!profileBadge.classList.contains('is-profile-trigger')) return;
-      event.preventDefault();
-      openFromProfileBadge();
-    });
-  }
-}
-async function initUserProfileGate(){
-  const profile=syncUserProfileBadge();
-  if(!profile) return openProfileGate();
-  if(profile.status!=='verified' || isCurrentProfileVerification(profile)) return profile;
-  const result=await lookupSc2Nickname(profile.handle);
-  if(result.found && result.nickname && writeUserProfile({handle:profile.handle,nickname:result.nickname,verifiedAt:Date.now(),source:result.source})) syncUserProfileBadge();
-  return readUserProfile();
 }
 
 const RUNE_CHOICE_TARGETS=[['ap','rAP'],['ua','rUA'],['td','rTD'],['harmony','rHarmony']];
@@ -2751,20 +2408,79 @@ function bindFontScaleViewportGuard(){
     if(isFontScaleLockedViewport()) applyFontScale(DPS_CONFIG.ui.fontScaleDefault, {silent:true});
   });
 }
+const APP_TITLE_ROTATION=Object.freeze({
+  main:'개복디 특성 계산기',
+  creator:'제작자 | 회장 · 3-S2-1-2461127',
+  mainMs:5000,
+  creatorMs:3000,
+  transitionMs:180,
+  versionMs:1200
+});
+let appTitleRotationTimer=0;
+let appTitleTransitionTimer=0;
 let appTitleVersionTimer=0;
+function clearAppTitleRotationTimers(){
+  if(appTitleRotationTimer){
+    clearTimeout(appTitleRotationTimer);
+    appTitleRotationTimer=0;
+  }
+  if(appTitleTransitionTimer){
+    clearTimeout(appTitleTransitionTimer);
+    appTitleTransitionTimer=0;
+  }
+}
+function renderAppTitleView(mode){
+  const title=$('appTitleView');
+  if(!title) return;
+  const text=mode==='creator'
+    ? APP_TITLE_ROTATION.creator
+    : mode==='version'
+      ? (window.APP_VERSION || 'V1.0')
+      : APP_TITLE_ROTATION.main;
+  title.dataset.titleView=mode;
+  title.classList.toggle('is-creator-view', mode==='creator');
+  title.classList.toggle('is-version-view', mode==='version');
+  title.textContent=text;
+  title.setAttribute('aria-label', `${text} · 앱 버전 보기`);
+}
+function scheduleAppTitleRotation(mode){
+  const delay=mode==='creator' ? APP_TITLE_ROTATION.creatorMs : APP_TITLE_ROTATION.mainMs;
+  appTitleRotationTimer=setTimeout(()=>{
+    const title=$('appTitleView');
+    if(!title) return;
+    title.classList.add('is-transitioning');
+    appTitleTransitionTimer=setTimeout(()=>{
+      const nextMode=mode==='creator' ? 'main' : 'creator';
+      renderAppTitleView(nextMode);
+      title.classList.remove('is-transitioning');
+      scheduleAppTitleRotation(nextMode);
+    },APP_TITLE_ROTATION.transitionMs);
+  },delay);
+}
+function restartAppTitleRotation(){
+  const title=$('appTitleView');
+  if(!title) return;
+  clearAppTitleRotationTimers();
+  title.classList.remove('is-transitioning');
+  renderAppTitleView('main');
+  scheduleAppTitleRotation('main');
+}
 function showAppTitleVersion(){
   const title=$('appTitleView');
   if(!title) return;
-  if(!title.dataset.originalText) title.dataset.originalText=title.textContent || '개복디 특성 계산기';
-  title.textContent=(window.APP_VERSION || 'V1.0');
+  clearAppTitleRotationTimers();
+  title.classList.remove('is-transitioning');
+  renderAppTitleView('version');
   if(appTitleVersionTimer) clearTimeout(appTitleVersionTimer);
   appTitleVersionTimer=setTimeout(()=>{
-    title.textContent=title.dataset.originalText || '개복디 특성 계산기';
-  },1200);
+    appTitleVersionTimer=0;
+    restartAppTitleRotation();
+  },APP_TITLE_ROTATION.versionMs);
 }
 function bindAppTitleVersion(){
   const title=$('appTitleView');
   if(!title) return;
+  restartAppTitleRotation();
   title.addEventListener('click', showAppTitleVersion);
   title.addEventListener('keydown', e=>{
     if(e.key==='Enter' || e.key===' '){
@@ -2982,7 +2698,6 @@ const ACTION_HANDLERS={
   openSanctuarySkillModal:()=>window.DpsModal.openBoardModal('sanctuarySkillModal'),
   openBusPassengerModal:()=>window.DpsModal.openBoardModal('busPassengerModal'),
   openZeroRankInfoModal:()=>window.DpsModal.openBoardModal('zeroRankInfoModal'),
-  closeProfileGate,
   zeroScoreStar:(trigger)=>toggleZeroScoreStar(trigger),
   decreaseFont:()=>changeFontScale(-DPS_CONFIG.ui.fontScaleStep),
   increaseFont:()=>changeFontScale(DPS_CONFIG.ui.fontScaleStep),
@@ -3014,8 +2729,7 @@ const REACTIVE_INPUT_EXCLUDED_IDS=new Set([
   'traitPresetBackupName',
   'dpsTableMinDps',
   'dpsTableMinDpsMain',
-  'artifactDpsViewToggle',
-  'dpsProfileHandleInput'
+  'artifactDpsViewToggle'
 ]);
 const RUNE_CHOICE_SYNC_IDS=new Set(['runeChoiceType','runeChoiceValue']);
 const DEDICATED_DPS_BASE_UNIT_REACTIVE_SELECTOR=[
@@ -3112,7 +2826,7 @@ function bindAppEvents(){
     bindFontScaleViewportGuard, bindActionEvents, bindTraitHoldEvents, bindTraitInputEvents,
     ()=>window.DpsModal.bindEvents(), ()=>window.DpsPreset.bindEvents(), bindJewelImageEvents,
     bindZeroScoreCalculator, bindTraitLimitDisplayEvents, bindDpsBaseUnitControlEvents, bindReactiveInputs,
-    bindButtonPressFeedback, bindDamageBoardSwitchEvents, bindDpsBaseUnitConditionEvents, bindUserProfileEvents, bindAppTitleVersion
+    bindButtonPressFeedback, bindDamageBoardSwitchEvents, bindDpsBaseUnitConditionEvents, bindAppTitleVersion
   ].forEach(fn=>fn());
 }
 function initApp(){
@@ -3129,7 +2843,6 @@ function initApp(){
   syncTraitLimitInputs();
   loadState();
   window.DpsPreset.init();
-  initUserProfileGate();
 }
 function markAppReady(){
   try{
