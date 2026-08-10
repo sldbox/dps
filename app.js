@@ -2409,13 +2409,21 @@ function bindFontScaleViewportGuard(){
   });
 }
 const APP_TITLE_ROTATION=Object.freeze({
-  main:'개복디 특성 계산기',
-  creator:'제작자 | 회장 · 3-S2-1-2461127',
+  main:{value:'개복디 특성 계산기'},
+  creator:{label:'제작자', value:'회장 | 3-S2-1-2461127'},
   mainMs:5000,
   creatorMs:3000,
   transitionMs:180,
   versionMs:1200
 });
+function getAppTitleViewMeta(mode){
+  if(mode==='version') return {label:'버전정보', value:(window.APP_VERSION || window.DPS_BUILD_VERSION || 'V1.0')};
+  return APP_TITLE_ROTATION[mode] || APP_TITLE_ROTATION.main;
+}
+function buildAppTitleHtml(mode, meta){
+  if(mode==='main') return `<span class="hdr-title-mainline">${escapeHtml(meta.value)}</span>`;
+  return `<span class="hdr-title-stack"><span class="hdr-title-label">${escapeHtml(meta.label)}</span><span class="hdr-title-main">${escapeHtml(meta.value)}</span></span>`;
+}
 let appTitleRotationTimer=0;
 let appTitleTransitionTimer=0;
 let appTitleVersionTimer=0;
@@ -2432,15 +2440,12 @@ function clearAppTitleRotationTimers(){
 function renderAppTitleView(mode){
   const title=$('appTitleView');
   if(!title) return;
-  const text=mode==='creator'
-    ? APP_TITLE_ROTATION.creator
-    : mode==='version'
-      ? (window.APP_VERSION || 'V1.0')
-      : APP_TITLE_ROTATION.main;
+  const meta=getAppTitleViewMeta(mode);
+  const text=meta.label ? `${meta.label} ${meta.value}` : meta.value;
   title.dataset.titleView=mode;
   title.classList.toggle('is-creator-view', mode==='creator');
   title.classList.toggle('is-version-view', mode==='version');
-  title.textContent=text;
+  title.innerHTML=buildAppTitleHtml(mode, meta);
   title.setAttribute('aria-label', `${text} · 앱 버전 보기`);
 }
 function scheduleAppTitleRotation(mode){
