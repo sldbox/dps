@@ -1128,7 +1128,7 @@ function renderTraitPresetCustomMenu(custom, select){
   menu.hidden=!custom.classList.contains('is-open');
 }
 function syncTraitPresetCustomSelect(select){
-  if(!select?.matches?.('#traitPresetSelect,#traitPresetUnitCopySourceSelect')) return;
+  if(!select?.matches?.('#traitPresetSelect')) return;
   const next=select.nextElementSibling;
   let custom=next?.matches?.(`[data-trait-preset-custom-select="${select.id}"]`) ? next : null;
   if(!custom){
@@ -1201,10 +1201,6 @@ function refreshTraitPresetControls(selectedId){
   dispatchTraitPresetStoreChanged({source:'selection', selectedTraitPresetId:current?.id || ''});
   qsa('[data-action="loadTraitPreset"],[data-action="updateTraitPreset"],[data-action="deleteTraitPreset"]').forEach(btn=>{
     btn.disabled=!current;
-  });
-  qsa('[data-trait-preset-unit-jewel-open]').forEach(btn=>{
-    const panel=btn.dataset.traitPresetUnitJewelOpen==='jewel' ? 'jewel' : 'copy';
-    btn.disabled=panel==='copy' && !store.presets.length;
   });
   qsa('[data-action="backupTraitPresets"]').forEach(btn=>{ btn.disabled=!store.presets.length; });
   renderTraitPresetStatus(status, store);
@@ -1713,7 +1709,7 @@ function traitPresetBackupUpdateListHtml(plan){
   const rows=Array.isArray(plan?.presetRows) ? plan.presetRows : [];
   const list=rows.length
     ? rows.map(row=>{
-      const emptyMark=row.changed ? '' : '<span class="trait-preset-unit-copy-duplicate-mark" aria-hidden="true">변경 사항 없음</span>';
+      const emptyMark=row.changed ? '' : '<span class="trait-preset-backup-no-change-mark" aria-hidden="true">변경 사항 없음</span>';
       return `<li class="${row.changed ? 'is-changed' : 'is-no-change'}"><span class="trait-preset-backup-preset-name">${escapeHtml(row.name)}</span>${traitPresetBackupScopeTagsHtml(row)}${emptyMark}</li>`;
     }).join('')
     : '<li class="trait-preset-backup-empty-row">로드된 프리셋 없음</li>';
@@ -1968,261 +1964,34 @@ async function importTraitPresetFile(file){
   }
 }
 let traitPresetUnitJewelReturnFocus=null;
-let traitPresetUnitJewelActivePanel='copy';
-let traitPresetUnitCopyAppliedTargetIds=new Set();
-let traitPresetUnitCopySelectedTargetIds=new Set();
-function setTraitPresetUnitJewelButtonExpanded(expanded,panel=''){
-  const activePanel=panel==='jewel' ? 'jewel' : panel==='copy' ? 'copy' : '';
+function setTraitPresetUnitJewelButtonExpanded(expanded){
   qsa('[data-trait-preset-unit-jewel-open]').forEach(button=>{
-    const buttonPanel=button.dataset.traitPresetUnitJewelOpen==='jewel' ? 'jewel' : 'copy';
-    button.setAttribute('aria-expanded',expanded && (!activePanel || buttonPanel===activePanel) ? 'true' : 'false');
+    button.setAttribute('aria-expanded',expanded ? 'true' : 'false');
   });
 }
-function traitPresetUnitJewelPanelTitle(panel){
-  return panel==='jewel' ? '쥬얼 설정' : '유닛 복사';
-}
-function traitPresetUnitJewelPanelHtml(panel){
-  if(panel==='jewel'){
-    return `<section class="trait-preset-unit-jewel-panel trait-preset-unit-jewel-settings-panel" id="traitPresetJewelSettingPanel" data-trait-preset-unit-jewel-panel="jewel">
-      <div class="dps-jewel-settings-body trait-preset-unit-jewel-settings-body" data-dps-jewel-config>
-        <div class="dps-jewel-config-grid" id="dpsJewelConfigGrid"></div>
-      </div>
-    </section>`;
-  }
-  return `<section class="trait-preset-unit-jewel-panel trait-preset-unit-copy-panel" id="traitPresetUnitCopyPanel" data-trait-preset-unit-jewel-panel="copy">
-    <div class="trait-preset-unit-copy-layout">
-      <div class="trait-preset-unit-copy-left">
-        <div class="trait-preset-unit-copy-actionbar">
-          <button class="btn pri ui-action-btn" id="traitPresetUnitCopyApplyBtn" type="button" data-trait-preset-unit-copy-apply="1" disabled><span>복사 하기</span><small>복사 적용 후에는 프리셋이 변경됩니다. 변경 내용을 보관하려면 프리셋 백업을 진행하세요.</small></button>
-        </div>
-        <section class="trait-preset-unit-copy-side">
-          <label class="trait-preset-unit-copy-select"><span class="trait-preset-unit-copy-select-head"><em>복사 원본</em></span><select id="traitPresetUnitCopySourceSelect" aria-label="복사 원본 프리셋"></select></label>
-          <div class="trait-preset-unit-copy-info" id="traitPresetUnitCopySourcePreview"></div>
-        </section>
-        <i class="trait-preset-unit-copy-arrow" aria-hidden="true">↓</i>
-        <section class="trait-preset-unit-copy-side">
-          <div class="trait-preset-unit-copy-target-head"><span>복사 대상</span><b id="traitPresetUnitCopyTargetStateLabel">복사 적용 전</b></div>
-          <div class="trait-preset-unit-copy-info">
-            <div id="traitPresetUnitCopyTargetPreview"></div>
-          </div>
-        </section>
-      </div>
-      <div class="trait-preset-unit-copy-right">
-        <div class="trait-preset-unit-copy-toolbar">
-          <b>프리셋 목록</b>
-          <div>
-            <button class="ui-action-btn trait-preset-unit-copy-tool" type="button" data-trait-preset-unit-copy-select-all="1">전체 선택</button>
-            <button class="ui-action-btn trait-preset-unit-copy-tool" type="button" data-trait-preset-unit-copy-clear="1">선택 해제</button>
-          </div>
-        </div>
-        <div class="trait-preset-unit-copy-list" id="traitPresetUnitCopyTargetList"></div>
-      </div>
+function traitPresetUnitJewelPanelHtml(){
+  return `<section class="trait-preset-unit-jewel-panel trait-preset-unit-jewel-settings-panel" id="traitPresetJewelSettingPanel" data-trait-preset-unit-jewel-panel="jewel">
+    <div class="dps-jewel-settings-body trait-preset-unit-jewel-settings-body" data-dps-jewel-config>
+      <div class="dps-jewel-config-grid" id="dpsJewelConfigGrid"></div>
     </div>
   </section>`;
 }
-function createTraitPresetUnitJewelModal(panel='copy'){
-  const mode=panel==='jewel' ? 'jewel' : 'copy';
-  const title=traitPresetUnitJewelPanelTitle(mode);
+function createTraitPresetUnitJewelModal(){
+  const title='쥬얼 설정';
   const html=`
     <div class="trait-preset-unit-jewel-backdrop" data-trait-preset-unit-jewel-close="1"></div>
-    <section class="trait-preset-unit-jewel-modal is-${mode}" role="dialog" aria-modal="true" aria-labelledby="traitPresetUnitJewelTitle">
+    <section class="trait-preset-unit-jewel-modal is-jewel" role="dialog" aria-modal="true" aria-labelledby="traitPresetUnitJewelTitle">
       <header class="trait-preset-unit-jewel-head">
         <h2 id="traitPresetUnitJewelTitle">${title}</h2>
         <button type="button" class="ui-icon-btn trait-preset-unit-jewel-close" data-trait-preset-unit-jewel-close="1" aria-label="${title} 닫기">×</button>
       </header>
       <div class="trait-preset-unit-jewel-body">
-        ${traitPresetUnitJewelPanelHtml(mode)}
+        ${traitPresetUnitJewelPanelHtml()}
       </div>
     </section>`;
   const existing=$('traitPresetUnitJewelModal');
   if(existing){ existing.innerHTML=html; return existing; }
   return window.DpsModal.createShell('traitPresetUnitJewelModal','trait-preset-unit-jewel-modal-shell',html);
-}
-function traitPresetUnitBoardForPreset(store,presetId){
-  return traitPresetUnitBoardState(store,presetId) || normalizeTraitPresetUnitBoardState(null);
-}
-function traitPresetUnitCopyUnitDetailItems(state){
-  const normalized=normalizeTraitPresetUnitBoardState(state);
-  return normalized.units.map(item=>{
-    const unit=dpsBaseUnitById(item.unitId);
-    const label=dpsBaseUnitLabel(unit || item.unitId);
-    const details=[];
-    if(unit && dpsBaseUnitHasQuantity(unit) && Number(item.quantity)>1) details.push(`${Number(item.quantity)}기`);
-    if(Number(item.enhanceExpected)>0) details.push(`강화 ${Number(item.enhanceExpected)}`);
-    if(Number(item.limitBreak)>0) details.push(`한돌 ${Number(item.limitBreak)}`);
-    if(normalizeDpsJewelName(item.legendaryMythicJewel)) details.push(`쥬얼 ${normalizeDpsJewelName(item.legendaryMythicJewel)}`);
-    if(normalizeDpsBaseUnitVoidPowerValue(item.voidPower)==='ON') details.push('공허 권능');
-    if(normalized.slotExpansions.includes(item.unitId)) details.push('슬롯 확장');
-    const extras=(normalized.additionalUnitSettings?.[item.unitId] || []).map((extra,index)=>{
-      const parts=[];
-      if(Number(extra.limitBreak)>0) parts.push(`한돌 ${Number(extra.limitBreak)}`);
-      if(normalizeDpsJewelName(extra.legendaryMythicJewel)) parts.push(`쥬얼 ${normalizeDpsJewelName(extra.legendaryMythicJewel)}`);
-      return parts.length ? `${index+2}기 ${parts.join(' · ')}` : '';
-    }).filter(Boolean);
-    return {label,details:details.length ? details : ['기본'],extras};
-  });
-}
-function traitPresetUnitCopyUnitDetailHtml(state){
-  const items=traitPresetUnitCopyUnitDetailItems(state);
-  if(!items.length) return '<div class="trait-preset-unit-copy-empty-units">선택된 유닛 없음</div>';
-  return `<ul class="trait-preset-unit-copy-units">${items.map(item=>`
-    <li>
-      <b>${escapeHtml(item.label)}</b>
-      <span>${item.details.map(detail=>`<em>${escapeHtml(detail)}</em>`).join('')}</span>
-      ${item.extras.length ? `<small>${item.extras.map(extra=>`<i>${escapeHtml(extra)}</i>`).join('')}</small>` : ''}
-    </li>`).join('')}</ul>`;
-}
-function traitPresetUnitCopySourceId(store,status=null){
-  const select=$('traitPresetUnitCopySourceSelect');
-  const selected=select?.value || selectedTraitPresetId() || status?.selectedTraitPresetId || '';
-  return store.presets.some(preset=>preset.id===selected) ? selected : firstTraitPresetSelectId(store);
-}
-function traitPresetUnitCopySourceOptionsHtml(store,sourceId,updatedIds=new Set()){
-  const buckets=sortedTraitPresetBuckets(store);
-  const currentUpdatedIds=updatedIds instanceof Set ? updatedIds : new Set();
-  const groups=TRAIT_PRESET_SELECT_GROUPS.map(group=>{
-    const options=(buckets[group.key] || []).map(preset=>{
-      const selected=preset.id===sourceId ? ' selected' : '';
-      const label=traitPresetSelectLabel(preset,currentUpdatedIds,group.key);
-      return `<option value="${escapeHtml(preset.id)}"${selected}${traitPresetNameOptionAttrs(label)}>${escapeHtml(label)}</option>`;
-    }).join('');
-    return options ? `<optgroup label="${escapeHtml(group.label)}">${options}</optgroup>` : '';
-  }).join('');
-  return groups || '<option value="">저장된 프리셋 없음</option>';
-}
-function traitPresetUnitCopySelectLabel(preset,groupKey,updatedIds=new Set()){
-  const currentUpdatedIds=updatedIds instanceof Set ? updatedIds : new Set();
-  return traitPresetSelectLabel(preset,currentUpdatedIds,groupKey || traitPresetCategoryKey(preset));
-}
-function traitPresetUnitCopyCardBodyHtml(preset,board,label){
-  if(!preset) return '<div class="trait-preset-unit-copy-empty-units">프리셋 목록에서 복사할 대상 선택</div>';
-  return `<div class="trait-preset-unit-copy-card-main">
-    <header class="trait-preset-unit-copy-card-head">
-      <i>프리셋</i>
-      <b>${escapeHtml(label || preset.name || '프리셋')}</b>
-    </header>
-    <section class="trait-preset-unit-copy-card-unit-section">
-      <b class="trait-preset-unit-copy-card-section-title">유닛 구성</b>
-      <div class="trait-preset-unit-copy-card-unit-head"><span>유닛명</span><span>유닛 세부정보</span></div>
-      <div class="trait-preset-unit-copy-card-units">${traitPresetUnitCopyUnitDetailHtml(board)}</div>
-    </section>
-  </div>`;
-}
-function traitPresetUnitCopySelectableIds(items){
-  return new Set(items
-    .filter(item=>!item.duplicate || traitPresetUnitCopyAppliedTargetIds.has(item.preset.id))
-    .map(item=>item.preset.id));
-}
-function normalizeTraitPresetUnitCopySelectedIds(items){
-  const validIds=traitPresetUnitCopySelectableIds(items);
-  traitPresetUnitCopySelectedTargetIds=new Set([...traitPresetUnitCopySelectedTargetIds]
-    .map(id=>String(id || ''))
-    .filter(id=>id && validIds.has(id)));
-  return traitPresetUnitCopySelectedTargetIds;
-}
-function traitPresetUnitCopyTargetPreviewIds(items){
-  const validIds=traitPresetUnitCopySelectableIds(items);
-  return [...traitPresetUnitCopySelectedTargetIds].filter(id=>validIds.has(id));
-}
-function traitPresetUnitCopyTargetPreviewHtml(items,updatedIds=new Set()){
-  const ids=traitPresetUnitCopyTargetPreviewIds(items);
-  if(!ids.length) return '<div class="trait-preset-unit-copy-empty-units">프리셋 목록에서 복사할 대상 선택</div>';
-  const itemById=new Map(items.map(item=>[item.preset.id,item]));
-  return `<div class="trait-preset-unit-copy-preview-list">${ids.map(id=>{
-    const item=itemById.get(id);
-    if(!item) return '';
-    const label=traitPresetUnitCopySelectLabel(item.preset,item.group.key,updatedIds);
-    return `<label class="trait-preset-unit-copy-option trait-preset-unit-copy-preview-card is-extra is-selected">
-      <input type="checkbox" value="${escapeHtml(id)}" data-trait-preset-unit-copy-preview-target="1" data-preset-name="${escapeHtml(label)}" checked/>
-      <span class="trait-preset-unit-copy-check" aria-hidden="true"></span>
-      ${traitPresetUnitCopyCardBodyHtml(item.preset,item.board,label)}
-    </label>`;
-  }).join('')}</div>`;
-}
-function traitPresetUnitCopyTargetItems(store,sourceId,sourceBoard){
-  const sourceValue=stableTraitPresetValue(sourceBoard);
-  const buckets=sortedTraitPresetBuckets(store);
-  return TRAIT_PRESET_SELECT_GROUPS.flatMap(group=>
-    (buckets[group.key] || [])
-      .filter(preset=>preset.id!==sourceId)
-      .map(preset=>{
-        const board=traitPresetUnitBoardForPreset(store,preset.id);
-        return {preset,group,board,duplicate:stableTraitPresetValue(board)===sourceValue};
-      })
-  );
-}
-function traitPresetUnitCopyRenderData(options={}){
-  const store=options.store || loadTraitPresetStore();
-  const status=options.status || loadTraitPresetStatusData();
-  const sourceId=options.sourceId || traitPresetUnitCopySourceId(store,status);
-  const source=store.presets.find(preset=>preset.id===sourceId) || null;
-  const sourceBoard=traitPresetUnitBoardForPreset(store,sourceId);
-  const targets=traitPresetUnitCopyTargetItems(store,sourceId,sourceBoard);
-  const updatedIds=options.updatedIds instanceof Set ? options.updatedIds : new Set(status.updatedPresetIds);
-  return {store,sourceId,source,sourceBoard,targets,updatedIds};
-}
-function traitPresetUnitCopyTargetHtml(items,updatedIds=new Set()){
-  if(!items.length) return '<div class="trait-preset-unit-copy-empty">복사할 대상 프리셋이 없습니다.</div>';
-  const selectedIds=traitPresetUnitCopySelectedTargetIds;
-  const sections=TRAIT_PRESET_SELECT_GROUPS.map(group=>{
-    const groupItems=items.filter(item=>item.group.key===group.key && !selectedIds.has(item.preset.id));
-    if(!groupItems.length) return '';
-    const cards=groupItems.map(({preset,board,duplicate})=>{
-      const label=traitPresetUnitCopySelectLabel(preset,group.key,updatedIds);
-      const applied=traitPresetUnitCopyAppliedTargetIds.has(preset.id);
-      const blockedDuplicate=duplicate && !applied;
-      const disabled=blockedDuplicate ? ' disabled' : '';
-      return `<label class="trait-preset-unit-copy-option${blockedDuplicate?' is-duplicate':' is-changing'}"${blockedDuplicate?' aria-disabled="true"':''}>
-        <input type="checkbox" value="${escapeHtml(preset.id)}" data-trait-preset-unit-copy-target="1" data-preset-name="${escapeHtml(label)}"${disabled}/>
-        <span class="trait-preset-unit-copy-check" aria-hidden="true"></span>
-        ${traitPresetUnitCopyCardBodyHtml(preset,board,label)}
-        ${blockedDuplicate ? '<span class="trait-preset-unit-copy-duplicate-mark" aria-hidden="true">중복 선택 불가</span>' : ''}
-      </label>`;
-    }).join('');
-    return `<section class="trait-preset-unit-copy-group" aria-label="${escapeHtml(group.label)}">
-      <h3 class="trait-preset-unit-copy-group-label">${escapeHtml(group.label)}</h3>
-      <div class="trait-preset-unit-copy-group-list">${cards}</div>
-    </section>`;
-  }).filter(Boolean).join('');
-  return sections || '<div class="trait-preset-unit-copy-empty">선택한 프리셋은 왼쪽 복사 대상으로 이동했습니다.</div>';
-}
-function selectedTraitPresetUnitCopyTargetIds(){
-  return [...traitPresetUnitCopySelectedTargetIds];
-}
-function syncTraitPresetUnitBoardCopySelection(){
-  const apply=$('traitPresetUnitCopyApplyBtn');
-  if(apply) apply.disabled=!traitPresetUnitCopySelectedTargetIds.size;
-}
-function updateTraitPresetUnitCopyPreview(renderData=null){
-  const data=renderData || traitPresetUnitCopyRenderData();
-  normalizeTraitPresetUnitCopySelectedIds(data.targets);
-  const sourcePreview=$('traitPresetUnitCopySourcePreview');
-  const targetPreview=$('traitPresetUnitCopyTargetPreview');
-  const targetLabel=$('traitPresetUnitCopyTargetStateLabel');
-  const sourceLabel=data.source ? traitPresetUnitCopySelectLabel(data.source,traitPresetCategoryKey(data.source),data.updatedIds) : '';
-  if(sourcePreview) sourcePreview.innerHTML=data.source ? traitPresetUnitCopyCardBodyHtml(data.source,data.sourceBoard,sourceLabel) : '<div class="trait-preset-unit-copy-empty-units">원본 선택</div>';
-  if(targetPreview) targetPreview.innerHTML=traitPresetUnitCopyTargetPreviewHtml(data.targets,data.updatedIds);
-  if(targetLabel) targetLabel.textContent=traitPresetUnitCopyTargetPreviewIds(data.targets).some(id=>traitPresetUnitCopyAppliedTargetIds.has(id)) ? '복사 적용 후' : '복사 적용 전';
-  syncTraitPresetUnitBoardCopySelection();
-}
-function renderTraitPresetUnitCopyPanel(options={}){
-  const data=traitPresetUnitCopyRenderData({sourceId:options.sourceId});
-  const sourceSelect=$('traitPresetUnitCopySourceSelect');
-  const targetList=$('traitPresetUnitCopyTargetList');
-  if(options.keepSelection!==true) traitPresetUnitCopySelectedTargetIds=new Set();
-  traitPresetUnitCopySelectedTargetIds.delete(data.sourceId);
-  normalizeTraitPresetUnitCopySelectedIds(data.targets);
-  if(sourceSelect) sourceSelect.innerHTML=traitPresetUnitCopySourceOptionsHtml(data.store,data.sourceId,data.updatedIds);
-  if(sourceSelect) sourceSelect.value=data.sourceId || '';
-  if(sourceSelect) syncTraitPresetCustomSelect(sourceSelect);
-  if(targetList) targetList.innerHTML=traitPresetUnitCopyTargetHtml(data.targets,data.updatedIds);
-  updateTraitPresetUnitCopyPreview(data);
-}
-function setTraitPresetUnitJewelPanel(panel){
-  const next=panel==='jewel' ? 'jewel' : 'copy';
-  traitPresetUnitJewelActivePanel=next;
-  if(next==='copy') renderTraitPresetUnitCopyPanel({keepSelection:true});
-  if(next==='jewel') renderDpsJewelConfigGrids();
 }
 function closeTraitPresetUnitJewelModal(options={}){
   if(!window.DpsModal?.isOpen?.('traitPresetUnitJewelModal')) return;
@@ -2231,80 +2000,18 @@ function closeTraitPresetUnitJewelModal(options={}){
   if(options.restoreFocus!==false && traitPresetUnitJewelReturnFocus?.isConnected) traitPresetUnitJewelReturnFocus.focus({preventScroll:true});
   traitPresetUnitJewelReturnFocus=null;
 }
-function openTraitPresetUnitJewelModal(trigger=null,panel='copy'){
-  const store=loadTraitPresetStore();
-  const next=panel==='jewel' ? 'jewel' : 'copy';
-  if(next==='copy' && !store.presets.length){
-    notifyStorageAction('저장된 프리셋이 없습니다.','err');
-    refreshTraitPresetControls('');
-    return false;
-  }
+function openTraitPresetUnitJewelModal(trigger=null){
   traitPresetUnitJewelReturnFocus=trigger instanceof HTMLElement ? trigger : (document.activeElement instanceof HTMLElement ? document.activeElement : null);
-  createTraitPresetUnitJewelModal(next);
-  traitPresetUnitCopyAppliedTargetIds=new Set();
-  traitPresetUnitCopySelectedTargetIds=new Set();
-  setTraitPresetUnitJewelPanel(next);
+  createTraitPresetUnitJewelModal();
+  renderDpsJewelConfigGrids();
   window.DpsModal.setOpen('traitPresetUnitJewelModal','trait-preset-unit-jewel-modal-open',true);
-  setTraitPresetUnitJewelButtonExpanded(true,next);
+  setTraitPresetUnitJewelButtonExpanded(true);
   const body=document.querySelector('#traitPresetUnitJewelModal .trait-preset-unit-jewel-body');
   if(body) body.scrollTop=0;
   requestAnimationFrame(()=>{
-    const focusTarget=traitPresetUnitJewelActivePanel==='jewel'
-      ? document.querySelector('[data-dps-jewel-config] select')
-      : $('traitPresetUnitCopySourceSelect');
-    focusTarget?.focus?.({preventScroll:true});
+    document.querySelector('[data-dps-jewel-config] select')?.focus?.({preventScroll:true});
   });
   return true;
-}
-function applyTraitPresetUnitBoardCopy(){
-  const sourceId=$('traitPresetUnitCopySourceSelect')?.value || '';
-  const targetIds=selectedTraitPresetUnitCopyTargetIds();
-  if(!targetIds.length){
-    syncTraitPresetUnitBoardCopySelection();
-    return false;
-  }
-  try{
-    let store=loadTraitPresetStore();
-    const source=store.presets.find(preset=>preset.id===sourceId);
-    if(!source) throw new Error('복사할 원본 프리셋을 찾을 수 없습니다.');
-    const sourceBoard=traitPresetUnitBoardForPreset(store,sourceId);
-    const sourceBoardValue=stableTraitPresetValue(sourceBoard);
-    const changedIds=[];
-    targetIds.forEach(id=>{
-      const target=store.presets.find(preset=>preset.id===id);
-      if(!target) return;
-      const hasBoard=traitPresetHasUnitBoard(store,id);
-      const previous=hasBoard ? traitPresetUnitBoardState(store,id) : normalizeTraitPresetUnitBoardState(null);
-      const changed=hasBoard
-        ? stableTraitPresetValue(previous)!==sourceBoardValue
-        : traitPresetUnitBoardHasValues(sourceBoard);
-      if(changed){
-        setTraitPresetUnitBoardState(store,id,sourceBoard);
-        changedIds.push(id);
-      }
-    });
-    if(!changedIds.length){
-      notifyStorageAction('중복 프리셋은 복사할 수 없습니다.','warn');
-      return false;
-    }
-    saveTraitPresetStore(store,{source:'copyTraitPresetUnitBoard',dispatch:true});
-    if(changedIds.includes(selectedTraitPresetId())){
-      applyTraitPresetUnitBoardState(sourceBoard,{recalculate:false});
-      recalc({save:false});
-      if(!isStorageLocked()) saveState({silent:true});
-    }
-    traitPresetUnitCopyAppliedTargetIds=new Set(changedIds);
-    renderTraitPresetUnitCopyPanel({sourceId,keepSelection:true});
-    markTraitPresetUpdated(changedIds,'unitBoardCopy',{unitBoard:true});
-    closeTraitPresetUnitJewelModal({restoreFocus:true});
-    notifyStorageAction(`유닛 복사 완료: ${changedIds.length}개 프리셋 변경`,'ok',{skipHeaderStatus:true});
-    setTimeout(()=>openTraitPresetBackupModal(),60);
-    return true;
-  }catch(e){
-    rememberAppIssue('error','[trait preset unit board copy failed]',e);
-    notifyStorageAction(e?.message || '유닛 보드 복사 실패','err');
-    return false;
-  }
 }
 function handleTraitPresetChange(e){
   if(e.target?.id==='traitPresetSelect'){
@@ -2314,23 +2021,6 @@ function handleTraitPresetChange(e){
   if(e.target?.id==='traitPresetImportFile' && e.target.files?.[0]){
     const file=e.target.files[0];
     importTraitPresetFile(file).finally(()=>resetTraitPresetImportInput(e.target));
-  }
-  if(e.target?.id==='traitPresetUnitCopySourceSelect'){
-    traitPresetUnitCopyAppliedTargetIds=new Set();
-    traitPresetUnitCopySelectedTargetIds=new Set();
-    renderTraitPresetUnitCopyPanel({sourceId:e.target.value});
-  }
-  if(e.target?.matches?.('[data-trait-preset-unit-copy-target]')){
-    traitPresetUnitCopyAppliedTargetIds=new Set();
-    const id=String(e.target.value || '');
-    if(id && e.target.checked && !e.target.disabled) traitPresetUnitCopySelectedTargetIds.add(id);
-    else traitPresetUnitCopySelectedTargetIds.delete(id);
-    renderTraitPresetUnitCopyPanel({keepSelection:true});
-  }
-  if(e.target?.matches?.('[data-trait-preset-unit-copy-preview-target]')){
-    traitPresetUnitCopyAppliedTargetIds=new Set();
-    traitPresetUnitCopySelectedTargetIds.delete(String(e.target.value || ''));
-    renderTraitPresetUnitCopyPanel({keepSelection:true});
   }
 }
 function handleTraitPresetClick(e){
@@ -2362,33 +2052,12 @@ function handleTraitPresetClick(e){
   if(unitJewelOpen){
     e.preventDefault();
     e.stopPropagation();
-    openTraitPresetUnitJewelModal(unitJewelOpen,unitJewelOpen.dataset.traitPresetUnitJewelOpen || 'copy');
+    openTraitPresetUnitJewelModal(unitJewelOpen);
     return;
   }
   if(e.target.closest('[data-trait-preset-unit-jewel-close]')){
     e.preventDefault();
     closeTraitPresetUnitJewelModal({restoreFocus:true});
-    return;
-  }
-  if(e.target.closest('[data-trait-preset-unit-copy-select-all]')){
-    e.preventDefault();
-    traitPresetUnitCopyAppliedTargetIds=new Set();
-    const data=traitPresetUnitCopyRenderData();
-    traitPresetUnitCopySelectedTargetIds=traitPresetUnitCopySelectableIds(data.targets);
-    renderTraitPresetUnitCopyPanel({sourceId:data.sourceId,keepSelection:true});
-    return;
-  }
-  if(e.target.closest('[data-trait-preset-unit-copy-clear]')){
-    e.preventDefault();
-    traitPresetUnitCopyAppliedTargetIds=new Set();
-    traitPresetUnitCopySelectedTargetIds=new Set();
-    renderTraitPresetUnitCopyPanel({keepSelection:true});
-    return;
-  }
-  if(e.target.closest('[data-trait-preset-unit-copy-apply]')){
-    e.preventDefault();
-    e.stopPropagation();
-    applyTraitPresetUnitBoardCopy();
     return;
   }
   if(e.target.closest('[data-trait-preset-backup-close]')) closeTraitPresetBackupModal();
@@ -2433,8 +2102,8 @@ function bindTraitPresetEvents(){
   document.addEventListener('change',handleTraitPresetChange);
   document.addEventListener('click',handleTraitPresetClick);
   document.addEventListener('keydown',handleTraitPresetKeydown);
-  window.addEventListener('dps:unitJewelModalRequest',e=>{
-    openTraitPresetUnitJewelModal(null,e.detail?.panel || 'jewel');
+  window.addEventListener('dps:unitJewelModalRequest',()=>{
+    openTraitPresetUnitJewelModal(null);
   });
   window.addEventListener('dps:unitJewelModalCloseRequest',()=>{
     closeTraitPresetUnitJewelModal({restoreFocus:true});
