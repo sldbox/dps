@@ -3,11 +3,6 @@
 
   /* 반응형 상태·측정 헬퍼 */
   const MODES = ['is-pc-landscape', 'is-pc-portrait', 'is-tablet', 'is-mobile', 'is-portrait-view', 'is-mobile-device', 'is-tablet-device', 'is-narrow-mobile', 'is-tabbed'];
-  const TABBED_REFERENCE_ACTIONS = [
-    { key: 'dps', label: 'DPS표', action: 'openDpsTable' },
-    { key: 'runes', label: '이달의룬', action: 'openMonthRuneTab', monthRuneTab: 'runes' },
-    { key: 'nexus', label: '넥서스 ↗', href: 'https://sldbox.github.io/site/' }
-  ];
   const TABBED_PAGES = [
     { key: 'basic', label: '기본 정보', selectors: ['.trait-preset-panel', '.col-left'] },
     { key: 'trait', label: '특성 보드', selectors: ['.trait-board-panel'] },
@@ -23,7 +18,6 @@
     layoutPortrait: null,
     activeIndex: 0,
     activeKey: null,
-    referenceActionsVisible: null,
     resumeRaf: 0,
     initialized: false
   };
@@ -111,42 +105,15 @@
     if (!key) return -1;
     return state.pages.findIndex(page => page.key === key);
   }
-  function buildReferenceActionButton(config) {
-    if (config.href) {
-      const link = document.createElement('a');
-      link.className = 'mobile-section-tab mobile-section-action-tab tone-reference';
-      link.href = config.href;
-      link.textContent = config.label;
-      return link;
-    }
-    const btn = document.createElement('button');
-    btn.type = 'button';
-    btn.className = 'mobile-section-tab mobile-section-action-tab tone-reference';
-    btn.textContent = config.label;
-    btn.dataset.action = config.action;
-    if (config.monthRuneTab) btn.dataset.monthRuneOpenTab = config.monthRuneTab;
-    return btn;
-  }
   function buildTabs(colWork, pages) {
     if (!state.tabs) {
       state.tabs = document.createElement('div');
       state.tabs.className = 'mobile-section-tabs';
-      state.tabs.setAttribute('aria-label', '빠른 기능 및 화면 전환');
+      state.tabs.setAttribute('aria-label', '화면 전환');
       colWork.parentNode.insertBefore(state.tabs, colWork);
       state.tabs.addEventListener('keydown', handleTabKeydown);
     }
     state.tabs.textContent = '';
-    const showReferenceActions = !document.body.classList.contains('is-pc-portrait');
-    state.referenceActionsVisible = showReferenceActions;
-    if (showReferenceActions) {
-      const actionRow = document.createElement('div');
-      actionRow.className = 'mobile-section-action-row';
-      actionRow.setAttribute('aria-label', '빠른 기능');
-      TABBED_REFERENCE_ACTIONS.forEach(config => {
-        actionRow.appendChild(buildReferenceActionButton(config));
-      });
-      state.tabs.append(actionRow);
-    }
     const pageRow = document.createElement('div');
     pageRow.className = 'mobile-section-page-row';
     pageRow.setAttribute('role', 'tablist');
@@ -241,7 +208,6 @@
     document.querySelector('.col-work')?.classList.remove('is-mobile-arranged');
     state.tabs = null;
     state.pages = [];
-    state.referenceActionsVisible = null;
     state.arrangedTabbed = false;
   }
   function syncTabbedLayout() {
@@ -250,8 +216,6 @@
     if (document.body.classList.contains('is-tabbed')) {
       if (!state.arrangedTabbed) arrangeTabbed(colWork);
       else {
-        const showReferenceActions = !document.body.classList.contains('is-pc-portrait');
-        if (state.referenceActionsVisible !== showReferenceActions) buildTabs(colWork, state.pages);
         showTabbedPage(getPageIndexByKey(state.activeKey));
       }
     } else {

@@ -469,7 +469,7 @@ function renderResourceSummary(s){
   syncSpBankDisplay();
 }
 function syncControlDisplays(){
-  [syncSelectButtons,syncBuffChoiceButtons,syncBattleMode,syncDifficultyTargetControls,syncErosionControlElements,syncPowerBlessOptions,syncDpsBaseUnitConditionSwitches,normalizeAllDpsBaseUnitQuantityInputs,formatAllMoneyInputs].forEach(fn=>fn());
+  [syncSelectButtons,syncBuffChoiceButtons,syncBattleMode,syncDifficultyTargetControls,syncErosionControlElements,syncPowerBlessOptions,syncSpecDpsSpeedSwitch,normalizeAllDpsBaseUnitQuantityInputs,formatAllMoneyInputs].forEach(fn=>fn());
 }
 function syncSpBankApplyControl(){
   const select=$('spBankApply');
@@ -610,8 +610,9 @@ function syncArtifactDpsViewSwitch(){
   const toggle=$('artifactDpsViewToggle');
   if(!toggle) return;
   const active=isArtifactDpsViewEnabled();
-  toggle.classList.toggle('is-active', active);
-  toggle.setAttribute('aria-checked', active ? 'true' : 'false');
+  toggle.classList.toggle('is-active',active);
+  toggle.setAttribute('aria-checked',active ? 'true' : 'false');
+  toggle.setAttribute('aria-label',`유물 DPS ${active ? '켬' : '끔'}`);
 }
 function syncOnOffSwitch(toggle,{active=false,disabled=false,label='설정',containerSelector=''}){
   if(!toggle) return;
@@ -619,7 +620,7 @@ function syncOnOffSwitch(toggle,{active=false,disabled=false,label='설정',cont
   toggle.classList.toggle('is-active',active);
   toggle.setAttribute('aria-checked',active ? 'true' : 'false');
   toggle.setAttribute('aria-disabled',disabled ? 'true' : 'false');
-  toggle.setAttribute('aria-label',`${label} ${active ? 'ON' : 'OFF'}`);
+  toggle.setAttribute('aria-label',`${label} ${active ? '켬' : '끔'}`);
   if(containerSelector) toggle.closest(containerSelector)?.classList.toggle('is-disabled',disabled);
 }
 const UNIFIED_DPS_SPEED_MODE_INPUT_IDS=Object.freeze(['specDpsSpeedMode','dpsBaseUnitSpeedMode']);
@@ -637,15 +638,14 @@ function normalizeUnifiedDpsSpeedModeValue(){
   return setUnifiedDpsSpeedModeValue(active);
 }
 function syncSpecDpsSpeedSwitch(){
-  const toggle=$('specDpsSpeedModeToggle');
-  if(!toggle) return;
+  const toggles=qsa('[data-spec-dps-speed-toggle]');
+  if(!toggles.length) return;
   const {active,disabled}=normalizeUnifiedDpsSpeedModeValue();
-  syncOnOffSwitch(toggle,{active,disabled,label:'스피드 모드',containerSelector:'.spec-dps-speed-switch-wrap'});
+  toggles.forEach(toggle=>syncOnOffSwitch(toggle,{active,disabled,label:'스피드 모드',containerSelector:'.spec-dps-speed-switch-wrap,.dps-base-unit-speed-switch-wrap'}));
 }
 function applyUnifiedDpsSpeedModeToggle(active){
   setUnifiedDpsSpeedModeValue(!active);
   syncSpecDpsSpeedSwitch();
-  syncDpsBaseUnitConditionSwitches();
   commitAppUpdate();
   return true;
 }
@@ -654,40 +654,6 @@ function toggleSpecDpsSpeedMode(){
   const {active,disabled}=normalizeUnifiedDpsSpeedModeValue();
   if(toggle?.disabled || disabled) return false;
   return applyUnifiedDpsSpeedModeToggle(active);
-}
-/* 유닛 보드 전투 모드·적 방어 효과 스위치 */
-function syncDpsBaseUnitConditionSwitch(toggle){
-  if(!toggle) return;
-  const inputId=toggle.dataset.dpsBaseUnitConditionToggle || '';
-  const input=$(inputId);
-  const label=toggle.dataset.dpsBaseUnitConditionLabel || '설정';
-  if(inputId==='dpsBaseUnitSpeedMode'){
-    const {active,disabled}=normalizeUnifiedDpsSpeedModeValue();
-    syncOnOffSwitch(toggle,{active,disabled,label,containerSelector:'.dps-base-unit-condition-item'});
-    return;
-  }
-  const disabled=dpsBaseUnitConditionLocked(inputId);
-  if(disabled && input) input.value='OFF';
-  const active=!disabled && storedSpeedModeEnabled(inputId);
-  syncOnOffSwitch(toggle,{active,disabled,label,containerSelector:'.dps-base-unit-condition-item'});
-}
-function syncDpsBaseUnitConditionSwitches(){
-  qsa('[data-dps-base-unit-condition-toggle]').forEach(syncDpsBaseUnitConditionSwitch);
-}
-function toggleDpsBaseUnitCondition(toggle){
-  const inputId=toggle?.dataset?.dpsBaseUnitConditionToggle || '';
-  const input=$(inputId);
-  if(!input || toggle.disabled) return false;
-  if(inputId==='dpsBaseUnitSpeedMode'){
-    const {active,disabled}=normalizeUnifiedDpsSpeedModeValue();
-    if(disabled) return false;
-    return applyUnifiedDpsSpeedModeToggle(active);
-  }
-  if(dpsBaseUnitConditionLocked(inputId)) return false;
-  input.value=storedSpeedModeEnabled(inputId) ? 'OFF' : 'ON';
-  syncDpsBaseUnitConditionSwitch(toggle);
-  commitAppUpdate();
-  return true;
 }
 function withArtifactDpsViewBuffApplied(callback){
   const artifactEl=$('prodArtifact');
@@ -723,9 +689,7 @@ const DPS_MODAL_MODES=['solo','coop','tower'];
 let activeDpsTableMode='solo';
 let dpsTableMinDps='1.0';
 function isDpsTableOpen(){
-  const modal=$('monthRuneModal');
-  const panel=modal?.querySelector('[data-month-rune-panel="dps"]');
-  return !!(modal?.classList.contains('is-open') && panel && !panel.hidden);
+  return $('dpsTableModal')?.classList.contains('is-open')===true;
 }
 function getDpsTableTowerGroupSize(){
   if(document.body?.classList.contains('is-mobile')) return 90;
@@ -768,17 +732,32 @@ function updateDpsRiskViews(currentDps){
 
 let dpsPreviewCacheRevision=-1;
 const dpsPreviewValueCache=new Map();
+const dpsPreviewCoreCache=new Map();
+function dpsTablePreviewCore(diff,round,options,artifactView){
+  const cacheKey=JSON.stringify([artifactView,diff,round,options.battleMode||'',options.teamCount||'']);
+  if(dpsPreviewCoreCache.has(cacheKey)) return dpsPreviewCoreCache.get(cacheKey);
+  try{
+    const core=calculateDpsPreviewCore(diff,round,options,artifactView);
+    dpsPreviewCoreCache.set(cacheKey,core);
+    return core;
+  }catch(e){
+    rememberAppIssue('error','[DPS preview core failed]',e);
+    return null;
+  }
+}
 function dpsTablePreviewValue(diff, penance, round, options={}){
   if(dpsPreviewCacheRevision!==appCalculationRevision){
     dpsPreviewValueCache.clear();
+    dpsPreviewCoreCache.clear();
     dpsPreviewCacheRevision=appCalculationRevision;
   }
   const artifactView=isArtifactDpsViewEnabled();
   const cacheKey=JSON.stringify([artifactView,diff,penance,round,options.battleMode||'',options.teamCount||'']);
   if(dpsPreviewValueCache.has(cacheKey)) return dpsPreviewValueCache.get(cacheKey);
+  const previewOptions={...options,previewCore:dpsTablePreviewCore(diff,round,options,artifactView)};
   const value=artifactView
-    ? calculateArtifactDpsPreview(diff, penance, round, options).dps
-    : computeDpsPreview(diff, penance, round, options);
+    ? calculateArtifactDpsPreview(diff, penance, round, previewOptions).dps
+    : computeDpsPreview(diff, penance, round, previewOptions);
   dpsPreviewValueCache.set(cacheKey,value);
   return value;
 }
@@ -788,9 +767,9 @@ function dpsTableDisplayTitle(){
 function syncDpsTableLabels(){
   const label=dpsTableDisplayTitle();
   setText('dpsTableMenuButton', label);
-  const titleEl=$('monthRuneTitle');
+  const titleEl=$('dpsTableTitle');
   if(titleEl && isDpsTableOpen()) titleEl.textContent=label;
-  const closeBtn=$('monthRuneModal')?.querySelector('.month-rune-close');
+  const closeBtn=$('dpsTableModal')?.querySelector('.dps-table-modal-close');
   if(closeBtn && isDpsTableOpen()) closeBtn.setAttribute('aria-label', `${label} 닫기`);
 }
 
@@ -898,7 +877,7 @@ function dpsTablePanelInnerHtml(){
   return `<section class="dps-table-panel dps-table-mode-panel ${modeClass}">${tableHtml}</section>`;
 }
 function syncDpsTableModalModeClass(){
-  const dialog=$('monthRuneModal')?.querySelector('.month-rune-modal');
+  const dialog=$('dpsTableModal')?.querySelector('.dps-table-modal');
   const mode=DPS_MODAL_MODES.includes(activeDpsTableMode) ? activeDpsTableMode : 'solo';
   window.DpsModal?.syncModeClasses(dialog, DPS_MODAL_MODES, mode);
 }
@@ -928,75 +907,7 @@ function openDpsTable(mode='auto'){
   const fallbackMode=isTowerDifficulty() ? 'tower' : (isCoopActive() ? 'coop' : 'solo');
   const normalizedMode=mode==='round' ? 'solo' : (mode==='auto' ? fallbackMode : mode);
   activeDpsTableMode=DPS_MODAL_MODES.includes(normalizedMode) ? normalizedMode : fallbackMode;
-  window.DpsModal.openMonthRune('dps');
-}
-function expandMonthRuneCodeGroup(code, desc){
-  const codeText=String(code||'').trim();
-  const descText=desc||'';
-  const parts=codeText.split(/\s*\/\s*/).map(part=>part.trim()).filter(Boolean);
-  const isRuneCodeGroup=parts.length>1 && parts.every(part=>/^\d{1,2}[A-D]\+?$/.test(part));
-  if(!isRuneCodeGroup) return [[codeText, descText]];
-  return parts.map(part=>[part, descText]);
-}
-function monthRunePairs(items){
-  const pairs=[];
-  for(let i=0;i<items.length;i+=2){
-    pairs.push(...expandMonthRuneCodeGroup(items[i]||'', items[i+1]||''));
-  }
-  return pairs;
-}
-function monthRuneEffectGroups(items){
-  const groups=[];
-  monthRunePairs(items).forEach(([code,desc])=>{
-    const descText=String(desc||'').trim();
-    const last=groups[groups.length-1];
-    if(last && last.desc===descText){
-      last.codes.push(code);
-      return;
-    }
-    groups.push({codes:[code],desc:descText});
-  });
-  return groups;
-}
-function renderMonthRuneCodePills(codes){
-  return (codes||[]).filter(Boolean).map(code=>`<b class="month-rune-code-pill">${escapeHtml(code)}</b>`).join('');
-}
-function renderMonthRuneRows(items, className=''){
-  return monthRuneEffectGroups(items).map(group=>`
-    <div class="month-rune-effect-row${className ? ' '+className : ''}">
-      <div class="month-rune-code-list">${renderMonthRuneCodePills(group.codes)}</div>
-      <span>${escapeHtml(group.desc)}</span>
-    </div>
-  `).join('');
-}
-function renderMonthRuneVariant(title, base, items, className=''){
-  return `
-    <section class="month-rune-side ${className}">
-      <h3><span>${escapeHtml(title)}</span><em>${escapeHtml(base)}</em></h3>
-      <div class="month-rune-effects">${renderMonthRuneRows(items, className)}</div>
-    </section>
-  `;
-}
-function renderMonthRuneCard(item, info={}){
-  const title=item.title || `${item.month}월 룬`;
-  return `
-    <article class="month-rune-card">
-      <header class="month-rune-card-head">
-        <div class="month-rune-title-block">
-          <b>${escapeHtml(title)}</b>
-        </div>
-      </header>
-      <div class="month-rune-compare">
-        ${renderMonthRuneVariant('일반 룬', info.normalBase || 'RP+1', item.normal||[], 'normal')}
-        ${renderMonthRuneVariant('이달의 룬+', info.plusBase || 'RP+2', item.plus||[], 'plus')}
-      </div>
-    </article>
-  `;
-}
-function renderMonthRunePanelContent(info){
-  const months=Array.isArray(info?.months)?info.months:[];
-  const content=months.length ? months.map(item=>renderMonthRuneCard(item, info)).join('') : '<div class="month-rune-empty">이달룬 데이터가 없습니다.</div>';
-  return `<div class="month-rune-grid">${content}</div>`;
+  window.DpsModal.openDpsTableModal();
 }
 function getJewelImageSources(name){
   const safeName=encodeURIComponent(String(name||'').trim());
@@ -1040,9 +951,6 @@ function renderJewelAbility(label, text){
     </div>
   `;
 }
-function renderMonthRuneModalPanel(name,content,active=false){
-  return `<section class="month-rune-panel${active?' is-active':''}" data-month-rune-panel="${name}" role="tabpanel" aria-labelledby="monthRuneTitle"${active?'':' hidden'}>${content}</section>`;
-}
 const FIELD_REGISTRY={
   sp:{kind:'기본 정보',name:'시작 SP',save:true},
   xp:{kind:'기본 정보',name:'보유 XP',save:true},
@@ -1072,8 +980,6 @@ const FIELD_REGISTRY={
   dpsBaseUnitExtraSettings:{kind:'유닛 보드',name:'추가 유닛 쥬얼 & 한계 돌파',save:true},
   dpsBaseUnitSlotExpansions:{kind:'유닛 보드',name:'슬롯 확장',save:true},
   dpsBaseUnitSpeedMode:{kind:'유닛 보드',name:'스피드 모드',save:true},
-  dpsBaseUnitShieldOff:{kind:'유닛 보드',name:'적버프 제거 · 쉴드오프',save:true},
-  dpsBaseUnitShieldMaster:{kind:'유닛 보드',name:'슈퍼실드 주기변경 · 쉴드마스',save:true},
   erosionStack:{kind:'기본 정보',name:'침식 스텍',save:true},
   jewelErosionRes:{kind:'기본 정보',name:'심연 내성',save:true},
   aprRuneNormal:{kind:'룬효과 버프',name:'4월 일반',save:true},
@@ -2699,7 +2605,6 @@ const ACTION_HANDLERS={
   backupTraitPresets:(...args)=>window.DpsPreset.openBackup(...args),
   importTraitPresets:(...args)=>window.DpsPreset.openImport(...args),
   openDpsTable,
-  openMonthRuneTab:(trigger)=>window.DpsModal.openMonthRune(trigger?.dataset?.monthRuneOpenTab || 'compare'),
   openSanctuarySkillModal:()=>window.DpsModal.openBoardModal('sanctuarySkillModal'),
   openBusPassengerModal:()=>window.DpsModal.openBoardModal('busPassengerModal'),
   openZeroRankInfoModal:()=>window.DpsModal.openBoardModal('zeroRankInfoModal'),
@@ -2816,14 +2721,6 @@ function bindDamageBoardSwitchEvents(){
     requestAppUpdate();
   }, true);
 }
-function bindDpsBaseUnitConditionEvents(){
-  document.addEventListener('click',e=>{
-    const toggle=e.target?.closest?.('[data-dps-base-unit-condition-toggle]');
-    if(!toggle || toggle.disabled) return;
-    e.preventDefault();
-    toggleDpsBaseUnitCondition(toggle);
-  },true);
-}
 function bindAppEvents(){
   if(appEventsBound) return;
   appEventsBound=true;
@@ -2831,7 +2728,7 @@ function bindAppEvents(){
     bindFontScaleViewportGuard, bindActionEvents, bindTraitHoldEvents, bindTraitInputEvents,
     ()=>window.DpsModal.bindEvents(), ()=>window.DpsPreset.bindEvents(), bindJewelImageEvents,
     bindZeroScoreCalculator, bindTraitLimitDisplayEvents, bindDpsBaseUnitControlEvents, bindReactiveInputs,
-    bindButtonPressFeedback, bindDamageBoardSwitchEvents, bindDpsBaseUnitConditionEvents, bindAppTitleVersion
+    bindButtonPressFeedback, bindDamageBoardSwitchEvents, bindAppTitleVersion
   ].forEach(fn=>fn());
 }
 function initApp(){

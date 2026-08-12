@@ -19,7 +19,7 @@ const TRAIT_PRESET_NAME_PLACEHOLDER='예시) 더파300라버스';
 const TRAIT_PRESET_INVALID_FILE_MESSAGE='특성 프리셋 파일 형식이 아닙니다.';
 const TRAIT_PRESET_SINGLE_UPDATE_VALUE_IDS=new Set([
   'diff','penance','round','challengeTowerFloor','soloMode','coopMode','coopPassenger2Dr','coopPassenger3Dr','team','pbless','spBankApply',
-  'specDpsSpeedMode','dpsBaseUnitSpeedMode','dpsBaseUnitShieldOff','dpsBaseUnitShieldMaster',
+  'specDpsSpeedMode','dpsBaseUnitSpeedMode',
   'overEnhance','repairEnhance','enhanceMaster',
   'prodArtifact','prodNova','prodTeratron','prodAmon','prodAdun','prodKerrigan','prodOvermind','prodNarud',
   'flowerSkill1','flowerSkill2','flowerSkill3',
@@ -93,7 +93,7 @@ function normalizeStoredElementValue(id, value){
   if(id==='dpsJewelSettings') return serializeDpsJewelSettings(value);
   if(id==='dpsBaseUnitExtraSettings') return serializeDpsBaseUnitExtraSettings(value);
   if(id==='dpsBaseUnitSlotExpansions') return serializeDpsBaseUnitSlotExpansions(value);
-  if(id==='specDpsSpeedMode' || id==='dpsBaseUnitSpeedMode' || id==='dpsBaseUnitShieldOff' || id==='dpsBaseUnitShieldMaster') return normalizeOnOffValue(value,'OFF');
+  if(id==='specDpsSpeedMode' || id==='dpsBaseUnitSpeedMode') return normalizeOnOffValue(value,'OFF');
   if(dpsBaseUnitQuantityIds().includes(id)) return normalizeDpsBaseUnitQuantityValue(value);
   if(DPS_BASE_UNIT_ENHANCE_IDS.has(id)) return normalizeDpsBaseUnitEnhanceValue(value);
   if(DPS_BASE_UNIT_LIMIT_BREAK_IDS.has(id)) return normalizeDpsBaseUnitLimitBreakValue(value);

@@ -2,11 +2,7 @@
   'use strict';
 
   /* 공통 모달 상태·쉘 */
-  const MONTH_RUNE_MODAL_TITLES=Object.freeze({
-    runes:'이달의 룬',
-    dps:'DPS표'
-  });
-  const MONTH_RUNE_MODAL_CLASS_NAMES=Object.freeze(['is-modal-runes','is-modal-dps']);
+  const DPS_TABLE_MODAL_ID='dpsTableModal';
   const DPS_TABLE_MIN_DPS_INPUT_SELECTOR='#dpsTableMinDps,#dpsTableMinDpsMain';
   const BOARD_MODAL_IDS=Object.freeze(['sanctuarySkillModal','busPassengerModal','zeroRankInfoModal']);
   let eventsBound=false;
@@ -137,7 +133,7 @@
     return BOARD_MODAL_IDS.find(isOpen) || '';
   }
 
-  /* DPS표·룬 */
+  /* DPS표 */
   function getDpsTableMinDpsInput(target){
     return target instanceof Element?target.closest(DPS_TABLE_MIN_DPS_INPUT_SELECTOR):null;
   }
@@ -157,78 +153,53 @@
     if(typeof fresh.setSelectionRange==='function') fresh.setSelectionRange(pos,pos);
   }
 
-  function renderMonthRuneModalHeader(tabName){
-    const modal=document.getElementById('monthRuneModal');
+  function renderDpsTableModalHeader(){
+    const modal=document.getElementById(DPS_TABLE_MODAL_ID);
     if(!modal) return;
-    const next=MONTH_RUNE_MODAL_TITLES[tabName]?tabName:'runes';
-    const title=next==='dps'?dpsTableDisplayTitle():MONTH_RUNE_MODAL_TITLES[next];
-    const dialog=modal.querySelector('.month-rune-modal');
-    const titleEl=document.getElementById('monthRuneTitle');
-    const actions=document.getElementById('monthRuneHeaderActions');
-    const closeButton=modal.querySelector('.month-rune-close');
-    if(dialog){
-      dialog.classList.remove(...MONTH_RUNE_MODAL_CLASS_NAMES);
-      dialog.classList.add(`is-modal-${next}`);
-    }
+    const title=dpsTableDisplayTitle();
+    const titleEl=document.getElementById('dpsTableTitle');
+    const actions=document.getElementById('dpsTableHeaderActions');
+    const closeButton=modal.querySelector('.dps-table-modal-close');
     if(titleEl) titleEl.textContent=title;
     if(closeButton) closeButton.setAttribute('aria-label',`${title} 닫기`);
     if(actions){
-      actions.innerHTML=next==='dps'
-        ?`<div class="dps-table-tabs month-rune-header-tabs" id="dpsTableTabsMount" data-dps-table-tabs-mount role="tablist" aria-label="DPS 기준 선택">${renderDpsTableTabs()}</div>`
-        :'';
+      actions.innerHTML=`<div class="dps-table-tabs dps-table-header-tabs" id="dpsTableTabsMount" data-dps-table-tabs-mount role="tablist" aria-label="DPS 기준 선택">${renderDpsTableTabs()}</div>`;
     }
   }
 
   function renderDpsTablePanel(){
-    return `<section class="month-rune-panel dps-table-inline-panel" data-month-rune-panel="dps" role="tabpanel" aria-labelledby="monthRuneTitle" hidden>
+    return `<section class="dps-table-modal-panel dps-table-inline-panel" role="tabpanel" aria-labelledby="dpsTableTitle">
       <div class="dps-table-body" id="dpsTableMount" data-dps-table-mount></div>
     </section>`;
   }
 
-  function selectMonthRuneModalTab(tabName){
-    const modal=document.getElementById('monthRuneModal');
-    if(!modal) return;
-    const next=['runes','dps'].includes(tabName)?tabName:'runes';
-    modal.querySelectorAll('[data-month-rune-panel]').forEach(panel=>{
-      const active=panel.dataset.monthRunePanel===next;
-      setClassState(panel,'is-active',active);
-      panel.hidden=!active;
-    });
-    renderMonthRuneModalHeader(next);
-    if(next!=='dps') syncModeClasses(modal.querySelector('.month-rune-modal'),DPS_MODAL_MODES);
-    if(next==='dps') renderDpsTablePanelContent();
-  }
-
-  function createMonthRuneModal(){
-    const data=window.DPS_DATA||{};
-    const info=data.MONTHLY_RUNE_INFO||{months:[]};
-    return createShell('monthRuneModal','month-rune-modal-shell',`
-      <div class="month-rune-backdrop" data-month-rune-close="1"></div>
-      <section class="month-rune-modal is-modal-runes" role="dialog" aria-modal="true" aria-labelledby="monthRuneTitle">
-        <header class="month-rune-head">
-          <h2 id="monthRuneTitle" class="month-rune-title">이달의 룬</h2>
-          <div class="month-rune-header-actions" id="monthRuneHeaderActions"></div>
-          <button type="button" class="ui-icon-btn month-rune-close" data-month-rune-close="1" aria-label="이달의 룬 닫기">×</button>
+  function createDpsTableModal(){
+    return createShell(DPS_TABLE_MODAL_ID,'dps-table-modal-shell',`
+      <div class="dps-table-modal-backdrop" data-dps-table-close="1"></div>
+      <section class="dps-table-modal" role="dialog" aria-modal="true" aria-labelledby="dpsTableTitle">
+        <header class="dps-table-modal-head">
+          <h2 id="dpsTableTitle" class="dps-table-modal-title">DPS표</h2>
+          <div class="dps-table-modal-actions" id="dpsTableHeaderActions"></div>
+          <button type="button" class="ui-icon-btn dps-table-modal-close" data-dps-table-close="1" aria-label="DPS표 닫기">×</button>
         </header>
-        <div class="month-rune-body">
-          ${renderMonthRuneModalPanel('runes',renderMonthRunePanelContent(info),true)}
+        <div class="dps-table-modal-body">
           ${renderDpsTablePanel()}
         </div>
       </section>`);
   }
 
-  function openMonthRune(tabName='runes'){
-    const next=typeof tabName==='string'?tabName:'runes';
-    createMonthRuneModal();
-    selectMonthRuneModalTab(next);
-    setOpen('monthRuneModal','month-rune-modal-open',true);
+  function openDpsTableModal(){
+    createDpsTableModal();
+    renderDpsTableModalHeader();
+    renderDpsTablePanelContent();
+    setOpen(DPS_TABLE_MODAL_ID,'dps-table-modal-open',true);
   }
 
-  function closeMonthRune(){
-    if(!isOpen('monthRuneModal')) return;
-    const modal=document.getElementById('monthRuneModal');
-    setOpen('monthRuneModal','month-rune-modal-open',false);
-    syncModeClasses(modal?.querySelector('.month-rune-modal'),DPS_MODAL_MODES);
+  function closeDpsTableModal(){
+    if(!isOpen(DPS_TABLE_MODAL_ID)) return;
+    const modal=document.getElementById(DPS_TABLE_MODAL_ID);
+    setOpen(DPS_TABLE_MODAL_ID,'dps-table-modal-open',false);
+    syncModeClasses(modal?.querySelector('.dps-table-modal'),DPS_MODAL_MODES);
   }
 
   /* 통합 이벤트·공개 API */
@@ -249,8 +220,8 @@
       closeBoardModal(boardModalClose.closest('.board-modal-shell')?.id || '');
       return;
     }
-    if(target.closest('[data-month-rune-close]')){
-      closeMonthRune();
+    if(target.closest('[data-dps-table-close]')){
+      closeDpsTableModal();
       return;
     }
     const modeTarget=target.closest('[data-dps-table-mode]');
@@ -270,7 +241,7 @@
         event.preventDefault();
         return;
       }
-      if(isOpen('monthRuneModal')) closeMonthRune();
+      if(isOpen(DPS_TABLE_MODAL_ID)) closeDpsTableModal();
       return;
     }
     if(event.key==='Enter' && isOpen('appInputModal')){
@@ -321,8 +292,8 @@
     syncModeClasses,
     openJewelSettings,
     closeJewelSettings,
-    openMonthRune,
-    closeMonthRune,
+    openDpsTableModal,
+    closeDpsTableModal,
     openBoardModal,
     closeBoardModal,
     openAppInputModal,

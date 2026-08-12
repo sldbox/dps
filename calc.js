@@ -1183,30 +1183,11 @@ function dpsBaseUnitWeaponAttack(unit){
 const DPS_BASE_UNIT_ENEMY_BUFF_DIFFICULTIES=new Set(['Hell','Inferno','Lunatic','Holic','Epic','Ultimate','Impossible','The Final','Hall Of Fame','Abyss road','Deep Abyss','도전의 탑']);
 const DPS_BASE_UNIT_FIXED_INVULNERABILITY_DIFFICULTIES=new Set(['Hall Of Fame','Abyss road','Deep Abyss']);
 const DPS_BASE_UNIT_INVULNERABILITY_TIME_LOSS=4;
-function dpsBaseUnitShieldOffLocked(diffName=vs('diff')){
-  const name=difficultyName(diffName);
-  return !DPS_BASE_UNIT_ENEMY_BUFF_DIFFICULTIES.has(name) || DPS_BASE_UNIT_FIXED_INVULNERABILITY_DIFFICULTIES.has(name);
-}
-function dpsBaseUnitShieldMasterLocked(){
-  return hasRuneOption('shieldImmune');
-}
-function dpsBaseUnitConditionLocked(inputId,diffName=vs('diff')){
-  if(inputId==='dpsBaseUnitSpeedMode') return !speedModeSupported(diffName);
-  if(inputId==='dpsBaseUnitShieldOff') return dpsBaseUnitShieldOffLocked(diffName);
-  if(inputId==='dpsBaseUnitShieldMaster') return dpsBaseUnitShieldMasterLocked();
-  return false;
-}
-function dpsBaseUnitShieldOffEnabled(diffName=vs('diff')){
-  return !dpsBaseUnitShieldOffLocked(diffName) && normalizeOnOffValue(vs('dpsBaseUnitShieldOff'),'OFF')==='ON';
-}
-function dpsBaseUnitShieldMasterEnabled(){
-  return !dpsBaseUnitShieldMasterLocked() && normalizeOnOffValue(vs('dpsBaseUnitShieldMaster'),'OFF')==='ON';
-}
 function dpsBaseUnitInvulnerabilityTimeLoss(diffName=vs('diff')){
   const name=difficultyName(diffName);
   if(!DPS_BASE_UNIT_ENEMY_BUFF_DIFFICULTIES.has(name)) return 0;
   if(DPS_BASE_UNIT_FIXED_INVULNERABILITY_DIFFICULTIES.has(name)) return DPS_BASE_UNIT_INVULNERABILITY_TIME_LOSS;
-  return dpsBaseUnitShieldOffEnabled(diffName) ? DPS_BASE_UNIT_INVULNERABILITY_TIME_LOSS : 0;
+  return 0;
 }
 function dpsBaseUnitRoundTime(round,diffName=vs('diff')){
   return roundTimeAfterSpeedAndLoss(
@@ -1217,9 +1198,8 @@ function dpsBaseUnitRoundTime(round,diffName=vs('diff')){
 }
 function dpsBaseUnitEnemyProtectionFactor(diffName=vs('diff')){
   if(!DPS_BASE_UNIT_ENEMY_BUFF_DIFFICULTIES.has(difficultyName(diffName))) return 1;
-  const shieldCycleMultiplier=dpsBaseUnitShieldMasterEnabled() ? 2 : 1;
-  const rawSuperShieldFactor=1-0.667*30/(30+35*shieldCycleMultiplier);
-  const superShieldFactor=dpsBaseUnitShieldMasterLocked() ? 1 : Math.round(rawSuperShieldFactor*1000)/1000;
+  const rawSuperShieldFactor=1-0.667*30/(30+35);
+  const superShieldFactor=hasRuneOption('shieldImmune') ? 1 : Math.round(rawSuperShieldFactor*1000)/1000;
   const stealthFactor=0.999;
   return Math.max(0.000001,Math.min(superShieldFactor,stealthFactor));
 }
@@ -1593,16 +1573,11 @@ function computeDpsBaseUnitBoardResult(context){
   };
 }
 
-function computeStatsRaw(options={}){
-  const extendedResults=options.extended!==false;
+function buildStatsCoreRaw(options={}){
   const syncDerivedViews=options.syncDerived!==false;
   const autoEP=syncDerivedViews ? syncAutoEP() : autoEpValue();
   const penaltyContext=currentPenaltyContext();
   const {diff,targetRound,penanceLevel}=penaltyContext;
-  const penCD=PEN_CD[penanceLevel];
-  const penTD=PEN_TD[penanceLevel];
-  const penDmg=PEN_DMG[penanceLevel];
-  const penUA=PEN_UA[penanceLevel];
   const asc=ASC[vs('rAsc')]||ASC['없음'];
   const baseReinf=v('rReinf');
   const reinf=baseReinf + (hasRuneOption('reinf5')?5:0);
@@ -1637,36 +1612,52 @@ function computeStatsRaw(options={}){
   const M8 = BASE_DISPLAY_STATS.cri + (traitStats.CRI||0) + v('rCRI') + v('rModCRI') + reinf + dailyCouponCRI + shareCRI + xpStat.cri + gradeCri + optionStats.cri + upperStats.cri + additionalStats.cri;
   const cdReinf = reinf > 10 ? reinf - 10 : 0;
   const rawCD = 100 + (traitStats.CD||0) + v('rCD') + cd50opt + cdReinf + upperStats.cd + ascVlookup5 + additionalStats.cd + v('rModCD');
-  const M9 = rawCD * (1 - penCD/100);
   const criOver300 = M8>=300 ? (M8>=400?5:Math.floor((M8-300)/20)) : 0;
   const M10 = (traitStats.MC||0) + (asc[5]||0) + criOver300 + optionStats.mc;
   const rawTD = (traitStats.TD||0) + specialRune.td + gradeTD + upperStats.td + (asc[6]||0) + optionStats.td + v('titleTdBonus') + additionalStats.td;
-  const tdReduce = penTD + abyssTdPenalty();
-  const actualTD = isAbyssDifficulty() ? 100 + rawTD - tdReduce : rawTD - tdReduce;
-  const M11 = isAbyssDifficulty() ? actualTD : 100 + actualTD;
+  const abyssTdReduction=abyssTdPenalty();
   const M12_dr = (traitStats.DR||0) + transcendDR + (asc[4]||0) + additionalStats.dr;
   const displayUA = uaProd() * optionStats.uaMul * upperStats.uaMul * enchantStats[2].ua * (1 + specialRune.ua/100) * (1 + additionalStats.ua/100);
-  const M13 = displayUA * (1 - penUA/100) * abyssSlowMultiplier();
+  const abyssSlow=abyssSlowMultiplier();
   const M16=traitStats.MD||0, M17=20+(INV[101]||0)*0.2, M18=(INV[102]||0)*0.5;
   const enemyData=enemyRoundData(targetRound);
-  const specEnemyDamageRate=diff.dmg*(1-penDmg/100);
-  const requiredEnemyDamageRate=specEnemyDamageRate*(Number(enemyData.damageMultiplier)||1);
   const displaySR = (traitStats.SR||0) + enchantStats[4].sr + additionalStats.sr;
   const displayHR = enchantStats[5].hr + additionalStats.hr;
   const basePierceBonus=SYSTEM_COMMON_BUFFS.basePierce;
   const rpPierce = rpPierceBonus();
   const effectivePierce=totalDpsPierce(basePierceBonus,rpPierce);
   const dt=personalUaDtMultiplier();
+  return {
+    diff,targetRound,penanceLevel,asc,rawDisplayAP,displayAP,AP9,M4,M7,M8,rawCD,M10,rawTD,
+    abyssTdReduction,M12_dr,displayUA,abyssSlow,M16,M17,M18,enemyData,displaySR,displayHR,
+    basePierceBonus,rpPierce,effectivePierce,dt,autoEP,epBuff,isAbyss:isAbyssDifficulty(),upperStats,unitADBonus
+  };
+}
+function computeStatsFromCoreRaw(core,options={}){
+  const extendedResults=options.extended!==false;
+  const penanceLevel=options.previewPenanceLevel ?? options.penanceLevel ?? core.penanceLevel;
+  const {diff,M4,M7,M8,M10,M16,M17,M18,rawCD,rawTD}=core;
+  const penCD=PEN_CD[penanceLevel];
+  const penTD=PEN_TD[penanceLevel];
+  const penDmg=PEN_DMG[penanceLevel];
+  const penUA=PEN_UA[penanceLevel];
+  const M9=core.rawCD * (1 - penCD/100);
+  const tdReduce=penTD + core.abyssTdReduction;
+  const actualTD=core.isAbyss ? 100 + core.rawTD - tdReduce : core.rawTD - tdReduce;
+  const M11=core.isAbyss ? actualTD : 100 + actualTD;
+  const M13=core.displayUA * (1 - penUA/100) * core.abyssSlow;
+  const specEnemyDamageRate=core.diff.dmg*(1-penDmg/100);
+  const requiredEnemyDamageRate=specEnemyDamageRate*(Number(core.enemyData.damageMultiplier)||1);
   const specBoard=computeSpecBoardResult({
-    diff,targetRound,upperStats,M4,M7,M8,M10,M9,M16,M17,M18,M11,M12_dr,M13,
-    displayHR,displaySR,effectivePierce,enemyData,specEnemyDamageRate,dt
+    diff,targetRound:core.targetRound,upperStats:core.upperStats,M4,M7,M8,M10,M9,M16,M17,M18,M11,M12_dr:core.M12_dr,M13,
+    displayHR:core.displayHR,displaySR:core.displaySR,effectivePierce:core.effectivePierce,enemyData:core.enemyData,specEnemyDamageRate,dt:core.dt
   });
   const {hpRatio,shieldRatio,M12,actualM12,AB3,AB4,AB5,AB6,roundTime,rawM19,displayMultiplier,M19}=specBoard;
 
   const enhanceStats=extendedResults ? unitEnhanceStats() : null;
   const dpsBaseUnit=extendedResults ? computeDpsBaseUnitBoardResult({
-    displayAP,basePierceBonus,rpPierce,unitADBonus,upperStats,diff,targetRound,M4,M7,M8,M10,M9,M16,M17,M18,M11,M12_dr,M13,dt,
-    enemyData,displayHR,displaySR,requiredEnemyDamageRate,roundTime,enhanceStats,
+    displayAP:core.displayAP,basePierceBonus:core.basePierceBonus,rpPierce:core.rpPierce,unitADBonus:core.unitADBonus,upperStats:core.upperStats,diff:core.diff,targetRound:core.targetRound,M4:core.M4,M7:core.M7,M8:core.M8,M10:core.M10,M9,M16:core.M16,M17:core.M17,M18:core.M18,M11,M12_dr:core.M12_dr,M13,dt:core.dt,
+    enemyData:core.enemyData,displayHR:core.displayHR,displaySR:core.displaySR,requiredEnemyDamageRate,roundTime,enhanceStats,
     unitListOverride:options.dpsBaseUnitListOverride || null
   }) : null;
   const resourceUsage=extendedResults ? resourceUsageSnapshot() : null;
@@ -1675,24 +1666,28 @@ function computeStatsRaw(options={}){
   const epU=resourceUsage?.epU || 0;
   const rpU=resourceUsage?.rpU || 0;
   const soulU=resourceUsage?.soulU || 0;
-  const displayAD = Math.round(AP9 * (1 + rawTD/100));
-  const displayAPS = displayAP;
-  const displayAPU = displayAP;
+  const displayAD = Math.round(core.AP9 * (1 + rawTD/100));
+  const displayAPS = core.displayAP;
+  const displayAPU = core.displayAP;
   const actualAPU = extendedResults
-    ? rawDisplayAP + (enhanceStats.value || 0) + (on('flowerSkill1') ? 40 : 0) + SYSTEM_COMMON_BUFFS.uniqueUnit.actualAp + (v('unitLevel') || 11) * 5
+    ? core.rawDisplayAP + (enhanceStats.value || 0) + (on('flowerSkill1') ? 40 : 0) + SYSTEM_COMMON_BUFFS.uniqueUnit.actualAp + (v('unitLevel') || 11) * 5
     : null;
-  const actualSR = displaySR * shieldRatio;
-  const actualHR = displayHR * hpRatio;
+  const actualSR = core.displaySR * shieldRatio;
+  const actualHR = core.displayHR * hpRatio;
   return {M4,M7,M8,M9,M10,M11,M12,actualM12,M13,M16,M17,M18,M19,rawM19,roundTime,displayMultiplier,rawCD,rawTD,diff,
-          displayAD,displayAPS,displayAPU,actualAPU,displayUA,displaySR,displayHR,actualSR,actualHR,
+          displayAD,displayAPS,displayAPU,actualAPU,displayUA:core.displayUA,displaySR:core.displaySR,displayHR:core.displayHR,actualSR,actualHR,
           spUsedTotal:spU+spO,spU,spO,epU,rpU,soulU,
           spBank:extendedResults ? effectiveSpBankBonus() : null,
           spBankApplied:extendedResults ? isSpBankApplied() : null,
           effectiveSP:extendedResults ? effectiveSP() : null,
-          effectivePierce,enemyData,dpsBaseUnit,enhanceStats};
+          effectivePierce:core.effectivePierce,enemyData:core.enemyData,dpsBaseUnit,enhanceStats};
 }
-function computeLightweightStatsRaw(){
-  return computeStatsRaw({extended:false,syncDerived:false});
+function computeStatsRaw(options={}){
+  const core=options.previewCore || buildStatsCoreRaw(options);
+  return computeStatsFromCoreRaw(core,options);
+}
+function computeLightweightStatsRaw(options={}){
+  return computeStatsRaw({...options,extended:false,syncDerived:false});
 }
 
 /* 유물 DPS */
@@ -1841,14 +1836,35 @@ function withPreparedDpsPreview(elementIds,diffName,penanceLevel,round,options,s
     return callback();
   });
 }
-function calculateArtifactDpsPreview(diffName, penanceLevel, round, options={}){
-  try{
-    return withPreparedDpsPreview(ARTIFACT_DPS_PREVIEW_IDS,diffName,penanceLevel,round,options,'artifact',()=>{
+function calculateDpsPreviewCore(diffName,round,options={},artifact=false){
+  const elementIds=artifact ? ARTIFACT_DPS_PREVIEW_IDS : DPS_PREVIEW_IDS;
+  const signaturePrefix=artifact ? 'artifact' : 'preview';
+  return withPreparedDpsPreview(elementIds,diffName,0,round,options,signaturePrefix,()=>{
+    if(artifact){
       const artifactEl=$('prodArtifact');
       if(artifactEl) artifactEl.checked=true;
-      const stats=computeLightweightStatsRaw();
-      return {...calculateArtifactDpsRaw(stats), baseDps:Number.isFinite(stats.M19) ? stats.M19 : 0};
-    });
+    }
+    return buildStatsCoreRaw({extended:false,syncDerived:false});
+  });
+}
+function calculateDpsPreviewValue(diffName,penanceLevel,round,options={},artifact=false){
+  const elementIds=artifact ? ARTIFACT_DPS_PREVIEW_IDS : DPS_PREVIEW_IDS;
+  const signaturePrefix=artifact ? 'artifact' : 'preview';
+  return withPreparedDpsPreview(elementIds,diffName,penanceLevel,round,options,signaturePrefix,()=>{
+    if(artifact){
+      const artifactEl=$('prodArtifact');
+      if(artifactEl) artifactEl.checked=true;
+    }
+    const previewPenanceLevel=shouldIgnorePenanceForDifficulty(diffName) ? undefined : penanceLevel;
+    const stats=computeLightweightStatsRaw({previewCore:options.previewCore,previewPenanceLevel});
+    return artifact
+      ? {...calculateArtifactDpsRaw(stats),baseDps:Number.isFinite(stats.M19) ? stats.M19 : 0}
+      : (Number.isFinite(stats.M19) ? stats.M19 : 0);
+  });
+}
+function calculateArtifactDpsPreview(diffName, penanceLevel, round, options={}){
+  try{
+    return calculateDpsPreviewValue(diffName,penanceLevel,round,options,true);
   }catch(e){
     rememberAppIssue('error','[artifact DPS preview failed]', e);
     return {dps:0,baseDps:0,error:e};
@@ -2137,10 +2153,7 @@ function updateDpsContextSummary(){
 const DPS_PREVIEW_IDS=['diff','penance','round','challengeTowerFloor','soloMode','coopMode','team','pbless',...EROSION_CONTROL_IDS];
 function computeDpsPreview(diffName, penanceLevel, round, options={}){
   try{
-    return withPreparedDpsPreview(DPS_PREVIEW_IDS,diffName,penanceLevel,round,options,'preview',()=>{
-      const stats=computeLightweightStatsRaw();
-      return Number.isFinite(stats.M19) ? stats.M19 : 0;
-    });
+    return calculateDpsPreviewValue(diffName,penanceLevel,round,options,false);
   }catch(e){
     rememberAppIssue('error','[DPS table preview failed]', e);
     return 0;
