@@ -100,14 +100,14 @@ window.DPS_ASSET_VERSIONS = {
 <style>
 html.dps-booting body{margin:0;background:#080d15;color:#e6edf7;overflow:hidden}
 html.dps-booting .wrap{visibility:hidden}
-#dpsBootScreen{--btn-action-bg:#2563eb;--btn-action-border-hover:#93c5fd;--btn-action-text:#f8fbff;position:fixed;inset:0;z-index:999999;display:flex;align-items:center;justify-content:center;background:#080d15;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+#dpsBootScreen{--btn-action-bg:#2563eb;--btn-action-border-emphasis:#93c5fd;--btn-action-text:#f8fbff;position:fixed;inset:0;z-index:999999;display:flex;align-items:center;justify-content:center;background:#080d15;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
 #dpsBootScreen .boot-card{width:min(320px,calc(100vw - 48px));padding:22px 20px;border:1px solid #26364d;border-radius:18px;background:#111a28;box-shadow:0 16px 44px rgba(0,0,0,.34);text-align:center}
 #dpsBootScreen .boot-title{font-weight:900;font-size:18px;margin-bottom:8px;color:#cfe0ff}
 #dpsBootScreen .boot-desc{font-size:13px;line-height:1.5;color:#aebdd1}
 #dpsBootScreen .boot-error-code{display:inline-flex;align-items:center;justify-content:center;margin:12px 0 10px;padding:7px 12px;border:1px solid #7f1d2d;border-radius:999px;background:#2b1017;color:#ff9aaa;font-weight:900;letter-spacing:.4px;font-variant-numeric:tabular-nums}
 #dpsBootScreen .boot-actions{display:flex;justify-content:center;gap:8px;margin-top:12px}
 #dpsBootScreen .boot-action-btn{height:34px;padding:0 12px;border:1px solid #2d5a9d;border-radius:10px;background:#10233d;color:#a9c8ff;font-weight:900;cursor:pointer}
-#dpsBootScreen .boot-action-btn.primary{border-color:var(--btn-action-border-hover);background:var(--btn-action-bg);color:var(--btn-action-text)}
+#dpsBootScreen .boot-action-btn.primary{border-color:var(--btn-action-border-emphasis);background:var(--btn-action-bg);color:var(--btn-action-text)}
 html.dps-boot-error #dpsBootScreen .boot-card{border-color:#7f1d2d;background:#2b1017}
 html.dps-boot-error #dpsBootScreen .boot-title{color:#ff9aaa}
 html:not(.dps-booting) #dpsBootScreen{display:none}
@@ -579,15 +579,15 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 </div>
 <input id="traitOptimizationMode" type="hidden" value="M1"/>
 <div class="trait-optimization-mode-grid" role="group" aria-label="특성 최적화 방식">
-<button class="trait-optimization-mode-btn is-selected" data-action="selectTraitOptimizationMode" data-mode="M1" type="button" aria-pressed="true" title="M1 · 현재 웹 방식 · DPS 증가량/투자 비용 효율 기반">
+<button class="trait-optimization-mode-btn is-selected" data-action="selectTraitOptimizationMode" data-mode="M1" type="button" aria-pressed="true">
 <span class="trait-optimization-mode-title">DPS 효율형</span>
 <span class="trait-optimization-mode-hint">증가량/투자비 기준</span>
 </button>
-<button class="trait-optimization-mode-btn" data-action="selectTraitOptimizationMode" data-mode="M2" type="button" aria-pressed="false" title="M2 · SP 30 → EP 2 → RP 1 → 심연의 혼 2 반복">
+<button class="trait-optimization-mode-btn" data-action="selectTraitOptimizationMode" data-mode="M2" type="button" aria-pressed="false">
 <span class="trait-optimization-mode-title">SP 우선형</span>
 <span class="trait-optimization-mode-hint">SP 30 · EP 2 · RP 1 · 혼 2</span>
 </button>
-<button class="trait-optimization-mode-btn" data-action="selectTraitOptimizationMode" data-mode="M3" type="button" aria-pressed="false" title="M3 · EP 4 → RP 2 → 심연의 혼 2 → SP 10 반복">
+<button class="trait-optimization-mode-btn" data-action="selectTraitOptimizationMode" data-mode="M3" type="button" aria-pressed="false">
 <span class="trait-optimization-mode-title">보조자원 우선형</span>
 <span class="trait-optimization-mode-hint">EP 4 · RP 2 · 혼 2 · SP 10</span>
 </button>
