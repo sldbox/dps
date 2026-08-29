@@ -1500,6 +1500,7 @@ function resetToFirstVisitState(){
       localStorage.removeItem(TRAIT_PRESET_STATUS_STORAGE_KEY);
       localStorage.removeItem(TRAIT_PRESET_DRAFT_STORAGE_KEY);
       localStorage.removeItem(DPS_CONFIG.storage.fontKey);
+      localStorage.removeItem(DPS_CONFIG.storage.traitOptimizationModeKey);
     }catch(error){
       rememberAppIssue('warn','전체 저장 데이터 제거', error);
     }

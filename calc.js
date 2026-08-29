@@ -2358,66 +2358,154 @@ function traitOptimizationMultiTargetBundleCandidate(base, rem, options={}){
   return evaluateTraitOptimizationCandidate(base, 'SP', rem, changes, '멀티 타겟 분기점', options);
 }
 /* 특성 자동 최적화 */
-function optimizeSP(){
-  function normalAddCount(row, kind, rem){
-    if(kind!=='SP') return 1;
-    if(rem<=4000000) return 1;
-    if(row===77 || row===104 || row===116) return 1;
-    return 5;
-  }
-  function boundedChanges(row, add, rem){
+const TRAIT_OPTIMIZATION_MODE_DEFAULT='M1';
+const TRAIT_OPTIMIZATION_MODE_CONFIG=Object.freeze({
+  M1:{cycle:null},
+  M2:{cycle:[['SP',30],['EP',2],['RP',1],['SOUL',2]]},
+  M3:{cycle:[['EP',4],['RP',2],['SOUL',2],['SP',10]]}
+});
+const TRAIT_OPTIMIZATION_HARD_STEP_LIMIT=10000;
+const TRAIT_OPTIMIZATION_MAX_RUNTIME_MS=5000;
+function normalizeTraitOptimizationMode(value){
+  const mode=String(value || TRAIT_OPTIMIZATION_MODE_DEFAULT).trim().toUpperCase();
+  return Object.prototype.hasOwnProperty.call(TRAIT_OPTIMIZATION_MODE_CONFIG,mode) ? mode : TRAIT_OPTIMIZATION_MODE_DEFAULT;
+}
+function traitOptimizationNormalAddCount(row,kind,rem){
+  if(kind!=='SP') return 1;
+  if(rem<=4000000) return 1;
+  if(row===77 || row===104 || row===116) return 1;
+  return 5;
+}
+function boundedTraitOptimizationChanges(row,add,rem){
+  const mx=TMAX[row]||999;
+  let n=Math.min(add,mx-(INV[row]||0));
+  while(n>0 && traitOptimizationDeltaCost(row,n)>rem) n--;
+  return n>0 ? [[row,n]] : null;
+}
+function traitOptimizationTargetTraits(kind){
+  return TRAITS.filter(t=>traitOptimizationResourceInfo(t[0])?.kind===kind && isTraitOptimizationTarget(t));
+}
+function traitOptimizationCandidates(base,kind,rem,targetTraits){
+  const candidates=[];
+  targetTraits.forEach(t=>{
+    const [row]=t;
+    const n=INV[row]||0;
     const mx=TMAX[row]||999;
-    let n=Math.min(add, mx-(INV[row]||0));
-    while(n>0 && traitOptimizationDeltaCost(row,n)>rem) n--;
-    return n>0 ? [[row,n]] : null;
+    if(n>=mx) return;
+    const changes=boundedTraitOptimizationChanges(row,traitOptimizationNormalAddCount(row,kind,rem),rem);
+    const candidate=changes && evaluateTraitOptimizationCandidate(base,kind,rem,changes,String(row),{visibleGain:false});
+    if(candidate) candidates.push(candidate);
+  });
+  if(kind==='SP'){
+    const crit=critTraitOptimizationCandidate(base,kind,rem,95,0.5,{visibleGain:false,label:'CRI→MC 95'});
+    if(crit) candidates.push(crit);
+    const multiTarget=traitOptimizationMultiTargetBundleCandidate(base,rem,{selectedTierOnly:true,currentSumLimit:50,requireTargetTrait:false,fullCost:true,visibleGain:false});
+    if(multiTarget) candidates.push(multiTarget);
   }
-  function optimizationCandidate(base, kind, rem, changes, label){
-    return evaluateTraitOptimizationCandidate(base, kind, rem, changes, label, {visibleGain:false});
+  if(kind==='EP'){
+    const crit=critTraitOptimizationCandidate(base,kind,rem,119,1,{visibleGain:false,label:'CRI→MC 119'});
+    if(crit) candidates.push(crit);
   }
+  if(kind==='RP'){
+    const crit=critTraitOptimizationCandidate(base,kind,rem,127,2,{visibleGain:false,label:'CRI→MC 127'});
+    if(crit) candidates.push(crit);
+  }
+  return candidates;
+}
+function bestTraitOptimizationCandidate(base,kind,rem,targetTraits){
+  return traitOptimizationCandidates(base,kind,rem,targetTraits).reduce((current,candidate)=>!current || candidate.score>current.score ? candidate : current,null);
+}
+function applyTraitOptimizationCandidate(candidate){
+  if(!candidate) return 0;
+  const appliedChanges=[];
+  let actualCost=0;
+  for(const [row,add] of candidate.changes){
+    const current=INV[row]||0;
+    const max=TMAX[row]||999;
+    const normalizedAdd=Math.max(0,Math.round(+add||0));
+    const next=Math.min(max,current+normalizedAdd);
+    if(next<=current) return 0;
+    const cost=traitOptimizationDeltaCost(row,next-current);
+    if(!Number.isFinite(cost) || cost<=0) return 0;
+    actualCost+=cost;
+    appliedChanges.push([row,current,next-current]);
+  }
+  if(!Number.isFinite(actualCost) || actualCost<=0) return 0;
+  for(const [row,current,add] of appliedChanges){
+    INV[row]=Math.min(TMAX[row]||999,current+add);
+  }
+  return actualCost;
+}
+function createTraitOptimizationGuard(){
+  return {steps:0,startedAt:Date.now(),aborted:false};
+}
+function traitOptimizationGuardCanContinue(guard){
+  if(!guard || guard.aborted) return false;
+  if(guard.steps>=TRAIT_OPTIMIZATION_HARD_STEP_LIMIT || Date.now()-guard.startedAt>=TRAIT_OPTIMIZATION_MAX_RUNTIME_MS){
+    guard.aborted=true;
+    return false;
+  }
+  return true;
+}
+function runTraitOptimizationStep(kind,targetTraits,guard){
+  if(!traitOptimizationGuardCanContinue(guard)) return false;
+  const rem=resourceOwn(kind)-resourceUsed(kind);
+  if(rem<=0) return false;
+  const base=computeLightweightStatsRaw();
+  const best=bestTraitOptimizationCandidate(base,kind,rem,targetTraits);
+  const actualCost=applyTraitOptimizationCandidate(best);
+  if(actualCost<=0) return false;
+  guard.steps++;
+  return true;
+}
+function optimizeTraitsByEfficiency(){
+  const guard=createTraitOptimizationGuard();
   const kinds=['SP','EP','RP','SOUL'];
-  for(const kind of kinds){
-    const targetTraits=TRAITS.filter(t=>traitOptimizationResourceInfo(t[0])?.kind===kind && isTraitOptimizationTarget(t));
+  kinds.forEach(kind=>{
+    if(guard.aborted) return;
+    const targetTraits=traitOptimizationTargetTraits(kind);
     const passLimit=targetTraits.reduce((sum,t)=>sum+Math.max(0,(TMAX[t[0]]||999)-(INV[t[0]]||0)),0)+1;
-    let used=resourceUsed(kind);
-    let rem=resourceOwn(kind)-used;
-    if(rem<=0) continue;
-    let base=computeLightweightStatsRaw();
-    for(let pass=0;pass<passLimit && rem>0;pass++){
-      const candidates=[];
-      for(const t of targetTraits){
-        const [row]=t;
-        const n=INV[row]||0;
-        const mx=TMAX[row]||999;
-        if(n>=mx) continue;
-        const changes=boundedChanges(row, normalAddCount(row, kind, rem), rem);
-        const cand=changes && optimizationCandidate(base, kind, rem, changes, String(row));
-        if(cand) candidates.push(cand);
-      }
-      if(kind==='SP'){
-        const c=critTraitOptimizationCandidate(base, kind, rem, 95, 0.5, {visibleGain:false,label:'CRI→MC 95'});
-        if(c) candidates.push(c);
-        const mt=traitOptimizationMultiTargetBundleCandidate(base, rem, {selectedTierOnly:true,currentSumLimit:50,requireTargetTrait:false,fullCost:true,visibleGain:false});
-        if(mt) candidates.push(mt);
-      }
-      if(kind==='EP'){
-        const c=critTraitOptimizationCandidate(base, kind, rem, 119, 1, {visibleGain:false,label:'CRI→MC 119'});
-        if(c) candidates.push(c);
-      }
-      if(kind==='RP'){
-        const c=critTraitOptimizationCandidate(base, kind, rem, 127, 2, {visibleGain:false,label:'CRI→MC 127'});
-        if(c) candidates.push(c);
-      }
-      const best=candidates.reduce((current,candidate)=>!current || candidate.score>current.score ? candidate : current,null);
-      if(!best) break;
-      let actualCost=0;
-      for(const [row,add] of best.changes) actualCost+=traitOptimizationDeltaCost(row,add);
-      for(const [row,add] of best.changes) INV[row]=Math.min(TMAX[row]||999,(INV[row]||0)+add);
-      used+=actualCost;
-      rem=Math.max(0,resourceOwn(kind)-used);
-      base=best.nextStats || computeLightweightStatsRaw();
+    for(let pass=0;pass<passLimit && !guard.aborted;pass++){
+      if(!runTraitOptimizationStep(kind,targetTraits,guard)) break;
     }
+  });
+  return guard;
+}
+function optimizeTraitsByCycle(cycle){
+  const guard=createTraitOptimizationGuard();
+  const targetTraitsByKind=new Map(['SP','EP','RP','SOUL'].map(kind=>[kind,traitOptimizationTargetTraits(kind)]));
+  const cycleLimit=[...targetTraitsByKind.values()].flat().reduce((sum,t)=>sum+Math.max(0,(TMAX[t[0]]||999)-(INV[t[0]]||0)),0)+1;
+  for(let cycleIndex=0;cycleIndex<cycleLimit && !guard.aborted;cycleIndex++){
+    let changed=false;
+    cycle.forEach(([kind,count])=>{
+      if(guard.aborted) return;
+      const targetTraits=targetTraitsByKind.get(kind) || [];
+      for(let step=0;step<count;step++){
+        if(!runTraitOptimizationStep(kind,targetTraits,guard)) break;
+        changed=true;
+      }
+    });
+    if(!changed) break;
   }
-  commitAppUpdate({recalculate:'now'});
+  return guard;
+}
+function optimizeSP(){
+  const mode=normalizeTraitOptimizationMode(vs('traitOptimizationMode'));
+  const config=TRAIT_OPTIMIZATION_MODE_CONFIG[mode];
+  const before=Object.fromEntries(Object.entries(INV));
+  try{
+    const guard=config.cycle ? optimizeTraitsByCycle(config.cycle) : optimizeTraitsByEfficiency();
+    if(guard.aborted) showToast('최적화 계산을 안전하게 중단했습니다. 투자 범위를 줄여 다시 시도해 주세요.','warn');
+    commitAppUpdate({recalculate:'now'});
+    return !guard.aborted;
+  }catch(error){
+    Object.keys(INV).forEach(row=>{ INV[row]=before[row] ?? 0; });
+    INV[116]=1;
+    rememberAppIssue('error','특성 최적화 계산',error);
+    showToast('특성 최적화 계산 중 오류가 발생해 변경사항을 되돌렸습니다.','err');
+    commitAppUpdate({recalculate:'now'});
+    return false;
+  }
 }
 
 /* 더제로 승단 */

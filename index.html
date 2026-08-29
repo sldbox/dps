@@ -4,18 +4,18 @@
 <meta charset="UTF-8"/>
 <meta name="google-site-verification" content="RTuDWbMdnKgbpRpl05eXh9epFwWRSxju4NOl8OtjMsI" />
 <script>
-window.DPS_BUILD_VERSION = "2608120000";
-window.APP_VERSION = "2608120000";
+window.DPS_BUILD_VERSION = "2608290000";
+window.APP_VERSION = "2608290000";
 window.DPS_ASSET_VERSIONS = {
-  "app.js": "2608120000",
-  "calc.js": "2608120000",
-  "data.js": "2608120000",
-  "modal.js": "2608120000",
-  "preset.js": "2608120000",
-  "responsive.js": "2608120000",
-  "style.css": "2608120000",
-  "icon.png": "2608120000",
-  "logo.png": "2608120000"
+  "app.js": "2608290000",
+  "calc.js": "2608290000",
+  "data.js": "2608290000",
+  "modal.js": "2608290000",
+  "preset.js": "2608290000",
+  "responsive.js": "2608290000",
+  "style.css": "2608290000",
+  "icon.png": "2608290000",
+  "logo.png": "2608290000"
 };
 (function(){
   'use strict';
@@ -198,14 +198,14 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 <meta content="https://sldbox.github.io/dps/" property="og:url"/>
 <meta content="개복디 특성 계산기" property="og:title"/>
 <meta content="특성 투자, 재화 사용량, 표기 스탯, 총데미지, DPS를 한 번에 계산할 수 있는 개복디 전용 계산기입니다." property="og:description"/>
-<meta content="https://sldbox.github.io/dps/logo.png?v=2608120000" property="og:image"/>
-<meta content="https://sldbox.github.io/dps/logo.png?v=2608120000" property="og:image:secure_url"/>
+<meta content="https://sldbox.github.io/dps/logo.png?v=2608290000" property="og:image"/>
+<meta content="https://sldbox.github.io/dps/logo.png?v=2608290000" property="og:image:secure_url"/>
 <meta content="image/png" property="og:image:type"/>
 <meta content="개복디 특성 계산기 로고" property="og:image:alt"/>
 <meta content="summary_large_image" name="twitter:card"/>
 <meta content="개복디 특성 계산기" name="twitter:title"/>
 <meta content="특성 투자, 재화 사용량, 표기 스탯, 총데미지, DPS를 한 번에 계산할 수 있는 개복디 전용 계산기입니다." name="twitter:description"/>
-<meta content="https://sldbox.github.io/dps/logo.png?v=2608120000" name="twitter:image"/>
+<meta content="https://sldbox.github.io/dps/logo.png?v=2608290000" name="twitter:image"/>
 <meta content="개복디 특성 계산기 로고" name="twitter:image:alt"/>
 <link href="https://cdn.jsdelivr.net" rel="preconnect"/>
 <link crossorigin="" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" rel="stylesheet"/>
@@ -576,6 +576,21 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 <button class="btn subtle danger ui-action-btn trait-board-head-btn" data-action="clearAll" type="button">특성 초기화</button>
 <button class="btn subtle danger ui-action-btn trait-board-head-btn" data-action="clearUtility" type="button">유틸 초기화</button>
 </div>
+</div>
+<input id="traitOptimizationMode" type="hidden" value="M1"/>
+<div class="trait-optimization-mode-grid" role="group" aria-label="특성 최적화 방식">
+<button class="trait-optimization-mode-btn is-selected" data-action="selectTraitOptimizationMode" data-mode="M1" type="button" aria-pressed="true" title="M1 · 현재 웹 방식 · DPS 증가량/투자 비용 효율 기반">
+<span class="trait-optimization-mode-title">DPS 효율형</span>
+<span class="trait-optimization-mode-hint">증가량/투자비 기준</span>
+</button>
+<button class="trait-optimization-mode-btn" data-action="selectTraitOptimizationMode" data-mode="M2" type="button" aria-pressed="false" title="M2 · SP 30 → EP 2 → RP 1 → 심연의 혼 2 반복">
+<span class="trait-optimization-mode-title">SP 우선형</span>
+<span class="trait-optimization-mode-hint">SP 30 · EP 2 · RP 1 · 혼 2</span>
+</button>
+<button class="trait-optimization-mode-btn" data-action="selectTraitOptimizationMode" data-mode="M3" type="button" aria-pressed="false" title="M3 · EP 4 → RP 2 → 심연의 혼 2 → SP 10 반복">
+<span class="trait-optimization-mode-title">보조자원 우선형</span>
+<span class="trait-optimization-mode-hint">EP 4 · RP 2 · 혼 2 · SP 10</span>
+</button>
 </div>
 <div class="trait-dashboard-tools trait-board-control-grid">
 <div class="trait-optimizer-row">
