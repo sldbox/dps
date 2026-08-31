@@ -5,14 +5,13 @@ const DPS_CONFIG={
     scope:'browser_local',
     key:'gbd_dps_calculator:personal_state',
     fontKey:'gbd_dps_calculator:font_scale',
-    traitOptimizationModeKey:'gbd_dps_calculator:trait_optimization_mode',
     clientKey:'gbd_dps_calculator:client_id',
     traitPresetKey:'gbd_dps_calculator:trait_presets',
     traitPresetStatusKey:'gbd_dps_calculator:trait_preset_status'
   },
 
   state:{
-    skipElementIds:['dpsTableMinDpsMain','ep','artifactDpsViewToggle','traitOptimizationMode']
+    skipElementIds:['dpsTableMinDpsMain','ep','artifactDpsViewToggle']
   },
 
   dpsTable:{
@@ -470,7 +469,7 @@ function renderResourceSummary(s){
   syncSpBankDisplay();
 }
 function syncControlDisplays(){
-  [syncSelectButtons,syncBuffChoiceButtons,syncBattleMode,syncDifficultyTargetControls,syncErosionControlElements,syncPowerBlessOptions,syncSpecDpsSpeedSwitch,syncTraitOptimizationMode,normalizeAllDpsBaseUnitQuantityInputs,formatAllMoneyInputs].forEach(fn=>fn());
+  [syncSelectButtons,syncBuffChoiceButtons,syncBattleMode,syncDifficultyTargetControls,syncErosionControlElements,syncPowerBlessOptions,syncSpecDpsSpeedSwitch,normalizeAllDpsBaseUnitQuantityInputs,formatAllMoneyInputs].forEach(fn=>fn());
 }
 function syncSpBankApplyControl(){
   const select=$('spBankApply');
@@ -2014,57 +2013,6 @@ function bindDpsBaseUnitControlEvents(){
 /* 특성 보드 */
 const INFINITE_TRAIT_TIER='무한∞';
 const TIERS=['루키','비기너','아마추어','프로','엑스퍼트','마스터','디바인','더원1','더원2',INFINITE_TRAIT_TIER,'EP특성','RP특성','심연특성'];
-function selectedTraitOptimizationMode(){
-  return normalizeTraitOptimizationMode(vs('traitOptimizationMode'));
-}
-function syncTraitOptimizationMode(){
-  const mode=selectedTraitOptimizationMode();
-  const input=$('traitOptimizationMode');
-  if(input && input.value!==mode) input.value=mode;
-  qsa('[data-action="selectTraitOptimizationMode"]').forEach(button=>{
-    const active=button.dataset.mode===mode;
-    button.classList.toggle('is-selected',active);
-    button.setAttribute('aria-pressed',active ? 'true' : 'false');
-  });
-  return mode;
-}
-function saveTraitOptimizationMode(mode){
-  const normalized=normalizeTraitOptimizationMode(mode);
-  const key=DPS_CONFIG.storage.traitOptimizationModeKey;
-  if(!key) return false;
-  try{
-    localStorage.setItem(key,normalized);
-    return true;
-  }catch(error){
-    rememberAppIssue('warn','특성 최적화 방식 저장',error);
-    return false;
-  }
-}
-function loadTraitOptimizationMode(){
-  const input=$('traitOptimizationMode');
-  let mode=normalizeTraitOptimizationMode(input?.value);
-  const key=DPS_CONFIG.storage.traitOptimizationModeKey;
-  if(key){
-    try{
-      const saved=localStorage.getItem(key);
-      if(saved) mode=normalizeTraitOptimizationMode(saved);
-    }catch(error){
-      rememberAppIssue('warn','특성 최적화 방식 불러오기',error);
-    }
-  }
-  if(input) input.value=mode;
-  return syncTraitOptimizationMode();
-}
-function selectTraitOptimizationMode(trigger){
-  const mode=String(trigger?.dataset?.mode || '').trim().toUpperCase();
-  if(!Object.prototype.hasOwnProperty.call(TRAIT_OPTIMIZATION_MODE_CONFIG,mode)) return false;
-  const input=$('traitOptimizationMode');
-  if(!input) return false;
-  input.value=mode;
-  syncTraitOptimizationMode();
-  saveTraitOptimizationMode(mode);
-  return true;
-}
 function updateTraits(){
   const body=$('traitBody');
   if(!body) return;
@@ -2481,7 +2429,7 @@ function buildZeroScoreCalcRow(config){
           </tr>`;
 }
 function buildZeroPenanceCalcRow(name){
-  return buildZeroScoreCalcRow({type:'penance',name,currentHonorClass:'zero-current-honor zero-honor-input',targetHonorClass:'zero-target-honor zero-honor-input',honorOptions:{inputmode:'latin',maxlength:1,placeholder:'B'}});
+  return buildZeroScoreCalcRow({type:'penance',name,currentHonorClass:'zero-current-honor zero-honor-input',targetHonorClass:'zero-target-honor zero-honor-input',honorOptions:{inputmode:'latin',maxlength:2,placeholder:'B'}});
 }
 function buildZeroTowerCalcRow(){
   return buildZeroScoreCalcRow({type:'towerCombo',name:'도전의탑',star:false,currentHonorClass:'zero-tower-honor-current',targetHonorClass:'zero-tower-honor-target'});
@@ -2664,7 +2612,6 @@ const ACTION_HANDLERS={
   decreaseFont:()=>changeFontScale(-DPS_CONFIG.ui.fontScaleStep),
   increaseFont:()=>changeFontScale(DPS_CONFIG.ui.fontScaleStep),
   resetFont:()=>applyFontScale(DPS_CONFIG.ui.fontScaleDefault),
-  selectTraitOptimizationMode,
   selectButton:(trigger)=>setSelectButton(trigger.closest('.seg-btns')?.dataset.target, trigger.dataset.value),
   traitAdjust:(trigger)=>{
     if(Date.now()<traitHoldSuppressClickUntil) return false;
@@ -2797,7 +2744,6 @@ function initApp(){
   formatAllMoneyInputs();
   syncTraitLimitInputs();
   loadState();
-  loadTraitOptimizationMode();
   window.DpsPreset.init();
 }
 function markAppReady(){
