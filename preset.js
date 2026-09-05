@@ -94,6 +94,7 @@ function normalizeStoredElementValue(id, value){
   if(id==='dpsBaseUnitExtraSettings') return serializeDpsBaseUnitExtraSettings(value);
   if(id==='dpsBaseUnitSlotExpansions') return serializeDpsBaseUnitSlotExpansions(value);
   if(id==='specDpsSpeedMode' || id==='dpsBaseUnitSpeedMode') return normalizeOnOffValue(value,'OFF');
+  if(id==='donationBuffType') return normalizeDonationBuffType(value);
   if(dpsBaseUnitQuantityIds().includes(id)) return normalizeDpsBaseUnitQuantityValue(value);
   if(DPS_BASE_UNIT_ENHANCE_IDS.has(id)) return normalizeDpsBaseUnitEnhanceValue(value);
   if(DPS_BASE_UNIT_LIMIT_BREAK_IDS.has(id)) return normalizeDpsBaseUnitLimitBreakValue(value);
@@ -167,7 +168,6 @@ function makePublicDefaultState(){
   normalizeShardStorageValues(values);
   const inv={};
   TRAITS.forEach(t=>{ inv[t[0]]=0; });
-  inv[116]=1;
   return makeStorageEnvelope({
     values,
     inv,
@@ -217,6 +217,7 @@ function makeStateObject(){
   normalizeShardStorageValues(values);
   normalizeMoneyStorageValues(values);
   const inv={...INV};
+  if(116 in inv) inv[116]=0;
   syncSpBankPresetState(values, inv);
   return makeStorageEnvelope({
     values,
@@ -253,6 +254,7 @@ function sanitizeSavedValues(values){
     if(hasOwn(out,id)) out[id]=normalizeDecimalDisplayValue(out[id]);
   });
   if(hasOwn(out,'spBankApply')) out.spBankApply=normalizeSpBankApplyValue(out.spBankApply);
+  if(hasOwn(out,'donationBuffType')) out.donationBuffType=normalizeDonationBuffType(out.donationBuffType);
   out.dpsBaseUnits=normalizeDpsBaseUnitsValue(out.dpsBaseUnits ?? '');
   if(hasOwn(out,'dpsBaseUnitSlots')) out.dpsBaseUnitSlots=serializeDpsBaseUnitSlots(out.dpsBaseUnitSlots);
   if(hasOwn(out,'dpsJewelSettings')) out.dpsJewelSettings=serializeDpsJewelSettings(out.dpsJewelSettings);
@@ -299,6 +301,7 @@ function normalizeSavedState(data){
   const sourceValues=(data.values && typeof data.values==='object') ? data.values : {};
   const values=sanitizeSavedValues({...sourceValues});
   const inv=(data.inv && typeof data.inv==='object') ? {...data.inv} : {};
+  if(116 in inv) inv[116]=0;
   syncSpBankPresetState(values, inv);
   return makeNormalizedStateEnvelope(data,values,inv,{requireRawValues:true,requireContent:false});
 }
@@ -570,7 +573,7 @@ function applyStateObject(data, options={}){
       if(!Number.isFinite(r) || !(r in INV)) return;
       INV[r]=Math.max(0, Math.min(TMAX[r]||999, Math.round(+val||0)));
     });
-    INV[116]=1;
+    if(116 in INV) INV[116]=0;
     enforceBudgets();
     if(hasOwn(sanitizedValues,'runeChoiceType') || hasOwn(sanitizedValues,'runeChoiceValue')) syncRuneChoice();
     else hydrateRuneChoiceFromHidden();

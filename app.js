@@ -65,7 +65,6 @@ function escapeHtml(value){
 
 const INV={};
 TRAITS.forEach(t=>{INV[t[0]]=0;});
-Object.assign(INV,{116:1});
 const AUTO_INVEST_EXCLUDED_ROWS=new Set([45,87]);
 const ENCHANT_INPUT_IDS=['enchAD','enchCRI','enchUA','enchTD','enchSR','enchHR'];
 const ENCHANT_INPUT_ID_SET=new Set(ENCHANT_INPUT_IDS);
@@ -243,6 +242,22 @@ function syncBuffChoiceButtons(){
     setTogglePressed(item, !!input?.checked, {classes:'is-active'});
   });
 }
+function syncDonationBuffControl(){
+  const select=$('donationBuffType');
+  if(!select) return;
+  const value=normalizeDonationBuffType(select.value);
+  if(select.value!==value) select.value=value;
+}
+function setDonationBuffType(value){
+  const select=$('donationBuffType');
+  if(!select) return false;
+  const normalized=normalizeDonationBuffType(value);
+  select.value=select.value===normalized ? 'none' : normalized;
+  syncDonationBuffControl();
+  syncSelectButtons();
+  commitAppUpdate();
+  return true;
+}
 function penanceOptionLabel(value){return value>0 ? `${value} 고행` : '선택 안함';}
 function syncPenanceOptions(){
   const el=$('penance');
@@ -409,7 +424,7 @@ const STAT_COMPARE_ROWS=[
   ['APU', s=>fmt(s.displayAPU,0), s=>fmt(s.actualAPU ?? s.displayAPU,0)],
   ['AS', s=>fmt(s.M7,1), s=>fmt(s.M7,1)],
   ['CRI', s=>fmt(s.M8,1), s=>fmt(s.M8,1)],
-  ['CD', s=>fmt(s.rawCD,1), s=>fmt(s.M9,2)],
+  ['CD', s=>fmt(s.displayCD,1), s=>fmt(s.actualCD,2)],
   ['MC', s=>fmt(s.M10,0), s=>fmt(s.M10,0)],
   ['TD', s=>fmt(s.rawTD,1), s=>fmt(s.M11,2)],
   ['DR', s=>fmt(s.M12,0), s=>fmt(s.actualM12,0)],
@@ -469,7 +484,7 @@ function renderResourceSummary(s){
   syncSpBankDisplay();
 }
 function syncControlDisplays(){
-  [syncSelectButtons,syncBuffChoiceButtons,syncBattleMode,syncDifficultyTargetControls,syncErosionControlElements,syncPowerBlessOptions,syncSpecDpsSpeedSwitch,normalizeAllDpsBaseUnitQuantityInputs,formatAllMoneyInputs].forEach(fn=>fn());
+  [syncSelectButtons,syncDonationBuffControl,syncBuffChoiceButtons,syncBattleMode,syncDifficultyTargetControls,syncErosionControlElements,syncPowerBlessOptions,syncSpecDpsSpeedSwitch,normalizeAllDpsBaseUnitQuantityInputs,formatAllMoneyInputs].forEach(fn=>fn());
 }
 function syncSpBankApplyControl(){
   const select=$('spBankApply');
@@ -482,6 +497,7 @@ function syncPreCalculationViews(){
   normalizeRoundInputs();
   syncExclusiveRuneOptions();
   syncRuneChoice();
+  syncDonationBuffControl();
   syncEnchantInputs();
   syncControlDisplays();
   syncTraitLimitInputs();
@@ -1000,6 +1016,7 @@ const FIELD_REGISTRY={
   flowerSkill1:{kind:'룬효과 버프',name:'근성의 꽃가루',save:true},
   flowerSkill2:{kind:'룬효과 버프',name:'바람의 꽃가루',save:true},
   flowerSkill3:{kind:'룬효과 버프',name:'안개의 꽃가루',save:true},
+  donationBuffType:{kind:'룬효과 버프',name:'나눔후원 적용',save:true},
   rAD:{kind:'룬정보',name:'공격력',save:true},
   rModAD:{kind:'룬정보',name:'공격력 개조',save:true},
   runeChoiceType:{kind:'룬정보',name:'룬 특수 옵션',save:true},
@@ -2193,7 +2210,7 @@ function masterTier(tier){
 }
 function resetTier(tier){
   forEachTraitInTier(tier,{},(_,row)=>{ INV[row]=0; });
-  if(116 in INV) INV[116]=1;
+  if(116 in INV) INV[116]=0;
   commitTraitInvestmentChange();
 }
 const UTILITY_OPT_TYPES=new Set(['유틸','경험치','AP','RA']);
@@ -2245,7 +2262,7 @@ function clearTraitInvestmentsBy(predicate){
       changed++;
     }
   });
-  if(116 in INV) INV[116]=1;
+  if(116 in INV) INV[116]=0;
   commitTraitInvestmentChange();
   return changed;
 }
@@ -2613,6 +2630,7 @@ const ACTION_HANDLERS={
   increaseFont:()=>changeFontScale(DPS_CONFIG.ui.fontScaleStep),
   resetFont:()=>applyFontScale(DPS_CONFIG.ui.fontScaleDefault),
   selectButton:(trigger)=>setSelectButton(trigger.closest('.seg-btns')?.dataset.target, trigger.dataset.value),
+  donationBuff:(trigger)=>setDonationBuffType(trigger.dataset.value),
   traitAdjust:(trigger)=>{
     if(Date.now()<traitHoldSuppressClickUntil) return false;
     return adjustTraitBy(+trigger.dataset.row,+trigger.dataset.delta,1);
@@ -2687,6 +2705,7 @@ function bindReactiveInputs(){
       syncTeamSelect({preserveCurrent:true});
     }
     if(TRAIT_LIMIT_INPUT_IDS.has(target.id) && String(target.value).replace(/,/g,'').trim()==='0') syncTraitLimitInputDisplay(target);
+    if(target.id==='donationBuffType') syncDonationBuffControl();
     if(target.matches('select')) syncSelectButtons();
     if(target.matches('.buff-choice-input')) syncBuffChoiceButtons();
     cancelAnimationFrame(raf);
@@ -2737,6 +2756,7 @@ function initApp(){
   bindAppEvents();
   syncEnchantCodeFromInputs(true);
   syncSelectButtons();
+  syncDonationBuffControl();
   syncBuffChoiceButtons();
   syncDpsBaseUnitControl();
   syncExclusiveRuneOptions();

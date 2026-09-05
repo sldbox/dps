@@ -132,7 +132,6 @@ function challengeTowerFloorStoredValue(){return normalizedStoredControlValue('c
 function effectiveTargetRound(){
   return isTowerDifficulty() ? normalizedTowerFloorNumber(challengeTowerFloorStoredValue()) : normalizedRoundNumber(targetRoundStoredValue());
 }
-const BASE_DISPLAY_STATS={ad:5, as:5, cri:5};
 function effectiveXpValue(){return Math.max(1, v('xp'));}
 function isCoopMode(){return normalizeOnOffValue(vs('coopMode'),'OFF')==='ON';}
 function isCoopActive(diffName=vs('diff')){return isCoopMode() && isCoopAllowedDifficulty(diffName);}
@@ -771,6 +770,23 @@ const SYSTEM_COMMON_BUFFS=Object.freeze({
   uniqueUnit:Object.freeze({baseAd:30,septemberPlusAd:10,actualAp:20}),
   basePierce:10
 });
+const DONATION_BUFF_TYPES=new Set(['sp','paid']);
+const DONATION_BUFF_SP_COST=150000;
+const EMPTY_DONATION_BUFF=Object.freeze({ad:0,as:0,cri:0});
+function normalizeDonationBuffType(value){
+  const key=String(value ?? '').trim().toLowerCase();
+  return DONATION_BUFF_TYPES.has(key) ? key : 'none';
+}
+function activeDonationBuffType(){
+  const el=(typeof $==='function' ? $('donationBuffType') : (typeof document!=='undefined' ? document.getElementById('donationBuffType') : null));
+  return normalizeDonationBuffType(el?.value);
+}
+function donationBuffStats(){
+  return activeDonationBuffType()==='none' ? EMPTY_DONATION_BUFF : SYSTEM_COMMON_BUFFS.shareUser;
+}
+function donationBuffSpCost(){
+  return activeDonationBuffType()==='sp' ? DONATION_BUFF_SP_COST : 0;
+}
 const UNIT_GRADE_AD={D:-10,C:-5,B:0,A:5,S:10,SS:20,SSS:30,X:40,XD:50,SXD:50,RXD:100};
 const UNIT_GRADE_AS={D:0,C:0,B:0,A:0,S:0,SS:0,SSS:0,X:0,XD:0,SXD:25,RXD:30};
 function activeUnitGrade(){return vs('unitGrade') || 'S';}
@@ -1584,7 +1600,7 @@ function buildStatsCoreRaw(options={}){
   const ascVlookup3=asc[1];
   const ascVlookup4=asc[2];
   const ascVlookup5=asc[3];
-  const {ad:shareAD,as:shareAS,cri:shareCRI}=SYSTEM_COMMON_BUFFS.shareUser;
+  const {ad:shareAD,as:shareAS,cri:shareCRI}=donationBuffStats();
   const dailyCouponCRI=SYSTEM_COMMON_BUFFS.dailyCouponCri;
   const xpStat=xpInputStatBonus();
   const traitStats=calculateTraitStatTotals();
@@ -1602,16 +1618,15 @@ function buildStatsCoreRaw(options={}){
   const additionalStats=effectiveAdditionalStats();
   const rawDisplayAP = (traitStats.AP||0) + (optionStats.ap||0) + specialRune.ap + additionalStats.ap;
   const displayAP = cappedDisplayAp(rawDisplayAP);
-  const AP9 = BASE_DISPLAY_STATS.ad + (traitStats.AD||0) + v('rAD') + optionStats.ad + upperStats.ad + ascVlookup3 + reinf + v('rModAD')
+  const AP9 = (traitStats.AD||0) + v('rAD') + optionStats.ad + upperStats.ad + ascVlookup3 + reinf + v('rModAD')
             + v('pbless') + shareAD + xpStat.ad + enchantStats[0].ad + epBuff
             + growthGraduationAttackBonus() + additionalStats.ad;
   const AP10 = -diff.ad;
   const M4 = AP9 + AP10 + unitADBonus + upperStats.actualAd;
-  const M7_base = BASE_DISPLAY_STATS.as + (traitStats.AS||0) + v('rAS') + upperStats.as + ascVlookup4 + reinf + shareAS + xpStat.as + v('rModAS') + additionalStats.as;
+  const M7_base = (traitStats.AS||0) + v('rAS') + upperStats.as + ascVlookup4 + reinf + shareAS + xpStat.as + v('rModAS') + additionalStats.as;
   const M7 = M7_base;
-  const M8 = BASE_DISPLAY_STATS.cri + (traitStats.CRI||0) + v('rCRI') + v('rModCRI') + reinf + dailyCouponCRI + shareCRI + xpStat.cri + gradeCri + optionStats.cri + upperStats.cri + additionalStats.cri;
-  const cdReinf = reinf > 10 ? reinf - 10 : 0;
-  const rawCD = 100 + (traitStats.CD||0) + v('rCD') + cd50opt + cdReinf + upperStats.cd + ascVlookup5 + additionalStats.cd + v('rModCD');
+  const M8 = (traitStats.CRI||0) + v('rCRI') + v('rModCRI') + reinf + dailyCouponCRI + shareCRI + xpStat.cri + gradeCri + optionStats.cri + upperStats.cri + additionalStats.cri;
+  const rawCD = 100 + (traitStats.CD||0) + v('rCD') + cd50opt + upperStats.cd + ascVlookup5 + additionalStats.cd + v('rModCD');
   const criOver300 = M8>=300 ? (M8>=400?5:Math.floor((M8-300)/20)) : 0;
   const M10 = (traitStats.MC||0) + (asc[5]||0) + criOver300 + optionStats.mc;
   const rawTD = (traitStats.TD||0) + specialRune.td + gradeTD + upperStats.td + (asc[6]||0) + optionStats.td + v('titleTdBonus') + additionalStats.td;
@@ -1666,7 +1681,9 @@ function computeStatsFromCoreRaw(core,options={}){
   const epU=resourceUsage?.epU || 0;
   const rpU=resourceUsage?.rpU || 0;
   const soulU=resourceUsage?.soulU || 0;
-  const displayAD = Math.round(core.AP9 * (1 + rawTD/100));
+  const displayAD = Math.ceil(core.AP9 * (1 + rawTD/100));
+  const displayCD = rawCD;
+  const actualCD = M9;
   const displayAPS = core.displayAP;
   const displayAPU = core.displayAP;
   const actualAPU = extendedResults
@@ -1675,7 +1692,7 @@ function computeStatsFromCoreRaw(core,options={}){
   const actualSR = core.displaySR * shieldRatio;
   const actualHR = core.displayHR * hpRatio;
   return {M4,M7,M8,M9,M10,M11,M12,actualM12,M13,M16,M17,M18,M19,rawM19,roundTime,displayMultiplier,rawCD,rawTD,diff,
-          displayAD,displayAPS,displayAPU,actualAPU,displayUA:core.displayUA,displaySR:core.displaySR,displayHR:core.displayHR,actualSR,actualHR,
+          displayAD,displayCD,actualCD,displayAPS,displayAPU,actualAPU,displayUA:core.displayUA,displaySR:core.displaySR,displayHR:core.displayHR,actualSR,actualHR,
           spUsedTotal:spU+spO,spU,spO,epU,rpU,soulU,
           spBank:extendedResults ? effectiveSpBankBonus() : null,
           spBankApplied:extendedResults ? isSpBankApplied() : null,
@@ -2027,7 +2044,7 @@ function syncSpBankDisplay(){
   if(select.value!==state) select.value=state;
 }
 function effectiveSP(){
-  return Math.max(0, v('sp') + effectiveSpBankBonus());
+  return Math.max(0, v('sp') + effectiveSpBankBonus() - donationBuffSpCost());
 }
 function rpPierceBonus(){return Math.max(0, Math.min(20, INV[130]||0));}
 function enforceBudgets(){
@@ -2170,7 +2187,7 @@ const STAT_KO={
 function statKo(type){return STAT_KO[type] || type;}
 function traitEffectText(row,type,rate){return !rate ? statKo(type) : `${statKo(type)} +${rate}${T_UA.has(row)?'%':''}`;}
 const TRAIT_OPT_NORMAL_ROWS={
-  SP:new Set([42,43,46,52,53,58,60,61,68,70,71,77,84,85,86,92,93,94,95,96,99,100,101,102,103,104,108,109,110,111,115,116,44,54,62,79]),
+  SP:new Set([42,43,46,52,53,58,60,61,68,70,71,77,84,85,86,92,93,94,95,96,99,100,101,102,103,104,108,109,110,111,115,44,54,62,79]),
   EP:new Set([117,118,119,120,121,122]),
   RP:new Set([125,126,127,129,130]),
   SOUL:new Set([131,132,133,134,135,136,137])
@@ -2182,7 +2199,7 @@ const TRAIT_LIMIT_CONFIG=[
   {id:'traitLimitAD',key:'AD',name:'공격력',value:s=>s.displayAD},
   {id:'traitLimitAS',key:'AS',name:'공격속도',value:s=>s.M7},
   {id:'traitLimitCRI',key:'CRI',name:'크리티컬 확률',value:s=>s.M8},
-  {id:'traitLimitCD',key:'CD',name:'크리티컬 데미지',value:s=>s.rawCD}
+  {id:'traitLimitCD',key:'CD',name:'크리티컬 데미지',value:s=>s.displayCD}
 ];
 const TRAIT_LIMIT_DEFAULTS={
   traitLimitAD:'0', traitLimitAS:'0', traitLimitCRI:'0', traitLimitCD:'0', traitLimitMultiTarget:'OFF', traitLimitInfinite:'OFF'
@@ -2468,7 +2485,7 @@ function optimizeSP(){
     return !guard.aborted;
   }catch(error){
     Object.keys(INV).forEach(row=>{ INV[row]=before[row] ?? 0; });
-    INV[116]=1;
+    if(116 in INV) INV[116]=0;
     rememberAppIssue('error','특성 최적화 계산',error);
     showToast('특성 최적화 계산 중 오류가 발생해 변경사항을 되돌렸습니다.','err');
     commitAppUpdate({recalculate:'now'});
