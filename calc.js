@@ -631,7 +631,7 @@ function normalizeOverEnhanceValue(value){
 }
 function monthRuneCount(prefix, kind='plus'){
   const el=$(prefix + (kind==='normal' ? 'RuneNormal' : 'RunePlus'));
-  return clampInt(el ? el.value : 0, 0, 4);
+  return clampInt(el ? el.value : 0, 0, 6);
 }
 const RUNE_OPTION_SELECT_IDS=['opt10','opt15','transOpt'];
 const RUNE_OPTION_SELECT_ID_SET=new Set(RUNE_OPTION_SELECT_IDS);
@@ -1064,7 +1064,9 @@ function dpsBaseUnitJewelStats(unitOrId,settings=null){
   return dpsJewelFinalStats(dpsBaseUnitJewelName(unitOrId),settings);
 }
 function dpsBaseUnitQuantityLimit(unitOrId=null){
-  return vs('coopMode')==='ON' ? 16 : 8;
+  const baseLimit=vs('coopMode')==='ON' ? 16 : 8;
+  const septemberPlus=monthRuneCount('sep','plus');
+  return baseLimit + Math.max(0,Math.min(2,septemberPlus-4));
 }
 function normalizeDpsBaseUnitQuantityValue(value,unitOrId=null){
   const limit=dpsBaseUnitQuantityLimit(unitOrId);
