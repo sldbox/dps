@@ -1,9 +1,12 @@
+/* 공통 모달
+ * - 접근성 포커스/닫기 처리
+ * - DPS표와 프리셋 등 공용 모달 동작
+ */
 (() => {
   'use strict';
 
   /* 공통 모달 상태·쉘 */
   const DPS_TABLE_MODAL_ID='dpsTableModal';
-  const DPS_TABLE_MIN_DPS_INPUT_SELECTOR='#dpsTableMinDps,#dpsTableMinDpsMain';
   const BOARD_MODAL_IDS=Object.freeze(['sanctuarySkillModal','busPassengerModal','zeroRankInfoModal']);
   let eventsBound=false;
 
@@ -134,25 +137,6 @@
   }
 
   /* DPS표 */
-  function getDpsTableMinDpsInput(target){
-    return target instanceof Element?target.closest(DPS_TABLE_MIN_DPS_INPUT_SELECTOR):null;
-  }
-
-  function withDpsTableMinDpsInput(event, handler){
-    const minInput=getDpsTableMinDpsInput(event.target);
-    if(!minInput) return false;
-    handler(minInput,event);
-    return true;
-  }
-
-  function syncFreshDpsTableMinDpsFocus(input){
-    const fresh=document.getElementById(input.id);
-    if(!fresh) return;
-    fresh.focus({preventScroll:true});
-    const pos=fresh.value.length;
-    if(typeof fresh.setSelectionRange==='function') fresh.setSelectionRange(pos,pos);
-  }
-
   function renderDpsTableModalHeader(){
     const modal=document.getElementById(DPS_TABLE_MODAL_ID);
     if(!modal) return;
@@ -252,28 +236,6 @@
         return;
       }
     }
-    withDpsTableMinDpsInput(event,(minInput)=>{
-      if(event.key==='.' || event.key===',' || event.key==='Decimal'){
-        event.preventDefault();
-        return;
-      }
-      if(event.key==='Enter'){
-        event.preventDefault();
-        setDpsTableMinDps(minInput.value,{format:true});
-        minInput.blur();
-      }
-    });
-  }
-
-  function handleDocumentInput(event){
-    withDpsTableMinDpsInput(event,(minInput)=>{
-      setDpsTableMinDps(minInput.value);
-      syncFreshDpsTableMinDpsFocus(minInput);
-    });
-  }
-
-  function handleDocumentFocusOut(event){
-    withDpsTableMinDpsInput(event,(minInput)=>setDpsTableMinDps(minInput.value,{format:true}));
   }
 
   function bindEvents(){
@@ -281,8 +243,6 @@
     eventsBound=true;
     document.addEventListener('click',handleDocumentClick);
     document.addEventListener('keydown',handleDocumentKeydown,true);
-    document.addEventListener('input',handleDocumentInput);
-    document.addEventListener('focusout',handleDocumentFocusOut,true);
   }
 
   window.DpsModal=Object.freeze({

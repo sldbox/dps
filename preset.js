@@ -1,3 +1,10 @@
+/* 프리셋 관리 레이어
+ * - 저장값 정규화: 숫자/룬/유닛 보드/재화 상태
+ * - 가져오기·내보내기: JSON 파일과 웹 버전 관리
+ * - 프리셋 목록: 필터, 정렬, 선택, 삭제, 갱신
+ * - 현재 상태 적용: 특성/유닛 보드/기본 정보 동기화
+ * - 변경 상태: 업데이트됨/백업 필요 표시
+ */
 /* 버전·상태 정규화 */
 const STORAGE_VERSION=DPS_CONFIG.storage.version;
 const STORAGE_SCOPE=DPS_CONFIG.storage.scope;
@@ -164,7 +171,6 @@ function makePublicDefaultState(){
   });
   Object.assign(values,{optTier:values.optTier ?? '루키', utilOptTier:values.utilOptTier ?? '루키'});
   Object.entries(TRAIT_LIMIT_DEFAULTS).forEach(([id,value])=>{ if(!hasOwn(values,id)) values[id]=value; });
-  values.dpsTableMinDps='1.0';
   normalizeShardStorageValues(values);
   const inv={};
   TRAITS.forEach(t=>{ inv[t[0]]=0; });
@@ -213,7 +219,6 @@ function makeStateObject(){
   const normalizedRune=normalizeRuneChoiceValues(values);
   values.runeChoiceType=normalizedRune.runeChoiceType;
   values.runeChoiceValue=normalizedRune.runeChoiceValue;
-  values.dpsTableMinDps=normalizeDpsTableMinDpsValue(dpsTableMinDps);
   normalizeShardStorageValues(values);
   normalizeMoneyStorageValues(values);
   const inv={...INV};
@@ -266,6 +271,7 @@ function sanitizeSavedValues(values){
   DPS_BASE_UNIT_JEWEL_IDS.forEach(id=>{ if(hasOwn(out,id)) out[id]=normalizeDpsJewelName(out[id]); });
   DPS_BASE_UNIT_VOID_POWER_IDS.forEach(id=>{ if(hasOwn(out,id)) out[id]=normalizeDpsBaseUnitVoidPowerValue(out[id]); });
   delete out['spBank'+'BudgetMode'];
+  delete out['dpsTable'+'MinDps'];
   if(hasOwn(out,'runeChoiceType') || hasOwn(out,'runeChoiceValue')){
     const normalizedRune=normalizeRuneChoiceValues(out);
     out.runeChoiceType=normalizedRune.runeChoiceType;
@@ -281,7 +287,7 @@ function sanitizeSavedValues(values){
 }
 
 function makeNormalizedStateEnvelope(source,values,inv,{requireRawValues=false,requireContent=true}={}){
-  const hasRawValues=Object.keys(source?.values || {}).some(id=>isUserStateValueId(id) || id==='dpsTableMinDps');
+  const hasRawValues=Object.keys(source?.values || {}).some(id=>isUserStateValueId(id));
   const hasZeroScore=!!(source?.zeroScore && Array.isArray(source.zeroScore.rows));
   if(requireRawValues && !hasRawValues && !Object.keys(inv).length && !hasZeroScore) return null;
   if(requireContent && !Object.keys(values).length && !Object.keys(inv).length && !hasZeroScore) return null;
@@ -491,10 +497,6 @@ function traitPresetHasUnitBoard(store,presetId){
 function traitPresetUnitBoardState(store,presetId){
   return traitPresetHasUnitBoard(store,presetId) ? normalizeTraitPresetUnitBoardState(store.unitBoard.presets[String(presetId || '')]) : null;
 }
-function traitPresetUnitBoardHasValues(value){
-  const state=normalizeTraitPresetUnitBoardState(value);
-  return state.units.length>0 || Object.keys(state.additionalUnitSettings).length>0;
-}
 function setTraitPresetUnitBoardState(store,presetId,state){
   const out=store && typeof store==='object' ? store : emptyTraitPresetStore();
   const validIds=(out.presets || []).map(preset=>preset.id);
@@ -546,8 +548,6 @@ function applyStateObject(data, options={}){
   storageState.isLoading=true;
   try{
     if(data.ui && Number.isFinite(+data.ui.fontScale)) applyFontScale(+data.ui.fontScale, {silent:true});
-    dpsTableMinDps=normalizeDpsTableMinDpsValue(data.values?.dpsTableMinDps ?? data.dpsTableMinDps ?? '1.0') || '1.0';
-    syncDpsMinDpsInputs();
     const sanitizedValues=sanitizeSavedValues(data.values || {});
     if(!hasOwn(sanitizedValues,'dpsBaseUnitSlots')){
       const slotInput=$('dpsBaseUnitSlots');
@@ -558,7 +558,6 @@ function applyStateObject(data, options={}){
       if(masterEl) writeElementValue(masterEl, sanitizedValues.enhanceMaster);
     }
     Object.entries(sanitizedValues).forEach(([id,val])=>{
-      if(id==='dpsTableMinDps') return;
       const el=$(id);
       if(el) writeElementValue(el,val);
     });
@@ -986,7 +985,8 @@ function selectedTraitPresetContext(message){
 const TRAIT_PRESET_SELECT_GROUPS=[
   {key:'solo', label:'개인'},
   {key:'coop', label:'협동'},
-  {key:'tower', label:'도전의탑'}
+  {key:'tower', label:'도전의탑'},
+  {key:'planet', label:'행성탐사'}
 ];
 const TRAIT_PRESET_DIFFICULTY_ORDER=[...DPS_CONFIG.dpsTable.difficulties, TOWER_DIFFICULTY_NAME];
 function traitPresetValueSource(preset){
@@ -1004,11 +1004,13 @@ function traitPresetSortInfo(preset){
   const diff=values.diff || meta.diff || '';
   const diffIndex=TRAIT_PRESET_DIFFICULTY_ORDER.indexOf(difficultyName(diff));
   const towerFloor=traitPresetNumberValue(values.challengeTowerFloor || meta.challengeTowerFloor, TOWER_FLOOR_INPUT_MIN);
+  const planetFloor=traitPresetNumberValue(values.planetExplorationFloor || meta.planetExplorationFloor, PLANET_EXPLORATION_FLOOR_INPUT_MIN);
   return {
     diffOrder:diffIndex>=0 ? diffIndex : TRAIT_PRESET_DIFFICULTY_ORDER.length,
     penance:traitPresetNumberValue(values.penance || meta.penance, 0),
     round:traitPresetNumberValue(values.round || meta.round, 1),
     towerFloor,
+    planetFloor,
     name:normalizeTraitPresetName(preset?.name || ''),
     createdAt:+preset?.createdAt || 0,
     updatedAt:+preset?.updatedAt || 0
@@ -1019,7 +1021,9 @@ function comparePresetForSelect(a,b,categoryKey){
   const right=traitPresetSortInfo(b);
   const numberKeys=categoryKey==='tower'
     ? ['towerFloor','diffOrder','penance','round','createdAt','updatedAt']
-    : ['diffOrder','penance','round','towerFloor','createdAt','updatedAt'];
+    : (categoryKey==='planet'
+      ? ['planetFloor','diffOrder','penance','round','createdAt','updatedAt']
+      : ['diffOrder','penance','round','towerFloor','planetFloor','createdAt','updatedAt']);
   for(const key of numberKeys){
     if(left[key]!==right[key]) return left[key]-right[key];
   }
@@ -1028,6 +1032,7 @@ function comparePresetForSelect(a,b,categoryKey){
 function traitPresetCategoryKey(preset){
   const {values,meta}=traitPresetValueSource(preset);
   if(isTowerDifficulty(values.diff || meta.diff)) return 'tower';
+  if(isPlanetExplorationDifficulty(values.diff || meta.diff)) return 'planet';
   if(normalizeOnOffValue(values.coopMode,'OFF')==='ON') return 'coop';
   return 'solo';
 }
@@ -1062,14 +1067,19 @@ function traitPresetOptionName(preset, categoryKey){
       name=floor ? `${floor}층` : '';
     }
   }
+  if(categoryKey==='planet'){
+    name=name.replace(/^(행성\s*탐사|행성탐사)(?:[-–—:·]?\s*(코랄|아이어|제루스))?\s*[-–—:·]?\s*/,'').trim();
+    if(/^\d+$/.test(name)) name=`${name}층`;
+    if(!name){
+      const floor=normalizedPlanetExplorationFloorString(values.planetExplorationFloor || meta.planetExplorationFloor || '');
+      name=floor ? `${floor}층` : '';
+    }
+  }
   return name || normalizeTraitPresetName(preset?.name || '프리셋');
 }
 function traitPresetSelectLabel(preset, updatedIds, categoryKey){
   const suffix=updatedIds.has(preset.id) ? ' · 업데이트됨' : '';
   return `${traitPresetOptionName(preset, categoryKey)}${suffix}`;
-}
-function traitPresetNameOptionAttrs(label){
-  return ` class="trait-preset-name-option" data-trait-preset-name-option="1" data-trait-preset-label="${escapeHtml(label)}"`;
 }
 function traitPresetOptionLabel(option){
   return option?.dataset?.traitPresetLabel || option?.textContent || option?.label || '';
@@ -1429,6 +1439,7 @@ function updateTraitPreset(options={}){
     return false;
   }
 }
+/* 프리셋 임시 변경 */
 function rememberTraitPresetDraft(id){
   const draftId=String(id || '').trim();
   if(!draftId) return false;

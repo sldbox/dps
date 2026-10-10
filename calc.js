@@ -1,3 +1,11 @@
+/* 계산 엔진
+ * - 공통 유틸·입력 정규화
+ * - 난이도/적 데이터: 일반·도전의탑·행성탐사 데이터 선택
+ * - 부담 배율: 물량·체력·실드·라운드 시간 기반 표시 DPS 보정
+ * - 룬/강화/상위옵션: 표기 스탯과 개인 버프 산출
+ * - 스펙 보드/유닛 보드: 표시 DPS, 클리어 기준, 클리어 기대값 산출
+ * - 자원/특성/프리셋: 투자 비용, 잔여 재화, 최적화 보조 계산
+ */
 /* 공통 계산 유틸 */
 function hasOwn(obj,key){
   return !!obj && Object.prototype.hasOwnProperty.call(obj,key);
@@ -24,10 +32,13 @@ const ROUND_INPUT_MIN=1;
 const ROUND_INPUT_MAX=300;
 const DPS_BATTLE_BASE_ROUND=300;
 const DPS_TOWER_BASE_FLOOR=81;
+const DPS_PLANET_BASE_FLOOR=91;
 const DPS_BURDEN_MULTIPLIER_MIN=0.000001;
 const TOWER_ROUND_TIME_BONUS_MAX=8;
 const TOWER_FLOOR_INPUT_MIN=1;
 const TOWER_FLOOR_INPUT_MAX=90;
+const PLANET_EXPLORATION_FLOOR_INPUT_MIN=1;
+const PLANET_EXPLORATION_FLOOR_INPUT_MAX=100;
 function normalizedIntegerRange(value, min, max, fallback=min){
   const raw=String(value ?? '').replace(/,/g,'').trim();
   const num=raw==='' ? NaN : Number(raw);
@@ -42,6 +53,10 @@ function normalizedTowerFloorNumber(value, fallback=TOWER_FLOOR_INPUT_MIN){
   return normalizedIntegerRange(value, TOWER_FLOOR_INPUT_MIN, TOWER_FLOOR_INPUT_MAX, fallback);
 }
 function normalizedTowerFloorString(value){ return String(normalizedTowerFloorNumber(value)); }
+function normalizedPlanetExplorationFloorNumber(value, fallback=PLANET_EXPLORATION_FLOOR_INPUT_MIN){
+  return normalizedIntegerRange(value, PLANET_EXPLORATION_FLOOR_INPUT_MIN, PLANET_EXPLORATION_FLOOR_INPUT_MAX, fallback);
+}
+function normalizedPlanetExplorationFloorString(value){ return String(normalizedPlanetExplorationFloorNumber(value)); }
 function normalizedShardNumber(value){
   return normalizedIntegerRange(value, 0, 9999, 0);
 }
@@ -129,8 +144,11 @@ function normalizedStoredControlValue(id,dataKey,fallback,normalize){
 }
 function targetRoundStoredValue(){return normalizedStoredControlValue('round','roundValue',ROUND_INPUT_MIN,normalizedRoundString);}
 function challengeTowerFloorStoredValue(){return normalizedStoredControlValue('challengeTowerFloor','challengeTowerFloorValue',TOWER_FLOOR_INPUT_MIN,normalizedTowerFloorString);}
+function planetExplorationFloorStoredValue(){return normalizedStoredControlValue('planetExplorationFloor','planetExplorationFloorValue',PLANET_EXPLORATION_FLOOR_INPUT_MIN,normalizedPlanetExplorationFloorString);}
 function effectiveTargetRound(){
-  return isTowerDifficulty() ? normalizedTowerFloorNumber(challengeTowerFloorStoredValue()) : normalizedRoundNumber(targetRoundStoredValue());
+  if(isTowerDifficulty()) return normalizedTowerFloorNumber(challengeTowerFloorStoredValue());
+  if(isPlanetExplorationDifficulty()) return normalizedPlanetExplorationFloorNumber(planetExplorationFloorStoredValue());
+  return normalizedRoundNumber(targetRoundStoredValue());
 }
 function effectiveXpValue(){return Math.max(1, v('xp'));}
 function isCoopMode(){return normalizeOnOffValue(vs('coopMode'),'OFF')==='ON';}
@@ -139,7 +157,7 @@ function battleEnemyCountMultiplier(diffName=vs('diff')){return isCoopActive(dif
 function currentPenanceMax(){return isCoopActive() ? COOP_PENANCE_MAX : SOLO_PENANCE_MAX;}
 function shouldIgnorePenanceForDifficulty(diffName=vs('diff')){
   const name=difficultyName(diffName);
-  return name===TOWER_DIFFICULTY_NAME || name==='Deep Abyss';
+  return name===TOWER_DIFFICULTY_NAME || isPlanetExplorationDifficulty(name) || name==='Deep Abyss';
 }
 function penanceStoredValue(){
   const el=$('penance');
@@ -192,29 +210,21 @@ function chunkDpsTowerFloors(minFloor, maxFloor, groupSize){
   }
   return chunks;
 }
-function dpsTableMinDpsIntegerPart(value){
-  const text=String(value ?? '').replace(/,/g,'').trim();
-  if(text==='') return '';
-  const cleaned=text.replace(/[^0-9.]/g,'');
-  const integerPart=cleaned.split('.')[0].replace(/\D/g,'');
-  return integerPart;
-}
-function normalizeDpsTableMinDpsValue(value){
-  const integerPart=dpsTableMinDpsIntegerPart(value);
-  if(integerPart==='') return '';
-  const number=Number(integerPart);
-  if(!Number.isFinite(number) || number<0) return '';
-  return number.toFixed(DPS_TABLE_DECIMALS);
-}
-function dpsTableRiskCompareValue(value){
-  if(!Number.isFinite(value)) return NaN;
-  const factor=10**DPS_TABLE_DECIMALS;
-  return Math.round(value*factor)/factor;
-}
 function towerEnemySummaryItems(floor){
   const r=Math.max(1, Math.min(90, Math.round(+floor||1)));
   const armorRow=lookupFloor(TOWER_ARMOR_TABLE, r);
   const unitRow=lookupFloor(TOWER_UNIT_TABLE, r);
+  return [
+    ['방어력', big(armorRow && armorRow[0]<=r ? armorRow[1] : 0)],
+    ['체력', big(unitRow ? unitRow[2] : 0)],
+    ['실드', big(unitRow ? unitRow[3] : 0)],
+    ['물량', big(unitRow ? unitRow[1] : 0)]
+  ];
+}
+function planetEnemySummaryItems(floor){
+  const r=Math.max(1, Math.min(100, Math.round(+floor||1)));
+  const armorRow=lookupFloor(PLANET_ARMOR_TABLE, r);
+  const unitRow=lookupFloor(PLANET_UNIT_TABLE, r);
   return [
     ['방어력', big(armorRow && armorRow[0]<=r ? armorRow[1] : 0)],
     ['체력', big(unitRow ? unitRow[2] : 0)],
@@ -278,13 +288,20 @@ function cumCost(row, investment=INV[row]||0){
 
 /* 난이도·적 데이터 */
 const TOWER_DIFFICULTY_NAME='도전의 탑';
+const PLANET_EXPLORATION_DIFFICULTIES=new Set(['행성탐사-코랄','행성탐사-아이어','행성탐사-제루스']);
+const PLANET_EXPLORATION_REGION_BY_DIFFICULTY=Object.freeze({
+  '행성탐사-코랄':'coral',
+  '행성탐사-아이어':'aiur',
+  '행성탐사-제루스':'xerus'
+});
 const ABYSS_DIFFICULTIES=new Set(['Abyss road','Deep Abyss']);
-const COOP_DISABLED_DIFFICULTIES=new Set([TOWER_DIFFICULTY_NAME,...ABYSS_DIFFICULTIES]);
-const SOLO_START_LOCK_DIFFICULTIES=new Set([TOWER_DIFFICULTY_NAME,'Deep Abyss']);
+const COOP_DISABLED_DIFFICULTIES=new Set([TOWER_DIFFICULTY_NAME,...PLANET_EXPLORATION_DIFFICULTIES,...ABYSS_DIFFICULTIES]);
+const SOLO_START_LOCK_DIFFICULTIES=new Set([TOWER_DIFFICULTY_NAME,...PLANET_EXPLORATION_DIFFICULTIES,'Deep Abyss']);
 const BATTLE_DATA_MODES=Object.freeze({
   classic:{label:'클래식',unitTable:ENEMY_UNIT_TABLE,armorTable:ENEMY_ARMOR_TABLE,roundTimeTable:CLASSIC_ROUND_TIME_TABLE,maxRound:300,totalMode:'sum'},
   eternal:{label:'이터널',unitTable:ETERNAL_ENEMY_UNIT_TABLE,armorTable:ENEMY_ARMOR_TABLE,roundTimeTable:ETERNAL_ROUND_TIME_TABLE,maxRound:300,totalMode:'sum'},
-  tower:{label:'클래식',unitTable:TOWER_UNIT_TABLE,armorTable:TOWER_ARMOR_TABLE,roundTimeTable:TOWER_TIME_TABLE,maxRound:90,totalMode:'current'}
+  tower:{label:'클래식',unitTable:TOWER_UNIT_TABLE,armorTable:TOWER_ARMOR_TABLE,roundTimeTable:TOWER_TIME_TABLE,maxRound:90,totalMode:'current'},
+  planet:{label:'행성탐사',unitTable:PLANET_UNIT_TABLE,armorTable:PLANET_ARMOR_TABLE,roundTimeTable:PLANET_TIME_TABLE,maxRound:100,totalMode:'current'}
 });
 const ROUND_FRUIT_PROFILES=Object.freeze([
   Object.freeze({key:'watermelon',label:'수박',enemyType:'거대',armorMultiplier:1,damageMultiplier:1}),
@@ -300,6 +317,8 @@ function enemyRoundFruitProfile(round){
 function difficultyName(value=vs('diff')){return String(value || '').trim();}
 function isDifficultyIn(value, set){return set.has(difficultyName(value));}
 function isAbyssDifficulty(diffName=vs('diff')){return isDifficultyIn(diffName, ABYSS_DIFFICULTIES);}
+function isPlanetExplorationDifficulty(diffName=vs('diff')){return isDifficultyIn(diffName, PLANET_EXPLORATION_DIFFICULTIES);}
+function planetExplorationRegion(diffName=vs('diff')){return PLANET_EXPLORATION_REGION_BY_DIFFICULTY[difficultyName(diffName)] || '';}
 function isCoopAllowedDifficulty(diffName=vs('diff')){return !isDifficultyIn(diffName, COOP_DISABLED_DIFFICULTIES);}
 function isSoloStartDifficulty(diffName=vs('diff')){return isDifficultyIn(diffName, SOLO_START_LOCK_DIFFICULTIES);}
 function abyssEffectiveStack(){
@@ -442,6 +461,7 @@ function lookupFloor(table, round){
 function isTowerDifficulty(value=vs('diff')){return difficultyName(value)===TOWER_DIFFICULTY_NAME;}
 function battleDataModeKeyForDifficulty(diffName=vs('diff')){
   if(isTowerDifficulty(diffName)) return 'tower';
+  if(isPlanetExplorationDifficulty(diffName)) return 'planet';
   return isAbyssDifficulty(diffName) ? 'eternal' : 'classic';
 }
 function battleDataModeForDifficulty(diffName=vs('diff')){
@@ -483,7 +503,7 @@ function storedSpeedModeEnabled(inputId){
   return normalizeOnOffValue(vs(inputId),'OFF')==='ON';
 }
 function speedModeSupported(diffName=vs('diff')){
-  return !isTowerDifficulty(diffName);
+  return !isTowerDifficulty(diffName) && !isPlanetExplorationDifficulty(diffName);
 }
 function speedModeRoundTime(baseTime,enabled){
   const time=Number(baseTime);
@@ -509,10 +529,11 @@ function dpsBaseUnitSpeedModeEnabled(diffName=vs('diff')){
   return unifiedDpsSpeedModeEnabled(diffName);
 }
 function specDpsRoundTimeParts(round,diffName=vs('diff')){
+  const timeLoss=isPlanetExplorationDifficulty(diffName) ? 0 : dpsBaseUnitInvulnerabilityTimeLoss(diffName);
   return roundTimeAfterSpeedAndLoss(
     enemyRoundTime(round,diffName),
     specDpsSpeedModeEnabled(diffName),
-    dpsBaseUnitInvulnerabilityTimeLoss(diffName)
+    timeLoss
   );
 }
 function specDpsRoundTime(round,diffName=vs('diff')){
@@ -525,9 +546,10 @@ function specDpsRoundTimeDpsMultiplier(round,diffName=vs('diff')){
 function battleModeLabel(diffName=vs('diff')){return isCoopActive(diffName) ? '협동' : '개인';}
 function dpsContextModeValues(diffName=vs('diff')){
   const players=isCoopActive(diffName) ? ` · ${effectiveTeamCount(diffName)}인` : '';
+  const displayMode=(isTowerDifficulty(diffName) || isPlanetExplorationDifficulty(diffName)) ? '클래식' : enemyDisplayModeLabel(diffName);
   return {
     primary:specDpsSpeedModeEnabled(diffName) ? '스피드' : '일반',
-    secondary:`${battleModeLabel(diffName)} · ${enemyDisplayModeLabel(diffName)}${players}`
+    secondary:`${battleModeLabel(diffName)} · ${displayMode}${players}`
   };
 }
 function enemyDataFromTables(mode, round, options={}){
@@ -571,7 +593,7 @@ function enemyTotalDisplayCount(round, diffName=vs('diff')){
   return enemyRoundCountTotal(round, diffName) * battleEnemyCountMultiplier(diffName);
 }
 function enemyDisplayCountText(round){
-  if(isTowerDifficulty()) return fullNumber(enemyRoundData(round).count);
+  if(isTowerDifficulty() || isPlanetExplorationDifficulty()) return fullNumber(enemyRoundData(round).count);
   return `${fullNumber(enemyRoundDisplayCount(round))} / ${fullNumber(enemyTotalDisplayCount(round))}`;
 }
 
@@ -602,11 +624,17 @@ function towerFloorEnemyData(floor){
   const r=Math.max(1, Math.min(90, Math.round(+floor||1)));
   return enemyDataFromTables({armorTable:TOWER_ARMOR_TABLE,unitTable:TOWER_UNIT_TABLE}, r);
 }
-function towerBurdenScore(floor, displayHR, displaySR){
-  const enemy=towerFloorEnemyData(floor);
-  if(!enemy.count) return 1;
-  const time=Math.max(1, enemyRoundTime(enemy.round, TOWER_DIFFICULTY_NAME));
+function planetFloorEnemyData(floor){
+  const r=Math.max(1, Math.min(100, Math.round(+floor||1)));
+  return enemyDataFromTables({armorTable:PLANET_ARMOR_TABLE,unitTable:PLANET_UNIT_TABLE}, r);
+}
+function contentFloorBurdenScore(enemy, diffName, displayHR, displaySR){
+  if(!enemy?.count) return 1;
+  const time=Math.max(1, enemyRoundTime(enemy.round, diffName));
   return Math.max(1, enemy.count * enemyBurdenDurability(enemy, displayHR, displaySR) / time);
+}
+function towerBurdenScore(floor, displayHR, displaySR){
+  return contentFloorBurdenScore(towerFloorEnemyData(floor), TOWER_DIFFICULTY_NAME, displayHR, displaySR);
 }
 function towerDpsDisplayMultiplier(floor, displayHR, displaySR){
   const r=Math.max(1, Math.min(90, Math.round(+floor||1)));
@@ -615,10 +643,24 @@ function towerDpsDisplayMultiplier(floor, displayHR, displaySR){
   const current=towerBurdenScore(r, displayHR, displaySR);
   return burdenMultiplier(base, current);
 }
+function planetBurdenScore(floor, diffName, displayHR, displaySR){
+  return contentFloorBurdenScore(planetFloorEnemyData(floor), diffName, displayHR, displaySR);
+}
+function planetDpsDisplayMultiplier(floor, diffName, displayHR, displaySR){
+  const r=Math.max(1, Math.min(100, Math.round(+floor||1)));
+  if(r<=90) return 1;
+  const base=planetBurdenScore(DPS_PLANET_BASE_FLOOR, diffName, displayHR, displaySR);
+  const current=planetBurdenScore(r, diffName, displayHR, displaySR);
+  return burdenMultiplier(base, current);
+}
+/* 행성탐사 표시 DPS/유닛 보드 기대값은 도전의탑과 같은 부담 배율 흐름을 쓰되,
+ * 기준 구간과 적 데이터는 행성탐사 고유값만 사용한다.
+ */
 function contentDpsDisplayMultiplier(diffName, round, displayHR, displaySR){
-  return difficultyName(diffName)===TOWER_DIFFICULTY_NAME
-    ? towerDpsDisplayMultiplier(round, displayHR, displaySR)
-    : battleDpsDisplayMultiplier(diffName, round, displayHR, displaySR);
+  const name=difficultyName(diffName);
+  if(name===TOWER_DIFFICULTY_NAME) return towerDpsDisplayMultiplier(round, displayHR, displaySR);
+  if(isPlanetExplorationDifficulty(name)) return planetDpsDisplayMultiplier(round, name, displayHR, displaySR);
+  return battleDpsDisplayMultiplier(diffName, round, displayHR, displaySR);
 }
 
 /* 룬·강화 */
@@ -738,9 +780,10 @@ function upperOptionStats(){
   const flower1=on('flowerSkill1');
   const flower2=on('flowerSkill2');
   const flower3=on('flowerSkill3');
+  const planetActive=isPlanetExplorationDifficulty();
   const prod={
     nova:on('prodNova'), teratron:on('prodTeratron'), amon:on('prodAmon'), adun:on('prodAdun'),
-    kerrigan:on('prodKerrigan'), overmind:on('prodOvermind'), narud:on('prodNarud'), artifact:on('prodArtifact')
+    kerrigan:on('prodKerrigan'), overmind:on('prodOvermind'), narud:on('prodNarud'), artifact:!planetActive && on('prodArtifact')
   };
   const coralShard=shardValue('coralShard');
   const aiurShard=shardValue('aiurShard');
@@ -770,6 +813,15 @@ const SYSTEM_COMMON_BUFFS=Object.freeze({
   uniqueUnit:Object.freeze({baseAd:30,septemberPlusAd:10,actualAp:20}),
   basePierce:10
 });
+function monthRuneCountFromValue(value){
+  return clampInt(value,0,6);
+}
+function septemberNormalBoardQuantityBonus(value){
+  return Math.max(0,Math.min(2,monthRuneCountFromValue(value)-4));
+}
+function septemberPlusUniqueAdBonus(value){
+  return SYSTEM_COMMON_BUFFS.uniqueUnit.septemberPlusAd*monthRuneCountFromValue(value);
+}
 const DONATION_BUFF_TYPES=new Set(['sp','paid']);
 const DONATION_BUFF_SP_COST=150000;
 const EMPTY_DONATION_BUFF=Object.freeze({ad:0,as:0,cri:0});
@@ -808,7 +860,7 @@ function unitADPrivateBonus(){
   const enh=specUnitEnhanceStats();
   const gradeAd=UNIT_GRADE_AD[activeUnitGrade()] ?? UNIT_GRADE_AD.S;
   const level=(v('unitLevel')||11)*5;
-  const uniqueBuff=SYSTEM_COMMON_BUFFS.uniqueUnit.baseAd + SYSTEM_COMMON_BUFFS.uniqueUnit.septemberPlusAd*(enh.septemberPlus ?? 4);
+  const uniqueBuff=SYSTEM_COMMON_BUFFS.uniqueUnit.baseAd + septemberPlusUniqueAdBonus(enh.septemberPlus);
   return gradeAd + level + uniqueBuff + (enh.value||0) - abyssAdPenalty();
 }
 function personalUaDtMultiplier(){
@@ -832,8 +884,7 @@ function growthGraduationAttackBonus(){
   return effectiveXpValue()>=2000000 ? 20 : 0;
 }
 
-/* 메인 스탯·DPS */
-
+/* 유닛 보드 데이터·입력 정규화 */
 const DPS_BASE_UNIT_STORAGE_SEPARATOR=',';
 const DPS_BASE_UNIT_SETTING_PREFIXES=Object.freeze({
   enhance:'dpsEnhance',
@@ -1065,8 +1116,8 @@ function dpsBaseUnitJewelStats(unitOrId,settings=null){
 }
 function dpsBaseUnitQuantityLimit(unitOrId=null){
   const baseLimit=vs('coopMode')==='ON' ? 16 : 8;
-  const septemberPlus=monthRuneCount('sep','plus');
-  return baseLimit + Math.max(0,Math.min(2,septemberPlus-4));
+  const septemberNormal=monthRuneCount('sep','normal');
+  return baseLimit + septemberNormalBoardQuantityBonus(septemberNormal);
 }
 function normalizeDpsBaseUnitQuantityValue(value,unitOrId=null){
   const limit=dpsBaseUnitQuantityLimit(unitOrId);
@@ -1198,12 +1249,14 @@ function dpsBaseUnitWeaponAttack(unit){
   return attack;
 }
 /* 유닛 보드 전투 모드·적 방어 효과 */
-const DPS_BASE_UNIT_ENEMY_BUFF_DIFFICULTIES=new Set(['Hell','Inferno','Lunatic','Holic','Epic','Ultimate','Impossible','The Final','Hall Of Fame','Abyss road','Deep Abyss','도전의 탑']);
+const DPS_BASE_UNIT_ENEMY_BUFF_DIFFICULTIES=new Set(['Hell','Inferno','Lunatic','Holic','Epic','Ultimate','Impossible','The Final','Hall Of Fame','Abyss road','Deep Abyss','도전의 탑','행성탐사-코랄','행성탐사-아이어','행성탐사-제루스']);
 const DPS_BASE_UNIT_FIXED_INVULNERABILITY_DIFFICULTIES=new Set(['Hall Of Fame','Abyss road','Deep Abyss']);
 const DPS_BASE_UNIT_INVULNERABILITY_TIME_LOSS=4;
+const DPS_BASE_UNIT_PLANET_INVULNERABILITY_TIME_LOSS=5;
 function dpsBaseUnitInvulnerabilityTimeLoss(diffName=vs('diff')){
   const name=difficultyName(diffName);
   if(!DPS_BASE_UNIT_ENEMY_BUFF_DIFFICULTIES.has(name)) return 0;
+  if(isPlanetExplorationDifficulty(name)) return DPS_BASE_UNIT_PLANET_INVULNERABILITY_TIME_LOSS;
   if(DPS_BASE_UNIT_FIXED_INVULNERABILITY_DIFFICULTIES.has(name)) return DPS_BASE_UNIT_INVULNERABILITY_TIME_LOSS;
   return 0;
 }
@@ -1224,7 +1277,7 @@ function dpsBaseUnitEnemyProtectionFactor(diffName=vs('diff')){
 function dpsBaseUnitExpectationMultiplier(diffName=vs('diff')){
   const fogMultiplier=on('flowerSkill3') ? 1.075 : 1;
   const modeMultiplier=battleDataModeKeyForDifficulty(diffName)==='eternal' ? 0.8 : 1;
-  const contentMultiplier=isTowerDifficulty(diffName) ? 0.9 : 0.8;
+  const contentMultiplier=(isTowerDifficulty(diffName) || isPlanetExplorationDifficulty(diffName)) ? 0.9 : 0.8;
   return fogMultiplier*modeMultiplier*contentMultiplier;
 }
 function dpsBaseUnitRequiredDurability(enemyData,displayHR,displaySR){
@@ -1238,8 +1291,21 @@ function dpsBaseUnitRequiredDurability(enemyData,displayHR,displaySR){
   const weightedShieldReduce=Math.max(0,Number(displaySR)||0)*shieldRatio;
   return Math.max(1,total*(1-(weightedHpReduce+weightedShieldReduce)/100));
 }
-function dpsBaseUnitTargetProfiles({enemyData,defenseReduce,displayHR,displaySR,diffName=vs('diff')}){
-  const count=Math.max(0,Number(enemyData?.count)||0);
+function dpsBaseUnitRequiredEnemyCount(enemyData){
+  return Math.max(0,Number(enemyData?.count)||0);
+}
+/* 행성탐사 클리어 기준은 선택 층 물량/시간을 쓰되,
+ * 내구도와 방어력 기준은 행성탐사 최고 기준층을 참조해 과소 계산을 막는다.
+ */
+function dpsBaseUnitRequiredReferenceEnemyData(enemyData,diffName=vs('diff')){
+  if(!isPlanetExplorationDifficulty(diffName)) return enemyData;
+  const mode=battleDataModeForDifficulty(diffName);
+  const baseFloor=Number(mode?.maxRound)||PLANET_EXPLORATION_FLOOR_INPUT_MAX;
+  return enemyRoundData(baseFloor,diffName);
+}
+function dpsBaseUnitTargetProfiles({enemyData,defenseReduce,displayHR,displaySR,diffName=vs('diff'),durabilityEnemyData=null}){
+  const count=dpsBaseUnitRequiredEnemyCount(enemyData,diffName);
+  const targetEnemy=durabilityEnemyData || enemyData;
   const profiles=[{
     player:1,
     count,
@@ -1259,14 +1325,15 @@ function dpsBaseUnitTargetProfiles({enemyData,defenseReduce,displayHR,displaySR,
   }
   return profiles.map(profile=>({
     ...profile,
-    durability:dpsBaseUnitRequiredDurability(enemyData,profile.hpReduce,profile.shieldReduce)
+    durability:dpsBaseUnitRequiredDurability(targetEnemy,profile.hpReduce,profile.shieldReduce)
   }));
 }
 function dpsBaseUnitRequiredDps({enemyData,defenseReduce,dmgReduce,round,displayHR,displaySR,diffName=vs('diff')}){
   const clearTime=dpsBaseUnitRoundTime(round,diffName);
-  const enemyArmor=Math.max(0,Number(enemyData?.armor)||0);
+  const referenceEnemyData=dpsBaseUnitRequiredReferenceEnemyData(enemyData,diffName);
+  const enemyArmor=Math.max(0,Number(referenceEnemyData?.armor)||0);
   const protectionFactor=dpsBaseUnitEnemyProtectionFactor(diffName);
-  const profiles=dpsBaseUnitTargetProfiles({enemyData,defenseReduce,displayHR,displaySR,diffName});
+  const profiles=dpsBaseUnitTargetProfiles({enemyData,defenseReduce,displayHR,displaySR,diffName,durabilityEnemyData:referenceEnemyData});
   if(clearTime<=0 || protectionFactor<=0) return 0;
   const requiredWork=profiles.reduce((sum,profile)=>{
     if(profile.count<=0 || profile.durability<=0) return sum;
@@ -1294,16 +1361,34 @@ function dpsBaseUnitRaceCritBonus(unit, round){
   const index=((Math.round(Number(round)||0)%5)+5)%5;
   return Number(values[index]) || 0;
 }
-function dpsBaseUnitUniqueAdBonus(unit,totalQuantity,enhanceStats=unitEnhanceStats()){
+const DPS_BASE_UNIT_PLANET_REGION_TOKENS=Object.freeze({
+  coral:Object.freeze(['테바','테메']),
+  aiur:Object.freeze(['프바','프메','토바','토메']),
+  xerus:Object.freeze(['저그','중립'])
+});
+function dpsBaseUnitRaceTokenText(unit){
+  return [unit?.raceCritKey, unit?.raceGroup, unit?.upgradeRace].filter(Boolean).join(' ');
+}
+function dpsBaseUnitIsHybrid(unit){
+  return unit?.raceGroup==='혼종' || String(unit?.upgradeRace||'').includes('&');
+}
+function dpsBaseUnitPlanetCritDamageMultiplier(unit, diffName=vs('diff')){
+  const region=planetExplorationRegion(diffName);
+  if(!region) return 1;
+  const tokens=DPS_BASE_UNIT_PLANET_REGION_TOKENS[region] || [];
+  const raceText=dpsBaseUnitRaceTokenText(unit);
+  const matched=tokens.some(token=>raceText.includes(token));
+  if(!matched) return 0.1;
+  return dpsBaseUnitIsHybrid(unit) ? 1 : 1.25;
+}
+function dpsBaseUnitUniqueAdBonus(unit,enhanceStats=unitEnhanceStats()){
   if(unit?.productionUnit) return 0;
-  const quantityLimit=1+(enhanceStats.septemberNormal ?? 0);
-  if(Math.max(1,Number(totalQuantity)||1)>quantityLimit) return 0;
-  return SYSTEM_COMMON_BUFFS.uniqueUnit.baseAd + SYSTEM_COMMON_BUFFS.uniqueUnit.septemberPlusAd*(enhanceStats.septemberPlus ?? 0);
+  return SYSTEM_COMMON_BUFFS.uniqueUnit.baseAd + septemberPlusUniqueAdBonus(enhanceStats.septemberPlus);
 }
 function dpsBaseUnitPrivateAd(unit, quantity, jewelStats=dpsBaseUnitJewelStats(unit), jewelName=dpsBaseUnitJewelName(unit), limitBreakValue=dpsBaseUnitLimitBreakValue(unit), enhanceStats=null){
   const limitBreak=dpsBaseUnitLimitBreakStats(unit,limitBreakValue);
   const enhance=dpsBaseUnitEnhanceValue(unit)+(Number(jewelStats?.enhanceFlat)||0);
-  const uniqueBuff=dpsBaseUnitUniqueAdBonus(unit,quantity,enhanceStats || undefined);
+  const uniqueBuff=dpsBaseUnitUniqueAdBonus(unit,enhanceStats || undefined);
   const duplicatePenalty=Math.max(Math.max(1,Number(quantity)||1)-8,0)*10;
   const jewelStackAd=jewelName==='라피스' ? 200 : (jewelName==='헬리오도르' ? -200 : 0);
   return UNIT_GRADE_AD.S + 11*5 + uniqueBuff + limitBreak.ad + enhance + (Number(jewelStats?.ad)||0) + jewelStackAd
@@ -1346,7 +1431,8 @@ function dpsBaseUnitSingleDpsParts(unit,context,jewelStats,jewelName='',limitBre
   const privateAd=dpsBaseUnitPrivateAd(unit,context.totalQuantity,jewelStats,jewelName,limitBreakValue,context.enhanceStats);
   const adTdMultiplier=(1+(context.globalAd+privateAd)/100)*((context.M11+limitBreak.td+(Number(jewelStats?.td)||0))/100);
   const raceCritBonus=dpsBaseUnitRaceCritBonus(unit,context.targetRound);
-  const unitCd=context.M9*(1+raceCritBonus);
+  const planetCritMultiplier=dpsBaseUnitPlanetCritDamageMultiplier(unit, context.diffName);
+  const unitCd=context.M9*(1+raceCritBonus)*planetCritMultiplier;
   const critMultiplier=dps2(context.M8,context.M10,unitCd,context.M16,context.M17,context.M18,unit?.critFormula==='방사' ? 1 : 0);
   const attackRate=dpsBaseUnitAttackRate(unit,{attackSpeed:context.M7,flowerAttackSpeed:context.flowerAttackSpeed,difficultyAs:context.difficultyAs,ua:context.M13,dt:context.dt,jewelStats,limitBreak:limitBreakValue,voidPower:context.voidPower});
   const noPierceDps0=dps0(1,context.enemyArmor,context.M12,0,100);
@@ -1357,7 +1443,7 @@ function dpsBaseUnitSingleDpsParts(unit,context,jewelStats,jewelName='',limitBre
   const rawM19=singleTargetRawM19*attackRate.targetsPerAttack;
   return {
     rawM19,singleTargetRawM19,AB3:armorPierceMultiplier,AB4:adTdMultiplier,AB5:critMultiplier,AB6:attackRate.rate,
-    effectivePierce:unitEffectivePierce,raceCritBonus,finalCooldown:attackRate.cooldown,maxSpeedCooldown:attackRate.maxSpeedCooldown,
+    effectivePierce:unitEffectivePierce,raceCritBonus,planetCritMultiplier,finalCooldown:attackRate.cooldown,maxSpeedCooldown:attackRate.maxSpeedCooldown,
     isMaxAttackSpeed:attackRate.isMaxAttackSpeed,targetsPerAttack:attackRate.targetsPerAttack,
     jewelName,jewelStats,limitBreak:Number(normalizeDpsBaseUnitLimitBreakValue(limitBreakValue))||0
   };
@@ -1521,7 +1607,7 @@ function computeDpsBaseUnitBoardResult(context){
     const jewelName=dpsBaseUnitJewelName(unit);
     const primaryJewelStats=dpsJewelFinalStats(jewelName,jewelSettings);
     const groups=dpsBaseUnitInstanceGroups(unit,quantityMultiplier,jewelSettings,extraSettings);
-    const unitContext={basePierceBonus,rpPierce,unitPierceBonus,totalQuantity:quantityMultiplier,globalAd:M4-unitADBonus,M11,M8,M10,M9,M16,M17,M18,M7,M13,dt,flowerAttackSpeed:upperStats.actualAs,difficultyAs:diff.as,enemyArmor:enemyData.armor,M12:M12_dr,targetRound,weaponAttack,enhanceStats,voidPower:voidPowerEnabledIds.has(unit.id)};
+    const unitContext={basePierceBonus,rpPierce,unitPierceBonus,totalQuantity:quantityMultiplier,globalAd:M4-unitADBonus,M11,M8,M10,M9,M16,M17,M18,M7,M13,dt,flowerAttackSpeed:upperStats.actualAs,difficultyAs:diff.as,diffName:vs('diff'),enemyArmor:enemyData.armor,M12:M12_dr,targetRound,weaponAttack,enhanceStats,voidPower:voidPowerEnabledIds.has(unit.id)};
     const groupResults=groups.map(group=>({...group,...dpsBaseUnitSingleDpsParts(unit,unitContext,group.stats,group.name,group.limitBreak)}));
     const unitRawM19=groupResults.reduce((sum,group)=>sum+group.rawM19*group.count,0);
     const unitSingleTargetRawM19=groupResults.reduce((sum,group)=>sum+group.singleTargetRawM19*group.count,0);
@@ -1562,7 +1648,10 @@ function computeDpsBaseUnitBoardResult(context){
   });
   const unitTotalDps=dpsBaseUnitResults.reduce((sum,item)=>sum+(Number(item?.M19)||0),0);
   const expectationMultiplier=dpsBaseUnitExpectationMultiplier(vs('diff'));
-  const expectedDps=unitTotalDps*expectationMultiplier;
+  const contentBurdenExpectationMultiplier=isPlanetExplorationDifficulty(vs('diff'))
+    ? planetDpsDisplayMultiplier(targetRound,vs('diff'),displayHR,displaySR)
+    : 1;
+  const expectedDps=unitTotalDps*expectationMultiplier*contentBurdenExpectationMultiplier;
   const requiredDps=dpsBaseUnitRequiredDps({
     enemyData,
     defenseReduce:M12_dr,
@@ -1583,6 +1672,7 @@ function computeDpsBaseUnitBoardResult(context){
     isAll:Array.isArray(unitListOverride) ? false : dpsBaseUnitSelectionIds(dpsBaseUnitSelection).includes(dpsBaseUnitAllId()),
     totalDps:unitTotalDps,
     expectationMultiplier,
+    planetBurdenExpectationMultiplier:contentBurdenExpectationMultiplier,
     expectedDps,
     requiredDps,
     achievementRate,
@@ -1591,6 +1681,7 @@ function computeDpsBaseUnitBoardResult(context){
   };
 }
 
+/* 메인 스탯·DPS 조립 */
 function buildStatsCoreRaw(options={}){
   const syncDerivedViews=options.syncDerived!==false;
   const autoEP=syncDerivedViews ? syncAutoEP() : autoEpValue();
@@ -1710,11 +1801,19 @@ function computeLightweightStatsRaw(options={}){
 }
 
 /* 유물 DPS */
+function floorPenaltyLevelForDifficulty(diffName, targetRound){
+  const name=difficultyName(diffName);
+  const floor=Math.max(0, Math.round(Number(targetRound)||0));
+  if(name===TOWER_DIFFICULTY_NAME) return floor>=65 ? Math.floor((floor-63)/2) : 0;
+  if(isPlanetExplorationDifficulty(name)) return Math.max(0, Math.min(9, Math.floor((floor-59)/2)));
+  return v('penance');
+}
 function currentPenaltyContext(){
-  const diff=DIFF[vs('diff')]||DIFF['The Final'];
+  const diffName=vs('diff');
+  const diff=DIFF[diffName]||DIFF['The Final'];
   const targetRound=effectiveTargetRound();
-  const towerPenaltyLevel=isTowerDifficulty() ? (targetRound>=65 ? Math.floor((targetRound-63)/2) : 0) : v('penance');
-  const penanceLevel=Math.max(0,Math.min(towerPenaltyLevel,currentPenanceMax()));
+  const penaltyLevel=floorPenaltyLevelForDifficulty(diffName, targetRound);
+  const penanceLevel=Math.max(0,Math.min(penaltyLevel,currentPenanceMax()));
   return {diff,targetRound,penanceLevel,penDmg:PEN_DMG[penanceLevel]||0};
 }
 function artifactEnergyRegenMultiplier(){
@@ -1768,7 +1867,7 @@ function calculateArtifactDpsRaw(stats=computeLightweightStatsRaw()){
   };
 }
 /* 계산 미리보기 상태 */
-const ARTIFACT_DPS_PREVIEW_IDS=['diff','penance','round','challengeTowerFloor','soloMode','coopMode','coopPassenger2Dr','coopPassenger3Dr','team','prodArtifact','pbless',...EROSION_CONTROL_IDS];
+const ARTIFACT_DPS_PREVIEW_IDS=['diff','penance','round','challengeTowerFloor','planetExplorationFloor','soloMode','coopMode','coopPassenger2Dr','coopPassenger3Dr','team','prodArtifact','pbless',...EROSION_CONTROL_IDS];
 function applyPreviewPenanceState(penEl, penanceLevel, battleMode, signaturePrefix){
   if(!penEl) return;
   const maxForPreview=battleMode==='coop' ? COOP_DPS_TABLE_PENANCE_MAX : DPS_TABLE_PENANCE_MAX;
@@ -1782,7 +1881,7 @@ function applyPreviewPenanceState(penEl, penanceLevel, battleMode, signaturePref
   penEl.value=normalizedPenance;
   penEl.dataset.penanceValue=normalizedPenance;
 }
-function applyPreviewRoundState(round, roundEl, towerFloorEl){
+function applyPreviewRoundState(round, roundEl, towerFloorEl, planetFloorEl){
   if(roundEl){
     const normalizedRound=normalizedRoundString(round);
     roundEl.value=normalizedRound;
@@ -1792,6 +1891,11 @@ function applyPreviewRoundState(round, roundEl, towerFloorEl){
     const normalizedTowerFloor=normalizedTowerFloorString(round);
     towerFloorEl.value=normalizedTowerFloor;
     towerFloorEl.dataset.challengeTowerFloorValue=normalizedTowerFloor;
+  }
+  if(planetFloorEl){
+    const normalizedPlanetFloor=normalizedPlanetExplorationFloorString(round);
+    planetFloorEl.value=normalizedPlanetFloor;
+    planetFloorEl.dataset.planetExplorationFloorValue=normalizedPlanetFloor;
   }
 }
 function normalizePreviewTeamCount(value, battleMode='solo'){
@@ -1826,6 +1930,7 @@ function previewControlElements(){
     penEl:$('penance'),
     roundEl:$('round'),
     towerFloorEl:$('challengeTowerFloor'),
+    planetFloorEl:$('planetExplorationFloor'),
     soloEl:$('soloMode'),
     coopEl:$('coopMode'),
     teamEl:$('team')
@@ -1837,7 +1942,7 @@ function prepareDpsPreviewControls(diffName, penanceLevel, round, options={}, si
   const teamCount=normalizePreviewTeamCount(options.teamCount, battleMode);
   if(controls.diffEl) controls.diffEl.value=diffName;
   applyPreviewPenanceState(controls.penEl, penanceLevel, battleMode, signaturePrefix);
-  applyPreviewRoundState(round, controls.roundEl, controls.towerFloorEl);
+  applyPreviewRoundState(round, controls.roundEl, controls.towerFloorEl, controls.planetFloorEl);
   syncErosionControlElements();
   applyPreviewBattleModeState({
     battleMode,
@@ -2106,6 +2211,12 @@ function normalizeRoundInput(id='round'){
     if(String(el.value)!==next){ el.value=next; return true; }
     return false;
   }
+  if(id==='planetExplorationFloor'){
+    const next=normalizedPlanetExplorationFloorString(el.value || el.dataset.planetExplorationFloorValue || PLANET_EXPLORATION_FLOOR_INPUT_MIN);
+    el.dataset.planetExplorationFloorValue=next;
+    if(String(el.value)!==next){ el.value=next; return true; }
+    return false;
+  }
   const next=normalizedRoundString(el.value);
   if(String(el.value)!==next){
     el.value=next;
@@ -2117,11 +2228,13 @@ function normalizeRoundInputs(){
   const a=normalizeRoundInput('round');
   const b=normalizeRoundInput('skillRound');
   const c=normalizeRoundInput('challengeTowerFloor');
-  return a || b || c;
+  const d=normalizeRoundInput('planetExplorationFloor');
+  return a || b || c || d;
 }
 function syncDifficultyTargetControls(){
   const roundEl=$('round');
   const towerEl=$('challengeTowerFloor');
+  const planetEl=$('planetExplorationFloor');
   if(roundEl){
     const stored=normalizedRoundString(roundEl.value || roundEl.dataset.roundValue || ROUND_INPUT_MIN);
     roundEl.value=stored;
@@ -2131,6 +2244,11 @@ function syncDifficultyTargetControls(){
     const stored=normalizedTowerFloorString(towerEl.value || towerEl.dataset.challengeTowerFloorValue || TOWER_FLOOR_INPUT_MIN);
     towerEl.value=stored;
     towerEl.dataset.challengeTowerFloorValue=stored;
+  }
+  if(planetEl){
+    const stored=normalizedPlanetExplorationFloorString(planetEl.value || planetEl.dataset.planetExplorationFloorValue || PLANET_EXPLORATION_FLOOR_INPUT_MIN);
+    planetEl.value=stored;
+    planetEl.dataset.planetExplorationFloorValue=stored;
   }
 }
 function resetDifficultyDependentFields(){
@@ -2151,11 +2269,15 @@ function getDpsContextValues(){
   const penValue=effectivePenanceValue();
   const roundInt=normalizedRoundNumber(targetRoundStoredValue());
   const floorInt=normalizedTowerFloorNumber(challengeTowerFloorStoredValue());
+  const planetFloorInt=normalizedPlanetExplorationFloorNumber(planetExplorationFloorStoredValue());
   const towerActive=isTowerDifficulty();
+  const planetActive=isPlanetExplorationDifficulty();
   const mode=dpsContextModeValues();
   const difficultyDetail=towerActive
-    ? `${floorInt}층 · ${roundInt} 라운드`
-    : `${penValue} 고행 · ${roundInt} 라운드`;
+    ? `${floorInt}층`
+    : planetActive
+      ? `${planetFloorInt}층`
+      : `${penValue} 고행 · ${roundInt} 라운드`;
   return {modePrimary:`${mode.primary} · ${mode.secondary}`,modeSecondary:'',diff:`${diff} · ${difficultyDetail}`,difficultyDetail:''};
 }
 function updateDpsContextSummary(){
@@ -2169,7 +2291,7 @@ function updateDpsContextSummary(){
 }
 
 /* DPS표 미리보기 */
-const DPS_PREVIEW_IDS=['diff','penance','round','challengeTowerFloor','soloMode','coopMode','team','pbless',...EROSION_CONTROL_IDS];
+const DPS_PREVIEW_IDS=['diff','penance','round','challengeTowerFloor','planetExplorationFloor','soloMode','coopMode','team','pbless',...EROSION_CONTROL_IDS];
 function computeDpsPreview(diffName, penanceLevel, round, options={}){
   try{
     return calculateDpsPreviewValue(diffName,penanceLevel,round,options,false);

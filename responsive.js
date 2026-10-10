@@ -1,3 +1,7 @@
+/* 반응형 레이아웃
+ * - 뷰포트 상태 클래스 관리
+ * - 모바일/태블릿/세로 화면 전환 보조
+ */
 (() => {
   'use strict';
 
@@ -6,7 +10,7 @@
   const TABBED_PAGES = [
     { key: 'basic', label: '기본 정보', selectors: ['.trait-preset-panel', '.col-left'] },
     { key: 'trait', label: '특성 보드', selectors: ['.trait-board-panel'] },
-    { key: 'specUnit', label: '스펙/유닛 보드', selectors: ['.stat-dps-card', '.dps-base-unit-panel'] }
+    { key: 'specUnit', label: '스펙/유닛 보드', selectors: ['.stat-dps-card'] }
   ];
   const state = {
     tabs: null,
@@ -176,8 +180,7 @@
   }
   function arrangeTabbed(colWork) {
     const pages = [];
-    const rawKeepKey = state.activeKey || state.pages[state.activeIndex]?.key || 'basic';
-    const keepKey = rawKeepKey === 'spec' || rawKeepKey === 'unit' ? 'specUnit' : rawKeepKey;
+    const keepKey = state.activeKey || state.pages[state.activeIndex]?.key || 'basic';
     TABBED_PAGES.forEach((config) => {
       const elements = config.selectors.map(selector => document.querySelector(selector)).filter(Boolean);
       if (!elements.length) return;
