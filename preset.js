@@ -29,7 +29,7 @@ const TRAIT_PRESET_SINGLE_UPDATE_VALUE_IDS=new Set([
   'specDpsSpeedMode','dpsBaseUnitSpeedMode',
   'overEnhance','repairEnhance','enhanceMaster',
   'prodArtifact','prodNova','prodTeratron','prodAmon','prodAdun','prodKerrigan','prodOvermind','prodNarud',
-  'flowerSkill1','flowerSkill2','flowerSkill3','specBoardPierce',
+  'flowerSkill1','flowerSkill2','flowerSkill3',
   'traitLimitAD','traitLimitAS','traitLimitCRI','traitLimitCD','traitLimitMultiTarget','traitLimitInfinite'
 ]);
 function isTraitPresetFileType(type){
