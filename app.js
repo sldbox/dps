@@ -206,6 +206,15 @@ function setTextMap(map){
 }
 
 const RUNE_CHOICE_TARGETS=[['ap','rAP'],['ua','rUA'],['td','rTD'],['harmony','rHarmony']];
+const SPEC_BOARD_PIERCE_VALUES=Object.freeze([0,10,15,20,25,30,35,40]);
+const SPEC_BOARD_PIERCE_VALUE_SET=new Set(SPEC_BOARD_PIERCE_VALUES.map(String));
+function normalizeSpecBoardPierceValue(value){
+  const raw=String(value ?? '').replace(/,/g,'').trim();
+  return SPEC_BOARD_PIERCE_VALUE_SET.has(raw) ? raw : '0';
+}
+function specBoardPierceValue(){
+  return Number(normalizeSpecBoardPierceValue(vs('specBoardPierce'))) || 0;
+}
 
 /* 입력·화면 동기화 */
 function renderEnemyData(data){
@@ -1032,6 +1041,7 @@ const FIELD_REGISTRY={
   flowerSkill1:{kind:'룬효과 버프',name:'근성의 꽃가루',save:true},
   flowerSkill2:{kind:'룬효과 버프',name:'바람의 꽃가루',save:true},
   flowerSkill3:{kind:'룬효과 버프',name:'안개의 꽃가루',save:true},
+  specBoardPierce:{kind:'룬효과 버프',name:'방어력 관통',save:true},
   donationBuffType:{kind:'룬효과 버프',name:'나눔후원 적용',save:true},
   rAD:{kind:'룬정보',name:'공격력',save:true},
   rModAD:{kind:'룬정보',name:'공격력 개조',save:true},
@@ -1299,7 +1309,7 @@ function renderDpsBaseUnitSummary(s,hidden=false){
   const results=Array.isArray(info?.results) ? info.results : [];
   const rpPierce=Number(info?.rpPierce)||0;
   const basePierce=Number(info?.basePierceBonus)||0;
-  dpsBaseUnitBoardBasePierce=basePierce+rpPierce;
+  dpsBaseUnitBoardBasePierce=basePierce;
   const selectedResultEntries=(hidden ? [] : results).map(item=>[String(item?.unitId || ''),item]).filter(([id])=>id);
   dpsBaseUnitResultDisplayMap=new Map(selectedResultEntries);
   syncDpsBaseUnitControl();

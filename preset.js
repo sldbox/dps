@@ -29,7 +29,7 @@ const TRAIT_PRESET_SINGLE_UPDATE_VALUE_IDS=new Set([
   'specDpsSpeedMode','dpsBaseUnitSpeedMode',
   'overEnhance','repairEnhance','enhanceMaster',
   'prodArtifact','prodNova','prodTeratron','prodAmon','prodAdun','prodKerrigan','prodOvermind','prodNarud',
-  'flowerSkill1','flowerSkill2','flowerSkill3',
+  'flowerSkill1','flowerSkill2','flowerSkill3','specBoardPierce',
   'traitLimitAD','traitLimitAS','traitLimitCRI','traitLimitCD','traitLimitMultiTarget','traitLimitInfinite'
 ]);
 function isTraitPresetFileType(type){
@@ -101,6 +101,7 @@ function normalizeStoredElementValue(id, value){
   if(id==='dpsBaseUnitExtraSettings') return serializeDpsBaseUnitExtraSettings(value);
   if(id==='dpsBaseUnitSlotExpansions') return serializeDpsBaseUnitSlotExpansions(value);
   if(id==='specDpsSpeedMode' || id==='dpsBaseUnitSpeedMode') return normalizeOnOffValue(value,'OFF');
+  if(id==='specBoardPierce') return normalizeSpecBoardPierceValue(value);
   if(id==='donationBuffType') return normalizeDonationBuffType(value);
   if(dpsBaseUnitQuantityIds().includes(id)) return normalizeDpsBaseUnitQuantityValue(value);
   if(DPS_BASE_UNIT_ENHANCE_IDS.has(id)) return normalizeDpsBaseUnitEnhanceValue(value);
@@ -260,6 +261,7 @@ function sanitizeSavedValues(values){
   });
   if(hasOwn(out,'spBankApply')) out.spBankApply=normalizeSpBankApplyValue(out.spBankApply);
   if(hasOwn(out,'donationBuffType')) out.donationBuffType=normalizeDonationBuffType(out.donationBuffType);
+  if(hasOwn(out,'specBoardPierce')) out.specBoardPierce=normalizeSpecBoardPierceValue(out.specBoardPierce);
   out.dpsBaseUnits=normalizeDpsBaseUnitsValue(out.dpsBaseUnits ?? '');
   if(hasOwn(out,'dpsBaseUnitSlots')) out.dpsBaseUnitSlots=serializeDpsBaseUnitSlots(out.dpsBaseUnitSlots);
   if(hasOwn(out,'dpsJewelSettings')) out.dpsJewelSettings=serializeDpsJewelSettings(out.dpsJewelSettings);

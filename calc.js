@@ -1427,7 +1427,7 @@ function dpsBaseUnitAttackRate(unit, context){
 }
 function dpsBaseUnitSingleDpsParts(unit,context,jewelStats,jewelName='',limitBreakValue=0){
   const limitBreak=dpsBaseUnitLimitBreakStats(unit,limitBreakValue);
-  const unitEffectivePierce=totalDpsPierce(context.basePierceBonus,context.rpPierce,context.unitPierceBonus);
+  const unitEffectivePierce=totalDpsPierce(context.rpPierce,context.unitPierceBonus);
   const privateAd=dpsBaseUnitPrivateAd(unit,context.totalQuantity,jewelStats,jewelName,limitBreakValue,context.enhanceStats);
   const adTdMultiplier=(1+(context.globalAd+privateAd)/100)*((context.M11+limitBreak.td+(Number(jewelStats?.td)||0))/100);
   const raceCritBonus=dpsBaseUnitRaceCritBonus(unit,context.targetRound);
@@ -1590,7 +1590,7 @@ function computeDpsBaseUnitBoardResult(context){
     }
     const baseWeaponAttack=nonNegativeNumber(unit.weaponAttack);
     const weaponAttack=dpsBaseUnitWeaponAttack(unit);
-    const unitPierceBonus=dpsBaseUnitPierceBonus(unit);
+    const unitPierceBonus=totalDpsPierce(basePierceBonus,dpsBaseUnitPierceBonus(unit));
     const quantity=Math.max(1,dpsBaseUnitQuantity(unit));
     const quantityMultiplier=dpsBaseUnitHasQuantity(unit) ? quantity : 1;
     const unitMeta={
@@ -1607,7 +1607,7 @@ function computeDpsBaseUnitBoardResult(context){
     const jewelName=dpsBaseUnitJewelName(unit);
     const primaryJewelStats=dpsJewelFinalStats(jewelName,jewelSettings);
     const groups=dpsBaseUnitInstanceGroups(unit,quantityMultiplier,jewelSettings,extraSettings);
-    const unitContext={basePierceBonus,rpPierce,unitPierceBonus,totalQuantity:quantityMultiplier,globalAd:M4-unitADBonus,M11,M8,M10,M9,M16,M17,M18,M7,M13,dt,flowerAttackSpeed:upperStats.actualAs,difficultyAs:diff.as,diffName:vs('diff'),enemyArmor:enemyData.armor,M12:M12_dr,targetRound,weaponAttack,enhanceStats,voidPower:voidPowerEnabledIds.has(unit.id)};
+    const unitContext={rpPierce,unitPierceBonus,totalQuantity:quantityMultiplier,globalAd:M4-unitADBonus,M11,M8,M10,M9,M16,M17,M18,M7,M13,dt,flowerAttackSpeed:upperStats.actualAs,difficultyAs:diff.as,diffName:vs('diff'),enemyArmor:enemyData.armor,M12:M12_dr,targetRound,weaponAttack,enhanceStats,voidPower:voidPowerEnabledIds.has(unit.id)};
     const groupResults=groups.map(group=>({...group,...dpsBaseUnitSingleDpsParts(unit,unitContext,group.stats,group.name,group.limitBreak)}));
     const unitRawM19=groupResults.reduce((sum,group)=>sum+group.rawM19*group.count,0);
     const unitSingleTargetRawM19=groupResults.reduce((sum,group)=>sum+group.singleTargetRawM19*group.count,0);
@@ -1731,14 +1731,15 @@ function buildStatsCoreRaw(options={}){
   const enemyData=enemyRoundData(targetRound);
   const displaySR = (traitStats.SR||0) + enchantStats[4].sr + additionalStats.sr;
   const displayHR = enchantStats[5].hr + additionalStats.hr;
+  const specBoardPierceBonus=typeof specBoardPierceValue==='function' ? specBoardPierceValue() : 0;
   const basePierceBonus=SYSTEM_COMMON_BUFFS.basePierce;
   const rpPierce = rpPierceBonus();
-  const effectivePierce=totalDpsPierce(basePierceBonus,rpPierce);
+  const effectivePierce=totalDpsPierce(specBoardPierceBonus,rpPierce);
   const dt=personalUaDtMultiplier();
   return {
     diff,targetRound,penanceLevel,asc,rawDisplayAP,displayAP,AP9,M4,M7,M8,rawCD,M10,rawTD,
     abyssTdReduction,M12_dr,displayUA,abyssSlow,M16,M17,M18,enemyData,displaySR,displayHR,
-    basePierceBonus,rpPierce,effectivePierce,dt,autoEP,epBuff,isAbyss:isAbyssDifficulty(),upperStats,unitADBonus
+    specBoardPierceBonus,basePierceBonus,rpPierce,effectivePierce,dt,autoEP,epBuff,isAbyss:isAbyssDifficulty(),upperStats,unitADBonus
   };
 }
 function computeStatsFromCoreRaw(core,options={}){
