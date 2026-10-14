@@ -2081,6 +2081,7 @@ function bindDpsBaseUnitControlEvents(){
 /* 특성 보드 */
 const INFINITE_TRAIT_TIER='무한∞';
 const TIERS=['루키','비기너','아마추어','프로','엑스퍼트','마스터','디바인','더원1','더원2',INFINITE_TRAIT_TIER,'EP특성','RP특성','심연특성'];
+const OPTIMIZATION_TIERS=TIERS.filter(tier=>tier!==INFINITE_TRAIT_TIER).concat(INFINITE_TRAIT_TIER);
 function updateTraits(){
   const body=$('traitBody');
   if(!body) return;

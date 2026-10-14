@@ -2051,7 +2051,7 @@ function nextRpCost(row){
   return rpCost(row,n+1)-rpCost(row,n);
 }
 function isUtilitySpTrait(trait){
-  return trait[3]==='유틸' || trait[3]==='경험치';
+  return trait[3]==='유틸' || trait[3]==='경험치' || trait[3]==='AP';
 }
 const RESOURCE_TRAIT_ROWS=Object.freeze({
   SP:Object.freeze(TRAITS.filter(t=>SP_ROWS.has(t[0])).map(t=>t[0])),
@@ -2177,9 +2177,9 @@ let allowedRowsByTierCache=new Set();
 function allowedRowsByTier(){
   const target=vs('optTier')||'루키';
   if(target===allowedRowsByTierCacheTarget) return allowedRowsByTierCache;
-  const idx=TIERS.indexOf(target);
+  const idx=OPTIMIZATION_TIERS.indexOf(target);
   allowedRowsByTierCacheTarget=target;
-  allowedRowsByTierCache=new Set(TRAITS.filter(t=>TIERS.indexOf(t[2])>=0 && TIERS.indexOf(t[2])<=idx).map(t=>t[0]));
+  allowedRowsByTierCache=new Set(TRAITS.filter(t=>OPTIMIZATION_TIERS.indexOf(t[2])>=0 && OPTIMIZATION_TIERS.indexOf(t[2])<=idx).map(t=>t[0]));
   return allowedRowsByTierCache;
 }
 function fmt(n,d=1){return n==null||isNaN(n)?'—':parseFloat(n.toFixed(d)).toLocaleString('ko-KR');}
@@ -2312,7 +2312,7 @@ const STAT_KO={
 function statKo(type){return STAT_KO[type] || type;}
 function traitEffectText(row,type,rate){return !rate ? statKo(type) : `${statKo(type)} +${rate}${T_UA.has(row)?'%':''}`;}
 const TRAIT_OPT_NORMAL_ROWS={
-  SP:new Set([42,43,46,52,53,58,60,61,68,70,71,77,84,85,86,92,93,94,95,96,99,100,101,102,103,104,108,109,110,111,115,44,54,62,79]),
+  SP:new Set([42,43,46,52,53,58,60,61,68,70,71,77,84,85,86,92,93,94,95,96,99,100,101,102,103,104,108,109,110,111,115,79]),
   EP:new Set([117,118,119,120,121,122]),
   RP:new Set([125,126,127,129,130]),
   SOUL:new Set([131,132,133,134,135,136,137])
@@ -2514,13 +2514,14 @@ function boundedTraitOptimizationChanges(row,add,rem){
   while(n>0 && traitOptimizationDeltaCost(row,n)>rem) n--;
   return n>0 ? [[row,n]] : null;
 }
-function traitOptimizationTargetTraits(kind){
-  return TRAITS.filter(t=>traitOptimizationResourceInfo(t[0])?.kind===kind && isTraitOptimizationTarget(t));
+function traitOptimizationTargetTraits(kind,options={}){
+  return TRAITS.filter(t=>traitOptimizationResourceInfo(t[0])?.kind===kind && isTraitOptimizationTarget(t)
+    && (kind!=='SP' || (t[2]===INFINITE_TRAIT_TIER)===Boolean(options.infinite)));
 }
 function preferTraitOptimizationCandidate(current,candidate){
   return candidate && (!current || candidate.score>current.score) ? candidate : current;
 }
-function bestTraitOptimizationCandidate(base,kind,rem,targetTraits){
+function bestTraitOptimizationCandidate(base,kind,rem,targetTraits,options={}){
   let best=null;
   for(const t of targetTraits){
     const [row]=t;
@@ -2532,7 +2533,7 @@ function bestTraitOptimizationCandidate(base,kind,rem,targetTraits){
     if(!changes) continue;
     best=preferTraitOptimizationCandidate(best,evaluateTraitOptimizationCandidate(base,kind,rem,changes,String(row),{visibleGain:false}));
   }
-  if(kind==='SP'){
+  if(kind==='SP' && !options.infiniteOnly){
     best=preferTraitOptimizationCandidate(best,critTraitOptimizationCandidate(base,kind,rem,95,0.5,{visibleGain:false,label:'CRI→MC 95'}));
     best=preferTraitOptimizationCandidate(best,traitOptimizationMultiTargetBundleCandidate(base,rem,{selectedTierOnly:true,currentSumLimit:50,requireTargetTrait:false,fullCost:true,visibleGain:false}));
   }
@@ -2581,16 +2582,22 @@ function traitOptimizationGuardCanContinue(guard){
   if(guard.steps>=TRAIT_OPTIMIZATION_HARD_STEP_LIMIT) return abortTraitOptimizationGuard(guard,'step-limit');
   return true;
 }
-function runTraitOptimizationStep(kind,targetTraits,guard){
+function runTraitOptimizationStep(kind,targetTraits,guard,options={}){
   if(!traitOptimizationGuardCanContinue(guard)) return false;
   const rem=resourceOwn(kind)-resourceUsed(kind);
   if(rem<=0) return false;
   const base=computeLightweightStatsRaw();
-  const best=bestTraitOptimizationCandidate(base,kind,rem,targetTraits);
+  const best=bestTraitOptimizationCandidate(base,kind,rem,targetTraits,options);
   const actualCost=applyTraitOptimizationCandidate(best,kind);
   if(actualCost<=0) return false;
   guard.steps++;
   return true;
+}
+function runTraitOptimizationPass(kind,targetTraits,guard,options={}){
+  const passLimit=targetTraits.reduce((sum,t)=>sum+Math.max(0,(TMAX[t[0]]||999)-(INV[t[0]]||0)),0)+1;
+  for(let pass=0;pass<passLimit && !guard.aborted;pass++){
+    if(!runTraitOptimizationStep(kind,targetTraits,guard,options)) break;
+  }
 }
 function optimizeSP(){
   const before=Object.fromEntries(Object.entries(INV));
@@ -2599,11 +2606,11 @@ function optimizeSP(){
     const kinds=['SP','EP','RP','SOUL'];
     for(const kind of kinds){
       if(guard.aborted) break;
-      const targetTraits=traitOptimizationTargetTraits(kind);
-      const passLimit=targetTraits.reduce((sum,t)=>sum+Math.max(0,(TMAX[t[0]]||999)-(INV[t[0]]||0)),0)+1;
-      for(let pass=0;pass<passLimit && !guard.aborted;pass++){
-        if(!runTraitOptimizationStep(kind,targetTraits,guard)) break;
-      }
+      runTraitOptimizationPass(kind,traitOptimizationTargetTraits(kind),guard);
+    }
+    if(!guard.aborted){
+      const infiniteTargets=traitOptimizationTargetTraits('SP',{infinite:true});
+      if(infiniteTargets.length) runTraitOptimizationPass('SP',infiniteTargets,guard,{infiniteOnly:true});
     }
     if(guard.aborted) showToast('최적화 계산을 안전하게 중단했습니다. 투자 범위를 줄여 다시 시도해 주세요.','warn');
     commitAppUpdate({recalculate:'now'});
