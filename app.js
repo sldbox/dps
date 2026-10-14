@@ -743,9 +743,8 @@ let activeDpsTableMode='solo';
 function isDpsTableOpen(){
   return $('dpsTableModal')?.classList.contains('is-open')===true;
 }
-function getDpsTableTowerGroupSize(){
-  if(document.body?.classList.contains('is-mobile')) return 90;
-  return 30;
+function getDpsTableTowerGroupSize(mode){
+  return mode==='planet' ? 25 : 30;
 }
 function formatDpsTableValue(value){
   if(!Number.isFinite(value)) return '—';
@@ -853,7 +852,7 @@ function buildDpsTowerTable(){
   const currentFloor=normalizedTowerFloorNumber(challengeTowerFloorStoredValue());
   const tower=DPS_CONFIG.dpsTable.tower || {};
   const range={ min:Math.max(1, Math.round(tower.minFloor || 1)), max:Math.max(1, Math.round(tower.maxFloor || 90)) };
-  const groupSize=getDpsTableTowerGroupSize();
+  const groupSize=getDpsTableTowerGroupSize('tower');
   const chunks=chunkDpsTowerFloors(range.min, range.max, groupSize);
   const blocks=chunks.map(floors=>{
     const rows=floors.map(floor=>{
@@ -862,10 +861,10 @@ function buildDpsTowerTable(){
       const classes=['dps-cell', currentCell?'dps-current-cell':''].filter(Boolean).join(' ');
       const enemyItems=towerEnemySummaryItems(floor);
       const enemySummaryHtml=enemyItems.map(([label,value])=>`<span class="dps-tower-enemy-item"><em>${label}</em><b>${value}</b></span>`).join('');
-      return `<tr${currentCell?' class="dps-current-row"':''}><th>${floor}층</th><td class="${classes}"><b class="dps-tower-value">${formatDpsTableValue(value)}</b><span class="dps-tower-enemy">${enemySummaryHtml}</span></td></tr>`;
+      return `<tr${currentCell?' class="dps-current-row"':''} data-dps-floor="${floor}"><td class="${classes}"><span class="dps-tower-floor">${floor}층</span><b class="dps-tower-value">${formatDpsTableValue(value)}</b><span class="dps-tower-enemy">${enemySummaryHtml}</span></td></tr>`;
     }).join('');
     const first=floors[0], last=floors[floors.length-1];
-    return `<div class="dps-tower-block" aria-label="도전의탑 ${first}층부터 ${last}층까지"><table class="dps-matrix dps-tower-matrix"><thead><tr><th>층</th><th>DPS</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+    return `<div class="dps-tower-block" aria-label="도전의탑 ${first}층부터 ${last}층까지"><table class="dps-matrix dps-tower-matrix"><caption>${first}층 ~ ${last}층</caption><thead><tr><th class="dps-tower-head"><span>층</span><span>DPS</span><span>적 정보</span></th></tr></thead><tbody>${rows}</tbody></table></div>`;
   }).join('');
   return `<div class="dps-tower-grid" data-tower-group-size="${groupSize}">${blocks}</div>`;
 }
@@ -873,7 +872,7 @@ function buildDpsPlanetTable(){
   const currentFloor=normalizedPlanetExplorationFloorNumber(planetExplorationFloorStoredValue());
   const planet=DPS_CONFIG.dpsTable.planet || {};
   const range={ min:Math.max(1, Math.round(planet.minFloor || 1)), max:Math.max(1, Math.round(planet.maxFloor || 100)) };
-  const groupSize=getDpsTableTowerGroupSize();
+  const groupSize=getDpsTableTowerGroupSize('planet');
   const chunks=chunkDpsTowerFloors(range.min, range.max, groupSize);
   const diff=isPlanetExplorationDifficulty() ? vs('diff') : '행성탐사-코랄';
   const blocks=chunks.map(floors=>{
@@ -883,10 +882,10 @@ function buildDpsPlanetTable(){
       const classes=['dps-cell', currentCell?'dps-current-cell':''].filter(Boolean).join(' ');
       const enemyItems=planetEnemySummaryItems(floor);
       const enemySummaryHtml=enemyItems.map(([label,value])=>`<span class="dps-tower-enemy-item"><em>${label}</em><b>${value}</b></span>`).join('');
-      return `<tr${currentCell?' class="dps-current-row"':''}><th>${floor}층</th><td class="${classes}"><b class="dps-tower-value">${formatDpsTableValue(value)}</b><span class="dps-tower-enemy">${enemySummaryHtml}</span></td></tr>`;
+      return `<tr${currentCell?' class="dps-current-row"':''} data-dps-floor="${floor}"><td class="${classes}"><span class="dps-tower-floor">${floor}층</span><b class="dps-tower-value">${formatDpsTableValue(value)}</b><span class="dps-tower-enemy">${enemySummaryHtml}</span></td></tr>`;
     }).join('');
     const first=floors[0], last=floors[floors.length-1];
-    return `<div class="dps-tower-block dps-planet-block" aria-label="행성탐사 ${first}층부터 ${last}층까지"><table class="dps-matrix dps-tower-matrix dps-planet-matrix"><thead><tr><th>층</th><th>DPS</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+    return `<div class="dps-tower-block dps-planet-block" aria-label="행성탐사 ${first}층부터 ${last}층까지"><table class="dps-matrix dps-tower-matrix dps-planet-matrix"><caption>${first}층 ~ ${last}층</caption><thead><tr><th class="dps-tower-head"><span>층</span><span>DPS</span><span>적 정보</span></th></tr></thead><tbody>${rows}</tbody></table></div>`;
   }).join('');
   return `<div class="dps-tower-grid dps-planet-grid" data-tower-group-size="${groupSize}">${blocks}</div>`;
 }
