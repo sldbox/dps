@@ -814,7 +814,7 @@ function buildPenanceDpsMatrix({difficulties, penanceMin, penanceMax, currentPen
   return `<table class="dps-matrix dps-round-matrix${tableClass ? ' '+tableClass : ''}"><thead><tr><th>고행</th>${head}</tr></thead><tbody>${rows.join('')}</tbody></table>`;
 }
 function buildDpsTable(round){
-  return buildPenanceDpsMatrix({
+  const matrix=buildPenanceDpsMatrix({
     difficulties:DPS_TABLE_DIFFICULTIES,
     penanceMin:DPS_TABLE_PENANCE_MIN,
     penanceMax:DPS_TABLE_PENANCE_MAX,
@@ -822,6 +822,8 @@ function buildDpsTable(round){
     round,
     previewOptions:{battleMode:'solo'}
   });
+  const pen=Math.max(DPS_TABLE_PENANCE_MIN,Math.min(DPS_TABLE_PENANCE_MAX,Math.round(v('penance'))));
+  return `<div class="dps-coop-stack dps-solo-stack" aria-label="개인 DPS표"><div class="dps-coop-group"><div class="dps-coop-title"><b>개인 · ${pen} 고행 · ${round} 라운드</b></div><div class="dps-coop-scroll">${matrix}</div></div></div>`;
 }
 function buildCoopDpsMatrix(round, teamCount){
   return buildPenanceDpsMatrix({
@@ -912,7 +914,7 @@ function dpsTablePanelInnerHtml(){
       ? `<div class="dps-table-scroll">${buildDpsPlanetTable()}</div>`
       : activeDpsTableMode==='coop'
       ? buildCoopDpsTable(round)
-      : `<div class="dps-table-scroll">${buildDpsTable(round)}</div>`;
+      : `<div class="dps-table-scroll dps-coop-table-scroll">${buildDpsTable(round)}</div>`;
   const modeClass=activeDpsTableMode==='tower' ? 'dps-tower-panel' : (activeDpsTableMode==='planet' ? 'dps-tower-panel dps-planet-panel' : (activeDpsTableMode==='coop' ? 'dps-coop-panel' : 'dps-solo-panel'));
   return `<section class="dps-table-panel dps-table-mode-panel ${modeClass}">${tableHtml}</section>`;
 }
