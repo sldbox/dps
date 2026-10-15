@@ -1394,7 +1394,7 @@ function dpsJewelFinalStatItemHtml(label,value,suffix='%'){
   return `<span class="dps-jewel-final-item"><em>${escapeHtml(label)}</em><b>${escapeHtml(value)}${escapeHtml(suffix)}</b></span>`;
 }
 function dpsJewelFinalStatsHtml(finalStats){
-  return `<span class="dps-jewel-final-label">최종</span>
+  return `<span class="dps-jewel-final-label">최종 능력치</span>
       ${dpsJewelFinalStatItemHtml('공격력',finalStats.ad)}
       ${dpsJewelFinalStatItemHtml('공격속도',finalStats.as)}
       ${dpsJewelFinalStatItemHtml('총데미지',finalStats.td)}
@@ -1431,10 +1431,11 @@ function dpsJewelConfigCardHtml(name,settings){
       ${renderJewelAbility('전설', ability.legendary)}
       ${renderJewelAbility('신화', ability.mythic)}
     </div>
+    <div class="dps-jewel-settings-title">능력치 설정</div>
+    <div class="dps-jewel-fields">${field('ad','공격력')}${field('as','공격속도')}${field('td','총데미지')}${field('ua','가속')}${field('enhance','강화')}${field('mythic','신화 여부')}</div>
     <div class="dps-jewel-final" aria-label="${escapeHtml(name)} 최종 옵션">
       ${dpsJewelFinalStatsHtml(finalStats)}
     </div>
-    <div class="dps-jewel-fields">${field('ad','공격력')}${field('as','공격속도')}${field('td','총데미지')}${field('ua','가속')}${field('enhance','강화')}${field('mythic','신화')}</div>
   </article>`;
 }
 function refreshDpsJewelConfigCard(name,settings=null,focusKey=''){

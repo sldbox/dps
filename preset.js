@@ -545,7 +545,11 @@ function createTraitPresetUnitJewelModal(){
     <div class="trait-preset-unit-jewel-backdrop" data-trait-preset-unit-jewel-close="1"></div>
     <section class="trait-preset-unit-jewel-modal is-jewel" role="dialog" aria-modal="true" aria-labelledby="traitPresetUnitJewelTitle">
       <header class="trait-preset-unit-jewel-head">
-        <h2 id="traitPresetUnitJewelTitle">${title}</h2>
+        <div class="trait-preset-unit-jewel-heading">
+          <h2 id="traitPresetUnitJewelTitle">${title}</h2>
+          <p>전설 · 신화 쥬얼 능력치 관리</p>
+        </div>
+        <span class="trait-preset-unit-jewel-total">${window.DPS_DATA?.DPS_JEWEL_NAMES?.length || 0}종</span>
         <button type="button" class="ui-icon-btn trait-preset-unit-jewel-close" data-trait-preset-unit-jewel-close="1" aria-label="${title} 닫기">×</button>
       </header>
       <div class="trait-preset-unit-jewel-body">

@@ -950,7 +950,7 @@ body .trait-preset-body .btn:is(.is-update-needed,.is-backup-needed):disabled{an
 body .trait-preset-body .btn.danger:not(.pri){background:#8b1e2d;border-color:#f87171;color:#fff7f7;box-shadow:0 2px 0 rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.10);}
 body .trait-preset-body .btn.danger:not(.pri):hover{background:#b42336;border-color:#fca5a5;color:#fff;box-shadow:0 3px 8px rgba(0,0,0,.24),inset 0 1px 0 rgba(255,255,255,.12);}
 body .trait-preset-body .btn.danger:not(.pri):active, body .trait-preset-body .btn.danger:not(.pri).is-pressed{background:#6f1624;border-color:#fecaca;color:#fff;box-shadow:inset 0 2px 5px rgba(0,0,0,.34);transform:translateY(1px) scale(.98);}
-.trait-preset-modal-shell{position:fixed;inset:0;z-index:10032;display:none;align-items:center;justify-content:center;padding:16px;}
+.trait-preset-modal-shell{position:fixed;inset:0;z-index:10032;display:none;align-items:center;justify-content:center;padding:16px;box-sizing:border-box;}
 .trait-preset-modal-shell.is-open{display:flex;}
 .trait-preset-modal-backdrop{position:absolute;inset:0;background:rgba(5,10,18,.68);}
 .trait-preset-modal{position:relative;z-index:1;width:min(420px,calc(100vw - 28px));border:1px solid var(--ui-line-strong);border-radius:var(--ui-radius);background:var(--ui-panel);box-shadow:0 18px 48px rgba(0,0,0,.42);overflow:hidden;}
@@ -961,13 +961,14 @@ body .trait-preset-body .btn.danger:not(.pri):active, body .trait-preset-body .b
 .trait-preset-modal-field{display:grid;grid-template-columns:minmax(88px,.55fr) minmax(0,1.45fr);gap:8px;align-items:center;margin:0;}
 .trait-preset-modal-field span{height:36px;display:flex;align-items:center;justify-content:center;padding:0 8px;border:1px solid var(--field-label-bd,#30435f);border-left-color:var(--field-label-accent,#425b7e);border-radius:8px;background:var(--field-label-bg,#172235);color:var(--field-label-text,#d7e4f3);font-size:calc(10.5px * var(--app-font-scale));font-weight:900;line-height:1;}
 .trait-preset-modal-field input{width:100%;min-width:0;height:36px;margin:0;padding:0 8px;border:1px solid var(--role-interactive-bd,#3c6fb6);border-radius:var(--ui-control-radius);background:var(--role-interactive-bg,#10233d);color:var(--color-slate-900);font-size:calc(11px * var(--app-font-scale));font-weight:900;text-align:center;text-align-last:center;box-shadow:inset 0 1px 2px rgba(32,57,91,.035);box-sizing:border-box;}
-.trait-preset-backup-modal{width:min(860px,calc(100vw - 28px));max-height:calc(100vh - 32px);border-color:#49678a;border-radius:15px;box-shadow:0 24px 68px rgba(0,0,0,.55),0 0 0 1px rgba(138,176,221,.09);}
-.trait-preset-backup-modal.has-few-updates{width:min(460px,calc(100vw - 28px));}
+#traitPresetBackupModal{width:100%;height:100vh;height:100dvh;}
+.trait-preset-backup-modal{display:grid;grid-template-rows:auto minmax(0,1fr);width:min(860px,100%);max-height:100%;min-height:0;border-color:#49678a;border-radius:15px;box-shadow:0 24px 68px rgba(0,0,0,.55),0 0 0 1px rgba(138,176,221,.09);}
+.trait-preset-backup-modal.has-few-updates{width:min(460px,100%);}
 .trait-preset-backup-modal.has-few-updates .trait-preset-backup-cards{grid-template-columns:minmax(0,1fr);}
 .trait-preset-backup-modal.has-pending-change{border-color:#608cc4;box-shadow:0 0 0 1px rgba(96,165,250,.18),0 24px 68px rgba(0,0,0,.56);}
 .trait-preset-backup-modal .trait-preset-modal-head{height:51px;padding:0 18px;background:linear-gradient(110deg,#1d3553,#192a43 62%,#17253a);}
 .trait-preset-backup-modal .trait-preset-modal-head h2{font-size:calc(13px * var(--app-font-scale));letter-spacing:-.1px;}
-.trait-preset-backup-body{gap:16px;max-height:calc(100vh - 84px);padding:18px;background:linear-gradient(180deg,#0f1a29,#0c1522);overflow:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;}
+.trait-preset-backup-body{gap:16px;min-height:0;max-height:none;padding:18px;background:linear-gradient(180deg,#0f1a29,#0c1522);overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;}
 .trait-preset-backup-targets{display:grid;gap:12px;min-width:0;}
 .trait-preset-backup-list-head{display:flex;align-items:center;justify-content:space-between;gap:12px;min-width:0;}
 .trait-preset-backup-list-head h3{margin:0;color:#edf4ff;font-size:calc(12.5px * var(--app-font-scale));font-weight:950;line-height:1.3;}
@@ -1018,6 +1019,7 @@ body .trait-preset-body .btn.danger:not(.pri):active, body .trait-preset-body .b
 
 body.is-tablet .trait-preset-title, body.is-tablet.is-tabbed .mobile-page .trait-preset-title{gap:6px;}
 body.is-tablet .trait-preset-actions{grid-template-columns:repeat(3,minmax(0,1fr));}
+body.is-tablet .dps-jewel-config-grid{grid-template-columns:repeat(2,minmax(0,1fr));}
 body .trait-subgroup-body{padding:10px;}
 body .trait-board-integrated-section{width:100%;min-width:0;margin:0 0 var(--section-gap);padding:0;border:1px solid var(--ui-line-strong);border-radius:var(--ui-radius);background:transparent;box-shadow:none;overflow:visible;}
 body .trait-limit-grid{display:grid;grid-template-columns:minmax(0,1fr);gap:6px;padding:8px var(--section-head-pad-x);}
@@ -1071,38 +1073,46 @@ body.trait-preset-unit-jewel-modal-open{overflow:hidden;}
 body .trait-preset-unit-jewel-modal-shell{position:fixed;inset:0;z-index:10031;display:none;align-items:flex-start;justify-content:center;padding:18px;box-sizing:border-box;}
 body .trait-preset-unit-jewel-modal-shell.is-open{display:flex;}
 body .trait-preset-unit-jewel-backdrop{position:absolute;inset:0;background:rgba(2,8,18,.78);backdrop-filter:blur(4px);}
-body .trait-preset-unit-jewel-modal{position:relative;z-index:1;display:grid;grid-template-rows:auto minmax(0,1fr);width:min(96vw,1120px);max-height:min(92vh,880px);border:1px solid var(--ui-line-strong,#3c6fb6);border-radius:14px;background:var(--surface-panel,#07111f);box-shadow:0 24px 70px rgba(0,0,0,.55);overflow:hidden;}
-body .trait-preset-unit-jewel-head{display:grid;grid-template-columns:minmax(0,1fr) 36px;align-items:center;gap:10px;min-height:48px;padding:0 12px;background:var(--section-head-bg);color:var(--section-head-text);box-sizing:border-box;}
-body .trait-preset-unit-jewel-head h2{justify-self:start;min-width:0;margin:0;font-size:calc(14px * var(--app-font-scale));font-weight:900;line-height:1;}
+body .trait-preset-unit-jewel-modal{position:relative;z-index:1;display:grid;grid-template-rows:auto minmax(0,1fr);width:min(96vw,1120px);max-height:min(92vh,880px);border:1px solid #3f618b;border-radius:15px;background:#0c1727;box-shadow:0 24px 70px rgba(0,0,0,.55),0 0 0 1px rgba(120,175,238,.1);overflow:hidden;}
+body .trait-preset-unit-jewel-head{display:grid;grid-template-columns:minmax(0,1fr) auto 36px;align-items:center;gap:12px;min-height:65px;padding:10px 18px;border-bottom:1px solid #304e74;background:linear-gradient(115deg,#1e3858,#142943 72%,#10233a);color:#edf5ff;box-sizing:border-box;}
+body .trait-preset-unit-jewel-heading{display:grid;gap:5px;min-width:0;}
+body .trait-preset-unit-jewel-head h2{justify-self:start;min-width:0;margin:0;font-size:calc(15px * var(--app-font-scale));font-weight:950;line-height:1.2;}
+body .trait-preset-unit-jewel-heading p{margin:0;color:#99b6d6;font-size:calc(10px * var(--app-font-scale));font-weight:700;}
+body .trait-preset-unit-jewel-total{padding:6px 10px;border:1px solid #47668d;border-radius:999px;background:#1a334f;color:#c1dafa;font-size:calc(10px * var(--app-font-scale));font-weight:900;white-space:nowrap;}
 body .trait-preset-unit-jewel-close{flex:0 0 auto;width:32px;min-width:32px;height:32px;min-height:32px;font-size:calc(18px * var(--app-font-scale));}
 body .trait-preset-unit-jewel-head .trait-preset-unit-jewel-close{justify-self:end;}
-body .trait-preset-unit-jewel-body{display:grid;grid-template-rows:minmax(0,1fr);gap:10px;min-height:0;padding:12px;box-sizing:border-box;overflow:auto;}
+body .trait-preset-unit-jewel-body{display:grid;grid-template-rows:minmax(0,1fr);gap:0;min-height:0;padding:12px;box-sizing:border-box;overflow:hidden;}
 body .trait-preset-unit-jewel-panel{min-height:0;overflow:visible;}
 body .trait-preset-unit-jewel-panel[hidden]{display:none;}
 body .trait-preset-unit-jewel-settings-panel{overflow:hidden;}
-body .trait-preset-unit-jewel-settings-body{height:100%;min-height:0;padding:0;overflow:auto;}
+body .trait-preset-unit-jewel-settings-body{height:100%;min-height:0;padding:0;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;}
 body .dps-jewel-settings-body{min-height:0;padding:12px;overflow:auto;box-sizing:border-box;}
-body .dps-jewel-config-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;min-width:0;width:100%;padding:0;box-sizing:border-box;}
-body .dps-jewel-card{display:grid;grid-template-columns:minmax(0,1fr);gap:7px;min-width:0;padding:8px;border:1px solid var(--ui-button-border,#60a5fa);border-radius:10px;background:rgba(7,17,31,.52);box-sizing:border-box;transition:border-color .2s ease,background .2s ease,box-shadow .2s ease;}
-body .dps-jewel-card.is-mythic{border-color:#facc15;background:radial-gradient(circle at 8% 8%,rgba(250,204,21,.11),transparent 38%),rgba(25,20,7,.66);box-shadow:0 0 0 1px rgba(250,204,21,.12),0 0 18px rgba(245,158,11,.16),inset 0 1px 0 rgba(255,247,194,.08);}
-body .dps-jewel-card-head{display:grid;grid-template-columns:46px minmax(0,1fr);align-items:center;gap:8px;min-width:0;}
-body .dps-jewel-card .jewel-card-visual{flex-basis:46px;width:46px;height:46px;border-radius:11px;}
+body .dps-jewel-config-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;min-width:0;width:100%;padding:2px;box-sizing:border-box;}
+body .dps-jewel-card{display:grid;grid-template-columns:minmax(0,1fr);align-content:start;gap:11px;min-width:0;padding:13px;border:1px solid #345477;border-radius:13px;background:linear-gradient(160deg,#15283e 0%,#0e1c2e 65%,#0c1728 100%);box-shadow:inset 0 1px rgba(229,244,255,.06),0 6px 16px rgba(0,0,0,.14);box-sizing:border-box;transition:border-color .2s ease,background .2s ease,box-shadow .2s ease;}
+body .dps-jewel-card.is-mythic{border-color:#8e713d;background:radial-gradient(circle at 12% 4%,rgba(240,195,80,.13),transparent 43%),linear-gradient(160deg,#292515,#181d2a 65%,#111b2b);box-shadow:0 0 0 1px rgba(250,204,21,.08),0 6px 20px rgba(102,70,9,.16),inset 0 1px rgba(255,247,194,.08);}
+body .dps-jewel-card-head{display:grid;grid-template-columns:54px minmax(0,1fr);align-items:center;gap:11px;min-width:0;padding-bottom:10px;border-bottom:1px solid #294360;}
+body .dps-jewel-card .jewel-card-visual{flex-basis:54px;width:54px;height:54px;border-color:#3c648e;border-radius:12px;}
 body .dps-jewel-title-block{display:grid;grid-template-columns:minmax(0,1fr);justify-items:start;gap:3px;min-width:0;}
-body .dps-jewel-title-block b{min-width:0;max-width:100%;overflow:hidden;color:#eaf2ff;font-size:calc(10.6px * var(--app-font-scale));font-weight:950;line-height:1.2;text-align:left;text-overflow:ellipsis;white-space:nowrap;}
+body .dps-jewel-title-block b{min-width:0;max-width:100%;color:#eaf2ff;font-size:calc(13px * var(--app-font-scale));font-weight:950;line-height:1.3;text-align:left;overflow-wrap:anywhere;}
 body .dps-jewel-title-block b.is-legendary{color:#93c5fd;}
 body .dps-jewel-title-block b.is-mythic{color:#fde047;}
-body .dps-jewel-ability-list{padding:0;gap:5px;}
-body .dps-jewel-ability-list .jewel-ability{grid-template-columns:38px minmax(0,1fr);min-height:30px;padding:6px;font-size:calc(9.2px * var(--app-font-scale));}
-body .dps-jewel-ability-list .jewel-ability>b{min-height:20px;font-size:calc(8.8px * var(--app-font-scale));}
-body .dps-jewel-fields{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px;min-width:0;}
-body .dps-jewel-field{display:grid;grid-template-columns:minmax(0,1fr);gap:2px;min-width:0;}
-body .dps-jewel-field span{color:#f8fbff;font-size:calc(7.8px * var(--app-font-scale));font-weight:900;text-align:center;white-space:nowrap;}
-body .dps-jewel-field select{width:100%;min-width:0;height:31px;min-height:31px;padding:0 18px 0 5px;border:1px solid var(--role-interactive-bd);border-radius:var(--ui-control-radius);background:var(--role-manual-select-bg,var(--role-interactive-bg));color:var(--color-text-main);font-size:calc(9.8px * var(--app-font-scale));font-weight:900;line-height:1;text-align:center;text-align-last:center;box-sizing:border-box;}
-body .dps-jewel-final{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));align-items:stretch;gap:4px;min-width:0;margin:0;text-align:center;}
-body .dps-jewel-final-label{grid-column:1/-1;display:flex;align-items:center;justify-content:center;color:#dbeafe;font-size:calc(8.6px * var(--app-font-scale));font-weight:950;line-height:1;}
-body .dps-jewel-final-item{display:grid;grid-template-columns:minmax(0,1fr);gap:2px;min-width:0;padding:5px 3px;border:1px solid rgba(96,165,250,.2);border-radius:8px;background:rgba(16,35,61,.34);box-sizing:border-box;}
-body .dps-jewel-final-item em{color:#93a4b9;font-size:calc(7.2px * var(--app-font-scale));font-style:normal;font-weight:900;line-height:1;white-space:nowrap;}
-body .dps-jewel-final-item b{min-width:0;color:#eaf2ff;font-family:Consolas,monospace;font-size:calc(9.2px * var(--app-font-scale));font-weight:950;line-height:1.15;text-align:center;white-space:nowrap;}
+body .dps-jewel-ability-list{padding:0;gap:7px;}
+body .dps-jewel-ability-list .jewel-ability{grid-template-columns:40px minmax(0,1fr);align-items:center;min-height:42px;padding:9px;border-color:#314964;border-radius:9px;background:#0a192b;color:#d9e5f4;font-size:calc(11px * var(--app-font-scale));line-height:1.4;}
+body .dps-jewel-ability-list .jewel-ability>b{min-height:23px;font-size:calc(10px * var(--app-font-scale));}
+body .dps-jewel-ability-list .jewel-ability:first-child{border-color:#344d6d;}
+body .dps-jewel-ability-list .jewel-ability:nth-child(2){border-color:#574761;background:#171b30;}
+body .dps-jewel-card.is-mythic .dps-jewel-ability-list .jewel-ability:nth-child(2){border-color:#796336;background:#28251c;}
+body .dps-jewel-settings-title{padding-top:3px;border-top:1px solid #2d4765;color:#e1efff;font-size:calc(11px * var(--app-font-scale));font-weight:950;line-height:1.5;}
+body .dps-jewel-fields{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;min-width:0;}
+body .dps-jewel-field{display:grid;grid-template-columns:minmax(0,1fr);gap:5px;min-width:0;}
+body .dps-jewel-field span{color:#b8cee7;font-size:calc(10px * var(--app-font-scale));font-weight:850;text-align:center;white-space:nowrap;}
+body .dps-jewel-field select{width:100%;min-width:0;height:36px;min-height:36px;padding:0 16px 0 5px;border:1px solid #486b93;border-radius:8px;background:#19324d;color:#f0f7ff;font-size:calc(11px * var(--app-font-scale));font-weight:900;line-height:1;text-align:center;text-align-last:center;box-sizing:border-box;}
+body .dps-jewel-field select:focus-visible{outline:2px solid #8fbcff;outline-offset:2px;}
+body .dps-jewel-final{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));align-items:stretch;gap:6px;min-width:0;margin:0;padding:10px;border:1px solid #365678;border-radius:10px;background:linear-gradient(140deg,#182f49,#11243b);text-align:center;}
+body .dps-jewel-final-label{grid-column:1/-1;display:flex;align-items:center;justify-content:flex-start;color:#dbeafe;font-size:calc(11px * var(--app-font-scale));font-weight:950;line-height:1.3;}
+body .dps-jewel-final-item{display:grid;grid-template-columns:minmax(0,1fr);gap:5px;min-width:0;padding:8px 3px;border:1px solid #304d70;border-radius:7px;background:#0d1e33;box-sizing:border-box;}
+body .dps-jewel-final-item em{color:#aabfda;font-size:calc(9.2px * var(--app-font-scale));font-style:normal;font-weight:850;line-height:1.15;white-space:nowrap;}
+body .dps-jewel-final-item b{min-width:0;color:#eef6ff;font-family:Consolas,monospace;font-size:calc(11px * var(--app-font-scale));font-weight:950;line-height:1.2;text-align:center;white-space:nowrap;}
 body .dps-base-unit-slot-stack{display:grid;grid-template-columns:minmax(0,1fr);gap:14px;min-width:0;width:100%;padding:3px 4px 0;}
 body .dps-base-unit-entry{display:grid;grid-template-columns:var(--dps-base-unit-columns);gap:7px;align-items:stretch;min-width:0;min-height:49px;border:0;border-radius:0;background:transparent;}
 body .dps-base-unit-card{--dps-base-unit-columns:minmax(0,2.35fr) minmax(0,.90fr) minmax(0,1.02fr) minmax(0,.82fr) minmax(0,1.08fr);--dps-base-unit-clear-size:31px;--dps-base-unit-select-gap:4px;display:grid;grid-template-columns:minmax(0,1fr);gap:10px;min-width:0;padding:4px 0 14px;border:0;}
@@ -1153,7 +1163,7 @@ body .dps-base-unit-extra-slot-title{display:block;width:100%;color:#dbeafe;font
 body .dps-base-unit-extra-slot label{display:grid;grid-template-columns:minmax(0,1fr);gap:3px;min-width:0;}
 body .dps-base-unit-extra-slot label>span{color:var(--ui-unified-muted);font-size:calc(8px * var(--app-font-scale));font-weight:900;line-height:1;text-align:center;white-space:nowrap;}
 body .dps-base-unit-extra-slot select{width:100%;min-width:0;height:31px;min-height:31px;padding:0 18px 0 5px;border:1px solid var(--role-interactive-bd);border-radius:var(--ui-control-radius);background:var(--role-manual-select-bg,var(--role-interactive-bg));color:var(--color-text-main);font-size:calc(9.8px * var(--app-font-scale));font-weight:900;line-height:1;text-align:center;text-align-last:center;box-sizing:border-box;}
-body.is-mobile .dps-jewel-card, body.is-narrow-mobile .dps-jewel-card{gap:6px;padding:7px;}
+body.is-mobile .dps-jewel-card, body.is-narrow-mobile .dps-jewel-card{gap:11px;padding:12px;}
 body.is-mobile .dps-base-unit-panel, body.is-narrow-mobile .dps-base-unit-panel{gap:6px;padding:0;margin-top:0;}
 body.is-mobile .dps-base-unit-title-actions, body.is-narrow-mobile .dps-base-unit-title-actions{gap:4px;}
 body.is-mobile .dps-unit-jewel-open-btn, body.is-narrow-mobile .dps-unit-jewel-open-btn{min-width:58px;height:26px;min-height:26px;padding:0 6px;font-size:calc(9.2px * var(--app-font-scale));}
@@ -1173,8 +1183,9 @@ body.is-narrow-mobile .artifact-dps-switch{width:52px;height:21px;font-size:calc
 body.is-narrow-mobile .artifact-dps-switch i{width:22px;height:13px;}
 body.is-narrow-mobile .artifact-dps-switch.is-active i{left:25px;}
 
-body.is-mobile .trait-preset-backup-modal, body.is-narrow-mobile .trait-preset-backup-modal{width:100%;max-height:calc(100vh - 16px);}
-body.is-mobile .trait-preset-backup-body, body.is-narrow-mobile .trait-preset-backup-body{gap:12px;max-height:calc(100vh - 65px);padding:11px;overflow:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;}
+body.is-mobile #traitPresetBackupModal, body.is-narrow-mobile #traitPresetBackupModal{width:100%;height:100vh;height:100dvh;padding:max(10px,env(safe-area-inset-top)) 10px max(10px,env(safe-area-inset-bottom));align-items:center;}
+body.is-mobile .trait-preset-backup-modal, body.is-narrow-mobile .trait-preset-backup-modal{width:100%;max-height:100%;}
+body.is-mobile .trait-preset-backup-body, body.is-narrow-mobile .trait-preset-backup-body{gap:12px;min-height:0;max-height:none;padding:11px;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;}
 body.is-mobile .trait-preset-backup-cards, body.is-narrow-mobile .trait-preset-backup-cards{grid-template-columns:minmax(0,1fr);gap:9px;}
 body.is-mobile .trait-preset-backup-card, body.is-narrow-mobile .trait-preset-backup-card{gap:10px;padding:11px;}
 body.is-mobile .trait-preset-backup-card-head, body.is-narrow-mobile .trait-preset-backup-card-head{gap:7px;padding-bottom:9px;}
@@ -1187,9 +1198,11 @@ body.is-mobile .trait-preset-backup-file-box, body.is-narrow-mobile .trait-prese
 body.is-mobile .trait-preset-backup-actions .btn, body.is-narrow-mobile .trait-preset-backup-actions .btn{min-height:44px;font-size:calc(11px * var(--app-font-scale));}
 body.is-mobile .trait-preset-unit-jewel-modal-shell, body.is-narrow-mobile .trait-preset-unit-jewel-modal-shell{align-items:flex-start;padding:8px;}
 body.is-mobile .trait-preset-unit-jewel-modal, body.is-narrow-mobile .trait-preset-unit-jewel-modal{width:100%;max-height:calc(100vh - 16px);}
-body.is-mobile .trait-preset-unit-jewel-head, body.is-narrow-mobile .trait-preset-unit-jewel-head{grid-template-columns:minmax(0,1fr) 32px;gap:7px;min-height:50px;padding:0 8px;}
-body.is-mobile .trait-preset-unit-jewel-head h2, body.is-narrow-mobile .trait-preset-unit-jewel-head h2{font-size:calc(12px * var(--app-font-scale));}
-body.is-mobile .trait-preset-unit-jewel-body, body.is-narrow-mobile .trait-preset-unit-jewel-body{grid-template-rows:minmax(0,1fr);gap:8px;padding:8px;}
+body.is-mobile .trait-preset-unit-jewel-head, body.is-narrow-mobile .trait-preset-unit-jewel-head{grid-template-columns:minmax(0,1fr) auto 32px;gap:7px;min-height:60px;padding:8px 10px;}
+body.is-mobile .trait-preset-unit-jewel-head h2, body.is-narrow-mobile .trait-preset-unit-jewel-head h2{font-size:calc(13px * var(--app-font-scale));}
+body.is-mobile .trait-preset-unit-jewel-heading p, body.is-narrow-mobile .trait-preset-unit-jewel-heading p{font-size:calc(9px * var(--app-font-scale));}
+body.is-mobile .trait-preset-unit-jewel-total, body.is-narrow-mobile .trait-preset-unit-jewel-total{padding:4px 6px;font-size:calc(9px * var(--app-font-scale));}
+body.is-mobile .trait-preset-unit-jewel-body, body.is-narrow-mobile .trait-preset-unit-jewel-body{grid-template-rows:minmax(0,1fr);gap:0;padding:8px;}
 body.is-mobile .dps-jewel-settings-body, body.is-narrow-mobile .dps-jewel-settings-body{padding:8px;}
 body.is-mobile .dps-jewel-config-grid, body.is-narrow-mobile .dps-jewel-config-grid{grid-template-columns:minmax(0,1fr);}
 body.is-mobile .dps-base-unit-slot-stack, body.is-narrow-mobile .dps-base-unit-slot-stack{gap:14px;padding:0 2px;}
