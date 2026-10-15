@@ -2623,7 +2623,7 @@ function bindFontScaleViewportGuard(){
   });
 }
 const APP_TITLE_ROTATION=Object.freeze({
-  main:{value:'개복디 특성 빌드'},
+  main:{value:'개복디 특성 계산기'},
   creator:{label:'제작자', value:'회장 | 3-S2-1-2461127'},
   mainMs:5000,
   creatorMs:3000,
