@@ -189,6 +189,7 @@ function makeStorageEnvelope(partial){
     schemaVersion:+partial.schemaVersion || APP_STATE_SCHEMA_VERSION,
     values:partial.values || {},
     inv:partial.inv || {},
+    recommendations:partial.recommendations,
     zeroScore:partial.zeroScore ? normalizeZeroScoreState(partial.zeroScore) : undefined,
     savedAt:+partial.savedAt || Date.now(),
     storageVersion:partial.storageVersion || STORAGE_VERSION,
@@ -228,6 +229,7 @@ function makeStateObject(){
   return makeStorageEnvelope({
     values,
     inv,
+    recommendations:traitRecommendationSaveState(),
     zeroScore:collectZeroScoreState(),
     savedAt:Date.now(),
     ui:{fontScale:getFontScale()}
@@ -297,6 +299,7 @@ function makeNormalizedStateEnvelope(source,values,inv,{requireRawValues=false,r
     values,
     inv,
     zeroScore:source.zeroScore,
+    recommendations:source.recommendations,
     savedAt:source.savedAt,
     storageVersion:source.storageVersion,
     scope:source.scope,
@@ -456,7 +459,7 @@ function applyTraitPresetUnitBoardState(value,options={}){
   if(options.recalculate!==false) recalc({save:options.save});
   return state;
 }
-/* 프리셋 쥬얼 설정 */
+/* 프리셋 쥬얼 상태 및 유닛 보드 설정 */
 function normalizeTraitPresetJewelSettings(value){
   if(!value || typeof value!=='object' || Array.isArray(value)) return null;
   const legendarySource=value.legendaryMythicJewels || value.legendaryMythic || value.jewelSettings;
@@ -522,6 +525,57 @@ function resetTraitPresetUnitBoardValues(values){
   out.dpsBaseUnitExtraSettings='{}';
   return out;
 }
+/* 유닛 쥬얼 모달: 생성·표시·닫기 */
+let traitPresetUnitJewelReturnFocus=null;
+function setTraitPresetUnitJewelButtonExpanded(expanded){
+  qsa('[data-trait-preset-unit-jewel-open]').forEach(button=>{
+    button.setAttribute('aria-expanded',expanded ? 'true' : 'false');
+  });
+}
+function traitPresetUnitJewelPanelHtml(){
+  return `<section class="trait-preset-unit-jewel-panel trait-preset-unit-jewel-settings-panel" id="traitPresetJewelSettingPanel" data-trait-preset-unit-jewel-panel="jewel">
+    <div class="dps-jewel-settings-body trait-preset-unit-jewel-settings-body" data-dps-jewel-config>
+      <div class="dps-jewel-config-grid" id="dpsJewelConfigGrid"></div>
+    </div>
+  </section>`;
+}
+function createTraitPresetUnitJewelModal(){
+  const title='쥬얼 설정';
+  const html=`
+    <div class="trait-preset-unit-jewel-backdrop" data-trait-preset-unit-jewel-close="1"></div>
+    <section class="trait-preset-unit-jewel-modal is-jewel" role="dialog" aria-modal="true" aria-labelledby="traitPresetUnitJewelTitle">
+      <header class="trait-preset-unit-jewel-head">
+        <h2 id="traitPresetUnitJewelTitle">${title}</h2>
+        <button type="button" class="ui-icon-btn trait-preset-unit-jewel-close" data-trait-preset-unit-jewel-close="1" aria-label="${title} 닫기">×</button>
+      </header>
+      <div class="trait-preset-unit-jewel-body">
+        ${traitPresetUnitJewelPanelHtml()}
+      </div>
+    </section>`;
+  const existing=$('traitPresetUnitJewelModal');
+  if(existing){ existing.innerHTML=html; return existing; }
+  return window.DpsModal.createShell('traitPresetUnitJewelModal','trait-preset-unit-jewel-modal-shell',html);
+}
+function closeTraitPresetUnitJewelModal(options={}){
+  if(!window.DpsModal?.isOpen?.('traitPresetUnitJewelModal')) return;
+  window.DpsModal.setOpen('traitPresetUnitJewelModal','trait-preset-unit-jewel-modal-open',false);
+  setTraitPresetUnitJewelButtonExpanded(false);
+  if(options.restoreFocus!==false && traitPresetUnitJewelReturnFocus?.isConnected) traitPresetUnitJewelReturnFocus.focus({preventScroll:true});
+  traitPresetUnitJewelReturnFocus=null;
+}
+function openTraitPresetUnitJewelModal(trigger=null){
+  traitPresetUnitJewelReturnFocus=trigger instanceof HTMLElement ? trigger : (document.activeElement instanceof HTMLElement ? document.activeElement : null);
+  createTraitPresetUnitJewelModal();
+  renderDpsJewelConfigGrids();
+  window.DpsModal.setOpen('traitPresetUnitJewelModal','trait-preset-unit-jewel-modal-open',true);
+  setTraitPresetUnitJewelButtonExpanded(true);
+  const body=document.querySelector('#traitPresetUnitJewelModal .trait-preset-unit-jewel-body');
+  if(body) body.scrollTop=0;
+  requestAnimationFrame(()=>{
+    document.querySelector('[data-dps-jewel-config] select')?.focus?.({preventScroll:true});
+  });
+  return true;
+}
 /* 프리셋 상태 병합·화면 적용 */
 function mergeTraitPresetWithLocalState(presetState, localState, options={}){
   const preset=normalizeTraitPresetState(presetState);
@@ -576,6 +630,7 @@ function applyStateObject(data, options={}){
     });
     if(116 in INV) INV[116]=0;
     enforceBudgets();
+    restoreTraitRecommendationSaveState(data.recommendations);
     if(hasOwn(sanitizedValues,'runeChoiceType') || hasOwn(sanitizedValues,'runeChoiceValue')) syncRuneChoice();
     else hydrateRuneChoiceFromHidden();
     applyZeroScoreState(data.zeroScore ? normalizeZeroScoreState(data.zeroScore) : data.zeroScore);
@@ -1523,11 +1578,11 @@ function resetToFirstVisitState(){
     refreshTraitPresetControls('');
     clearTraitPresetUpdatedStatus('latest');
     resetTraitPresetNameInput();
-    notifyStorageAction('전체 초기화 완료','ok');
+    notifyStorageAction('프리셋 초기화 완료','ok');
     return true;
   }catch(e){
     rememberAppIssue('error','[full reset failed]',e);
-    notifyStorageAction(e?.message || '전체 초기화 실패','err');
+    notifyStorageAction(e?.message || '프리셋 초기화 실패','err');
     return false;
   }
 }
@@ -1536,7 +1591,7 @@ function resetTraitPresetResetButton(trigger){
   const btn=trigger || $('traitPresetResetAllBtn');
   if(!btn) return;
   btn.dataset.confirming='0';
-  btn.textContent='전체 초기화';
+  btn.textContent='프리셋 초기화';
 }
 function requestTraitPresetFullReset(trigger){
   const btn=trigger || $('traitPresetResetAllBtn');
@@ -1552,7 +1607,7 @@ function requestTraitPresetFullReset(trigger){
     clearTimeout(traitPresetResetButtonTimer);
     traitPresetResetButtonTimer=setTimeout(()=>resetTraitPresetResetButton(btn), delay);
   }
-  notifyStorageAction('한 번 더 누르면 전체 초기화','warn');
+  notifyStorageAction('한 번 더 누르면 프리셋 초기화','warn');
   return false;
 }
 /* 가져오기·백업 */
@@ -1978,56 +2033,7 @@ async function importTraitPresetFile(file){
     return false;
   }
 }
-let traitPresetUnitJewelReturnFocus=null;
-function setTraitPresetUnitJewelButtonExpanded(expanded){
-  qsa('[data-trait-preset-unit-jewel-open]').forEach(button=>{
-    button.setAttribute('aria-expanded',expanded ? 'true' : 'false');
-  });
-}
-function traitPresetUnitJewelPanelHtml(){
-  return `<section class="trait-preset-unit-jewel-panel trait-preset-unit-jewel-settings-panel" id="traitPresetJewelSettingPanel" data-trait-preset-unit-jewel-panel="jewel">
-    <div class="dps-jewel-settings-body trait-preset-unit-jewel-settings-body" data-dps-jewel-config>
-      <div class="dps-jewel-config-grid" id="dpsJewelConfigGrid"></div>
-    </div>
-  </section>`;
-}
-function createTraitPresetUnitJewelModal(){
-  const title='쥬얼 설정';
-  const html=`
-    <div class="trait-preset-unit-jewel-backdrop" data-trait-preset-unit-jewel-close="1"></div>
-    <section class="trait-preset-unit-jewel-modal is-jewel" role="dialog" aria-modal="true" aria-labelledby="traitPresetUnitJewelTitle">
-      <header class="trait-preset-unit-jewel-head">
-        <h2 id="traitPresetUnitJewelTitle">${title}</h2>
-        <button type="button" class="ui-icon-btn trait-preset-unit-jewel-close" data-trait-preset-unit-jewel-close="1" aria-label="${title} 닫기">×</button>
-      </header>
-      <div class="trait-preset-unit-jewel-body">
-        ${traitPresetUnitJewelPanelHtml()}
-      </div>
-    </section>`;
-  const existing=$('traitPresetUnitJewelModal');
-  if(existing){ existing.innerHTML=html; return existing; }
-  return window.DpsModal.createShell('traitPresetUnitJewelModal','trait-preset-unit-jewel-modal-shell',html);
-}
-function closeTraitPresetUnitJewelModal(options={}){
-  if(!window.DpsModal?.isOpen?.('traitPresetUnitJewelModal')) return;
-  window.DpsModal.setOpen('traitPresetUnitJewelModal','trait-preset-unit-jewel-modal-open',false);
-  setTraitPresetUnitJewelButtonExpanded(false);
-  if(options.restoreFocus!==false && traitPresetUnitJewelReturnFocus?.isConnected) traitPresetUnitJewelReturnFocus.focus({preventScroll:true});
-  traitPresetUnitJewelReturnFocus=null;
-}
-function openTraitPresetUnitJewelModal(trigger=null){
-  traitPresetUnitJewelReturnFocus=trigger instanceof HTMLElement ? trigger : (document.activeElement instanceof HTMLElement ? document.activeElement : null);
-  createTraitPresetUnitJewelModal();
-  renderDpsJewelConfigGrids();
-  window.DpsModal.setOpen('traitPresetUnitJewelModal','trait-preset-unit-jewel-modal-open',true);
-  setTraitPresetUnitJewelButtonExpanded(true);
-  const body=document.querySelector('#traitPresetUnitJewelModal .trait-preset-unit-jewel-body');
-  if(body) body.scrollTop=0;
-  requestAnimationFrame(()=>{
-    document.querySelector('[data-dps-jewel-config] select')?.focus?.({preventScroll:true});
-  });
-  return true;
-}
+/* 프리셋 UI 이벤트 바인딩 */
 function handleTraitPresetChange(e){
   if(e.target?.id==='traitPresetSelect'){
     updateTraitPresetBeforeSelectionChange(e.target.value);

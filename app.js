@@ -530,6 +530,7 @@ function renderCalculatedViews(s){
   renderEnhanceSummary(s.enhanceStats);
   renderResourceSummary(s);
   updateTraits();
+  renderTraitRecommendations();
 }
 /* 계산 실행·예약 */
 let appCalculationRevision=0;
@@ -730,7 +731,7 @@ function renderSkillDamage(s){
   if(!el) return;
   el.innerHTML=rows.items.map(row=>`<tr><td>${row.name}</td><td>${fmt(row.total,1)}%</td><td>AP ${fmt(ap,0)} / 더블 ${fmt(rows.doubleSpace,2)}</td></tr>`).join('');
 }
-/* 모달·비교·DPS표 */
+/* DPS표 모드·미리보기·모달 */
 const DPS_TABLE_DIFFICULTIES=DPS_CONFIG.dpsTable.difficulties;
 const COOP_DPS_TABLE_DIFFICULTIES=DPS_TABLE_DIFFICULTIES.slice(0, DPS_TABLE_DIFFICULTIES.indexOf('Hall Of Fame') + 1);
 const COOP_DPS_TABLE_PENANCE_MIN=0;
@@ -744,7 +745,7 @@ function isDpsTableOpen(){
   return $('dpsTableModal')?.classList.contains('is-open')===true;
 }
 function getDpsTableTowerGroupSize(mode){
-  return mode==='planet' ? 25 : 30;
+  return mode==='planet' ? 35 : 30;
 }
 function formatDpsTableValue(value){
   if(!Number.isFinite(value)) return '—';
@@ -875,7 +876,11 @@ function buildDpsPlanetTable(){
   const planet=DPS_CONFIG.dpsTable.planet || {};
   const range={ min:Math.max(1, Math.round(planet.minFloor || 1)), max:Math.max(1, Math.round(planet.maxFloor || 100)) };
   const groupSize=getDpsTableTowerGroupSize('planet');
-  const chunks=chunkDpsTowerFloors(range.min, range.max, groupSize);
+  // 행성탐사 1~35 / 36~70 / 71~100 (35·35·30층)
+  const chunks=[
+    ...chunkDpsTowerFloors(range.min, Math.min(range.max, 70), groupSize),
+    ...chunkDpsTowerFloors(Math.max(range.min, 71), range.max, 30)
+  ];
   const diff=isPlanetExplorationDifficulty() ? vs('diff') : '행성탐사-코랄';
   const blocks=chunks.map(floors=>{
     const rows=floors.map(floor=>{
@@ -951,48 +956,7 @@ function openDpsTable(mode='auto'){
   activeDpsTableMode=DPS_MODAL_MODES.includes(normalizedMode) ? normalizedMode : fallbackMode;
   window.DpsModal.openDpsTableModal();
 }
-function getJewelImageSources(name){
-  const safeName=encodeURIComponent(String(name||'').trim());
-  const key=`jw/${String(name||'').trim()}.png`;
-  const version=encodeURIComponent(window.DPS_BUILD_VERSION || 'dev');
-  const assetUrl=typeof window.dpsAssetUrl==='function' ? window.dpsAssetUrl : null;
-  const remoteUrl=typeof window.dpsRemoteAssetUrl==='function'
-    ? window.dpsRemoteAssetUrl(key, key)
-    : `https://sldbox.github.io/dps/jw/${safeName}.png?v=${version}`;
-  const localUrl=assetUrl ? assetUrl(`./jw/${safeName}.png`, key) : `./jw/${safeName}.png?v=${version}`;
-  return {
-    src:remoteUrl,
-    fallback:localUrl
-  };
-}
-function handleJewelImageError(img){
-  if(!img) return;
-  const fallbackSrc=img.dataset?.fallbackSrc || '';
-  if(fallbackSrc){
-    img.dataset.fallbackSrc='';
-    img.src=fallbackSrc;
-    return;
-  }
-  const visual=img.closest('.jewel-card-visual');
-  if(visual) visual.classList.add('is-missing');
-  img.remove();
-}
-function bindJewelImageEvents(){
-  document.addEventListener('error', e=>{
-    const img=e.target?.closest?.('.jewel-card-visual img[data-jewel-image]');
-    if(img) handleJewelImageError(img);
-  }, true);
-}
-function renderJewelAbility(label, text){
-  const value=String(text||'').trim();
-  const isUnreleased=value==='미발견';
-  return `
-    <div class="jewel-ability ${isUnreleased?'is-unreleased':''}">
-      <b>${escapeHtml(label)}</b>
-      <span>${escapeHtml(value)}</span>
-    </div>
-  `;
-}
+/* 기본 정보·유닛 저장 필드 레지스트리 */
 const FIELD_REGISTRY={
   sp:{kind:'기본 정보',name:'시작 SP',save:true},
   xp:{kind:'기본 정보',name:'보유 XP',save:true},
@@ -1269,6 +1233,7 @@ function dpsBaseUnitNumberText(value,options={}){
   if(options.trillion && absolute>=1000000000000) return compact(1000000000000,'조');
   if(absolute>=100000000) return compact(100000000,'억');
   if(absolute>=10000){
+    if(options.compactTenThousands) return compact(10000,'만');
     const convert=options.roundTenThousands ? Math.round : Math.floor;
     return `${sign}${convert(absolute/10000).toLocaleString('ko-KR')}만`;
   }
@@ -1374,6 +1339,49 @@ function dpsBaseUnitQuantityControlHtml(unit, slotIndex){
   const increaseDisabled=Number(value)>=limit ? ' disabled aria-disabled="true"' : '';
   const label=escapeHtml(dpsBaseUnitLabel(unit.id));
   return `<div class="dps-base-unit-qty-control" data-dps-base-unit-qty-control="${escapeHtml(unit.id)}"><button class="ui-choice-btn dps-base-unit-qty-btn" data-dps-base-unit-qty-delta="-1" data-dps-base-unit-id="${escapeHtml(unit.id)}" type="button" aria-label="${label} 수량 감소">−</button><input class="dps-base-unit-qty-input" id="dpsBaseUnitSlotQty${slotIndex+1}" data-dps-base-unit-slot-quantity="${escapeHtml(unit.id)}" inputmode="numeric" type="text" min="0" max="${limit}" value="${escapeHtml(value)}" aria-label="${label} 수량"/><button class="ui-choice-btn dps-base-unit-qty-btn" data-dps-base-unit-qty-delta="1" data-dps-base-unit-id="${escapeHtml(unit.id)}" type="button" aria-label="${label} 수량 증가"${increaseDisabled}>+</button></div>`;
+}
+/* 쥬얼 이미지·표시 및 설정 */
+function getJewelImageSources(name){
+  const safeName=encodeURIComponent(String(name||'').trim());
+  const key=`jw/${String(name||'').trim()}.png`;
+  const version=encodeURIComponent(window.DPS_BUILD_VERSION || 'dev');
+  const assetUrl=typeof window.dpsAssetUrl==='function' ? window.dpsAssetUrl : null;
+  const remoteUrl=typeof window.dpsRemoteAssetUrl==='function'
+    ? window.dpsRemoteAssetUrl(key, key)
+    : `https://sldbox.github.io/dps/jw/${safeName}.png?v=${version}`;
+  const localUrl=assetUrl ? assetUrl(`./jw/${safeName}.png`, key) : `./jw/${safeName}.png?v=${version}`;
+  return {
+    src:remoteUrl,
+    fallback:localUrl
+  };
+}
+function handleJewelImageError(img){
+  if(!img) return;
+  const fallbackSrc=img.dataset?.fallbackSrc || '';
+  if(fallbackSrc){
+    img.dataset.fallbackSrc='';
+    img.src=fallbackSrc;
+    return;
+  }
+  const visual=img.closest('.jewel-card-visual');
+  if(visual) visual.classList.add('is-missing');
+  img.remove();
+}
+function bindJewelImageEvents(){
+  document.addEventListener('error', e=>{
+    const img=e.target?.closest?.('.jewel-card-visual img[data-jewel-image]');
+    if(img) handleJewelImageError(img);
+  }, true);
+}
+function renderJewelAbility(label, text){
+  const value=String(text||'').trim();
+  const isUnreleased=value==='미발견';
+  return `
+    <div class="jewel-ability ${isUnreleased?'is-unreleased':''}">
+      <b>${escapeHtml(label)}</b>
+      <span>${escapeHtml(value)}</span>
+    </div>
+  `;
 }
 function dpsJewelOptionHtml(values,selected,suffix=''){
   return (Array.isArray(values) ? values : []).map(value=>`<option value="${escapeHtml(value)}"${String(value)===String(selected)?' selected':''}>${escapeHtml(value)}${suffix}</option>`).join('');
@@ -2080,7 +2088,47 @@ function bindDpsBaseUnitControlEvents(){
   }, true);
 }
 
-/* 특성 보드 */
+/* 스펙·유닛 보드 전환 및 상태 이벤트 */
+function setDamageBoardTab(active){
+  const next=active==='unit' ? 'unit' : 'spec';
+  const changed=isUnitBoardRecommendationMode() !== (next==='unit');
+  qsa('[data-damage-board-tab]').forEach(tab=>{
+    const isActive=tab.dataset.damageBoardTab===next;
+    tab.classList.toggle('is-active', isActive);
+    tab.setAttribute('aria-selected', String(isActive));
+  });
+  qsa('[data-damage-board-panel]').forEach(panel=>{
+    const isActive=panel.dataset.damageBoardPanel===next;
+    panel.classList.toggle('is-active', isActive);
+    panel.hidden=!isActive;
+  });
+  if(changed) renderTraitRecommendations();
+}
+function bindDamageBoardTabEvents(){
+  document.addEventListener('click', e=>{
+    const tab=e.target?.closest?.('[data-damage-board-tab]');
+    if(!tab || tab.disabled) return;
+    e.preventDefault();
+    setDamageBoardTab(tab.dataset.damageBoardTab);
+  }, true);
+}
+function bindDamageBoardSwitchEvents(){
+  document.addEventListener('click', e=>{
+    const speedToggle=e.target?.closest?.('[data-spec-dps-speed-toggle]');
+    if(speedToggle){
+      e.preventDefault();
+      toggleSpecDpsSpeedMode();
+      return;
+    }
+    const artifactToggle=e.target?.closest?.('#artifactDpsViewToggle');
+    if(!artifactToggle) return;
+    e.preventDefault();
+    if(artifactToggle.disabled || planetExplorationRestrictionsActive()) return;
+    setArtifactDpsViewEnabled(!isArtifactDpsViewEnabled());
+    requestAppUpdate();
+  }, true);
+}
+/* 특성 보드: 목록·수동 투자·추천·최적화 */
 const INFINITE_TRAIT_TIER='무한∞';
 const TIERS=['루키','비기너','아마추어','프로','엑스퍼트','마스터','디바인','더원1','더원2',INFINITE_TRAIT_TIER,'EP특성','RP특성','심연특성'];
 const OPTIMIZATION_TIERS=TIERS.filter(tier=>tier!==INFINITE_TRAIT_TIER).concat(INFINITE_TRAIT_TIER);
@@ -2104,13 +2152,176 @@ function updateTraits(){
             <span class="trait-max-val">${mx}</span>
           </div>
           <button type="button" class="ui-step-btn" data-action="traitAdjust" data-row="${row}" data-delta="1" ${isMax?'disabled':''}>+</button>
-          <button type="button" class="ui-action-btn trait-master-btn" data-action="traitMax" data-row="${row}" ${isMax?'disabled':''}>MAX</button>
+          <button type="button" class="ui-action-btn trait-master-btn" data-action="traitMax" data-row="${row}" ${isMax?'disabled':''}>마스터</button>
         </div>
       </div>`;
     }).join('');
     return `<div class="trait-group"><h4><span class="trait-title">${tier}</span><span class="trait-tools"><button type="button" class="ui-action-btn mini-btn master" data-action="masterTier" data-tier="${tier}">구간 마스터</button><button type="button" class="ui-action-btn mini-btn reset danger" data-action="resetTier" data-tier="${tier}">초기화</button></span></h4>${rows}</div>`;
   }).join('');
 }
+/* 특성 추천: 가상 투자 계획을 단계별로 계산하여 화면 스크롤을 유지 */
+let traitRecommendationTimer=0;
+let traitRecommendationUsesIdle=false;
+let traitRecommendationRevision=0;
+let currentTraitRecommendationPlan=null;
+function cancelTraitRecommendationCalculation(){
+  if(!traitRecommendationTimer) return;
+  if(traitRecommendationUsesIdle && typeof cancelIdleCallback==='function') cancelIdleCallback(traitRecommendationTimer);
+  else clearTimeout(traitRecommendationTimer);
+  traitRecommendationTimer=0;
+}
+function scheduleTraitRecommendationCalculation(step){
+  if(typeof requestIdleCallback==='function'){
+    traitRecommendationUsesIdle=true;
+    traitRecommendationTimer=requestIdleCallback(step,{timeout:250});
+  }else{
+    traitRecommendationUsesIdle=false;
+    traitRecommendationTimer=setTimeout(step,24);
+  }
+}
+function isUnitBoardRecommendationMode(){
+  return $('damageBoardUnitTab')?.getAttribute('aria-selected')==='true';
+}
+function traitRecommendationNumberText(value,decimals=0){
+  return Math.abs(Number(value))>=10000
+    ? dpsBaseUnitNumberText(value,{trillion:true,compactTenThousands:true})
+    : (decimals ? fmt(value,decimals) : fullNumber(value));
+}
+function renderTraitRecommendations(){
+  const table=$('traitRecommendationRows'),status=$('traitRecommendationStatus'),refund=$('traitRecommendationRefund'),investAll=$('traitRecommendationInvestAll');
+  if(!table||!status||!refund||!investAll) return;
+  const useUnitBoard=isUnitBoardRecommendationMode();
+  setText('traitRecommendationDpsLabel',useUnitBoard ? '클리어 기대값' : 'DPS');
+  synchronizeTraitRecommendationCredits();
+  refund.disabled=!hasTraitRecommendationCredits();
+  const revision=++traitRecommendationRevision;
+  cancelTraitRecommendationCalculation();
+  currentTraitRecommendationPlan=null;
+  investAll.disabled=true;
+  const snapshot=traitRecommendationPlanSnapshot(useUnitBoard);
+  const remaining=snapshot.remaining;
+  const resources=Object.entries(remaining).map(([kind,value])=>`${TRAIT_RECOMMENDATION_RESOURCE_LABELS[kind]} ${traitRecommendationNumberText(value)}`).join(' · ');
+  if(!Object.values(remaining).some(value=>value>0)){
+    status.textContent=`남은 재화 없음 · ${resources}`;
+    table.innerHTML='<tr><td colspan="5">추천에 사용할 잔여 재화가 없습니다.</td></tr>';
+    return;
+  }
+  const initial=traitRecommendationStats(useUnitBoard);
+  if(useUnitBoard && !initial.dpsBaseUnit?.isActive){
+    status.textContent='유닛을 선택하면 클리어 기대값 기준으로 추천을 계산합니다.';
+    table.innerHTML='<tr><td colspan="5">유닛 보드에서 유닛을 먼저 선택해 주세요.</td></tr>';
+    return;
+  }
+  status.textContent=`잔여 재화 전체 기준 · 투자 계획 계산 중 · ${resources}`;
+  table.innerHTML='<tr><td colspan="5">여러 특성의 투자 수량과 효율을 계산하는 중입니다.</td></tr>';
+  const kinds=['SP','EP','RP','SOUL'];
+  const targets=Object.fromEntries(kinds.map(kind=>[kind,TRAITS.filter(t=>t[0]!==116 && traitOptimizationResourceInfo(t[0])?.kind===kind && traitRecommendationAllowsTrait(t))]));
+  const allocations=new Map();
+  const spent={SP:0,EP:0,RP:0,SOUL:0};
+  const steps=Object.create(null);
+  const MAX_PASSES_PER_RESOURCE=32;
+  const candidateScores=Object.fromEntries(kinds.map(kind=>[kind,new Map()]));
+  let kindIndex=0,pass=0,cursor=0,best=null,base=null,allowance=0,available=0,passStarted=false;
+  let passTargets=[],scanningAll=false,forceFullScan=false;
+  function advanceResource(){kindIndex++;pass=0;passStarted=false;}
+  function beginPass(){
+    while(kindIndex<kinds.length){
+      const kind=kinds[kindIndex];
+      available=Math.max(0,remaining[kind]-spent[kind]);
+      if(available<=0 || !targets[kind].length || pass>=MAX_PASSES_PER_RESOURCE){advanceResource();continue;}
+      // 먼저 일부 재화만 투자하여 단계별 효율 역전 가능성을 평가한다.
+      allowance=pass<4 ? Math.max(1,Math.floor(available*.30)) : pass<8 ? Math.max(1,Math.floor(available*.50)) : available;
+      // 효율 상위 후보를 빠르게 재평가하고 주기적으로 전체 대상을 다시 훑는다.
+      scanningAll=forceFullScan || pass===0 || pass%5===0;
+      passTargets=scanningAll ? targets[kind] : targets[kind].slice().sort((a,b)=>(candidateScores[kind].get(b[0])||0)-(candidateScores[kind].get(a[0])||0)).slice(0,Math.min(10,targets[kind].length));
+      base=withTemporaryTraitInvestments([...allocations],()=>traitRecommendationStats(useUnitBoard));
+      best=null;
+      cursor=0;
+      passStarted=true;
+      return true;
+    }
+    return false;
+  }
+  function finalize(){
+    if(revision!==traitRecommendationRevision) return;
+    if(!traitRecommendationPlanMatches(snapshot)){
+      status.textContent='계산 중 입력 상태가 변경되었습니다. 다음 자동 갱신 결과를 확인해 주세요.';
+      table.innerHTML='<tr><td colspan="5">현재 입력 기준으로 다시 계산해 주세요.</td></tr>';
+      return;
+    }
+    const changes=[...allocations];
+    if(!changes.length){
+      status.textContent=`${resources} · 제한과 잔여 재화 내에서 투자 가능한 DPS 상승 없음`;
+      table.innerHTML='<tr><td colspan="5">현재 조건에서 DPS를 높이는 투자 계획이 없습니다.</td></tr>';
+      return;
+    }
+    const combined=withTemporaryTraitInvestments(changes,()=>traitRecommendationStats(useUnitBoard));
+    const finalDps=traitRecommendationDpsValue(combined,useUnitBoard);
+    const originalDps=traitRecommendationDpsValue(initial,useUnitBoard);
+    if(!traitRecommendationLimitsOk(combined,initial) || !Number.isFinite(finalDps) || finalDps<=originalDps){
+      status.textContent='최종 투자 제한 검증에 실패했습니다. 현재 값은 변경되지 않았습니다.';
+      table.innerHTML='<tr><td colspan="5">투자 제한과 현재 조건을 확인해 주세요.</td></tr>';
+      return;
+    }
+    const items=changes.map(([row,amount])=>{
+      const kind=traitOptimizationResourceInfo(row).kind;
+      const cost=traitOptimizationDeltaCost(row,amount);
+      const stats=withTemporaryTraitInvestments([[row,amount]],()=>traitRecommendationStats(useUnitBoard));
+      const dps=traitRecommendationDpsValue(stats,useUnitBoard);
+      return {row,kind,amount,cost,dps,gain:dps-originalDps};
+    });
+    currentTraitRecommendationPlan={snapshot,items,finalDps};
+    investAll.disabled=false;
+    status.textContent=`잔여 재화 전체 기준 · ${items.length}개 특성 투자 계획 · ${useUnitBoard ? '클리어 기대값' : 'DPS'} ${traitRecommendationNumberText(originalDps,1)} → ${traitRecommendationNumberText(finalDps,1)} (+${traitRecommendationNumberText(finalDps-originalDps,1)})`;
+    table.innerHTML=items.map(item=>`<tr>
+      <td>${escapeHtml(traitName(item.row))}</td>
+      <td>${fullNumber(item.amount)}</td>
+      <td title="${TRAIT_RECOMMENDATION_RESOURCE_LABELS[item.kind]} ${fullNumber(item.cost)}">${TRAIT_RECOMMENDATION_RESOURCE_LABELS[item.kind]} ${traitRecommendationNumberText(item.cost)}</td>
+      <td><strong title="${fmt(item.dps,1)}">${traitRecommendationNumberText(item.dps,1)}</strong><small title="${item.gain>=0?'+':''}${fmt(item.gain,1)}">${item.gain>=0?'+':''}${traitRecommendationNumberText(item.gain,1)} ${useUnitBoard ? '기대값' : 'DPS'}</small></td>
+      <td><button class="btn pri ui-action-btn trait-recommendation-apply" data-action="applyTraitRecommendation" data-row="${item.row}" data-amount="${item.amount}" type="button">투자</button></td>
+    </tr>`).join('');
+  }
+  function step(){
+    if(revision!==traitRecommendationRevision) return;
+    try{
+      if(!passStarted && !beginPass()){finalize();return;}
+      const kind=kinds[kindIndex];
+      const t=passTargets[cursor++];
+      if(t){
+        const candidate=withTemporaryTraitInvestments([...allocations],()=>bestTraitRecommendationForRow(t,base,allowance,useUnitBoard));
+        candidateScores[kind].set(t[0],candidate?.score||0);
+        if(candidate && (!best || candidate.score>best.score || (candidate.score===best.score && (candidate.gain>best.gain || (candidate.gain===best.gain && candidate.row<best.row))))) best=candidate;
+      }
+      if(cursor>=passTargets.length){
+        if(best){
+          allocations.set(best.row,(allocations.get(best.row)||0)+best.amount);
+          spent[kind]+=best.cost;
+          pass++;
+          forceFullScan=false;
+        }else if(!scanningAll){
+          forceFullScan=true;
+        }else if(allowance<available){
+          // 일부 재화로 투자 가능한 후보가 없으면 남은 재화 전체로 재시도한다.
+          pass=MAX_PASSES_PER_RESOURCE-1;
+        }else advanceResource();
+        passStarted=false;
+      }
+      if(cursor%6===0 || !passStarted) status.textContent=`투자 계획 계산 중 · ${TRAIT_RECOMMENDATION_RESOURCE_LABELS[kind]} ${Math.min(pass+1,MAX_PASSES_PER_RESOURCE)}/${MAX_PASSES_PER_RESOURCE} · ${resources}`;
+      scheduleTraitRecommendationCalculation(step);
+    }catch(error){
+      rememberAppIssue('error','특성 추천 투자 계획',error);
+      status.textContent='특성 추천 계산을 완료하지 못했습니다.';
+      table.innerHTML='<tr><td colspan="5">추천 계산 오류 · 현재 투자값은 변경되지 않았습니다.</td></tr>';
+      investAll.disabled=true;
+    }
+  }
+  scheduleTraitRecommendationCalculation(step);
+}
+function applyCurrentTraitRecommendationPlan(){
+  if(!currentTraitRecommendationPlan) return false;
+  return applyTraitRecommendationPlan(currentTraitRecommendationPlan);
+}
+/* 수동 특성 입력·반복 투자 이벤트 */
 let traitKeyNavGuardUntil=0;
 function commitTraitInput(el){
   const row=+(el && el.dataset ? el.dataset.row : NaN);
@@ -2267,6 +2478,7 @@ function resetTier(tier){
   if(116 in INV) INV[116]=0;
   commitTraitInvestmentChange();
 }
+/* 특성 초기화·유틸 최적화 */
 const UTILITY_OPT_TYPES=new Set(['유틸','경험치','AP','RA']);
 const UTILITY_OPT_TIERS=['루키','비기너','아마추어','프로','엑스퍼트','마스터','디바인','더원1','더원2'];
 function isUtilityOptimizationTrait(t, maxTierIndex=null){
@@ -2666,6 +2878,9 @@ let appEventsBound=false;
 const ACTION_HANDLERS={
   optimizeSP,
   optimizeUtility,
+  applyTraitRecommendation:(trigger)=>applyTraitRecommendation(+trigger.dataset.row,+trigger.dataset.amount),
+  applyTraitRecommendationPlan:()=>applyCurrentTraitRecommendationPlan(),
+  refundTraitRecommendations:()=>requestConfirmAction('refundTraitRecommendations','한 번 더 누르면 추천 투자만 전체환불',refundTraitRecommendations),
   clearUtility:()=>requestConfirmAction('clearUtility','한 번 더 누르면 유틸 초기화', clearUtility),
   clearAll:()=>requestConfirmAction('clearAll','한 번 더 누르면 유틸 제외 특성 초기화', clearAll),
   saveTraitPreset:(...args)=>window.DpsPreset.saveCurrent(...args),
@@ -2776,43 +2991,6 @@ function bindButtonPressFeedback(){
     if(!btn || btn.disabled) return;
     btn.classList.add('is-pressed');
     setTimeout(()=>btn.classList.remove('is-pressed'), 180);
-  }, true);
-}
-function setDamageBoardTab(active){
-  const next=active==='unit' ? 'unit' : 'spec';
-  qsa('[data-damage-board-tab]').forEach(tab=>{
-    const isActive=tab.dataset.damageBoardTab===next;
-    tab.classList.toggle('is-active', isActive);
-    tab.setAttribute('aria-selected', String(isActive));
-  });
-  qsa('[data-damage-board-panel]').forEach(panel=>{
-    const isActive=panel.dataset.damageBoardPanel===next;
-    panel.classList.toggle('is-active', isActive);
-    panel.hidden=!isActive;
-  });
-}
-function bindDamageBoardTabEvents(){
-  document.addEventListener('click', e=>{
-    const tab=e.target?.closest?.('[data-damage-board-tab]');
-    if(!tab || tab.disabled) return;
-    e.preventDefault();
-    setDamageBoardTab(tab.dataset.damageBoardTab);
-  }, true);
-}
-function bindDamageBoardSwitchEvents(){
-  document.addEventListener('click', e=>{
-    const speedToggle=e.target?.closest?.('[data-spec-dps-speed-toggle]');
-    if(speedToggle){
-      e.preventDefault();
-      toggleSpecDpsSpeedMode();
-      return;
-    }
-    const artifactToggle=e.target?.closest?.('#artifactDpsViewToggle');
-    if(!artifactToggle) return;
-    e.preventDefault();
-    if(artifactToggle.disabled || planetExplorationRestrictionsActive()) return;
-    setArtifactDpsViewEnabled(!isArtifactDpsViewEnabled());
-    requestAppUpdate();
   }, true);
 }
 function bindAppEvents(){

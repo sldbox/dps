@@ -215,9 +215,9 @@ function towerEnemySummaryItems(floor){
   const armorRow=lookupFloor(TOWER_ARMOR_TABLE, r);
   const unitRow=lookupFloor(TOWER_UNIT_TABLE, r);
   return [
-    ['방어력', big(armorRow && armorRow[0]<=r ? armorRow[1] : 0)],
     ['체력', big(unitRow ? unitRow[2] : 0)],
     ['실드', big(unitRow ? unitRow[3] : 0)],
+    ['방어력', big(armorRow && armorRow[0]<=r ? armorRow[1] : 0)],
     ['물량', big(unitRow ? unitRow[1] : 0)]
   ];
 }
@@ -226,9 +226,9 @@ function planetEnemySummaryItems(floor){
   const armorRow=lookupFloor(PLANET_ARMOR_TABLE, r);
   const unitRow=lookupFloor(PLANET_UNIT_TABLE, r);
   return [
-    ['방어력', big(armorRow && armorRow[0]<=r ? armorRow[1] : 0)],
     ['체력', big(unitRow ? unitRow[2] : 0)],
     ['실드', big(unitRow ? unitRow[3] : 0)],
+    ['방어력', big(armorRow && armorRow[0]<=r ? armorRow[1] : 0)],
     ['물량', big(unitRow ? unitRow[1] : 0)]
   ];
 }
@@ -243,7 +243,7 @@ function currentEnchantStats(syncInputs=true){
   });
 }
 
-/* 특성 비용 */
+/* 특성 비용·재화 검증 */
 const FIXED_STEP_AFTER_150={93:76000,94:76000,95:114000};
 const STEP_COST_PREFIX=Object.freeze(Object.fromEntries(Object.entries(STEP_COST).map(([row,steps])=>{
   let total=0;
@@ -2302,7 +2302,7 @@ function computeDpsPreview(diffName, penanceLevel, round, options={}){
   }
 }
 
-/* 특성 계산·자동 최적화 */
+/* 특성 계산 및 투자 효율 평가 */
 const STAT_KO={
   AD:'공격력', AS:'공격속도', AP:'마법공격력', CRI:'크리티컬 확률', CD:'크리티컬 데미지',
   MC:'다중 크리티컬', TD:'총 데미지', DR:'방어력 감소', PIERCE:'방어력 관통', UA:'유닛 가속',
@@ -2499,7 +2499,7 @@ function traitOptimizationMultiTargetBundleCandidate(base, rem, options={}){
   }
   return evaluateTraitOptimizationCandidate(base, 'SP', rem, changes, '멀티 타겟 분기점', options);
 }
-/* 특성 자동 최적화 */
+/* 특성 자동 최적화: 재화·구간별 투자 */
 const TRAIT_OPTIMIZATION_HARD_STEP_LIMIT=10000;
 function traitOptimizationNormalAddCount(row,kind,rem){
   if(kind!=='SP') return 1;
@@ -2623,6 +2623,215 @@ function optimizeSP(){
     commitAppUpdate({recalculate:'now'});
     return false;
   }
+}
+
+/* 특성 추천: 잔여 재화·제한·투자·환불 */
+const TRAIT_RECOMMENDATION_RESOURCE_LABELS=Object.freeze({SP:'SP',EP:'EP',RP:'RP',SOUL:'혼'});
+const traitRecommendationCredits=new Map();
+const traitRecommendationObserved=new Map();
+function synchronizeTraitRecommendationCredits(){
+  for(const t of TRAITS){
+    const row=t[0], current=INV[row]||0, previous=traitRecommendationObserved.get(row);
+    if(previous!==undefined && current<previous){
+      const credit=traitRecommendationCredits.get(row)||0;
+      const reduced=Math.min(credit,previous-current);
+      if(reduced>0){
+        if(credit>reduced) traitRecommendationCredits.set(row,credit-reduced);
+        else traitRecommendationCredits.delete(row);
+      }
+    }
+    traitRecommendationObserved.set(row,current);
+  }
+}
+function traitRecommendationSaveState(){
+  synchronizeTraitRecommendationCredits();
+  return {version:1,credits:Object.fromEntries(traitRecommendationCredits),observed:Object.fromEntries(traitRecommendationObserved)};
+}
+function restoreTraitRecommendationSaveState(state){
+  traitRecommendationCredits.clear();
+  traitRecommendationObserved.clear();
+  if(state?.version===1 && state.credits && state.observed){
+    for(const t of TRAITS){
+      const row=t[0], current=INV[row]||0;
+      const observed=+state.observed[row];
+      const credit=+state.credits[row]||0;
+      if(observed===current && Number.isInteger(credit) && credit>0 && credit<=current){
+        traitRecommendationCredits.set(row,credit);
+      }
+    }
+  }
+  synchronizeTraitRecommendationCredits();
+}
+function hasTraitRecommendationCredits(){
+  synchronizeTraitRecommendationCredits();
+  return traitRecommendationCredits.size>0;
+}
+function traitRecommendationMaxAffordable(row,remaining){
+  const max=Math.max(0,(TMAX[row]||999)-(INV[row]||0));
+  let lo=0,hi=max;
+  while(lo<hi){
+    const mid=Math.ceil((lo+hi)/2);
+    if(traitOptimizationDeltaCost(row,mid)<=remaining) lo=mid;
+    else hi=mid-1;
+  }
+  return lo;
+}
+function traitRecommendationLimitsOk(stats,base){
+  for(const item of TRAIT_LIMIT_CONFIG){
+    const limit=Number(normalizeTraitLimitStorageValue(vs(item.id)));
+    if(!Number.isFinite(limit)||limit<=0) continue;
+    const before=Number(item.value(base)),after=Number(item.value(stats));
+    if(!Number.isFinite(after)||!Number.isFinite(before)) return false;
+    // 기존 값이 이미 제한을 초과한 경우 다른 특성까지 막지 않고 추가 초과만 방지.
+    if(after>Math.max(limit,before)+1e-9) return false;
+  }
+  return true;
+}
+function traitRecommendationStats(useUnitBoard){
+  return withArtifactDpsViewBuffApplied(()=>useUnitBoard ? computeStatsRaw({syncDerived:false}) : computeLightweightStatsRaw());
+}
+function traitRecommendationDpsValue(stats,useUnitBoard){
+  return Number(useUnitBoard ? stats?.dpsBaseUnit?.expectedDps : stats?.M19);
+}
+function evaluateTraitRecommendation(row,amount,kind,remaining,base,useUnitBoard=false){
+  const cost=traitOptimizationDeltaCost(row,amount);
+  if(!Number.isFinite(cost)||cost<=0||cost>remaining) return null;
+  const stats=withTemporaryTraitInvestments([[row,amount]],()=>traitRecommendationStats(useUnitBoard));
+  if(!traitRecommendationLimitsOk(stats,base)) return null;
+  const dps=traitRecommendationDpsValue(stats,useUnitBoard);
+  const gain=dps-traitRecommendationDpsValue(base,useUnitBoard);
+  if(!Number.isFinite(gain)||gain<=1e-9) return null;
+  // 서로 다른 재화를 단순한 명목 숫자로 비교하지 않고, 잔여 재화 소비율로 보정한다.
+  const share=cost/remaining;
+  const score=gain/Math.sqrt(share);
+  return {row,kind,amount,cost,gain,dps,score};
+}
+function traitRecommendationAllowsTrait(t){
+  return traitLimitAllowsTrait(t) && !(t?.[3]==='AS' && isArtifactDpsViewEnabled());
+}
+function bestTraitRecommendationForRow(t,base,remaining,useUnitBoard=false){
+  const row=t[0], kind=traitOptimizationResourceInfo(row)?.kind;
+  if(!kind || !traitRecommendationAllowsTrait(t) || row===116 || remaining<=0) return null;
+  const affordable=traitRecommendationMaxAffordable(row,remaining);
+  if(!affordable) return null;
+  const amounts=new Set([1,affordable]);
+  for(let count=2;count<affordable;count*=2) amounts.add(count);
+  // 큰 투자 수량도 평가해 1회 투자에만 추천이 고정되지 않도록 한다.
+  for(const portion of [0.25,0.5,0.75]) amounts.add(Math.max(1,Math.floor(affordable*portion)));
+  let best=null;
+  for(const amount of amounts){
+    if(amount>affordable) continue;
+    const candidate=evaluateTraitRecommendation(row,amount,kind,remaining,base,useUnitBoard);
+    if(candidate && (!best || candidate.score>best.score || (candidate.score===best.score && candidate.gain>best.gain))) best=candidate;
+  }
+  return best;
+}
+/* 전체 잔여 재화 기반 투자 계획: 계산 중 실제 INV는 변경하지 않는다. */
+function traitRecommendationPlanSnapshot(useUnitBoard){
+  const base=traitRecommendationStats(useUnitBoard);
+  return {
+    useUnitBoard,
+    investments:TRAITS.map(t=>INV[t[0]]||0),
+    remaining:Object.fromEntries(['SP','EP','RP','SOUL'].map(kind=>[kind,Math.max(0,resourceOwn(kind)-resourceUsed(kind))])),
+    limits:TRAIT_LIMIT_CONFIG.map(item=>String(vs(item.id))),
+    multi:traitLimitSwitchOn('traitLimitMultiTarget'),
+    infinite:traitLimitSwitchOn('traitLimitInfinite'),
+    artifact:isArtifactDpsViewEnabled(),
+    dps:traitRecommendationDpsValue(base,useUnitBoard)
+  };
+}
+function traitRecommendationPlanMatches(snapshot){
+  if(!snapshot || snapshot.useUnitBoard!==isUnitBoardRecommendationMode() ||
+     snapshot.artifact!==isArtifactDpsViewEnabled() ||
+     snapshot.multi!==traitLimitSwitchOn('traitLimitMultiTarget') ||
+     snapshot.infinite!==traitLimitSwitchOn('traitLimitInfinite')) return false;
+  if(TRAITS.some((t,i)=>(INV[t[0]]||0)!==snapshot.investments[i])) return false;
+  if(TRAIT_LIMIT_CONFIG.some((item,i)=>String(vs(item.id))!==snapshot.limits[i])) return false;
+  if(Object.keys(snapshot.remaining).some(kind=>Math.abs(Math.max(0,resourceOwn(kind)-resourceUsed(kind))-snapshot.remaining[kind])>1e-6)) return false;
+  const dps=traitRecommendationDpsValue(traitRecommendationStats(snapshot.useUnitBoard),snapshot.useUnitBoard);
+  return Number.isFinite(dps) && Math.abs(dps-snapshot.dps)<=1e-7*Math.max(1,Math.abs(dps));
+}
+function applyTraitRecommendationPlan(plan){
+  synchronizeTraitRecommendationCredits();
+  if(!plan?.items?.length || !traitRecommendationPlanMatches(plan.snapshot)){
+    showToast('투자 상태가 변경되었습니다. 자동 갱신된 추천을 다시 확인해 주세요.','warn');
+    return false;
+  }
+  const changes=[];
+  const costs={SP:0,EP:0,RP:0,SOUL:0};
+  for(const item of plan.items){
+    const {row,amount,kind}=item;
+    const t=traitByRow(row);
+    if(!t || !traitRecommendationAllowsTrait(t) || traitOptimizationResourceInfo(row)?.kind!==kind ||
+       !Number.isInteger(amount) || amount<=0 || amount>(TMAX[row]||999)-(INV[row]||0)) return false;
+    const cost=traitOptimizationDeltaCost(row,amount);
+    if(!Number.isFinite(cost) || cost<=0) return false;
+    costs[kind]+=cost;
+    changes.push([row,amount]);
+  }
+  for(const kind of Object.keys(costs)){
+    if(costs[kind]>Math.max(0,resourceOwn(kind)-resourceUsed(kind))+1e-6){
+      showToast('투자에 필요한 재화가 부족합니다. 갱신된 추천을 확인해 주세요.','warn');
+      return false;
+    }
+  }
+  const base=traitRecommendationStats(plan.snapshot.useUnitBoard);
+  const next=withTemporaryTraitInvestments(changes,()=>traitRecommendationStats(plan.snapshot.useUnitBoard));
+  if(!traitRecommendationLimitsOk(next,base) ||
+     !(traitRecommendationDpsValue(next,plan.snapshot.useUnitBoard)>traitRecommendationDpsValue(base,plan.snapshot.useUnitBoard))){
+    showToast('현재 투자 제한 또는 효율 조건에서 적용할 수 없습니다.','warn');
+    return false;
+  }
+  let total=0;
+  for(const [row,amount] of changes){
+    INV[row]=(INV[row]||0)+amount;
+    traitRecommendationCredits.set(row,(traitRecommendationCredits.get(row)||0)+amount);
+    traitRecommendationObserved.set(row,INV[row]);
+    total+=amount;
+  }
+  commitAppUpdate({recalculate:'now'});
+  showToast(`추천 계획 ${fullNumber(changes.length)}종 · ${fullNumber(total)}개 전체투자 완료`);
+  return true;
+}
+function applyTraitRecommendation(row,amount){
+  synchronizeTraitRecommendationCredits();
+  const t=traitByRow(row);
+  const kind=traitOptimizationResourceInfo(row)?.kind;
+  const count=Math.round(+amount||0);
+  if(!t||!kind||count<=0||!traitRecommendationAllowsTrait(t)) return false;
+  const remaining=resourceOwn(kind)-resourceUsed(kind);
+  if(count>(TMAX[row]||999)-(INV[row]||0) || traitOptimizationDeltaCost(row,count)>remaining){
+    showToast('남은 재화 또는 투자 상한이 변경되었습니다. 추천을 다시 확인해 주세요.','warn');
+    return false;
+  }
+  const useUnitBoard=isUnitBoardRecommendationMode();
+  const base=traitRecommendationStats(useUnitBoard);
+  if(!evaluateTraitRecommendation(row,count,kind,remaining,base,useUnitBoard)){
+    showToast('현재 특성 제한이나 DPS 기준으로 적용할 수 없습니다.','warn');
+    return false;
+  }
+  INV[row]=(INV[row]||0)+count;
+  traitRecommendationCredits.set(row,(traitRecommendationCredits.get(row)||0)+count);
+  traitRecommendationObserved.set(row,INV[row]);
+  commitAppUpdate({recalculate:'now'});
+  showToast(`${traitName(row)} ${fullNumber(count)}개 추천 투자 적용`);
+  return true;
+}
+function refundTraitRecommendations(){
+  synchronizeTraitRecommendationCredits();
+  if(!traitRecommendationCredits.size){showToast('환불할 추천 투자 내역이 없습니다.','warn');return false;}
+  let total=0;
+  for(const [row,credit] of traitRecommendationCredits){
+    const count=Math.min(credit,INV[row]||0);
+    if(count<=0) continue;
+    INV[row]-=count;
+    total+=count;
+  }
+  traitRecommendationCredits.clear();
+  synchronizeTraitRecommendationCredits();
+  commitAppUpdate({recalculate:'now'});
+  showToast(`추천 투자 ${fullNumber(total)}개 환불 완료`);
+  return total>0;
 }
 
 /* 더제로 승단 */

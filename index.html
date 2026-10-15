@@ -4,18 +4,18 @@
 <meta charset="UTF-8"/>
 <meta name="google-site-verification" content="RTuDWbMdnKgbpRpl05eXh9epFwWRSxju4NOl8OtjMsI" />
 <script>
-window.DPS_BUILD_VERSION = "dps-2610150010";
-window.APP_VERSION = "dps-2610150010";
+window.DPS_BUILD_VERSION = "dps-2610150024";
+window.APP_VERSION = "dps-2610150024";
 window.DPS_ASSET_VERSIONS = {
-  "app.js": "dps-2610150010",
-  "calc.js": "dps-2610150010",
-  "data.js": "dps-2610150010",
-  "modal.js": "dps-2610150010",
-  "preset.js": "dps-2610150010",
-  "responsive.js": "dps-2610150010",
-  "style.css": "dps-2610150010",
-  "icon.png": "dps-2610150010",
-  "logo.png": "dps-2610150010"
+  "app.js": "dps-2610150024",
+  "calc.js": "dps-2610150024",
+  "data.js": "dps-2610150024",
+  "modal.js": "dps-2610150024",
+  "preset.js": "dps-2610150024",
+  "responsive.js": "dps-2610150024",
+  "style.css": "dps-2610150024",
+  "icon.png": "dps-2610150024",
+  "logo.png": "dps-2610150024"
 };
 (function(){
   'use strict';
@@ -198,14 +198,14 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 <meta content="https://sldbox.github.io/dps/" property="og:url"/>
 <meta content="개복디 특성 계산기" property="og:title"/>
 <meta content="특성 투자, 재화 사용량, 표기 스탯, 총데미지, DPS를 한 번에 계산할 수 있는 개복디 전용 계산기입니다." property="og:description"/>
-<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2610150010" property="og:image"/>
-<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2610150010" property="og:image:secure_url"/>
+<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2610150024" property="og:image"/>
+<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2610150024" property="og:image:secure_url"/>
 <meta content="image/png" property="og:image:type"/>
 <meta content="개복디 특성 계산기 로고" property="og:image:alt"/>
 <meta content="summary_large_image" name="twitter:card"/>
 <meta content="개복디 특성 계산기" name="twitter:title"/>
 <meta content="특성 투자, 재화 사용량, 표기 스탯, 총데미지, DPS를 한 번에 계산할 수 있는 개복디 전용 계산기입니다." name="twitter:description"/>
-<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2610150010" name="twitter:image"/>
+<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2610150024" name="twitter:image"/>
 <meta content="개복디 특성 계산기 로고" name="twitter:image:alt"/>
 <link href="https://cdn.jsdelivr.net" rel="preconnect"/>
 <link crossorigin="" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" rel="stylesheet"/>
@@ -214,28 +214,11 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
   var assetUrl = window.dpsAssetUrl;
   var imageAssetUrl = window.dpsImageAssetUrl || assetUrl;
   var icon = imageAssetUrl('./icon.png', 'icon.png');
-  function cleanVisibleUrlParams(){
-    if(!window.location || window.location.protocol === 'file:') return;
-    try{
-      var url = new URL(window.location.href);
-      var changed = false;
-      ['fresh','__dps_check'].forEach(function(name){
-        if(url.searchParams.has(name)){
-          url.searchParams.delete(name);
-          changed = true;
-        }
-      });
-      if(changed && window.history && window.history.replaceState){
-        window.history.replaceState(null, document.title || '', url.pathname + url.search + url.hash);
-      }
-    }catch(e){ window.DPS_LAST_URL_CLEANUP_ERROR=e; }
-  }
   function appendLink(attrs){
     var link=document.createElement('link');
     Object.keys(attrs).forEach(function(key){ link.setAttribute(key, attrs[key]); });
     document.head.appendChild(link);
   }
-  cleanVisibleUrlParams();
   appendLink({href:icon, rel:'icon', type:'image/png'});
   appendLink({rel:'stylesheet', href:assetUrl('./style.css', 'style.css')});
 })();
@@ -303,7 +286,7 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 <span class="trait-preset-heading">특성 프리셋</span>
 <div class="trait-preset-title-actions">
 <button class="btn subtle danger ui-action-btn trait-preset-title-btn" data-action="deleteTraitPreset" type="button">프리셋 삭제</button>
-<button class="btn subtle danger ui-action-btn trait-preset-title-btn" data-action="resetAllTraitPresetState" id="traitPresetResetAllBtn" type="button">전체 초기화</button>
+<button class="btn subtle danger ui-action-btn trait-preset-title-btn" data-action="resetAllTraitPresetState" id="traitPresetResetAllBtn" type="button">프리셋 초기화</button>
 </div>
 </div>
 <div class="trait-preset-body trait-subgroup-body">
@@ -327,6 +310,7 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 <input id="traitPresetImportFile" class="hidden-field" type="file" accept=".txt,text/plain"/>
 </div>
 </div>
+<!-- 기본 정보: 재화·모드·난이도 -->
 <div class="sg xp-sp-card">
 <div class="sg-title basic-info-title"><span>기본 정보</span><div class="basic-info-title-actions"><button class="btn subtle ui-action-btn basic-info-title-btn" data-action="openSanctuarySkillModal" type="button" aria-haspopup="dialog" aria-controls="sanctuarySkillModal">성소 스킬</button><button class="btn subtle ui-action-btn basic-info-title-btn" data-action="openBusPassengerModal" type="button" aria-haspopup="dialog" aria-controls="busPassengerModal">버스 승객</button></div></div>
 <div class="xp-sp-split basic-info-grid">
@@ -380,13 +364,14 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 </div>
 </div>
  </div>
+<!-- 룬 정보·스탯 -->
 <div class="sg rune-spec clean-rune-card">
 <div class="sg-title"><span>룬정보 버프</span></div>
 <div class="rune-panel tidy-rune-panel">
 <div class="rune-basic-card">
 <div class="rune-panel-title">사용중인 룬 정보</div>
 <div class="rune-stat-row rune-stat-head">
-<div></div><div>기본</div><div>개조</div>
+<div></div><div>기본 스텟</div><div>개조 스텟</div>
 </div>
 <div class="rune-stat-row">
 <label>공격력</label>
@@ -478,6 +463,7 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 <input id="enchantCode" type="hidden" value="000000"/>
 </div>
 </div>
+<!-- 룬효과·강화·버프 -->
 <div class="sg unit-enhance-card spec-unit-enhance rune-effect-panel">
 <div class="unit-enhance-main-row">
 <div class="unit-enhance-left">
@@ -573,6 +559,7 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 <input id="rUA" type="hidden" value="0"/>
 <input id="rHarmony" type="hidden" value="0"/>
 </div>
+<!-- 더제로 승단정보 -->
 <div class="data-card zero-rank-card">
 <h3 class="zero-rank-title"><span>더제로 승단 정보</span><button class="btn subtle ui-action-btn zero-rank-info-open-btn" data-action="openZeroRankInfoModal" type="button" aria-haspopup="dialog" aria-controls="zeroRankInfoModal">승단표</button></h3>
 <div class="zero-rank-content">
@@ -638,10 +625,28 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 </div>
 </div>
 </div>
+<!-- 특성 추천: 제한 다음, 특성 투자 전 -->
+<section class="trait-board-integrated-section trait-recommendation-section" aria-labelledby="traitRecommendationHeading">
+<div class="optimizer-head trait-recommendation-heading">
+<h3 id="traitRecommendationHeading">특성 추천</h3>
+<div class="trait-recommendation-heading-actions">
+<button type="button" class="btn pri ui-action-btn trait-recommendation-invest-all" id="traitRecommendationInvestAll" data-action="applyTraitRecommendationPlan" disabled>추천 전체투자</button>
+<button type="button" class="btn subtle danger ui-action-btn trait-recommendation-refund" data-action="refundTraitRecommendations" id="traitRecommendationRefund" disabled>추천 전체환불</button>
+</div>
+</div>
+<div class="trait-recommendation-content">
+<p class="trait-recommendation-status" id="traitRecommendationStatus" aria-live="polite">남은 재화를 기준으로 추천을 계산합니다.</p>
+<div class="trait-recommendation-scroll"><table class="trait-recommendation-table" aria-label="DPS 효율 특성 추천">
+<thead><tr><th scope="col">특성명</th><th scope="col">추천 투자수</th><th scope="col">필요량</th><th scope="col" id="traitRecommendationDpsLabel">DPS</th><th scope="col">특성 투자</th></tr></thead>
+<tbody id="traitRecommendationRows"><tr><td colspan="5">계산 대기 중</td></tr></tbody>
+</table></div>
+</div>
+</section>
 <div class="tp-body" id="traitBody"></div>
 </div>
 </div>
 <div class="col-right">
+<!-- 스펙·유닛 보드: 전환 버튼·결과 -->
 <div class="data-card stat-dps-card">
 <div class="damage-board-tabs" role="tablist" aria-label="보드 선택" data-damage-board-tabs>
 <button class="damage-board-tab is-active" id="damageBoardSpecTab" type="button" role="tab" aria-selected="true" aria-controls="damageBoardSpecPanel" data-damage-board-tab="spec"><span class="damage-board-tab-title">스펙 보드</span><span class="damage-board-tab-desc">순수 특성 스펙 기반 DPS 측정</span></button>
