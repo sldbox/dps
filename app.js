@@ -2161,23 +2161,16 @@ function updateTraits(){
 }
 /* 특성 추천: 가상 투자 계획을 단계별로 계산하여 화면 스크롤을 유지 */
 let traitRecommendationTimer=0;
-let traitRecommendationUsesIdle=false;
 let traitRecommendationRevision=0;
 let currentTraitRecommendationPlan=null;
+const traitRecommendationCache=new Map();
 function cancelTraitRecommendationCalculation(){
-  if(!traitRecommendationTimer) return;
-  if(traitRecommendationUsesIdle && typeof cancelIdleCallback==='function') cancelIdleCallback(traitRecommendationTimer);
-  else clearTimeout(traitRecommendationTimer);
+  if(traitRecommendationTimer) clearTimeout(traitRecommendationTimer);
   traitRecommendationTimer=0;
 }
 function scheduleTraitRecommendationCalculation(step){
-  if(typeof requestIdleCallback==='function'){
-    traitRecommendationUsesIdle=true;
-    traitRecommendationTimer=requestIdleCallback(step,{timeout:250});
-  }else{
-    traitRecommendationUsesIdle=false;
-    traitRecommendationTimer=setTimeout(step,24);
-  }
+  // Short cooperative batches avoid the per-candidate delay without blocking page scrolling.
+  traitRecommendationTimer=setTimeout(step,0);
 }
 function isUnitBoardRecommendationMode(){
   return $('damageBoardUnitTab')?.getAttribute('aria-selected')==='true';
@@ -2196,9 +2189,25 @@ function renderTraitRecommendations(){
   refund.disabled=!hasTraitRecommendationCredits();
   const revision=++traitRecommendationRevision;
   cancelTraitRecommendationCalculation();
+  const cached=traitRecommendationCache.get(useUnitBoard);
+  if(cached && cached.appRevision===appCalculationRevision){
+    currentTraitRecommendationPlan=cached.plan;
+    investAll.disabled=!cached.plan;
+    status.textContent=cached.status;
+    table.innerHTML=cached.rows;
+    return;
+  }
   currentTraitRecommendationPlan=null;
   investAll.disabled=true;
   const snapshot=traitRecommendationPlanSnapshot(useUnitBoard);
+  function cacheResult(){
+    traitRecommendationCache.set(useUnitBoard,{
+      appRevision:appCalculationRevision,
+      plan:currentTraitRecommendationPlan,
+      status:status.textContent,
+      rows:table.innerHTML
+    });
+  }
   const remaining=snapshot.remaining;
   const resources=Object.entries(remaining).map(([kind,value])=>`${TRAIT_RECOMMENDATION_RESOURCE_LABELS[kind]} ${traitRecommendationNumberText(value)}`).join(' · ');
   if(!Object.values(remaining).some(value=>value>0)){
@@ -2253,6 +2262,7 @@ function renderTraitRecommendations(){
     if(!changes.length){
       status.textContent=`${resources} · 제한과 잔여 재화 내에서 투자 가능한 DPS 상승 없음`;
       table.innerHTML='<tr><td colspan="5">현재 조건에서 DPS를 높이는 투자 계획이 없습니다.</td></tr>';
+      cacheResult();
       return;
     }
     const combined=withTemporaryTraitInvestments(changes,()=>traitRecommendationStats(useUnitBoard));
@@ -2280,33 +2290,48 @@ function renderTraitRecommendations(){
       <td><strong title="${fmt(item.dps,1)}">${traitRecommendationNumberText(item.dps,1)}</strong><small title="${item.gain>=0?'+':''}${fmt(item.gain,1)}">${item.gain>=0?'+':''}${traitRecommendationNumberText(item.gain,1)} ${useUnitBoard ? '기대값' : 'DPS'}</small></td>
       <td><button class="btn pri ui-action-btn trait-recommendation-apply" data-action="applyTraitRecommendation" data-row="${item.row}" data-amount="${item.amount}" type="button">투자</button></td>
     </tr>`).join('');
+    cacheResult();
   }
   function step(){
     if(revision!==traitRecommendationRevision) return;
+    traitRecommendationTimer=0;
     try{
-      if(!passStarted && !beginPass()){finalize();return;}
-      const kind=kinds[kindIndex];
-      const t=passTargets[cursor++];
-      if(t){
-        const candidate=withTemporaryTraitInvestments([...allocations],()=>bestTraitRecommendationForRow(t,base,allowance,useUnitBoard));
-        candidateScores[kind].set(t[0],candidate?.score||0);
-        if(candidate && (!best || candidate.score>best.score || (candidate.score===best.score && (candidate.gain>best.gain || (candidate.gain===best.gain && candidate.row<best.row))))) best=candidate;
+      const started=performance.now();
+      let evaluated=0;
+      let progressKind='';
+      // The investment snapshot is the same for every candidate within a pass.
+      // Apply it once per batch instead of once per candidate.
+      while(evaluated<6 && performance.now()-started<10){
+        if(!passStarted && !beginPass()){finalize();return;}
+        const kind=kinds[kindIndex];
+        progressKind=kind;
+        withTemporaryTraitInvestments([...allocations],()=>{
+          while(cursor<passTargets.length && evaluated<6 && performance.now()-started<10){
+            const t=passTargets[cursor++];
+            const candidate=bestTraitRecommendationForRow(t,base,allowance,useUnitBoard);
+            candidateScores[kind].set(t[0],candidate?.score||0);
+            if(candidate && (!best || candidate.score>best.score || (candidate.score===best.score && (candidate.gain>best.gain || (candidate.gain===best.gain && candidate.row<best.row))))) best=candidate;
+            evaluated++;
+          }
+        });
+        if(cursor>=passTargets.length){
+          if(best){
+            allocations.set(best.row,(allocations.get(best.row)||0)+best.amount);
+            spent[kind]+=best.cost;
+            pass++;
+            forceFullScan=false;
+          }else if(!scanningAll){
+            forceFullScan=true;
+          }else if(allowance<available){
+            // If a small allocation cannot be used, retry with the full remainder.
+            pass=MAX_PASSES_PER_RESOURCE-1;
+          }else advanceResource();
+          passStarted=false;
+        }
       }
-      if(cursor>=passTargets.length){
-        if(best){
-          allocations.set(best.row,(allocations.get(best.row)||0)+best.amount);
-          spent[kind]+=best.cost;
-          pass++;
-          forceFullScan=false;
-        }else if(!scanningAll){
-          forceFullScan=true;
-        }else if(allowance<available){
-          // 일부 재화로 투자 가능한 후보가 없으면 남은 재화 전체로 재시도한다.
-          pass=MAX_PASSES_PER_RESOURCE-1;
-        }else advanceResource();
-        passStarted=false;
+      if(!passStarted && progressKind){
+        status.textContent=`투자 계획 계산 중 · ${TRAIT_RECOMMENDATION_RESOURCE_LABELS[progressKind]} ${Math.min(pass+1,MAX_PASSES_PER_RESOURCE)}/${MAX_PASSES_PER_RESOURCE} · ${resources}`;
       }
-      if(cursor%6===0 || !passStarted) status.textContent=`투자 계획 계산 중 · ${TRAIT_RECOMMENDATION_RESOURCE_LABELS[kind]} ${Math.min(pass+1,MAX_PASSES_PER_RESOURCE)}/${MAX_PASSES_PER_RESOURCE} · ${resources}`;
       scheduleTraitRecommendationCalculation(step);
     }catch(error){
       rememberAppIssue('error','특성 추천 투자 계획',error);
