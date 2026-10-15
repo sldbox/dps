@@ -1,5 +1,5 @@
 /* 공통 모달
- * - 접근성 포커스/닫기 처리
+ * - 포커스/닫기 처리
  * - DPS표와 프리셋 등 공용 모달 동작
  */
 (() => {
@@ -49,70 +49,6 @@
     dialog?.classList.add(`is-dps-mode-${activeMode}`);
     document.body?.classList.add(`is-dps-mode-${activeMode}`);
   }
-
-  function dispatchUnitJewelModalEvent(type,detail){
-    window.dispatchEvent(new CustomEvent(type,detail===undefined ? undefined : {detail}));
-  }
-  function openJewelSettings(){
-    dispatchUnitJewelModalEvent('dps:unitJewelModalRequest',{panel:'jewel'});
-  }
-
-  function closeJewelSettings(){
-    dispatchUnitJewelModalEvent('dps:unitJewelModalCloseRequest');
-  }
-
-
-  /* 앱 입력 모달 */
-  let appInputModalState=null;
-  function createAppInputModal(){
-    return createShell('appInputModal','app-input-modal-shell',`
-      <div class="app-input-modal-backdrop" data-app-input-close="cancel"></div>
-      <section class="app-input-modal" role="dialog" aria-modal="true" aria-labelledby="appInputModalTitle" aria-describedby="appInputModalMessage">
-        <header class="app-input-modal-head">
-          <h2 id="appInputModalTitle" class="app-input-modal-title">입력</h2>
-          <button type="button" class="ui-icon-btn app-input-modal-close" data-app-input-close="cancel" aria-label="입력 모달 닫기">×</button>
-        </header>
-        <div class="app-input-modal-body">
-          <p id="appInputModalMessage" class="app-input-modal-message"></p>
-          <input id="appInputModalField" class="app-input-modal-field" type="text" autocomplete="off" maxlength="80"/>
-        </div>
-        <footer class="app-input-modal-actions">
-          <button type="button" class="btn subtle ui-action-btn" data-app-input-close="cancel">취소</button>
-          <button type="button" class="btn pri ui-action-btn" data-app-input-confirm="1">확인</button>
-        </footer>
-      </section>`);
-  }
-  function closeAppInputModal(result={confirmed:false,value:''}){
-    if(!isOpen('appInputModal')) return;
-    const state=appInputModalState;
-    appInputModalState=null;
-    setOpen('appInputModal','app-input-modal-open',false,{rootClass:true});
-    if(typeof state?.resolve==='function') state.resolve(result);
-  }
-  function openAppInputModal(options={}){
-    createAppInputModal();
-    const titleEl=document.getElementById('appInputModalTitle');
-    const messageEl=document.getElementById('appInputModalMessage');
-    const input=document.getElementById('appInputModalField');
-    if(titleEl) titleEl.textContent=String(options.title || '입력');
-    if(messageEl) messageEl.textContent=String(options.message || '값을 입력하세요.');
-    if(input){
-      input.value=String(options.value ?? '');
-      input.placeholder=String(options.placeholder || '');
-      input.maxLength=Math.max(1,Math.min(120,Number(options.maxLength) || 80));
-    }
-    if(appInputModalState) closeAppInputModal({confirmed:false,value:''});
-    setOpen('appInputModal','app-input-modal-open',true,{rootClass:true});
-    return new Promise(resolve=>{
-      appInputModalState={resolve};
-      requestAnimationFrame(()=>{
-        if(!input) return;
-        input.focus({preventScroll:true});
-        if(typeof input.select==='function') input.select();
-      });
-    });
-  }
-
 
   /* 보드 분리 모달 */
   function closeBoardModal(id=''){
@@ -190,15 +126,6 @@
   function handleDocumentClick(event){
     const target=event.target instanceof Element?event.target:null;
     if(!target) return;
-    if(target.closest('[data-app-input-close]')){
-      closeAppInputModal({confirmed:false,value:''});
-      return;
-    }
-    if(target.closest('[data-app-input-confirm]')){
-      const input=document.getElementById('appInputModalField');
-      closeAppInputModal({confirmed:true,value:String(input?.value || '')});
-      return;
-    }
     const boardModalClose=target.closest('[data-board-modal-close]');
     if(boardModalClose){
       closeBoardModal(boardModalClose.closest('.board-modal-shell')?.id || '');
@@ -214,11 +141,6 @@
 
   function handleDocumentKeydown(event){
     if(event.key==='Escape'){
-      if(isOpen('appInputModal')){
-        closeAppInputModal({confirmed:false,value:''});
-        event.preventDefault();
-        return;
-      }
       const openBoardId=getOpenBoardModalId();
       if(openBoardId){
         closeBoardModal(openBoardId);
@@ -227,14 +149,6 @@
       }
       if(isOpen(DPS_TABLE_MODAL_ID)) closeDpsTableModal();
       return;
-    }
-    if(event.key==='Enter' && isOpen('appInputModal')){
-      const input=document.getElementById('appInputModalField');
-      if(event.target===input){
-        event.preventDefault();
-        closeAppInputModal({confirmed:true,value:String(input?.value || '')});
-        return;
-      }
     }
   }
 
@@ -250,14 +164,10 @@
     setOpen,
     isOpen,
     syncModeClasses,
-    openJewelSettings,
-    closeJewelSettings,
     openDpsTableModal,
     closeDpsTableModal,
     openBoardModal,
     closeBoardModal,
-    openAppInputModal,
-    closeAppInputModal,
     bindEvents
   });
 })();

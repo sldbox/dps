@@ -4,18 +4,18 @@
 <meta charset="UTF-8"/>
 <meta name="google-site-verification" content="RTuDWbMdnKgbpRpl05eXh9epFwWRSxju4NOl8OtjMsI" />
 <script>
-window.DPS_BUILD_VERSION = "dps-2610150006";
-window.APP_VERSION = "dps-2610150006";
+window.DPS_BUILD_VERSION = "dps-2610150010";
+window.APP_VERSION = "dps-2610150010";
 window.DPS_ASSET_VERSIONS = {
-  "app.js": "dps-2610150006",
-  "calc.js": "dps-2610150006",
-  "data.js": "dps-2610150006",
-  "modal.js": "dps-2610150006",
-  "preset.js": "dps-2610150006",
-  "responsive.js": "dps-2610150006",
-  "style.css": "dps-2610150006",
-  "icon.png": "dps-2610150006",
-  "logo.png": "dps-2610150006"
+  "app.js": "dps-2610150010",
+  "calc.js": "dps-2610150010",
+  "data.js": "dps-2610150010",
+  "modal.js": "dps-2610150010",
+  "preset.js": "dps-2610150010",
+  "responsive.js": "dps-2610150010",
+  "style.css": "dps-2610150010",
+  "icon.png": "dps-2610150010",
+  "logo.png": "dps-2610150010"
 };
 (function(){
   'use strict';
@@ -198,14 +198,14 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 <meta content="https://sldbox.github.io/dps/" property="og:url"/>
 <meta content="개복디 특성 계산기" property="og:title"/>
 <meta content="특성 투자, 재화 사용량, 표기 스탯, 총데미지, DPS를 한 번에 계산할 수 있는 개복디 전용 계산기입니다." property="og:description"/>
-<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2610150006" property="og:image"/>
-<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2610150006" property="og:image:secure_url"/>
+<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2610150010" property="og:image"/>
+<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2610150010" property="og:image:secure_url"/>
 <meta content="image/png" property="og:image:type"/>
 <meta content="개복디 특성 계산기 로고" property="og:image:alt"/>
 <meta content="summary_large_image" name="twitter:card"/>
 <meta content="개복디 특성 계산기" name="twitter:title"/>
 <meta content="특성 투자, 재화 사용량, 표기 스탯, 총데미지, DPS를 한 번에 계산할 수 있는 개복디 전용 계산기입니다." name="twitter:description"/>
-<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2610150006" name="twitter:image"/>
+<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2610150010" name="twitter:image"/>
 <meta content="개복디 특성 계산기 로고" name="twitter:image:alt"/>
 <link href="https://cdn.jsdelivr.net" rel="preconnect"/>
 <link crossorigin="" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" rel="stylesheet"/>
@@ -384,7 +384,7 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 <div class="sg-title"><span>룬정보 버프</span></div>
 <div class="rune-panel tidy-rune-panel">
 <div class="rune-basic-card">
-<div class="rune-panel-title">기본 스탯 / 개조</div>
+<div class="rune-panel-title">사용중인 룬 정보</div>
 <div class="rune-stat-row rune-stat-head">
 <div></div><div>기본</div><div>개조</div>
 </div>
@@ -419,7 +419,7 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 </div>
 </div>
 <div class="rune-option-card">
-<div class="rune-panel-title">강화 / 옵션</div>
+<div class="rune-panel-title">사용중인 룬 옵션</div>
 <div class="rune-option-grid">
 <label>룬 강화 수</label>
 <select id="rReinf"><option selected="" value="0">선택 안함</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option><option>9</option><option>10</option><option>11</option><option>12</option><option>13</option><option>14</option><option>15</option></select>
@@ -436,7 +436,7 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 </div>
 </div>
 <div class="additional-editor">
-<div class="rune-panel-title additional-title-row"><span>에디셔널</span><span class="additional-help">룬 최하옵션을 입력하세요.</span></div>
+<div class="rune-panel-title additional-title-row"><span>에디셔널 버프</span><span class="additional-help">최하옵션/평균옵션 선택입력</span></div>
 <div class="additional-list">
 <div class="additional-row"><label>공격력</label><input id="addAD" type="text" value="0" inputmode="decimal"/></div>
 <div class="additional-row"><label>공격속도</label><input id="addAS" type="text" value="0" inputmode="decimal"/></div>
@@ -448,7 +448,7 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 </div>
 </div>
 <div class="enchant-combined">
-<div class="rune-panel-title">인챈트 레벨 / 결과</div>
+<div class="rune-panel-title">사용중인 룬 인첸트 레벨</div>
 <div class="enchant-combined-grid">
 <div class="enchant-combined-row">
 <label class="enchant-result-label"><span>공격력</span><b id="enchOutAD" class="enchant-result-value">65</b></label>
@@ -586,7 +586,6 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 </div>
 <div class="zero-calc-table-wrap">
 <table class="zero-calc-table">
-<colgroup><col/><col/><col/><col/><col/><col/><col/></colgroup>
 <thead><tr><th>난이도</th><th>현재 일반</th><th>목표 일반</th><th>24스타</th><th>현재 명예</th><th>목표 명예</th><th>목표 추가점수</th></tr></thead>
 <tbody id="zeroScoreRows"></tbody>
 </table>
@@ -619,7 +618,8 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 </div>
 </div>
 </div>
-<div class="trait-board-integrated-section trait-limit-section" aria-label="특성 투자 제한">
+<div class="trait-board-integrated-section trait-limit-section" aria-labelledby="traitLimitHeading">
+<h3 class="optimizer-head" id="traitLimitHeading">특성 제한</h3>
 <div class="trait-limit-grid">
 <div class="trait-limit-row">
 <span class="trait-limit-combo-label">공격력 / 공격속도 제한</span>
@@ -643,11 +643,11 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 </div>
 <div class="col-right">
 <div class="data-card stat-dps-card">
-<div class="damage-board-tab-shell" data-damage-board-tabs>
-<div class="damage-board-tabs" role="tablist" aria-label="보드 선택">
+<div class="damage-board-tabs" role="tablist" aria-label="보드 선택" data-damage-board-tabs>
 <button class="damage-board-tab is-active" id="damageBoardSpecTab" type="button" role="tab" aria-selected="true" aria-controls="damageBoardSpecPanel" data-damage-board-tab="spec"><span class="damage-board-tab-title">스펙 보드</span><span class="damage-board-tab-desc">순수 특성 스펙 기반 DPS 측정</span></button>
 <button class="damage-board-tab" id="damageBoardUnitTab" type="button" role="tab" aria-selected="false" aria-controls="damageBoardUnitPanel" data-damage-board-tab="unit"><span class="damage-board-tab-title">유닛 보드</span><span class="damage-board-tab-desc">히든조합 빌드 기반 DPS 측정</span></button>
 </div>
+<div class="damage-board-tab-shell">
 <section class="damage-board-panel is-active" id="damageBoardSpecPanel" role="tabpanel" aria-labelledby="damageBoardSpecTab" data-damage-board-panel="spec">
 <div class="section-title damage-board-title"><span class="damage-board-heading">스펙 보드</span><input id="specDpsSpeedMode" type="hidden" value="OFF"/><div class="spec-dps-speed-switch-wrap" aria-label="스펙 보드 스피드 모드 전환"><span class="spec-dps-speed-switch-label">스피드 모드</span><button class="artifact-dps-switch" id="specDpsSpeedModeToggle" type="button" role="switch" aria-checked="false" data-spec-dps-speed-toggle><span class="artifact-dps-switch-text">끔</span><span class="artifact-dps-switch-text">켬</span><i aria-hidden="true"></i></button></div><div class="artifact-dps-switch-wrap" aria-label="유물 DPS 표시 전환"><span class="artifact-dps-switch-label">유물 DPS</span><button class="artifact-dps-switch" id="artifactDpsViewToggle" type="button" role="switch" aria-checked="false"><span class="artifact-dps-switch-text">끔</span><span class="artifact-dps-switch-text">켬</span><i aria-hidden="true"></i></button></div></div>
 <div class="dps-card stat-dps-summary" id="statDpsSummary">

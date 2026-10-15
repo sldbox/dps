@@ -1945,7 +1945,6 @@ function mergeTraitPresetImport(imported,options={}){
     if(index===0) firstImportedPresetId=targetId;
   });
   store=saveTraitPresetStore(store,{source:'import'});
-  const importedIds=(imported.presets || []).map(preset=>store.presets.find(item=>item.name===preset.name)?.id || preset.id).filter(Boolean);
   clearTraitPresetUpdatedStatus('import');
   return {store,added,replaced,firstImportedPresetId};
 }
@@ -2118,12 +2117,6 @@ function bindTraitPresetEvents(){
   document.addEventListener('change',handleTraitPresetChange);
   document.addEventListener('click',handleTraitPresetClick);
   document.addEventListener('keydown',handleTraitPresetKeydown);
-  window.addEventListener('dps:unitJewelModalRequest',()=>{
-    openTraitPresetUnitJewelModal(null);
-  });
-  window.addEventListener('dps:unitJewelModalCloseRequest',()=>{
-    closeTraitPresetUnitJewelModal({restoreFocus:true});
-  });
 }
 
 /* 공개 API */

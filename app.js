@@ -2480,23 +2480,23 @@ function zeroScoreInputHtml(className, options={}){
   const inputMode=options.inputmode || 'numeric';
   const placeholder=options.placeholder ? ` placeholder="${escapeHtml(options.placeholder)}"` : '';
   const maxLength=options.maxlength ? ` maxlength="${Number(options.maxlength)}"` : '';
-  return `<input class="${className}" inputmode="${inputMode}"${maxLength}${placeholder} type="text" value="0"/>`;
+  const label=options.label ? ` aria-label="${escapeHtml(options.label)}"` : '';
+  return `<input class="${className}" inputmode="${inputMode}"${maxLength}${placeholder}${label} autocomplete="off" type="text" value="0"/>`;
 }
-function zeroScoreStarButtonHtml(enabled){
-  return enabled
-    ? '<button class="ui-toggle-btn zero-star-toggle" data-action="zeroScoreStar" type="button" aria-pressed="false">+2</button>'
-    : '<button class="ui-toggle-btn zero-star-toggle zero-star-disabled" type="button" disabled aria-disabled="true" aria-pressed="false">비활성화</button>';
+function zeroScoreStarButtonHtml(){
+  return '<button class="ui-toggle-btn zero-star-toggle" data-action="zeroScoreStar" type="button" aria-pressed="false" aria-label="24스타 추가 점수 적용">+2</button>';
 }
 function buildZeroScoreCalcRow(config){
+  const name=escapeHtml(config.name);
   return `
           <tr class="zero-calc-row" data-row-type="${config.type}">
-            <td class="zero-calc-name">${escapeHtml(config.name)}</td>
-            <td>${zeroScoreInputHtml('zero-calc-current')}</td>
-            <td>${zeroScoreInputHtml('zero-calc-target')}</td>
-            <td>${zeroScoreStarButtonHtml(config.star !== false)}</td>
-            <td>${zeroScoreInputHtml(config.currentHonorClass,config.honorOptions)}</td>
-            <td>${zeroScoreInputHtml(config.targetHonorClass,config.honorOptions)}</td>
-            <td><b class="zero-row-score">0</b></td>
+            <td class="zero-calc-name">${name}</td>
+            <td>${zeroScoreInputHtml('zero-calc-current',{label:`${config.name} 일반 현재`})}</td>
+            <td>${zeroScoreInputHtml('zero-calc-target',{label:`${config.name} 일반 목표`})}</td>
+            <td class="zero-calc-star">${config.star !== false ? zeroScoreStarButtonHtml() : ''}</td>
+            <td>${zeroScoreInputHtml(config.currentHonorClass,{...config.honorOptions,label:`${config.name} 명예 현재`})}</td>
+            <td>${zeroScoreInputHtml(config.targetHonorClass,{...config.honorOptions,label:`${config.name} 명예 목표`})}</td>
+            <td class="zero-calc-score"><b class="zero-row-score">0</b></td>
           </tr>`;
 }
 function buildZeroPenanceCalcRow(name){
