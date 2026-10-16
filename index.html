@@ -4,18 +4,18 @@
 <meta charset="UTF-8"/>
 <meta name="google-site-verification" content="RTuDWbMdnKgbpRpl05eXh9epFwWRSxju4NOl8OtjMsI" />
 <script>
-window.DPS_BUILD_VERSION = "dps-2610150039";
-window.APP_VERSION = "dps-2610150039";
+window.DPS_BUILD_VERSION = "dps-2610160000";
+window.APP_VERSION = "dps-2610160000";
 window.DPS_ASSET_VERSIONS = {
-  "app.js": "dps-2610150038",
-  "calc.js": "dps-2610150038",
-  "data.js": "dps-2610150038",
-  "modal.js": "dps-2610150038",
-  "preset.js": "dps-2610150038",
-  "responsive.js": "dps-2610150038",
-  "style.css": "dps-2610150039",
-  "icon.png": "dps-2610150038",
-  "logo.png": "dps-2610150038"
+  "app.js": "dps-2610160000",
+  "calc.js": "dps-2610160000",
+  "data.js": "dps-2610160000",
+  "modal.js": "dps-2610160000",
+  "preset.js": "dps-2610160000",
+  "responsive.js": "dps-2610160000",
+  "style.css": "dps-2610160000",
+  "icon.png": "dps-2610160000",
+  "logo.png": "dps-2610160000"
 };
 (function(){
   'use strict';
@@ -198,14 +198,14 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 <meta content="https://sldbox.github.io/dps/" property="og:url"/>
 <meta content="개복디 특성 계산기" property="og:title"/>
 <meta content="특성 투자, 재화 사용량, 표기 스탯, 총데미지, DPS를 한 번에 계산할 수 있는 개복디 전용 계산기입니다." property="og:description"/>
-<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2610150038" property="og:image"/>
-<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2610150038" property="og:image:secure_url"/>
+<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2610160000" property="og:image"/>
+<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2610160000" property="og:image:secure_url"/>
 <meta content="image/png" property="og:image:type"/>
 <meta content="개복디 특성 계산기 로고" property="og:image:alt"/>
 <meta content="summary_large_image" name="twitter:card"/>
 <meta content="개복디 특성 계산기" name="twitter:title"/>
 <meta content="특성 투자, 재화 사용량, 표기 스탯, 총데미지, DPS를 한 번에 계산할 수 있는 개복디 전용 계산기입니다." name="twitter:description"/>
-<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2610150038" name="twitter:image"/>
+<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2610160000" name="twitter:image"/>
 <meta content="개복디 특성 계산기 로고" name="twitter:image:alt"/>
 <link href="https://cdn.jsdelivr.net" rel="preconnect"/>
 <link crossorigin="" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" rel="stylesheet"/>
@@ -286,6 +286,7 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 <div class="trait-standalone-panel trait-preset-panel" aria-label="특성 프리셋">
 <div class="trait-preset-title trait-subgroup-title">
 <span class="trait-preset-heading">특성 프리셋</span>
+<button class="trait-preset-guide-trigger" type="button" data-trait-preset-guide-open aria-label="프리셋 업데이트·백업 사용 안내 보기" title="프리셋 사용 안내"><svg viewBox="0 0 48 48" aria-hidden="true" focusable="false"><use href="#dpsHeaderBrandGlyph"/></svg><span>이용 안내</span></button>
 <div class="trait-preset-title-actions">
 <button class="btn subtle danger ui-action-btn trait-preset-title-btn" data-action="deleteTraitPreset" type="button">프리셋 삭제</button>
 <button class="btn subtle danger ui-action-btn trait-preset-title-btn" data-action="resetAllTraitPresetState" id="traitPresetResetAllBtn" type="button">프리셋 초기화</button>
@@ -309,14 +310,20 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 <button class="btn subtle ui-action-btn" data-action="updateTraitPreset" type="button">프리셋 업데이트</button>
 <button class="btn subtle ui-action-btn" data-action="backupTraitPresets" type="button">프리셋 백업</button>
 </div>
+<div class="trait-preset-progress" aria-live="polite" aria-atomic="true" aria-label="프리셋 저장 진행 상태">
+  <div class="trait-preset-progress-step" id="traitPresetUpdateStep" data-state="idle"><span class="trait-preset-progress-number">01</span><span class="trait-preset-progress-copy"><strong>프리셋 업데이트</strong><small id="traitPresetUpdateHint">프리셋을 선택하세요</small></span><span class="trait-preset-progress-badge" id="traitPresetUpdateBadge">대기</span><button class="trait-preset-progress-dismiss" data-trait-preset-update-dismiss type="button" aria-label="프리셋 변경 안내 닫기" title="안내만 숨기기 (입력값 유지)" hidden>×</button></div>
+  <div class="trait-preset-progress-bridge" aria-hidden="true"></div>
+  <div class="trait-preset-progress-step" id="traitPresetBackupStep" data-state="idle"><span class="trait-preset-progress-number">02</span><span class="trait-preset-progress-copy"><strong>통합 프리셋 백업</strong><small id="traitPresetBackupHint">백업할 프리셋이 없습니다</small></span><span class="trait-preset-progress-badge" id="traitPresetBackupBadge">대기</span></div>
+</div>
 <input id="traitPresetImportFile" class="hidden-field" type="file" accept=".txt,text/plain"/>
 </div>
 </div>
-<!-- 기본 정보: 재화·모드·난이도 -->
+<div class="basic-goal-cards">
+<!-- 기본 정보: 재화 -->
 <div class="sg xp-sp-card">
 <div class="sg-title basic-info-title"><span>기본 정보</span><div class="basic-info-title-actions"><button class="btn subtle ui-action-btn basic-info-title-btn" data-action="openSanctuarySkillModal" type="button" aria-haspopup="dialog" aria-controls="sanctuarySkillModal">성소 스킬</button><button class="btn subtle ui-action-btn basic-info-title-btn" data-action="openBusPassengerModal" type="button" aria-haspopup="dialog" aria-controls="busPassengerModal">버스 승객</button></div></div>
 <div class="xp-sp-split basic-info-grid">
-<div class="xp-sp-panel basic-info-panel" data-basic-info-side="left">
+<div class="xp-sp-panel basic-info-panel">
 <div class="basic-info-row manual-resource" data-basic-row="start-sp"><label for="sp">시작 SP</label><input class="money-input" id="sp" inputmode="numeric" type="text" value="0"/></div>
 <div class="basic-info-row readonly-resource" data-basic-row="total-sp"><label>총 SP</label><b id="spTotalBasicView">0</b></div>
 <div class="basic-info-row readonly-resource" data-basic-row="used-sp-attack"><label>사용한 SP (공격)</label><b id="spAttackView">0</b></div>
@@ -336,7 +343,13 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 <div class="basic-info-row readonly-resource" data-basic-row="remain-soul"><label>남은 심연의혼</label><b id="soulRemainBasicView">0</b></div>
 <input id="ep" type="hidden" value="0"/>
 </div>
-<div class="xp-sp-panel basic-info-panel" data-basic-info-side="right">
+</div>
+</div>
+<!-- 목표설정: 난이도·진행 목표 -->
+<div class="sg xp-sp-card goal-settings-card">
+<div class="sg-title"><span>목표설정</span></div>
+<div class="xp-sp-split basic-info-grid">
+<div class="xp-sp-panel basic-info-panel">
 <div class="basic-info-row" data-basic-row="difficulty"><label for="diff">난이도</label><select id="diff">
 <option selected="">Practice</option><option>Very Easy</option><option>Easy</option>
 <option>Normal</option><option>Hard</option><option>Very Hard</option>
@@ -366,6 +379,7 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 </div>
 </div>
  </div>
+</div>
 <!-- 룬 정보·스탯 -->
 <div class="sg rune-spec clean-rune-card">
 <div class="sg-title"><span>룬정보</span></div>
@@ -388,6 +402,7 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 <option value="harmony">총 데미지 &amp; 유닛 가속</option>
 </select>
 <input id="runeChoiceValue" type="text" value="0" inputmode="decimal"/>
+<div class="rune-mod-empty" aria-hidden="true"></div>
 </div>
 <div class="rune-stat-row">
 <label>공격속도</label>
