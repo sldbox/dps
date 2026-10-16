@@ -4,18 +4,18 @@
 <meta charset="UTF-8"/>
 <meta name="google-site-verification" content="RTuDWbMdnKgbpRpl05eXh9epFwWRSxju4NOl8OtjMsI" />
 <script>
-window.DPS_BUILD_VERSION = "dps-2610150037";
-window.APP_VERSION = "dps-2610150037";
+window.DPS_BUILD_VERSION = "dps-2610150039";
+window.APP_VERSION = "dps-2610150039";
 window.DPS_ASSET_VERSIONS = {
-  "app.js": "dps-2610150037",
-  "calc.js": "dps-2610150037",
-  "data.js": "dps-2610150037",
-  "modal.js": "dps-2610150037",
-  "preset.js": "dps-2610150037",
-  "responsive.js": "dps-2610150037",
-  "style.css": "dps-2610150037",
-  "icon.png": "dps-2610150037",
-  "logo.png": "dps-2610150037"
+  "app.js": "dps-2610150038",
+  "calc.js": "dps-2610150038",
+  "data.js": "dps-2610150038",
+  "modal.js": "dps-2610150038",
+  "preset.js": "dps-2610150038",
+  "responsive.js": "dps-2610150038",
+  "style.css": "dps-2610150039",
+  "icon.png": "dps-2610150038",
+  "logo.png": "dps-2610150038"
 };
 (function(){
   'use strict';
@@ -198,14 +198,14 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 <meta content="https://sldbox.github.io/dps/" property="og:url"/>
 <meta content="개복디 특성 계산기" property="og:title"/>
 <meta content="특성 투자, 재화 사용량, 표기 스탯, 총데미지, DPS를 한 번에 계산할 수 있는 개복디 전용 계산기입니다." property="og:description"/>
-<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2610150037" property="og:image"/>
-<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2610150037" property="og:image:secure_url"/>
+<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2610150038" property="og:image"/>
+<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2610150038" property="og:image:secure_url"/>
 <meta content="image/png" property="og:image:type"/>
 <meta content="개복디 특성 계산기 로고" property="og:image:alt"/>
 <meta content="summary_large_image" name="twitter:card"/>
 <meta content="개복디 특성 계산기" name="twitter:title"/>
 <meta content="특성 투자, 재화 사용량, 표기 스탯, 총데미지, DPS를 한 번에 계산할 수 있는 개복디 전용 계산기입니다." name="twitter:description"/>
-<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2610150037" name="twitter:image"/>
+<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2610150038" name="twitter:image"/>
 <meta content="개복디 특성 계산기 로고" name="twitter:image:alt"/>
 <link href="https://cdn.jsdelivr.net" rel="preconnect"/>
 <link crossorigin="" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" rel="stylesheet"/>
@@ -368,7 +368,7 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
  </div>
 <!-- 룬 정보·스탯 -->
 <div class="sg rune-spec clean-rune-card">
-<div class="sg-title"><span>룬정보 버프</span></div>
+<div class="sg-title"><span>룬정보</span></div>
 <div class="rune-panel tidy-rune-panel">
 <div class="rune-basic-card">
 <div class="rune-panel-title">사용중인 룬 정보</div>
@@ -412,61 +412,67 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 <select id="rReinf"><option selected="" value="0">선택 안함</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option><option>9</option><option>10</option><option>11</option><option>12</option><option>13</option><option>14</option><option>15</option></select>
 <label>룬 각성</label>
 <select id="rAsc"><option selected="" value="없음">선택 안함</option><option>a</option><option>b</option><option>c</option><option>d</option><option>e</option><option>f</option><option value="g">g</option></select>
-<label>종족 업그레이드</label>
+<label>종족업</label>
 <select class="choice-input" id="raceOpt"><option selected="" value="없음">선택 안함</option><option>저그</option><option>테란 바이오닉</option><option>테란 메카닉</option><option>플토 바이오닉</option><option>플토 메카닉</option><option>중립</option><option>중장갑</option><option>경장갑</option><option>사이오닉</option></select>
-<label>10강 옵션</label>
+<label>룬 10강 옵션</label>
 <select class="choice-input" id="opt10"><option selected="" value="none">선택 안함</option><option value="cd50">크리티컬 피해량 +50%</option><option value="ua15">유닛 가속 +15%</option><option value="cri22">크리티컬 확률 +22%</option><option value="dr25">적 방어력 감소 25%</option><option value="mc3">다중 크리 +3</option><option value="reinf5">유닛 최대 강화수 +5</option><option value="removeBuff">적버프 50% 확률로 제거</option><option value="raceAll1">모든 종족업 +1(최대21)</option><option value="ad15">공격력 +15%</option><option value="td2">총 데미지 2배</option><option value="shieldImmune">슈퍼쉴드 면역</option></select>
-<label>15강 옵션</label>
+<label>룬 15강 옵션</label>
 <select class="choice-input" id="opt15"><option selected="" value="none">선택 안함</option><option value="cd50">크리티컬 피해량 +50%</option><option value="ua15">유닛 가속 +15%</option><option value="cri22">크리티컬 확률 +22%</option><option value="dr25">적 방어력 감소 25%</option><option value="mc3">다중 크리 +3</option><option value="reinf5">유닛 최대 강화수 +5</option><option value="removeBuff">적버프 50% 확률로 제거</option><option value="raceAll1">모든 종족업 +1(최대21)</option><option value="ad15">공격력 +15%</option></select>
-<label>초월 옵션</label>
+<label>룬 초월 옵션</label>
 <select class="choice-input" id="transOpt"><option selected="" value="none">선택 안함</option><option value="cd50">크리티컬 피해량 +50%</option><option value="ua15">유닛 가속 +15%</option><option value="cri22">크리티컬 확률 +22%</option><option value="dr25">적 방어력 감소 25%</option><option value="mc3">다중 크리 +3</option><option value="reinf5">유닛 최대 강화수 +5</option><option value="removeBuff">적버프 50% 확률로 제거</option><option value="raceAll1">모든 종족업 +1(최대21)</option><option value="ad15">공격력 +15%</option></select>
 </div>
 </div>
 <div class="additional-editor">
 <div class="rune-panel-title additional-title-row"><span>에디셔널 버프</span><span class="additional-help">최하옵션/평균옵션 선택입력</span></div>
 <div class="additional-list">
-<div class="additional-row"><label>공격력</label><input id="addAD" type="text" value="0" inputmode="decimal"/></div>
-<div class="additional-row"><label>공격속도</label><input id="addAS" type="text" value="0" inputmode="decimal"/></div>
-<div class="additional-row"><label>크리티컬 데미지</label><input id="addCD" type="text" value="0" inputmode="decimal"/></div>
-<div class="additional-row"><label>크리티컬 확률</label><input id="addCRI" type="text" value="0" inputmode="decimal"/></div>
-<div class="additional-row"><label>마법공격력</label><input id="addAP" type="text" value="0" inputmode="decimal"/></div>
-<div class="additional-row"><label>총 데미지</label><input id="addTD" type="text" value="0" inputmode="decimal"/></div>
-<div class="additional-row"><label>유닛 가속</label><input id="addUA" type="text" value="0" inputmode="decimal"/></div>
+<div class="additional-row"><label>에디셔널 공격력</label><input id="addAD" type="text" value="0" inputmode="decimal"/></div>
+<div class="additional-row"><label>에디셔널 공격속도</label><input id="addAS" type="text" value="0" inputmode="decimal"/></div>
+<div class="additional-row"><label>에디셔널 크리티컬 데미지</label><input id="addCD" type="text" value="0" inputmode="decimal"/></div>
+<div class="additional-row"><label>에디셔널 크리티컬 확률</label><input id="addCRI" type="text" value="0" inputmode="decimal"/></div>
+<div class="additional-row"><label>에디셔널 마법공격력</label><input id="addAP" type="text" value="0" inputmode="decimal"/></div>
+<div class="additional-row"><label>에디셔널 총 데미지</label><input id="addTD" type="text" value="0" inputmode="decimal"/></div>
+<div class="additional-row"><label>에디셔널 유닛 가속</label><input id="addUA" type="text" value="0" inputmode="decimal"/></div>
 </div>
 </div>
 <div class="enchant-combined">
 <div class="rune-panel-title">사용중인 룬 인첸트 레벨</div>
 <div class="enchant-combined-grid">
 <div class="enchant-combined-row">
-<label class="enchant-result-label"><span>공격력</span><b id="enchOutAD" class="enchant-result-value">65</b></label>
+<label class="enchant-result-label"><span>인첸트 공격력</span><b id="enchOutAD" class="enchant-result-value">65</b></label>
 <input id="enchAD" type="text" value="0" inputmode="decimal"/>
 </div>
 <div class="enchant-combined-row">
-<label class="enchant-result-label"><span>크리티컬 확률</span><b id="enchOutCRI" class="enchant-result-value">24</b></label>
+<label class="enchant-result-label"><span>인첸트 크리티컬 확률</span><b id="enchOutCRI" class="enchant-result-value">24</b></label>
 <input id="enchCRI" type="text" value="0" inputmode="decimal"/>
 </div>
 <div class="enchant-combined-row">
-<label class="enchant-result-label"><span>유닛 가속</span><b id="enchOutUA" class="enchant-result-value">1.16×</b></label>
+<label class="enchant-result-label"><span>인첸트 유닛 가속</span><b id="enchOutUA" class="enchant-result-value">1.16×</b></label>
 <input id="enchUA" type="text" value="0" inputmode="decimal"/>
 </div>
 <div class="enchant-combined-row">
-<label class="enchant-result-label"><span>총 데미지</span><b id="enchOutTD" class="enchant-result-value">7</b></label>
+<label class="enchant-result-label"><span>인첸트 총 데미지</span><b id="enchOutTD" class="enchant-result-value">7</b></label>
 <input id="enchTD" type="text" value="0" inputmode="decimal"/>
 </div>
 <div class="enchant-combined-row">
-<label class="enchant-result-label"><span>실드 감소</span><b id="enchOutSR" class="enchant-result-value">16.02</b></label>
+<label class="enchant-result-label"><span>인첸트 실드 감소</span><b id="enchOutSR" class="enchant-result-value">16.02</b></label>
 <input id="enchSR" type="text" value="0" inputmode="decimal"/>
 </div>
 <div class="enchant-combined-row">
-<label class="enchant-result-label"><span>체력 감소</span><b id="enchOutHR" class="enchant-result-value">16.02</b></label>
+<label class="enchant-result-label"><span>인첸트 체력 감소</span><b id="enchOutHR" class="enchant-result-value">16.02</b></label>
 <input id="enchHR" type="text" value="0" inputmode="decimal"/>
 </div>
 </div>
 <input id="enchantCode" type="hidden" value="000000"/>
 </div>
 </div>
-<!-- 룬효과·강화·버프 -->
+<input id="rAP" type="hidden" value="0"/>
+<input id="rTD" type="hidden" value="0"/>
+<input id="rUA" type="hidden" value="0"/>
+<input id="rHarmony" type="hidden" value="0"/>
+</div>
+<!-- 효과 및 버프: 독립 카드 -->
 <div class="sg unit-enhance-card spec-unit-enhance rune-effect-panel">
+<div class="sg-title"><span>효과 및 버프</span></div>
 <div class="unit-enhance-main-row">
 <div class="unit-enhance-left">
 <div class="unit-enhance-control-stack">
@@ -555,11 +561,6 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 <input id="unitLevel" type="hidden" value="0"/>
 </div>
 </div>
-</div>
-<input id="rAP" type="hidden" value="0"/>
-<input id="rTD" type="hidden" value="0"/>
-<input id="rUA" type="hidden" value="0"/>
-<input id="rHarmony" type="hidden" value="0"/>
 </div>
 <!-- 더제로 승단정보 -->
 <div class="data-card zero-rank-card">
