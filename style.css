@@ -1362,7 +1362,9 @@ body .trait-preset-custom-select{position:relative;width:100%;min-width:0;z-inde
 body .trait-preset-custom-select.is-open{z-index:140;}
 /* 열린 목록이 하단 관리 버튼 카드보다 항상 위에 렌더링되도록 상위 stacking context를 승격 */
 body .trait-preset-panel,body .trait-preset-body{overflow:visible;}
+body .trait-preset-panel.is-menu-open{position:relative;z-index:5;}
 body .trait-preset-body{position:relative;isolation:isolate;}
+body .trait-preset-panel.is-menu-open > .trait-preset-body{z-index:3;}
 body .trait-preset-form-card{position:relative;z-index:1;}
 body .trait-preset-form-card.is-menu-open{z-index:60;}
 body .trait-preset-custom-select.opens-up .trait-preset-custom-menu{top:auto;bottom:calc(100% + 6px);}

@@ -1201,6 +1201,7 @@ function setTraitPresetCustomSelectOpen(custom, open){
   const active=!!open;
   custom.classList.toggle('is-open',active);
   custom.closest('.trait-preset-form-card')?.classList.toggle('is-menu-open',active);
+  custom.closest('.trait-preset-panel')?.classList.toggle('is-menu-open',active);
   if(active){
     const rect=custom.getBoundingClientRect();
     const availableBelow=window.innerHeight-rect.bottom;
@@ -2124,7 +2125,7 @@ async function importTraitPresetFile(file){
 function handleTraitPresetChange(e){
   if(e.target?.id==='traitPresetSelect'){
     updateTraitPresetBeforeSelectionChange(e.target.value);
-    loadTraitPresetById(e.target.value,{preserveSharedValues:false});
+    loadTraitPresetById(e.target.value,{preserveSharedValues:false,useDraft:false,discardDraft:true});
   }
   if(e.target?.id==='traitPresetImportFile' && e.target.files?.[0]){
     const file=e.target.files[0];
