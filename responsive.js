@@ -9,8 +9,8 @@
   const MODES = ['is-pc-landscape', 'is-pc-portrait', 'is-tablet', 'is-mobile', 'is-portrait-view', 'is-mobile-device', 'is-tablet-device', 'is-narrow-mobile', 'is-tabbed'];
   const TABBED_PAGES = [
     { key: 'basic', label: '기본 정보', selectors: ['.trait-preset-panel', '.col-left'] },
-    { key: 'trait', label: '특성 보드', selectors: ['.trait-board-panel'] },
-    { key: 'specUnit', label: '스펙/유닛 보드', selectors: ['.stat-dps-card'] }
+    { key: 'trait', label: '특성 관리', selectors: ['.trait-board-panel'] },
+    { key: 'specUnit', label: '분석 보드', selectors: ['.stat-dps-card'] }
   ];
   const state = {
     tabs: null,
@@ -127,7 +127,8 @@
       btn.type = 'button';
       btn.id = `mobileTab-${page.key}`;
       btn.className = ['mobile-section-tab', 'mobile-section-page-tab', page.toneClass].filter(Boolean).join(' ');
-      btn.textContent = page.label;
+      const glyph = page.key === 'basic' ? '▤' : page.key === 'trait' ? '✦' : '▥';
+      btn.innerHTML = `<span class="mobile-tab-glyph" aria-hidden="true">${glyph}</span><span class="mobile-tab-label">${page.label}</span>`;
       btn.setAttribute('role', 'tab');
       btn.setAttribute('aria-selected', 'false');
       btn.setAttribute('aria-controls', page.el.id);

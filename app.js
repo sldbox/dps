@@ -223,6 +223,10 @@ function renderEnemyData(data){
   setText('enemyHpQuick', fullNumber(data.hp));
   setText('enemyShieldQuick', fullNumber(data.shield));
   setText('enemyCountQuick', enemyDisplayCountText(data.round));
+  const countText=enemyDisplayCountText(data.round);
+  const countParts=String(countText).split(' / ');
+  setText('enemyWaveCountQuick',countParts[0] || '—');
+  setText('enemyTotalCountQuick',countParts.length>1 ? countParts[1] : countParts[0] || '—');
 }
 function syncRuneChoice(){
   const type=vs('runeChoiceType') || 'harmony';
@@ -452,7 +456,18 @@ const STAT_COMPARE_ROWS=[
   ['MP', s=>fmt(s.M17,0), s=>fmt(s.M17,0)],
   ['MCP', s=>fmt(s.M18,0), s=>fmt(s.M18,0)]
 ];
+function dpsBoardContextHtml(){
+  const ctx=getDpsContextValues();
+  const modeTokens=String(ctx.modePrimary||'—').split(' · ').map(token=>token.trim()).filter(Boolean);
+  const difficultyTokens=String(ctx.diff||'—').split(' · ').map(token=>token.trim()).filter(Boolean);
+  return `<span class="right-mode-first">${modeTokens.map(token=>`<span>${escapeHtml(token)}</span>`).join('')}</span><span class="right-mode-second">${difficultyTokens.map(token=>`<span>${escapeHtml(token)}</span>`).join('')}</span>`;
+}
+function renderRightHeroContext(){
+  const target=$('rightHeroCompactContext');
+  if(target) target.innerHTML=dpsBoardContextHtml();
+}
 function renderStatSummary(s){
+  renderRightHeroContext();
   const artifactView=isArtifactDpsViewEnabled();
   const coopActive=isCoopActive();
   const teamCount=typeof effectiveTeamCount==='function' ? effectiveTeamCount() : Math.max(1, Math.min(3, Number(v('team')) || 1));
@@ -532,6 +547,34 @@ function renderCalculatedViews(s){
   updateTraits();
   renderTraitRecommendations();
 }
+/* 특성 투자 제한: 원본 ON/OFF 셀렉트와 좌우 선택 버튼 동기화 */
+const TRAIT_LIMIT_STATUS_FIELDS=['traitLimitAD','traitLimitAS','traitLimitCRI','traitLimitCD','traitLimitMultiTarget','traitLimitInfinite'];
+function syncTraitLimitControlPresentation(){
+  for(const id of ['traitLimitMultiTarget','traitLimitInfinite']){
+    const field=$(id);
+    if(!field) continue;
+    document.querySelectorAll(`[data-limit-select="${id}"]`).forEach(button=>{
+      button.setAttribute('aria-pressed',String(button.dataset.limitValue===field.value));
+    });
+  }
+}
+function bindTraitLimitChoiceEvents(){
+  document.addEventListener('click',event=>{
+    const button=event.target.closest?.('[data-limit-select][data-limit-value]');
+    if(!button || button.disabled) return;
+    const field=$(button.dataset.limitSelect);
+    if(!field || field.value===button.dataset.limitValue) return;
+    field.value=button.dataset.limitValue;
+    syncTraitLimitControlPresentation();
+    field.dispatchEvent(new Event('change',{bubbles:true}));
+  });
+  document.addEventListener('input',event=>{
+    if(TRAIT_LIMIT_STATUS_FIELDS.includes(event.target?.id)) syncTraitLimitControlPresentation();
+  },true);
+  document.addEventListener('change',event=>{
+    if(TRAIT_LIMIT_STATUS_FIELDS.includes(event.target?.id)) syncTraitLimitControlPresentation();
+  },true);
+}
 /* 계산 실행·예약 */
 let appCalculationRevision=0;
 let appUpdateTimer=0;
@@ -542,6 +585,7 @@ function invalidateAppCalculations(){
 function recalc(options={}){
   try{
     syncPreCalculationViews();
+    syncTraitLimitControlPresentation();
     withArtifactDpsViewBuffApplied(()=>{
       const stats=computeStatsRaw();
       invalidateAppCalculations();
@@ -581,7 +625,8 @@ function renderEnhanceSummary(stats=null){
     enhanceChanceView:(e.chance*100).toFixed(2)+'%',
     enhanceCountView:`${fmt(e.count,0)}회`,
     enhanceValueView:fmt(e.value,0),
-    sepRuneImpactView:`${fmt(unitLimit,0)}마리\n+${fmt(sepPlusUniqueAd,0)} 공격력`
+    sepRuneQuantityView:fmt(unitLimit,0),
+    sepRuneAttackView:`+${fmt(sepPlusUniqueAd,0)}`
   });
 }
 function renderEnchantPreview(){
@@ -744,9 +789,6 @@ let activeDpsTableMode='solo';
 function isDpsTableOpen(){
   return $('dpsTableModal')?.classList.contains('is-open')===true;
 }
-function getDpsTableTowerGroupSize(mode){
-  return mode==='planet' ? 35 : 30;
-}
 function formatDpsTableValue(value){
   if(!Number.isFinite(value)) return '—';
   return value.toLocaleString('ko-KR',{minimumFractionDigits:DPS_TABLE_DECIMALS, maximumFractionDigits:DPS_TABLE_DECIMALS});
@@ -788,113 +830,96 @@ function dpsTableDisplayTitle(){
 }
 function syncDpsTableLabels(){
   const label=dpsTableDisplayTitle();
-  setText('dpsTableMenuButton', label);
+  const menuLabel=$('dpsTableMenuButton')?.querySelector('.header-reference-label');
+  if(menuLabel) menuLabel.textContent=label;
   const titleEl=$('dpsTableTitle');
   if(titleEl && isDpsTableOpen()) titleEl.textContent=label;
   const closeBtn=$('dpsTableModal')?.querySelector('.dps-table-modal-close');
   if(closeBtn && isDpsTableOpen()) closeBtn.setAttribute('aria-label', `${label} 닫기`);
 }
 
-function dpsTableCellHtml(value, active){
-  const classes=active ? 'dps-current-cell' : '';
-  return `<td${classes ? ` class="${classes}"` : ''}>${formatDpsTableValue(value)}</td>`;
-}
-function buildPenanceDpsMatrix({difficulties, penanceMin, penanceMax, currentPen, round, previewOptions={}, tableClass=''}){
-  const currentDiff=vs('diff');
-  const clampedPen=Math.max(penanceMin, Math.min(penanceMax, Math.round(currentPen)));
-  const head=difficulties.map(diff=>`<th class="${diff===currentDiff?'dps-current-column':''}">${diff}</th>`).join('');
-  const rows=[];
-  for(let pen=penanceMin; pen<=penanceMax; pen++){
-    const rowCurrent=pen===clampedPen;
-    const cells=difficulties.map(diff=>{
-      const value=dpsTablePreviewValue(diff, pen, round, previewOptions);
-      return dpsTableCellHtml(value, rowCurrent && diff===currentDiff);
-    }).join('');
-    rows.push(`<tr${rowCurrent?' class="dps-current-row"':''}><th>${pen}</th>${cells}</tr>`);
-  }
-  return `<table class="dps-matrix dps-round-matrix${tableClass ? ' '+tableClass : ''}"><thead><tr><th>고행</th>${head}</tr></thead><tbody>${rows.join('')}</tbody></table>`;
-}
-function buildDpsTable(round){
-  const matrix=buildPenanceDpsMatrix({
-    difficulties:DPS_TABLE_DIFFICULTIES,
-    penanceMin:DPS_TABLE_PENANCE_MIN,
-    penanceMax:DPS_TABLE_PENANCE_MAX,
-    currentPen:v('penance'),
-    round,
-    previewOptions:{battleMode:'solo'}
-  });
-  const pen=Math.max(DPS_TABLE_PENANCE_MIN,Math.min(DPS_TABLE_PENANCE_MAX,Math.round(v('penance'))));
-  return `<div class="dps-coop-stack dps-solo-stack" aria-label="개인 DPS표"><div class="dps-coop-group"><div class="dps-coop-title"><b>개인 · ${pen} 고행 · ${round} 라운드</b></div><div class="dps-coop-scroll">${matrix}</div></div></div>`;
-}
-function buildCoopDpsMatrix(round, teamCount){
-  return buildPenanceDpsMatrix({
-    difficulties:COOP_DPS_TABLE_DIFFICULTIES,
-    penanceMin:COOP_DPS_TABLE_PENANCE_MIN,
-    penanceMax:COOP_DPS_TABLE_PENANCE_MAX,
-    currentPen:v('penance'),
-    round,
-    previewOptions:{battleMode:'coop', teamCount},
-    tableClass:`dps-coop-matrix dps-coop-${teamCount}-matrix`
-  });
+// 고행별 전체 난이도 격자 대신, 계산 결과를 난이도별 압축 비교로 표시합니다.
+let dpsVisualDifficulty='';
+function selectedDpsVisualDifficulty(mode){
+  const options=mode==='coop'?COOP_DPS_TABLE_DIFFICULTIES:DPS_TABLE_DIFFICULTIES;
+  if(!options.includes(dpsVisualDifficulty)) dpsVisualDifficulty=options.includes(vs('diff'))?vs('diff'):options[0];
+  return dpsVisualDifficulty;
 }
 function selectedCoopDpsTableTeamCount(){
   return normalizeTeamCountValue(vs('team'), 2)==='3' ? 3 : 2;
 }
-function buildCoopDpsTable(round){
-  const teamCount=selectedCoopDpsTableTeamCount();
-  const roundLabel=`${round} 라운드`;
-  const block=`
-    <div class="dps-coop-group" aria-label="협동 ${teamCount}인 DPS표">
-      <div class="dps-coop-title"><b>협동 ${teamCount}인 · ${roundLabel}</b></div>
-      <div class="dps-coop-scroll">${buildCoopDpsMatrix(round, teamCount)}</div>
+function buildDpsVisualComparison(round,mode){
+  const coop=mode==='coop';
+  const difficulty=selectedDpsVisualDifficulty(mode);
+  const teamCount=coop?selectedCoopDpsTableTeamCount():1;
+  const penanceMin=coop?COOP_DPS_TABLE_PENANCE_MIN:DPS_TABLE_PENANCE_MIN;
+  const penanceMax=coop?COOP_DPS_TABLE_PENANCE_MAX:DPS_TABLE_PENANCE_MAX;
+  const current=Math.max(penanceMin,Math.min(penanceMax,Math.round(v('penance'))));
+  const values=[];
+  for(let pen=penanceMin;pen<=penanceMax;pen++){
+    const dps=dpsTablePreviewValue(difficulty,pen,round,{battleMode:coop?'coop':'solo',...(coop?{teamCount}:{})});
+    values.push({pen,dps});
+  }
+  const currentValue=values.find(item=>item.pen===current)?.dps;
+  const enemy=enemyRoundData(round,difficulty);
+  const enemyFactor=coop ? teamCount : 1;
+  const waveCount=(Number(enemy.count)||0)*enemyFactor;
+  const totalCount=enemyRoundCountTotal(round,difficulty)*enemyFactor;
+  const enemyTime=specDpsRoundTime(round,difficulty);
+  const enemyItems=[['체력',fullNumber(enemy.hp)],['실드',fullNumber(enemy.shield)],['방어력',fullNumber(enemy.armor)],['물량',fullNumber(waveCount)],['총물량',fullNumber(totalCount)],['라운드 시간',Number.isFinite(enemyTime) ? `${fmt(enemyTime,1)}초` : '—']];
+  const enemyHtml=enemyItems.map(([label,value])=>`<div class="dps-table-enemy-stat"><span>${label}</span><strong>${escapeHtml(String(value))}</strong></div>`).join('');
+  const diffOptions=(coop?COOP_DPS_TABLE_DIFFICULTIES:DPS_TABLE_DIFFICULTIES).map(item=>`<option value="${escapeHtml(item)}"${item===difficulty?' selected':''}>${escapeHtml(item)}</option>`).join('');
+  const cells=values.map(({pen,dps})=>`<div class="dps-compact-cell${pen===current?' is-current':''}" data-dps-penance="${pen}">
+      <span class="dps-compact-pen">${pen} 고행</span><strong class="dps-compact-value">${formatDpsTableValue(dps)} <small class="dps-score-unit">DPS</small></strong>
+    </div>`).join('');
+  return `<div class="dps-overview">
+    <div class="dps-overview-main">
+      <div class="dps-overview-condition"><div class="dps-overview-title">모드 / 난이도</div><strong class="dps-overview-mode">${coop?'협동 · '+teamCount+'인':'개인'} · ${current} 고행 · ${round} 라운드</strong><label class="dps-overview-select"><span>난이도 선택</span><select id="dpsVisualDifficulty" data-dps-view-diff aria-label="비교할 난이도 선택">${diffOptions}</select></label></div>
+      <div class="dps-overview-highlight"><div class="dps-overview-title">현재 DPS</div><strong>${formatDpsTableValue(currentValue)}</strong><span class="dps-overview-dps-unit">DPS</span></div>
+      <section class="dps-table-enemy-summary" aria-label="현재 조건의 적 정보"><div class="dps-overview-title">적 정보</div><div class="dps-table-enemy-grid">${enemyHtml}</div></section>
     </div>
-  `;
-  return `<div class="dps-table-scroll dps-coop-table-scroll"><div class="dps-coop-stack">${block}</div></div>`;
+    <div class="dps-overview-results"><div class="dps-overview-list-head"><strong>고행별 DPS</strong><span>${penanceMin}–${penanceMax} · ${values.length}개</span></div>
+      <div class="dps-compact-grid" style="--dps-row-count:${Math.ceil(values.length/3)};--dps-row-count-2:${Math.ceil(values.length/2)}" aria-label="${escapeHtml(difficulty)} 고행별 DPS 비교">${cells}</div></div>
+  </div>`;
 }
-function buildDpsTowerTable(){
-  const currentFloor=normalizedTowerFloorNumber(challengeTowerFloorStoredValue());
-  const tower=DPS_CONFIG.dpsTable.tower || {};
-  const range={ min:Math.max(1, Math.round(tower.minFloor || 1)), max:Math.max(1, Math.round(tower.maxFloor || 90)) };
-  const groupSize=getDpsTableTowerGroupSize('tower');
-  const chunks=chunkDpsTowerFloors(range.min, range.max, groupSize);
-  const blocks=chunks.map(floors=>{
-    const rows=floors.map(floor=>{
-      const value=dpsTablePreviewValue('도전의 탑', 0, floor, {battleMode:'solo'});
-      const currentCell=currentFloor===floor;
-      const classes=['dps-cell', currentCell?'dps-current-cell':''].filter(Boolean).join(' ');
-      const enemyItems=towerEnemySummaryItems(floor);
-      const enemySummaryHtml=enemyItems.map(([label,value])=>`<span class="dps-tower-enemy-item"><em>${label}</em><b>${value}</b></span>`).join('');
-      return `<tr${currentCell?' class="dps-current-row"':''} data-dps-floor="${floor}"><td class="${classes}"><span class="dps-tower-floor">${floor}층</span><b class="dps-tower-value">${formatDpsTableValue(value)}</b><span class="dps-tower-enemy">${enemySummaryHtml}</span></td></tr>`;
-    }).join('');
-    const first=floors[0], last=floors[floors.length-1];
-    return `<div class="dps-tower-block" aria-label="도전의탑 ${first}층부터 ${last}층까지"><table class="dps-matrix dps-tower-matrix"><caption>${first}층 ~ ${last}층</caption><thead><tr><th class="dps-tower-head"><span>층</span><span>DPS</span><span>적 정보</span></th></tr></thead><tbody>${rows}</tbody></table></div>`;
-  }).join('');
-  return `<div class="dps-tower-grid" data-tower-group-size="${groupSize}">${blocks}</div>`;
+function changeDpsVisualDifficulty(value){
+  const choices=activeDpsTableMode==='coop'?COOP_DPS_TABLE_DIFFICULTIES:DPS_TABLE_DIFFICULTIES;
+  if(!choices.includes(value)||!isDpsTableOpen()) return;
+  dpsVisualDifficulty=value;
+  renderDpsTablePanelContent();
 }
-function buildDpsPlanetTable(){
-  const currentFloor=normalizedPlanetExplorationFloorNumber(planetExplorationFloorStoredValue());
-  const planet=DPS_CONFIG.dpsTable.planet || {};
-  const range={ min:Math.max(1, Math.round(planet.minFloor || 1)), max:Math.max(1, Math.round(planet.maxFloor || 100)) };
-  const groupSize=getDpsTableTowerGroupSize('planet');
-  // 행성탐사 1~35 / 36~70 / 71~100 (35·35·30층)
-  const chunks=[
-    ...chunkDpsTowerFloors(range.min, Math.min(range.max, 70), groupSize),
-    ...chunkDpsTowerFloors(Math.max(range.min, 71), range.max, 30)
-  ];
-  const diff=isPlanetExplorationDifficulty() ? vs('diff') : '행성탐사-코랄';
-  const blocks=chunks.map(floors=>{
-    const rows=floors.map(floor=>{
-      const value=dpsTablePreviewValue(diff, 0, floor, {battleMode:'solo'});
-      const currentCell=currentFloor===floor;
-      const classes=['dps-cell', currentCell?'dps-current-cell':''].filter(Boolean).join(' ');
-      const enemyItems=planetEnemySummaryItems(floor);
-      const enemySummaryHtml=enemyItems.map(([label,value])=>`<span class="dps-tower-enemy-item"><em>${label}</em><b>${value}</b></span>`).join('');
-      return `<tr${currentCell?' class="dps-current-row"':''} data-dps-floor="${floor}"><td class="${classes}"><span class="dps-tower-floor">${floor}층</span><b class="dps-tower-value">${formatDpsTableValue(value)}</b><span class="dps-tower-enemy">${enemySummaryHtml}</span></td></tr>`;
-    }).join('');
-    const first=floors[0], last=floors[floors.length-1];
-    return `<div class="dps-tower-block dps-planet-block" aria-label="행성탐사 ${first}층부터 ${last}층까지"><table class="dps-matrix dps-tower-matrix dps-planet-matrix"><caption>${first}층 ~ ${last}층</caption><thead><tr><th class="dps-tower-head"><span>층</span><span>DPS</span><span>적 정보</span></th></tr></thead><tbody>${rows}</tbody></table></div>`;
-  }).join('');
-  return `<div class="dps-tower-grid dps-planet-grid" data-tower-group-size="${groupSize}">${blocks}</div>`;
+function buildDpsFloorCards(mode){
+  const tower=mode==='tower';
+  const config=(tower?DPS_CONFIG.dpsTable.tower:DPS_CONFIG.dpsTable.planet)||{};
+  const current=tower?normalizedTowerFloorNumber(challengeTowerFloorStoredValue()):normalizedPlanetExplorationFloorNumber(planetExplorationFloorStoredValue());
+  const min=Math.max(1,Math.round(config.minFloor||1));
+  const max=Math.max(min,Math.round(config.maxFloor||(tower?90:100)));
+  const diff=tower?'도전의 탑':(isPlanetExplorationDifficulty()?vs('diff'):'행성탐사-코랄');
+  const middle=Math.floor((min+max)/2);
+  const halves=[[],[]];
+  let currentFloorDetails='';
+  let currentFloorDps=NaN;
+  for(let floor=min;floor<=max;floor++){
+    const value=dpsTablePreviewValue(diff,0,floor,{battleMode:'solo'});
+    const enemies=tower?towerEnemySummaryItems(floor):planetEnemySummaryItems(floor);
+    const details=enemies.map(([label,itemValue])=>`<span class="dps-floor-enemy"><small>${escapeHtml(String(label))}</small><b>${escapeHtml(String(itemValue))}</b></span>`).join('');
+    if(floor===current){currentFloorDps=value;currentFloorDetails=details;}
+    halves[floor<=middle?0:1].push(`<article class="dps-floor-card${floor===current?' is-current':''}" data-dps-floor="${floor}">
+      <div class="dps-floor-pair"><span class="dps-floor-number"><strong>${floor}층</strong></span><span class="dps-floor-score"><b>${formatDpsTableValue(value)} <small class="dps-score-unit">DPS</small></b></span></div>
+      <div class="dps-floor-enemies">${details}</div>
+    </article>`);
+  }
+  const halfHtml=halves.map((half,index)=>`<section class="dps-floor-half" aria-label="${index===0?min:middle+1}층부터 ${index===0?middle:max}층">
+    <header class="dps-floor-range">${index===0?min:middle+1}–${index===0?middle:max}층</header>
+    <div class="dps-floor-half-entries">${half.join('')}</div>
+  </section>`).join('');
+  return `<div class="dps-floor-view">
+    <div class="dps-current-floor-summary" aria-label="현재 선택 ${current}층 DPS 및 적 정보">
+      <div class="dps-current-floor-pair"><div class="dps-current-floor-number"><small>현재 선택 층</small><strong>${current}층</strong></div><div class="dps-current-floor-score"><small>예상 DPS</small><strong>${formatDpsTableValue(currentFloorDps)} <span class="dps-score-unit">DPS</span></strong></div></div>
+      <div class="dps-current-floor-enemies"><span class="dps-current-floor-label">적 정보</span><div class="dps-current-floor-enemy-items">${currentFloorDetails||'<span>정보 없음</span>'}</div></div>
+    </div>
+    <div class="dps-floor-split-grid">${halfHtml}</div>
+  </div>`;
 }
 function renderDpsTableTabs(){
   return [
@@ -913,15 +938,14 @@ function renderDpsTableTabs(){
 }
 function dpsTablePanelInnerHtml(){
   const round=normalizedRoundNumber(targetRoundStoredValue());
-  const tableHtml=activeDpsTableMode==='tower'
-    ? `<div class="dps-table-scroll">${buildDpsTowerTable()}</div>`
-    : activeDpsTableMode==='planet'
-      ? `<div class="dps-table-scroll">${buildDpsPlanetTable()}</div>`
-      : activeDpsTableMode==='coop'
-      ? buildCoopDpsTable(round)
-      : `<div class="dps-table-scroll dps-coop-table-scroll">${buildDpsTable(round)}</div>`;
-  const modeClass=activeDpsTableMode==='tower' ? 'dps-tower-panel' : (activeDpsTableMode==='planet' ? 'dps-tower-panel dps-planet-panel' : (activeDpsTableMode==='coop' ? 'dps-coop-panel' : 'dps-solo-panel'));
-  return `<section class="dps-table-panel dps-table-mode-panel ${modeClass}">${tableHtml}</section>`;
+  const mode=activeDpsTableMode;
+  const floorMode=mode==='tower'||mode==='planet';
+  const modeNames={solo:'개인',coop:'협동',tower:'도전의탑',planet:'행성탐사'};
+  const content=floorMode?buildDpsFloorCards(mode):buildDpsVisualComparison(round,mode);
+  return `<section class="dps-table-panel dps-table-mode-panel dps-redesigned-panel ${floorMode?'dps-floor-panel':'dps-comparison-panel'}">
+    <div class="dps-analysis-strip"><div class="dps-analysis-heading"><span class="dps-analysis-kicker">DAMAGE OVERVIEW</span><strong>${modeNames[mode]} · DPS 한눈에 보기</strong><small>${floorMode?'층별 DPS와 적 정보':'난이도 선택 · 고행별 DPS 비교'}</small></div></div>
+    ${content}
+  </section>`;
 }
 function syncDpsTableModalModeClass(){
   const dialog=$('dpsTableModal')?.querySelector('.dps-table-modal');
@@ -942,6 +966,7 @@ function renderDpsTablePanelContent(){
 function switchDpsTableMode(mode){
   if(!DPS_MODAL_MODES.includes(mode) || activeDpsTableMode===mode) return;
   activeDpsTableMode=mode;
+  dpsVisualDifficulty='';
   renderDpsTablePanelContent();
 }
 let dpsTowerResizeTimer=0;
@@ -954,6 +979,7 @@ function openDpsTable(mode='auto'){
   const fallbackMode=isTowerDifficulty() ? 'tower' : (isPlanetExplorationDifficulty() ? 'planet' : (isCoopActive() ? 'coop' : 'solo'));
   const normalizedMode=mode==='round' ? 'solo' : (mode==='auto' ? fallbackMode : mode);
   activeDpsTableMode=DPS_MODAL_MODES.includes(normalizedMode) ? normalizedMode : fallbackMode;
+  dpsVisualDifficulty='';
   window.DpsModal.openDpsTableModal();
 }
 /* 기본 정보·유닛 저장 필드 레지스트리 */
@@ -986,8 +1012,8 @@ const FIELD_REGISTRY={
   dpsBaseUnitExtraSettings:{kind:'유닛 보드',name:'추가 유닛 쥬얼 & 한계 돌파',save:true},
   dpsBaseUnitSlotExpansions:{kind:'유닛 보드',name:'슬롯 확장',save:true},
   dpsBaseUnitSpeedMode:{kind:'유닛 보드',name:'스피드 모드',save:true},
-  erosionStack:{kind:'목표설정',name:'침식 스텍',save:true},
-  jewelErosionRes:{kind:'목표설정',name:'심연 내성',save:true},
+  erosionStack:{kind:'목표설정',name:'어비스 침색 스텍',save:true},
+  jewelErosionRes:{kind:'목표설정',name:'어비스 심연 내성',save:true},
   aprRuneNormal:{kind:'룬효과 버프',name:'4월 일반',save:true},
   aprRunePlus:{kind:'룬효과 버프',name:'4월 강화(+)',save:true},
   sepRuneNormal:{kind:'룬효과 버프',name:'9월 일반',save:true},
@@ -1262,35 +1288,34 @@ function dpsBaseUnitAchievementText(value){
   const percent=dpsBaseUnitAchievementPercent(value);
   return percent===null ? '—' : `${dpsBaseUnitNumberText(percent,{trillion:true})}%`;
 }
-function dpsBaseUnitAchievementState(value){
-  const percent=dpsBaseUnitAchievementPercent(value);
-  if(percent===null || percent<100) return {label:'달성률 부족',status:'부족'};
-  if(percent===100) return {label:'달성률 달성',status:'달성'};
-  return {label:'달성률 초과',status:'초과'};
-}
 function renderDpsBaseUnitSummary(s,hidden=false){
   const el=$('dpsBaseUnitSummary');
   if(!el) return;
   const info=s?.dpsBaseUnit;
   const results=Array.isArray(info?.results) ? info.results : [];
-  const rpPierce=Number(info?.rpPierce)||0;
   const basePierce=Number(info?.basePierceBonus)||0;
   dpsBaseUnitBoardBasePierce=basePierce;
   const selectedResultEntries=(hidden ? [] : results).map(item=>[String(item?.unitId || ''),item]).filter(([id])=>id);
   dpsBaseUnitResultDisplayMap=new Map(selectedResultEntries);
   syncDpsBaseUnitControl();
   const requiredDps=Number(info?.requiredDps);
-  if(hidden || !Number.isFinite(requiredDps) || requiredDps<=0){
+  if(hidden){
     el.hidden=true;
     el.innerHTML='';
     return;
   }
+  const valid=Number.isFinite(requiredDps) && requiredDps>0;
   const expectedDps=Math.max(0,Number(info?.expectedDps)||0);
   const achievementRate=Math.max(0,Number(info?.achievementRate)||0);
-  const achievementState=dpsBaseUnitAchievementState(achievementRate);
-  const ctx=(typeof getDpsContextValues==='function') ? getDpsContextValues() : {modePrimary:'—',diff:'—'};
-  const contextHtml=`<div class="dps-base-unit-context-summary" aria-label="유닛 보드 기준"><div class="dps-context-item"><span class="dps-context-label">모드</span><strong>${escapeHtml(ctx.modePrimary || '—')}</strong></div><div class="dps-context-item"><span class="dps-context-label">난이도</span><strong>${escapeHtml(ctx.diff || '—')}</strong></div></div>`;
-  el.innerHTML=`<div class="dps-base-unit-summary-row"><div class="dps-base-unit-summary-item"><span class="dps-lbl">클리어 기준</span><b class="dps-num">${dpsBaseUnitSummaryMarkup(dpsBaseUnitNumberText(requiredDps,DPS_BASE_UNIT_SUMMARY_NUMBER_OPTIONS))}</b></div><div class="dps-base-unit-summary-item"><span class="dps-lbl">클리어 기대값</span><b class="dps-num">${dpsBaseUnitSummaryMarkup(dpsBaseUnitNumberText(expectedDps,DPS_BASE_UNIT_SUMMARY_NUMBER_OPTIONS))}</b></div><div class="dps-base-unit-summary-item"><span class="dps-lbl">${achievementState.label}</span><b class="dps-num">${dpsBaseUnitSummaryMarkup(dpsBaseUnitAchievementText(achievementRate))}</b></div></div>${contextHtml}`;
+  const rawPercent=valid ? dpsBaseUnitAchievementPercent(achievementRate) : null;
+  const shownPercent=rawPercent===null ? '—' : dpsBaseUnitAchievementText(achievementRate);
+  const fillPercent=rawPercent===null ? 0 : Math.min(100,Math.max(0,achievementRate));
+  const contextHtml=`<div class="right-hero-context dps-base-unit-context" aria-label="유닛 보드 모드 및 난이도"><span class="dps-lbl">모드 / 난이도</span><strong class="right-hero-compact-mode">${dpsBoardContextHtml()}</strong></div>`;
+  const requiredHtml=`<div class="dps-base-unit-summary-item"><span class="dps-lbl">클리어 기준</span><b class="dps-num">${dpsBaseUnitSummaryMarkup(valid ? dpsBaseUnitNumberText(requiredDps,DPS_BASE_UNIT_SUMMARY_NUMBER_OPTIONS) : '—')}</b></div>`;
+  const expectedHtml=`<div class="dps-base-unit-summary-item dps-base-unit-expected"><span class="dps-lbl">클리어 기대값</span><b class="dps-num">${dpsBaseUnitSummaryMarkup(valid ? dpsBaseUnitNumberText(expectedDps,DPS_BASE_UNIT_SUMMARY_NUMBER_OPTIONS) : '—')}</b><div class="unit-achievement" aria-label="클리어 달성률 ${escapeHtml(shownPercent)}"><div class="unit-achievement-label"><span>달성률</span><strong>${escapeHtml(shownPercent)}</strong></div><div class="unit-achievement-track" role="progressbar" aria-label="클리어 달성률" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(fillPercent)}"><span class="unit-achievement-fill${fillPercent>=100?' is-complete':''}" style="--achievement-fill:${fillPercent}%"></span></div><div class="unit-achievement-scale"><small>0%</small><small>100%</small></div></div></div>`;
+  // CSS 변수로 실제 달성률과 별개인 0~100% 게이지 채움 폭을 전달합니다.
+  el.innerHTML=`<div class="dps-base-unit-summary-row">${contextHtml}${requiredHtml}${expectedHtml}</div>`;
+
   el.hidden=false;
 }
 function appendDpsBaseUnitStoreInput(store,id,value,dataName,unitId){
@@ -1331,14 +1356,14 @@ function dpsBaseUnitStoreInput(field,unit){
 function dpsBaseUnitQuantityText(unit){
   return dpsBaseUnitHasQuantity(unit) ? normalizeDpsBaseUnitQuantityValue(dpsBaseUnitStoreInput('quantity',unit)?.value || 0,unit) : '1';
 }
-function dpsBaseUnitQuantityControlHtml(unit, slotIndex){
+function dpsBaseUnitQuantityControlHtml(unit, slotIndex, idPrefix='dpsBaseUnitSlotQty'){
   if(!unit) return '<span class="dps-base-unit-fixed-qty is-auto-value">—</span>';
   if(!dpsBaseUnitHasQuantity(unit)) return '<span class="dps-base-unit-fixed-qty is-auto-value">1</span>';
   const limit=dpsBaseUnitQuantityLimit(unit);
   const value=normalizeDpsBaseUnitQuantityValue(dpsBaseUnitStoreInput('quantity',unit)?.value || 0,unit);
   const increaseDisabled=Number(value)>=limit ? ' disabled aria-disabled="true"' : '';
   const label=escapeHtml(dpsBaseUnitLabel(unit.id));
-  return `<div class="dps-base-unit-qty-control" data-dps-base-unit-qty-control="${escapeHtml(unit.id)}"><button class="ui-choice-btn dps-base-unit-qty-btn" data-dps-base-unit-qty-delta="-1" data-dps-base-unit-id="${escapeHtml(unit.id)}" type="button" aria-label="${label} 수량 감소">−</button><input class="dps-base-unit-qty-input" id="dpsBaseUnitSlotQty${slotIndex+1}" data-dps-base-unit-slot-quantity="${escapeHtml(unit.id)}" inputmode="numeric" type="text" min="0" max="${limit}" value="${escapeHtml(value)}" aria-label="${label} 수량"/><button class="ui-choice-btn dps-base-unit-qty-btn" data-dps-base-unit-qty-delta="1" data-dps-base-unit-id="${escapeHtml(unit.id)}" type="button" aria-label="${label} 수량 증가"${increaseDisabled}>+</button></div>`;
+  return `<div class="dps-base-unit-qty-control" data-dps-base-unit-qty-control="${escapeHtml(unit.id)}"><button class="ui-choice-btn dps-base-unit-qty-btn" data-dps-base-unit-qty-delta="-1" data-dps-base-unit-id="${escapeHtml(unit.id)}" type="button" aria-label="${label} 수량 감소">−</button><input class="dps-base-unit-qty-input" id="${idPrefix}${slotIndex+1}" data-dps-base-unit-slot-quantity="${escapeHtml(unit.id)}" inputmode="numeric" type="text" min="0" max="${limit}" value="${escapeHtml(value)}" aria-label="${label} 수량"/><button class="ui-choice-btn dps-base-unit-qty-btn" data-dps-base-unit-qty-delta="1" data-dps-base-unit-id="${escapeHtml(unit.id)}" type="button" aria-label="${label} 수량 증가"${increaseDisabled}>+</button></div>`;
 }
 /* 쥬얼 이미지·표시 및 설정 */
 function getJewelImageSources(name){
@@ -1740,7 +1765,16 @@ function sanitizeDpsBaseUnitVoidPowerAvailability(selectedIds=null){
 }
 
 function dpsBaseUnitSettingsHtml(unit,slotIndex){
-  if(!unit) return '';
+  if(!unit){
+    const emptySelect='<option value="" selected>유닛 선택 후 사용 가능</option>';
+    return `<div class="dps-base-unit-settings is-unassigned" aria-label="빈 슬롯 상세 설정">
+      <label class="dps-base-unit-setting is-disabled"><span>강화 기대값</span><input class="dps-base-unit-setting-input" type="text" value="" placeholder="유닛 선택 후 사용" disabled></label>
+      <label class="dps-base-unit-setting is-disabled"><span>한계 돌파</span><select class="dps-base-unit-setting-select" disabled>${emptySelect}</select></label>
+      <label class="dps-base-unit-setting is-disabled"><span>전설·신화 쥬얼</span><select class="dps-base-unit-setting-select" disabled>${emptySelect}</select></label>
+      <div class="dps-base-unit-action-buttons"><div class="dps-base-unit-void-power-control"><span class="dps-base-unit-void-power-usage">—</span><button class="ui-choice-btn dps-base-unit-option-btn" type="button" disabled>공허의 힘</button></div><button class="ui-choice-btn dps-base-unit-option-btn" type="button" disabled>슬롯 확장</button></div>
+      <p class="unit-slot-empty-guidance">위에서 유닛을 선택하면 모든 설정을 바로 사용할 수 있습니다.</p>
+    </div>`;
+  }
   const unitId=escapeHtml(unit.id);
   const label=escapeHtml(dpsBaseUnitLabel(unit));
   const enhance=normalizeDpsBaseUnitEnhanceValue(dpsBaseUnitStoreInput('enhance',unit)?.value,0);
@@ -1798,16 +1832,69 @@ function dpsBaseUnitSlotHtml(unitId, slotIndex, slots){
   const unit=dpsBaseUnitById(unitId);
   const empty=!unit;
   const selectId=`dpsBaseUnitSlot${slotIndex+1}`;
-  const selectControl=`<div class="dps-base-unit-select-wrap"><button class="ui-icon-btn dps-base-unit-clear-btn" data-dps-base-unit-clear-slot="${slotIndex}" type="button" aria-label="유닛 선택 해제"${empty?' disabled':''}>×</button><select class="dps-base-unit-select" id="${selectId}" data-dps-base-unit-slot="${slotIndex}" aria-label="유닛 선택">${dpsBaseUnitSelectOptionsHtml(unitId,slots)}</select></div>`;
+  const selectControl=`<div class="dps-base-unit-select-wrap"><button class="ui-icon-btn dps-base-unit-clear-btn" data-dps-base-unit-clear-slot="${slotIndex}" type="button" aria-label="유닛 선택 해제"${empty?' disabled':''}>×</button><select class="dps-base-unit-select" id="${selectId}" data-dps-base-unit-slot="${slotIndex}" aria-label="슬롯 ${slotIndex+1} 유닛 선택">${dpsBaseUnitSelectOptionsHtml(unitId,slots)}</select></div>`;
   const result=unit ? dpsBaseUnitResultDisplayMap.get(String(unit.id || '')) || null : null;
   const attack=result ? dpsBaseUnitAttackText(result) : '—';
   const pierce=result ? dpsBaseUnitPercentText(result.effectivePierce) : (unit ? (dpsBaseUnitIsArtifact(unit) ? '0%' : dpsBaseUnitPercentText(dpsBaseUnitBoardBasePierce + dpsBaseUnitPierceBonus(unit))) : '—');
   const dps=result ? dpsBaseUnitDpsText(result) : '—';
   const entry=`<div class="dps-base-unit-entry dps-base-unit-slot${empty ? ' is-empty' : ''}${unit && dpsBaseUnitHasQuantity(unit) ? ' has-quantity' : ' is-fixed'}" data-dps-base-unit-slot-row="${slotIndex}">${dpsBaseUnitFieldHtml(dpsBaseUnitNameFieldLabelHtml(unit),'dps-base-unit-name-field',selectControl)}${dpsBaseUnitFieldHtml('공격력','dps-base-unit-attack-field',`<span class="dps-base-unit-board-cell dps-base-unit-board-attack">${escapeHtml(attack)}</span>`)}${dpsBaseUnitFieldHtml('방어력 관통','dps-base-unit-pierce-field',`<span class="dps-base-unit-board-cell dps-base-unit-board-pierce">${escapeHtml(pierce)}</span>`)}${dpsBaseUnitFieldHtml(unit && dpsBaseUnitIsArtifact(unit)?'파장 총 DPS':'총 DPS','dps-base-unit-dps-field',`<b class="dps-base-unit-board-cell dps-base-unit-board-dps">${escapeHtml(dps)}</b>`)}${dpsBaseUnitFieldHtml('수량','dps-base-unit-quantity-field',`<div class="dps-base-unit-board-cell dps-base-unit-board-quantity">${dpsBaseUnitQuantityControlHtml(unit,slotIndex)}</div>`)}</div>`;
-  return `<div class="dps-base-unit-card${empty?' is-empty':''}">${entry}${dpsBaseUnitSettingsHtml(unit,slotIndex)}</div>`;
+  return `<article class="dps-base-unit-card right-unit-slot-card${empty?' is-empty':''}" aria-label="유닛 슬롯 ${slotIndex+1}"><div class="right-unit-slot-performance">${entry}</div><div class="right-unit-slot-settings">${dpsBaseUnitSettingsHtml(unit,slotIndex)}</div></article>`;
 }
+let dpsUnitSelectedSlot=0;
+let dpsUnitDetailOpen=false;
 function dpsBaseUnitSlotsHtml(slots){
-  return slots.map((unitId,index)=>dpsBaseUnitSlotHtml(unitId,index,slots)).join('');
+  dpsUnitSelectedSlot=Math.max(0,Math.min(slots.length-1,dpsUnitSelectedSlot));
+  const activeCount=slots.filter(unitId=>!!dpsBaseUnitById(unitId)).length;
+  const headings=`<div class="unit-list-heading"><span>슬롯</span><span>유닛명</span><span>수량</span><span>공격력</span><span>관통</span><span>DPS</span><span>관리</span></div>`;
+  const rows=slots.map((unitId,index)=>{
+    const unit=dpsBaseUnitById(unitId);
+    const info=unit ? dpsBaseUnitResultDisplayMap.get(String(unit.id||'')) : null;
+    const attack=unit && info ? dpsBaseUnitAttackText(info) : '';
+    const pierce=unit && info ? dpsBaseUnitPercentText(info.effectivePierce) : '';
+    const dps=unit && info ? dpsBaseUnitDpsText(info) : '';
+    const unitName=unit ? dpsBaseUnitDisplayLabel(unit) : '';
+    const quantity=unit ? (dpsBaseUnitHasQuantity(unit) ? dpsBaseUnitQuantityText(unit) : '1') : '';
+    const selected=index===dpsUnitSelectedSlot && dpsUnitDetailOpen;
+    return `<div class="unit-list-row${selected?' is-selected':''}${unit?'':' is-unassigned'}"><b class="unit-list-index">${index+1}</b><strong class="unit-list-name-readonly" title="${escapeHtml(unitName)}">${escapeHtml(unitName)}</strong><span class="unit-list-quantity">${escapeHtml(quantity)}</span><span class="unit-list-attack">${escapeHtml(attack)}</span><span class="unit-list-pierce">${escapeHtml(pierce)}</span><strong class="unit-list-dps">${escapeHtml(dps)}</strong><div class="unit-list-actions"><button type="button" class="unit-list-settings" data-unit-list-select="${index}" aria-label="슬롯 ${index+1} 설정 열기" aria-haspopup="dialog" aria-expanded="${selected}" aria-controls="dpsUnitSlotModal" title="슬롯 ${index+1} 설정">설정</button><button type="button" class="unit-list-remove" data-unit-list-remove="${index}" aria-label="슬롯 ${index+1} 제거" title="슬롯 ${index+1} 제거"${unit?'':' disabled'}>×</button></div></div>`;
+  }).join('');
+  const summaryMessage=activeCount ? `<strong class="unit-list-usage">${activeCount} / ${slots.length} 슬롯 활성화됨</strong>` : '<strong class="unit-list-empty-notice">유닛 설정이 필요합니다</strong>';
+  return `<section class="unit-list-collection" aria-label="유닛 슬롯 관리"><header class="right-unit-collection-heading"><span class="right-unit-collection-mark" aria-hidden="true">▦</span><span><strong>유닛 슬롯 관리</strong><small>유닛과 수량은 설정에서 변경</small></span><span class="unit-list-status" role="status" aria-live="polite">${summaryMessage}</span></header><div class="unit-list-panel" aria-label="유닛 슬롯 조회 목록">${headings}${rows}</div></section>`;
+}
+let dpsUnitSlotModalSyncing=false;
+function syncDpsUnitSlotModal(slots){
+  // 입력 blur/change가 렌더링 도중 다시 호출되어 DOM을 이중 교체하지 않도록 보호
+  if(dpsUnitSlotModalSyncing) return;
+  dpsUnitSlotModalSyncing=true;
+  try{
+  const shell=$('dpsUnitSlotModal');
+  const panel=$('dpsUnitSlotDetail');
+  const title=$('dpsUnitSlotDetailTitle');
+  if(!shell || !panel || !title) return;
+  shell.hidden=!dpsUnitDetailOpen;
+  shell.classList.toggle('is-open',dpsUnitDetailOpen);
+  document.body.classList.toggle('unit-slot-modal-open',dpsUnitDetailOpen);
+  if(!dpsUnitDetailOpen){
+    if(panel.innerHTML) panel.replaceChildren();
+    return;
+  }
+  title.textContent=`슬롯 ${dpsUnitSelectedSlot+1} 상세 설정`;
+  const card=dpsBaseUnitSlotHtml(slots[dpsUnitSelectedSlot],dpsUnitSelectedSlot,slots);
+  if(panel.innerHTML!==card){
+    const state=captureDpsBaseUnitViewState(panel);
+    const scrollArea=shell.querySelector('.unit-slot-modal-scroll');
+    const previousScroll=scrollArea?.scrollTop || 0;
+    panel.innerHTML=card;
+    restoreDpsBaseUnitViewState(panel,state);
+    if(scrollArea) scrollArea.scrollTop=previousScroll;
+  }
+  }finally{ dpsUnitSlotModalSyncing=false; }
+}
+function closeDpsUnitSlotModal(){
+  if(!dpsUnitDetailOpen) return;
+  $('unitSlotModalClose')?.focus({preventScroll:true});
+  dpsUnitDetailOpen=false;
+  syncDpsBaseUnitControl({skipJewelConfig:true});
+  $('dpsBaseUnitSlotStack')?.querySelector(`[data-unit-list-select="${dpsUnitSelectedSlot}"]`)?.focus({preventScroll:true});
 }
 function syncDpsBaseUnitQuantitiesForSelection(selectedIds){
   const selected=new Set(selectedIds || []);
@@ -1918,6 +2005,33 @@ function setDpsBaseUnitStoredValue(value, notify=true, options={}){
     input.dispatchEvent(new Event('change',{bubbles:true}));
   }
 }
+function resetDpsBaseUnitSlotSettings(unitId){
+  const unit=dpsBaseUnitById(unitId);
+  if(!unit) return;
+  const defaults={quantity:'0',enhance:'0',limitBreak:'0',jewel:'',voidPower:'OFF'};
+  Object.entries(defaults).forEach(([field,value])=>{
+    const store=dpsBaseUnitStoreInput(field,unit);
+    if(store) store.value=value;
+  });
+  const extras=dpsBaseUnitExtraSettingsObject();
+  if(Object.prototype.hasOwnProperty.call(extras,unit.id)){
+    delete extras[unit.id];
+    setDpsBaseUnitExtraSettings(extras);
+  }
+  const expansions=$('dpsBaseUnitSlotExpansions');
+  if(expansions) expansions.value=serializeDpsBaseUnitSlotExpansions(dpsBaseUnitSlotExpansionIds().filter(id=>id!==unit.id));
+}
+function removeDpsBaseUnitSlot(slotIndex){
+  const slots=currentDpsBaseUnitSlots();
+  const index=Number(slotIndex);
+  if(!Number.isInteger(index) || index<0 || index>=slots.length || !slots[index]) return false;
+  const removedUnit=slots[index];
+  slots[index]='';
+  if(!slots.includes(removedUnit)) resetDpsBaseUnitSlotSettings(removedUnit);
+  if(dpsUnitDetailOpen && dpsUnitSelectedSlot===index) dpsUnitDetailOpen=false;
+  setDpsBaseUnitStoredValue(slots.filter(Boolean),false,{slots});
+  return true;
+}
 function changeDpsBaseUnitSlot(slotIndex, unitId, options={}){
   const index=Math.max(0,Math.min(dpsBaseUnitSelectionLimit()-1,Number(slotIndex)||0));
   const slots=currentDpsBaseUnitSlots();
@@ -1937,7 +2051,7 @@ function changeDpsBaseUnitSlot(slotIndex, unitId, options={}){
 function captureDpsBaseUnitViewState(stack){
   if(!stack) return {focus:null};
   const active=stack.contains(document.activeElement) ? document.activeElement : null;
-  let focus=null;
+  let focus=active?.id ? {type:'id',id:active.id,start:active.selectionStart,end:active.selectionEnd} : null;
   if(active?.hasAttribute('data-dps-base-unit-extra-limit-break') || active?.hasAttribute('data-dps-base-unit-extra-jewel')){
     focus={
       type:active.hasAttribute('data-dps-base-unit-extra-limit-break') ? 'extra-limit' : 'extra-jewel',
@@ -1952,6 +2066,14 @@ function captureDpsBaseUnitViewState(stack){
 function restoreDpsBaseUnitViewState(stack,state){
   const focus=state?.focus;
   if(!stack || !focus) return;
+  if(focus.type==='id'){
+    const target=document.getElementById(focus.id);
+    if(target && stack.contains(target)){
+      target.focus({preventScroll:true});
+      if(typeof focus.start==='number' && target.setSelectionRange) target.setSelectionRange(focus.start,focus.end);
+    }
+    return;
+  }
   let selector='[data-dps-base-unit-slot-jewel]';
   let unitAttribute='data-dps-base-unit-slot-jewel';
   if(focus.type==='extra-limit'){
@@ -1965,7 +2087,7 @@ function restoreDpsBaseUnitViewState(stack,state){
     if(String(element.getAttribute(unitAttribute) || '')!==focus.unitId) return false;
     return focus.type==='named' || String(element.getAttribute('data-dps-base-unit-extra-index') || '0')===focus.index;
   });
-  if(target) requestAnimationFrame(()=>target.focus({preventScroll:true}));
+  if(target) target.focus({preventScroll:true});
 }
 function syncDpsBaseUnitControl(options={}){
   ensureDpsBaseUnitStore();
@@ -1988,12 +2110,9 @@ function syncDpsBaseUnitControl(options={}){
   const stack=$('dpsBaseUnitSlotStack');
   if(stack){
     const html=dpsBaseUnitSlotsHtml(slots);
-    if(stack.innerHTML!==html){
-      const viewState=captureDpsBaseUnitViewState(stack);
-      stack.innerHTML=html;
-      restoreDpsBaseUnitViewState(stack,viewState);
-    }
+    if(stack.innerHTML!==html) stack.innerHTML=html;
   }
+  syncDpsUnitSlotModal(slots);
 }
 function adjustDpsBaseUnitQuantity(unitId, delta, options={}){
   const unit=dpsBaseUnitById(unitId);
@@ -2018,12 +2137,48 @@ function applyDpsBaseUnitAddDefaults(unitId){
 function bindDpsBaseUnitControlEvents(){
   if(document.documentElement.dataset.dpsBaseUnitControlBound==='1') return;
   document.documentElement.dataset.dpsBaseUnitControlBound='1';
+  document.addEventListener('keydown', e=>{
+    if(!dpsUnitDetailOpen) return;
+    const shell=$('dpsUnitSlotModal');
+    if(!shell || shell.hidden) return;
+    if(e.key==='Escape'){
+      e.preventDefault();
+      e.stopPropagation();
+      closeDpsUnitSlotModal();
+    }else if(e.key==='Tab'){
+      const controls=[...shell.querySelectorAll('button:not(:disabled),select:not(:disabled),input:not(:disabled),[tabindex="0"]')].filter(el=>el.getClientRects().length);
+      if(!controls.length) return;
+      const first=controls[0],last=controls[controls.length-1];
+      if(e.shiftKey && (document.activeElement===first || !shell.contains(document.activeElement))){e.preventDefault();last.focus();}
+      else if(!e.shiftKey && (document.activeElement===last || !shell.contains(document.activeElement))){e.preventDefault();first.focus();}
+    }
+  },true);
   document.addEventListener('click', e=>{
+    const removeButton=e.target?.closest?.('[data-unit-list-remove]');
+    if(removeButton?.closest?.('#dpsBaseUnitSlotStack')){
+      e.preventDefault();
+      if(removeDpsBaseUnitSlot(removeButton.getAttribute('data-unit-list-remove'))) commitAppUpdate();
+      return;
+    }
+    const unitRow=e.target?.closest?.('[data-unit-list-select]');
+    if(unitRow?.closest?.('[data-dps-base-unit-control]')){
+      e.preventDefault();
+      dpsUnitSelectedSlot=Number(unitRow.dataset.unitListSelect)||0;
+      dpsUnitDetailOpen=true;
+      syncDpsBaseUnitControl({skipJewelConfig:true});
+      $('unitSlotModalClose')?.focus({preventScroll:true});
+      return;
+    }
+    const closeDetail=e.target?.closest?.('[data-unit-detail-close],[data-unit-detail-backdrop]');
+    if(closeDetail?.closest?.('#dpsUnitSlotModal')){
+      e.preventDefault();
+      closeDpsUnitSlotModal();
+      return;
+    }
     const clearUnit=e.target?.closest?.('[data-dps-base-unit-clear-slot]');
     if(clearUnit?.closest?.('[data-dps-base-unit-control]')){
       e.preventDefault();
-      changeDpsBaseUnitSlot(clearUnit.getAttribute('data-dps-base-unit-clear-slot'),'',{notify:false});
-      commitAppUpdate();
+      if(removeDpsBaseUnitSlot(clearUnit.getAttribute('data-dps-base-unit-clear-slot'))) commitAppUpdate();
       return;
     }
     const qtyBtn=e.target?.closest?.('[data-dps-base-unit-qty-delta]');
@@ -2054,7 +2209,8 @@ function bindDpsBaseUnitControlEvents(){
   document.addEventListener('change', e=>{
     const select=e.target?.closest?.('[data-dps-base-unit-slot]');
     if(select?.closest?.('[data-dps-base-unit-control]')){
-      changeDpsBaseUnitSlot(select.getAttribute('data-dps-base-unit-slot'),select.value,{notify:false});
+      dpsUnitSelectedSlot=Number(select.getAttribute('data-dps-base-unit-slot'))||0;
+      changeDpsBaseUnitSlot(dpsUnitSelectedSlot,select.value,{notify:false});
       commitAppUpdate();
       return;
     }
@@ -2136,28 +2292,37 @@ const OPTIMIZATION_TIERS=TIERS.filter(tier=>tier!==INFINITE_TRAIT_TIER).concat(I
 function updateTraits(){
   const body=$('traitBody');
   if(!body) return;
-  body.innerHTML=TIERS.map(tier=>{
-    const rows=TRAITS.filter(t=>t[2]===tier && t[0]!==116).map(t=>{
+  body.innerHTML=TIERS.map((tier,tierIndex)=>{
+    const tierTraits=TRAITS.filter(t=>t[2]===tier && t[0]!==116);
+    const rows=tierTraits.map((t,index)=>{
       const [row,name,,type,rate]=t;
       const n=INV[row]||0, mx=TMAX[row]||999;
       const isMax=n>=mx;
       const cost=nextCost(row);
       const rStr=traitEffectText(row,type,rate);
-      return `<div class="tr">
-        <div><div class="tr-name">${name}</div><div class="tr-type">${rStr}${isMax?' · 최대 투자됨':` · 다음비용 ${fullNumber(cost)}`}</div></div>
-        <div class="tr-ctrl">
-          <button type="button" class="ui-step-btn" data-action="traitAdjust" data-row="${row}" data-delta="-1" ${n<=0?'disabled':''}>−</button>
-          <div class="trait-value-pair">
-            <input class="tv-input" type="text" inputmode="numeric" value="${n}" data-row="${row}">
-            <span class="trait-max-sep">/</span>
-            <span class="trait-max-val">${mx}</span>
+      return `<article class="tr trait-invest-card${isMax?' is-mastered':''}" data-trait-id="${row}">
+        <div class="trait-invest-main">
+          <span class="trait-invest-index" aria-hidden="true">${String(index+1).padStart(2,'0')}</span>
+          <div class="trait-row-detail">
+            <div class="trait-invest-topline"><div class="tr-name">${escapeHtml(name)}</div><span class="trait-invest-level">LV <b>${fullNumber(n)}</b><i>/ ${fullNumber(mx)}</i></span></div>
+            <div class="tr-type"><span class="trait-effect-text">${escapeHtml(rStr)}</span><span class="trait-cost-chip ${isMax?'is-complete':''}">${isMax?'✓ 마스터 완료':`다음 투자 · ${fullNumber(cost)}`}</span></div>
           </div>
-          <button type="button" class="ui-step-btn" data-action="traitAdjust" data-row="${row}" data-delta="1" ${isMax?'disabled':''}>+</button>
+        </div>
+        <div class="tr-ctrl" aria-label="${escapeHtml(name)} 투자 조절">
+          <button type="button" class="ui-step-btn" data-action="traitAdjust" data-row="${row}" data-delta="-1" ${n<=0?'disabled':''} aria-label="${escapeHtml(name)} 1 환불">−</button>
+          <div class="trait-value-pair">
+            <input class="tv-input" type="text" inputmode="numeric" value="${n}" data-row="${row}" aria-label="${escapeHtml(name)} 현재 투자">
+            <span class="trait-max-sep">/</span><span class="trait-max-val">${mx}</span>
+          </div>
+          <button type="button" class="ui-step-btn" data-action="traitAdjust" data-row="${row}" data-delta="1" ${isMax?'disabled':''} aria-label="${escapeHtml(name)} 1 투자">+</button>
           <button type="button" class="ui-action-btn trait-master-btn" data-action="traitMax" data-row="${row}" ${isMax?'disabled':''}>마스터</button>
         </div>
-      </div>`;
+      </article>`;
     }).join('');
-    return `<div class="trait-group"><h4><span class="trait-title">${tier}</span><span class="trait-tools"><button type="button" class="ui-action-btn mini-btn master" data-action="masterTier" data-tier="${tier}">구간 마스터</button><button type="button" class="ui-action-btn mini-btn reset danger" data-action="resetTier" data-tier="${tier}">초기화</button></span></h4>${rows}</div>`;
+    return `<section class="trait-group trait-tier-panel" data-tier-index="${tierIndex+1}">
+      <h4><span class="trait-title"><span class="trait-tier-index" aria-hidden="true">${String(tierIndex+1).padStart(2,'0')}</span><span class="trait-tier-name">${tier}<small class="trait-tier-caption">TRAIT COLLECTION</small></span></span><span class="trait-tools"><button type="button" class="ui-action-btn mini-btn master" data-action="masterTier" data-tier="${tier}">구간 마스터</button><button type="button" class="ui-action-btn mini-btn reset danger" data-action="resetTier" data-tier="${tier}">초기화</button></span></h4>
+      <div class="trait-invest-list">${rows}</div>
+    </section>`;
   }).join('');
 }
 /* 특성 추천: 가상 투자 계획을 단계별로 계산하여 화면 스크롤을 유지 */
@@ -2624,7 +2789,7 @@ function bindFontScaleViewportGuard(){
   });
 }
 const APP_TITLE_ROTATION=Object.freeze({
-  main:{value:'개복디 특성 계산기'},
+  main:{value:'개복디 특성 게산기'},
   creator:{label:'제작자', value:'회장 | 3-S2-1-2461127'},
   mainMs:5000,
   creatorMs:3000,
@@ -2719,23 +2884,36 @@ function zeroScoreInputHtml(className, options={}){
   const placeholder=options.placeholder ? ` placeholder="${escapeHtml(options.placeholder)}"` : '';
   const maxLength=options.maxlength ? ` maxlength="${Number(options.maxlength)}"` : '';
   const label=options.label ? ` aria-label="${escapeHtml(options.label)}"` : '';
-  return `<input class="${className}" inputmode="${inputMode}"${maxLength}${placeholder}${label} autocomplete="off" type="text" value="0"/>`;
+  const range=options.range ? ` min="${options.range[0]}" max="${options.range[1]}" step="1"` : '';
+  return `<input class="${className}" inputmode="${inputMode}"${maxLength}${placeholder}${label}${range} autocomplete="off" type="${options.range ? 'number' : 'text'}" value="${options.range ? options.range[0] : '0'}"/>`;
+}
+function zeroScorePenanceSelectHtml(className, label){
+  const values=Array.from({length:20},(_,index)=>index+1);
+  return `<select class="${className}" aria-label="${escapeHtml(label)}"><option value="0">없음</option>${values.map(value=>`<option value="${value}">${value}</option>`).join('')}</select>`;
+}
+function zeroScoreHonorSelectHtml(className, label){
+  const options=[['0','없음'],['b','B'],['a','A'],['s','S'],['x','X'],['xd','XD']];
+  return `<select class="${className}" aria-label="${escapeHtml(label)}">${options.map(([value,name])=>`<option value="${value}">${name}</option>`).join('')}</select>`;
 }
 function zeroScoreStarButtonHtml(){
-  return '<button class="ui-toggle-btn zero-star-toggle" data-action="zeroScoreStar" type="button" aria-pressed="false" aria-label="24스타 추가 점수 적용">+2</button>';
+  return '<button class="ui-toggle-btn zero-star-toggle" data-action="zeroScoreStar" type="button" aria-pressed="false" aria-label="24 스타 미적용">24 스타 미적용</button>';
 }
 function buildZeroScoreCalcRow(config){
   const name=escapeHtml(config.name);
-  return `
-          <tr class="zero-calc-row" data-row-type="${config.type}">
-            <td class="zero-calc-name">${name}</td>
-            <td>${zeroScoreInputHtml('zero-calc-current',{label:`${config.name} 일반 현재`})}</td>
-            <td>${zeroScoreInputHtml('zero-calc-target',{label:`${config.name} 일반 목표`})}</td>
-            <td class="zero-calc-star">${config.star !== false ? zeroScoreStarButtonHtml() : ''}</td>
-            <td>${zeroScoreInputHtml(config.currentHonorClass,{...config.honorOptions,label:`${config.name} 명예 현재`})}</td>
-            <td>${zeroScoreInputHtml(config.targetHonorClass,{...config.honorOptions,label:`${config.name} 명예 목표`})}</td>
-            <td class="zero-calc-score"><b class="zero-row-score">0</b></td>
-          </tr>`;
+  const penance=config.type==='penance';
+  const generalCurrent=penance ? zeroScorePenanceSelectHtml('zero-calc-current',`${config.name} 일반 현재`) : zeroScoreInputHtml('zero-calc-current',{label:`${config.name} 일반 현재`});
+  const generalTarget=penance ? zeroScorePenanceSelectHtml('zero-calc-target',`${config.name} 일반 목표`) : zeroScoreInputHtml('zero-calc-target',{label:`${config.name} 일반 목표`});
+  const honorCurrent=penance ? zeroScoreHonorSelectHtml(config.currentHonorClass,`${config.name} 명예 현재`) : zeroScoreInputHtml(config.currentHonorClass,{...config.honorOptions,label:`${config.name} 명예 현재`});
+  const honorTarget=penance ? zeroScoreHonorSelectHtml(config.targetHonorClass,`${config.name} 명예 목표`) : zeroScoreInputHtml(config.targetHonorClass,{...config.honorOptions,label:`${config.name} 명예 목표`});
+  const group=(label,note,cssClass,current,target)=>`<section class="zero-calc-group ${cssClass}"><div class="zero-calc-group-head"><strong>${label}</strong><small>${note}</small></div><div class="zero-calc-pair"><label class="zero-calc-field"><span>현재</span>${current}</label><span class="zero-calc-arrow" aria-hidden="true">→</span><label class="zero-calc-field"><span>목표</span>${target}</label></div></section>`;
+  return `<article class="zero-calc-row" data-row-type="${config.type}">
+    <div class="zero-calc-row-head"><div class="zero-calc-name"><span class="zero-calc-row-symbol" aria-hidden="true">✦</span><strong>${name}</strong><small>${penance?'DIFFICULTY':'CHALLENGE TOWER'}</small></div><div class="zero-calc-score"><span>추가점수</span><b class="zero-row-score">0</b><small>POINTS</small></div></div>
+    <div class="zero-calc-fields">
+      ${group(penance?'일반 고행':'도전의탑','현재 → 목표','zero-calc-general',generalCurrent,generalTarget)}
+      ${group(penance?'명예':'명예의탑','현재 → 목표','zero-calc-honor',honorCurrent,honorTarget)}
+    </div>
+    ${config.star !== false ? `<div class="zero-calc-star"><span class="zero-calc-star-copy"><strong>24스타 보너스</strong><small>적용 시 +2점 · 기존 계산 유지</small></span>${zeroScoreStarButtonHtml()}</div>` : ''}
+  </article>`;
 }
 function buildZeroPenanceCalcRow(name){
   return buildZeroScoreCalcRow({type:'penance',name,currentHonorClass:'zero-current-honor zero-honor-input',targetHonorClass:'zero-target-honor zero-honor-input',honorOptions:{inputmode:'latin',maxlength:2,placeholder:'B'}});
@@ -2818,8 +2996,8 @@ function updateZeroScoreCalculator(){
 const ZERO_SCORE_DOM_FIELDS=Object.freeze({
   current:{selector:'.zero-calc-current',fallback:'0'},
   target:{selector:'.zero-calc-target',fallback:'0'},
-  currentHonor:{selector:'.zero-current-honor',fallback:'0',normalize:value=>normalizeZeroHonorValue(value).toUpperCase()},
-  targetHonor:{selector:'.zero-target-honor',fallback:'0',normalize:value=>normalizeZeroHonorValue(value).toUpperCase()},
+  currentHonor:{selector:'.zero-current-honor',fallback:'0',normalize:value=>normalizeZeroHonorValue(value)},
+  targetHonor:{selector:'.zero-target-honor',fallback:'0',normalize:value=>normalizeZeroHonorValue(value)},
   honorCurrent:{selector:'.zero-tower-honor-current',fallback:'0'},
   honorTarget:{selector:'.zero-tower-honor-target',fallback:'0'}
 });
@@ -2835,7 +3013,12 @@ function readZeroScoreDomField(row, key){
 function writeZeroScoreDomField(row, key, value){
   const def=ZERO_SCORE_DOM_FIELDS[key];
   const field=zeroScoreDomField(row,key);
-  if(field) field.value=def?.normalize ? def.normalize(value ?? def.fallback) : String(value ?? def?.fallback ?? '0');
+  if(!field) return;
+  if(row.dataset.rowType==='penance' && (key==='current' || key==='target')){
+    field.value=String(Math.max(0,Math.min(20,Math.trunc(Number(value) || 0))));
+    return;
+  }
+  field.value=def?.normalize ? def.normalize(value ?? def.fallback) : String(value ?? def?.fallback ?? '0');
 }
 function collectZeroScoreState(){
   const calc=qs('.zero-score-calc');
@@ -2860,7 +3043,8 @@ function collectZeroScoreState(){
   };
 }
 function setZeroScoreStarButton(starBtn,active){
-  setTogglePressed(starBtn, active, {activeText:'ON +2', inactiveText:'+2'});
+  setTogglePressed(starBtn, active, {activeText:'24 스타 적용중', inactiveText:'24 스타 미적용'});
+  if(starBtn) starBtn.setAttribute('aria-label',active?'24 스타 적용중':'24 스타 미적용');
 }
 function applyZeroScoreState(zeroScore){
   const calc=qs('.zero-score-calc');
@@ -2884,19 +3068,32 @@ function toggleZeroScoreStar(trigger){
   commitZeroScoreChange();
 }
 function normalizeZeroHonorInputElement(el){
-  if(!el || !el.classList?.contains('zero-honor-input')) return;
+  if(!el || !el.classList?.contains('zero-honor-input') || el.tagName==='SELECT') return;
   el.value=normalizeZeroHonorValue(el.value).toUpperCase();
 }
 function bindZeroScoreCalculator(){
   if(document.documentElement.dataset.zeroScoreCalcBound==='1') return;
   document.documentElement.dataset.zeroScoreCalcBound='1';
-  const updateAndSave=(target)=>{
+  const updateAndSave=(target,finalize=false)=>{
     if(!(target && target.closest && target.closest('.zero-score-calc'))) return;
+    const penanceRow=target.closest('.zero-calc-row[data-row-type="penance"]');
+    if(penanceRow && target.matches('.zero-calc-current,.zero-calc-target')){
+      if(target.value===''){
+        if(!finalize) return; // Allow replacing a number without saving an empty value.
+        target.value='0';
+      }
+      const value=Number(target.value);
+      target.value=String(Number.isFinite(value) ? Math.max(0,Math.min(20,Math.trunc(value))) : 0);
+    }
     normalizeZeroHonorInputElement(target);
     commitZeroScoreChange();
   };
   document.addEventListener('input', e=>updateAndSave(e.target), true);
-  document.addEventListener('change', e=>updateAndSave(e.target), true);
+  document.addEventListener('change', e=>updateAndSave(e.target,true), true);
+  document.addEventListener('focusout', e=>{
+    const target=e.target;
+    if(target?.matches?.('.zero-calc-row[data-row-type="penance"] .zero-calc-current,.zero-calc-row[data-row-type="penance"] .zero-calc-target') && target.value==='') updateAndSave(target,true);
+  }, true);
 }
 
 /* 이벤트·초기화 */
@@ -3025,7 +3222,7 @@ function bindAppEvents(){
   [
     bindFontScaleViewportGuard, bindActionEvents, bindTraitHoldEvents, bindTraitInputEvents,
     ()=>window.DpsModal.bindEvents(), ()=>window.DpsPreset.bindEvents(), bindJewelImageEvents,
-    bindZeroScoreCalculator, bindTraitLimitDisplayEvents, bindDpsBaseUnitControlEvents, bindReactiveInputs,
+    bindZeroScoreCalculator, bindTraitLimitDisplayEvents, bindTraitLimitChoiceEvents, bindDpsBaseUnitControlEvents, bindReactiveInputs,
     bindButtonPressFeedback, bindDamageBoardTabEvents, bindDamageBoardSwitchEvents, bindAppTitleVersion
   ].forEach(fn=>fn());
 }

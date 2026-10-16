@@ -751,19 +751,24 @@ function currentTraitPresetStatusData(partial={}){
   status.pendingSingleChangeKeys=[...new Set(status.pendingSingleChangeKeys.map(key=>String(key || '').trim()).filter(Boolean))];
   return {status,store};
 }
-function traitPresetBackupButtonText(status, store){
-  const needsBackup=status.backupNeeded || status.updatedPresetIds.length>0 || status.pendingUnitBoardPresetIds.length>0 || status.pendingJewelSettings;
-  return store.presets.length && needsBackup ? '프리셋 백업 필요' : '프리셋 백업';
+/* 버튼 자체가 안내 패널 역할을 하며 상태의 출처는 기존 프리셋 판정 로직입니다. */
+function setTraitPresetActionDisplay(action,state,badge,hint){
+  qsa(`[data-action="${action}"]`).forEach(btn=>{
+    if(!btn.classList.contains('preset-command')) return;
+    btn.dataset.state=state;
+    const label=btn.querySelector('.preset-command-pill');
+    if(label && label.textContent!==badge) label.textContent=badge;
+    const detail=btn.querySelector('.preset-command-main small');
+    if(detail && detail.textContent!==hint) detail.textContent=hint;
+  });
 }
 function renderTraitPresetStatus(status, store){
   const needsBackup=store.presets.length>0 && (status.backupNeeded || status.updatedPresetIds.length>0 || status.pendingUnitBoardPresetIds.length>0 || status.pendingJewelSettings);
-  const label=traitPresetBackupButtonText(status, store);
   qsa('[data-action="backupTraitPresets"]').forEach(btn=>{
-    btn.textContent=label;
     btn.classList.toggle('is-backup-needed', needsBackup);
-    btn.setAttribute('aria-label', needsBackup ? '특성 프리셋 백업 필요' : '특성 프리셋 백업');
+    btn.setAttribute('aria-label',needsBackup?'통합 프리셋 백업 필요':'통합 프리셋 백업');
   });
-  setTraitPresetProgressStep('traitPresetBackup',store.presets.length ? (needsBackup ? 'pending' : 'done') : 'idle',
+  setTraitPresetActionDisplay('backupTraitPresets',store.presets.length ? (needsBackup ? 'pending' : 'done') : 'idle',
     needsBackup ? '백업 필요' : (store.presets.length ? '백업 최신' : '대기'),
     needsBackup ? '프리셋 변경 내용이 아직 새 파일에 담기지 않았어요.' :
       (store.presets.length ? '마지막 백업 이후 저장된 변경사항이 없습니다.' : '백업할 프리셋이 없습니다.'));
@@ -1195,6 +1200,13 @@ function setTraitPresetCustomSelectOpen(custom, open){
   if(!custom) return;
   const active=!!open;
   custom.classList.toggle('is-open',active);
+  custom.closest('.trait-preset-form-card')?.classList.toggle('is-menu-open',active);
+  if(active){
+    const rect=custom.getBoundingClientRect();
+    const availableBelow=window.innerHeight-rect.bottom;
+    const availableAbove=rect.top;
+    custom.classList.toggle('opens-up',availableBelow<205 && availableAbove>availableBelow);
+  }else custom.classList.remove('opens-up');
   custom.querySelector('[data-trait-preset-custom-button]')?.setAttribute('aria-expanded',active ? 'true' : 'false');
   const menu=custom.querySelector('[data-trait-preset-custom-menu]');
   if(menu) menu.hidden=!active;
@@ -1487,36 +1499,16 @@ function traitPresetUpdateStatus(store=loadTraitPresetStore()){
   const jewelChanged=!jewel || stableTraitPresetValue(jewel)!==stableTraitPresetValue(captureTraitPresetJewelSettings());
   return {preset,needsUpdate:summary.stateChanged || boardChanged || jewelChanged};
 }
-function setTraitPresetProgressStep(prefix,state,badge,hint){
-  const step=$(prefix+'Step');
-  if(step) step.dataset.state=state;
-  const badgeEl=$(prefix+'Badge');
-  if(badgeEl && badgeEl.textContent!==badge) badgeEl.textContent=badge;
-  const hintEl=$(prefix+'Hint');
-  if(hintEl && hintEl.textContent!==hint) hintEl.textContent=hint;
-}
-let traitPresetUpdateHintPresetId='';
-let traitPresetUpdateHintDismissed=false;
 function renderTraitPresetUpdateStatus(store=loadTraitPresetStore()){
   const status=traitPresetUpdateStatus(store);
-  const presetId=status.preset?.id || '';
-  if(traitPresetUpdateHintPresetId!==presetId || !status.needsUpdate){
-    traitPresetUpdateHintPresetId=presetId;
-    traitPresetUpdateHintDismissed=false;
-  }
-  const dismissed=status.needsUpdate && traitPresetUpdateHintDismissed;
   qsa('[data-action="updateTraitPreset"]').forEach(btn=>{
-    btn.textContent='프리셋 업데이트';
-    btn.setAttribute('aria-label','현재 프리셋 업데이트');
+    btn.setAttribute('aria-label',status.needsUpdate?'현재 프리셋 업데이트 필요':'현재 프리셋 업데이트');
+    btn.classList.toggle('is-update-needed',status.needsUpdate);
   });
-  setTraitPresetProgressStep('traitPresetUpdate',status.preset ? (status.needsUpdate ? 'pending' : 'done') : 'idle',
-    status.needsUpdate ? (dismissed ? '임시 변경' : '변경 감지') : (status.preset ? '반영 완료' : '대기'),
-    status.needsUpdate ? '프리셋 입력값이 선택한 프리셋과 달라요. 변경이 필요한 경우 업데이트를 눌러 주세요.' :
+  setTraitPresetActionDisplay('updateTraitPreset',status.preset ? (status.needsUpdate ? 'pending' : 'done') : 'idle',
+    status.needsUpdate ? '업데이트 필요' : (status.preset ? '반영 완료' : '대기'),
+    status.needsUpdate ? '현재 입력값이 선택한 프리셋과 달라요. 업데이트가 필요합니다.' :
       (status.preset ? '현재 입력값이 선택한 프리셋과 일치합니다.' : '먼저 프리셋을 선택하거나 저장하세요.'));
-  const step=$('traitPresetUpdateStep');
-  if(step) step.classList.toggle('is-hint-dismissed',dismissed);
-  const dismissButton=document.querySelector('[data-trait-preset-update-dismiss]');
-  if(dismissButton) dismissButton.hidden=!status.needsUpdate || dismissed;
   return status.needsUpdate;
 }
 let traitPresetGuidanceRefreshTimer=0;
@@ -1714,7 +1706,7 @@ const TRAIT_PRESET_CHANGE_LABEL_OVERRIDES=Object.freeze({
   round:'목표 라운드',
   penance:'고행 단계',
   spBankApply:'SP 은행 반영',
-  jewelErosionRes:'기본 정보 심연 내성',
+  jewelErosionRes:'어비스 심연 내성',
   skillRound:'성소 사용 라운드',
   skillMode:'성소 모드'
 });
@@ -1912,7 +1904,7 @@ function setTraitPresetBackupSavingState(active){
   qsa('[data-trait-preset-backup-close]').forEach(btn=>{ btn.disabled=!!active; });
 }
 function traitPresetBackupDefaultFileName(){
-  return `통합프리셋_${formatTraitPresetExportedAt().slice(0,6)}`;
+  return `통합프리셋_${formatTraitPresetExportedAt().slice(0,11)}`;
 }
 function traitPresetBackupFileNameControlHtml(){
   return `<section class="trait-preset-backup-file-box">
@@ -1925,8 +1917,8 @@ function createTraitPresetBackupModal(){
     <div class="trait-preset-modal-backdrop" data-trait-preset-backup-close="1"></div>
     <section class="trait-preset-modal trait-preset-backup-modal" role="dialog" aria-modal="true" aria-labelledby="traitPresetBackupTitle">
       <header class="trait-preset-modal-head">
-        <h2 id="traitPresetBackupTitle">특성 프리셋 백업</h2>
-        <button type="button" class="ui-icon-btn trait-preset-modal-close" data-trait-preset-backup-close="1" aria-label="특성 프리셋 백업 닫기">×</button>
+        <h2 id="traitPresetBackupTitle">통합 프리셋 백업</h2>
+        <button type="button" class="ui-icon-btn trait-preset-modal-close" data-trait-preset-backup-close="1" aria-label="통합 프리셋 백업 닫기">×</button>
       </header>
       <div class="trait-preset-modal-body trait-preset-backup-body" id="traitPresetBackupBody"></div>
     </section>`);
@@ -2128,70 +2120,6 @@ async function importTraitPresetFile(file){
     return false;
   }
 }
-/* 이용 안내 · 날짜별 자동 표시와 직접 다시 보기 */
-const TRAIT_PRESET_GUIDE_STORAGE_KEY='gbd_dps_calculator:trait_preset_guide';
-let traitPresetGuideReturnFocus=null;
-function traitPresetGuideToday(){
-  const now=new Date();
-  return `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
-}
-function traitPresetGuidePreferences(){
-  try{
-    const data=safeJsonParse(localStorage.getItem(TRAIT_PRESET_GUIDE_STORAGE_KEY));
-    return data && typeof data==='object' && !Array.isArray(data) ? data : {};
-  }catch(error){ rememberAppIssue('warn','프리셋 안내 설정 읽기',error); return {}; }
-}
-function saveTraitPresetGuidePreferences(partial){
-  try{ localStorage.setItem(TRAIT_PRESET_GUIDE_STORAGE_KEY,JSON.stringify({...traitPresetGuidePreferences(),...partial})); }
-  catch(error){ rememberAppIssue('warn','프리셋 안내 설정 저장',error); }
-}
-function createTraitPresetGuideModal(){
-  return window.DpsModal.createShell('traitPresetGuideModal','trait-preset-guide-shell',`
-    <div class="trait-preset-guide-backdrop" data-trait-preset-guide-close></div>
-    <section class="trait-preset-guide-dialog" role="dialog" aria-modal="true" aria-labelledby="traitPresetGuideTitle" aria-describedby="traitPresetGuideDescription" tabindex="-1">
-      <header class="trait-preset-guide-top"><span class="trait-preset-guide-overline"><span class="trait-preset-guide-overline-dot"></span> DPS / BUILD STUDIO <span class="trait-preset-guide-top-tag">PRESET GUIDE</span></span><button type="button" class="trait-preset-guide-close" data-trait-preset-guide-close aria-label="안내 닫기">×</button></header>
-      <div class="trait-preset-guide-content">
-        <div class="trait-preset-guide-hero">
-          <span class="trait-preset-guide-hero-mark" aria-hidden="true"><svg viewBox="0 0 48 48" focusable="false"><use href="#dpsHeaderBrandGlyph"/></svg></span>
-          <div class="trait-preset-guide-hero-copy"><span class="trait-preset-guide-kicker">변경사항을 안전하게 관리하세요</span>
-            <h2 id="traitPresetGuideTitle">프리셋을 바꿨다면,<br/><em>업데이트와 백업</em>까지</h2>
-          </div>
-        </div>
-        <p id="traitPresetGuideDescription">화면에서 값을 바꾸는 것과 프리셋 파일에 보관하는 것은 서로 다른 단계예요.</p>
-        <div class="trait-preset-guide-timeline">
-          <article class="trait-preset-guide-item"><span class="trait-preset-guide-index">01</span><div><strong>값 수정</strong><p>현재 화면의 항목을 원하는 값으로 변경합니다.</p></div><span class="trait-preset-guide-item-symbol" aria-hidden="true">✎</span></article>
-          <article class="trait-preset-guide-item"><span class="trait-preset-guide-index">02</span><div><strong>프리셋 업데이트</strong><p>수정값을 선택한 프리셋에 반영합니다. 공통 항목은 다른 프리셋에도 적용됩니다.</p></div><span class="trait-preset-guide-item-symbol" aria-hidden="true">↻</span></article>
-          <article class="trait-preset-guide-item"><span class="trait-preset-guide-index">03</span><div><strong>통합 프리셋 백업</strong><p>최신 내용을 새 백업 파일로 다운로드해 보관합니다.</p></div><span class="trait-preset-guide-item-symbol" aria-hidden="true">↓</span></article>
-        </div>
-        <p class="trait-preset-guide-note"><span aria-hidden="true">✦</span> 백업 버튼은 아직 업데이트하지 않은 변경사항도 먼저 반영한 뒤 파일을 생성합니다.</p>
-      </div>
-      <footer class="trait-preset-guide-footer"><label class="trait-preset-guide-skip"><input type="checkbox" id="traitPresetGuideSkipToday"/><span>오늘 하루 보지 않기</span></label><button type="button" class="trait-preset-guide-confirm" data-trait-preset-guide-close>확인했어요 <span aria-hidden="true">→</span></button></footer>
-    </section>`);
-}
-function closeTraitPresetGuideModal(){
-  const modal=$('traitPresetGuideModal');
-  if(!modal?.classList.contains('is-open')) return;
-  if($('traitPresetGuideSkipToday')?.checked) saveTraitPresetGuidePreferences({hideDate:traitPresetGuideToday()});
-  window.DpsModal.setOpen('traitPresetGuideModal','trait-preset-guide-open',false);
-  traitPresetGuideReturnFocus?.focus?.({preventScroll:true});
-  traitPresetGuideReturnFocus=null;
-}
-function openTraitPresetGuideModal(options={}){
-  const modal=createTraitPresetGuideModal();
-  traitPresetGuideReturnFocus=options.trigger || document.activeElement;
-  const checkbox=$('traitPresetGuideSkipToday');
-  if(checkbox) checkbox.checked=false;
-  window.DpsModal.setOpen('traitPresetGuideModal','trait-preset-guide-open',true);
-  modal.querySelector('.trait-preset-guide-close')?.focus({preventScroll:true});
-  if(options.automatic) saveTraitPresetGuidePreferences({shownDate:traitPresetGuideToday()});
-}
-function maybeShowTraitPresetGuide(){
-  const today=traitPresetGuideToday();
-  const prefs=traitPresetGuidePreferences();
-  if(prefs.shownDate===today || prefs.hideDate===today) return;
-  if(document.querySelector('.trait-preset-modal-shell.is-open,.board-modal-shell.is-open,.trait-preset-unit-jewel-modal-shell.is-open')) return;
-  openTraitPresetGuideModal({automatic:true});
-}
 /* 프리셋 UI 이벤트 바인딩 */
 function handleTraitPresetChange(e){
   if(e.target?.id==='traitPresetSelect'){
@@ -2204,16 +2132,6 @@ function handleTraitPresetChange(e){
   }
 }
 function handleTraitPresetClick(e){
-  const updateHintDismiss=e.target.closest('[data-trait-preset-update-dismiss]');
-  if(updateHintDismiss){
-    e.preventDefault();
-    traitPresetUpdateHintDismissed=true;
-    renderTraitPresetUpdateStatus();
-    return;
-  }
-  const guideOpen=e.target.closest('[data-trait-preset-guide-open]');
-  if(guideOpen){ e.preventDefault(); openTraitPresetGuideModal({trigger:guideOpen}); return; }
-  if(e.target.closest('[data-trait-preset-guide-close]')){ e.preventDefault(); closeTraitPresetGuideModal(); return; }
   const customButton=e.target.closest('[data-trait-preset-custom-button]');
   if(customButton){
     e.preventDefault();
@@ -2284,7 +2202,6 @@ function handleTraitPresetKeydown(e){
     return;
   }
   if(e.key==='Escape'){
-    if($('traitPresetGuideModal')?.classList.contains('is-open')){ closeTraitPresetGuideModal(); return; }
     if($('traitPresetBackupModal')?.classList.contains('is-open')) closeTraitPresetBackupModal();
     if($('traitPresetUnitJewelModal')?.classList.contains('is-open')) closeTraitPresetUnitJewelModal({restoreFocus:true});
   }
@@ -2294,21 +2211,13 @@ function bindTraitPresetEvents(){
   document.addEventListener('click',handleTraitPresetClick);
   document.addEventListener('keydown',handleTraitPresetKeydown);
   document.addEventListener('input',e=>{
-    if(e.target?.closest?.('.trait-preset-panel,.trait-preset-guide-shell,.trait-preset-modal-shell')) return;
+    if(e.target?.closest?.('.trait-preset-panel,.trait-preset-modal-shell,[aria-modal="true"]')) return;
     scheduleTraitPresetGuidanceRefresh();
   });
   document.addEventListener('change',e=>{
-    if(e.target?.closest?.('.trait-preset-guide-shell,.trait-preset-modal-shell')) return;
+    if(e.target?.closest?.('.trait-preset-modal-shell,[aria-modal="true"]')) return;
     if(e.target?.id==='traitPresetSelect' || e.target?.id==='traitPresetImportFile') return;
     scheduleTraitPresetGuidanceRefresh();
-  });
-  document.addEventListener('keydown',e=>{
-    if(e.key!=='Tab' || !$('traitPresetGuideModal')?.classList.contains('is-open')) return;
-    const dialog=$('traitPresetGuideModal');
-    const focusable=[...dialog.querySelectorAll('button:not(:disabled),input:not(:disabled)')];
-    if(!focusable.length) return;
-    if(e.shiftKey && document.activeElement===focusable[0]){e.preventDefault();focusable[focusable.length-1].focus();}
-    else if(!e.shiftKey && document.activeElement===focusable[focusable.length-1]){e.preventDefault();focusable[0].focus();}
   });
 }
 
@@ -2317,7 +2226,6 @@ window.DpsPreset=Object.freeze({
   init:function(){
     refreshTraitPresetControls();
     restoreTraitPresetStatus();
-    setTimeout(maybeShowTraitPresetGuide,850);
   },
   bindEvents:bindTraitPresetEvents,
   saveCurrent:saveTraitPreset,
