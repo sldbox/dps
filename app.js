@@ -217,21 +217,20 @@ function specBoardPierceValue(){
 }
 
 /* 입력·화면 동기화 */
-function renderEnemyData(data){
+function renderEnemyData(data,stats){
   if(!data) return;
-  const countText=enemyDisplayCountText(data.round);
-  const countParts=String(countText).split(' / ');
+  const countParts=String(enemyDisplayCountText(data.round)).split(' / ');
+  const armor=Number(data.armor)||0;
+  const actualArmor=armor*Math.max(0,1-(Number(stats?.M12)||0)/100)*Math.max(0,1-(Number(stats?.effectivePierce)||0)/100);
   const values={
-    ArmorQuick:fullNumber(data.armor),
+    ArmorDisplayQuick:fullNumber(armor),
+    ArmorActualQuick:fullNumber(actualArmor),
     HpQuick:fullNumber(data.hp),
     ShieldQuick:fullNumber(data.shield),
     WaveCountQuick:countParts[0] || '—',
-    TotalCountQuick:countParts.length>1 ? countParts[1] : countParts[0] || '—'
+    TotalCountQuick:countParts.length>1 ? countParts[1] : '-'
   };
-  Object.entries(values).forEach(([name,value])=>{
-    setText('enemy'+name,value);
-  });
-  setText('enemyCountQuick', countText);
+  Object.entries(values).forEach(([name,value])=>setText('enemy'+name,value));
 }
 function syncRuneChoice(){
   const type=vs('runeChoiceType') || 'harmony';
@@ -494,9 +493,7 @@ function currentRoundTimeBonusSeconds(){
 function renderDamageBoardRoundTime(s){
   const roundTime=Number(s?.roundTime);
   const bonus=currentRoundTimeBonusSeconds();
-  const rpTimeText=bonus>0 || isTowerDifficulty(vs('diff'))
-    ? `RP ${fmt(bonus,0)}초 / 최대 8초`
-    : '-';
+  const rpTimeText=bonus>0 ? `RP +${fmt(bonus,0)}초 적용 중` : '-';
   const timeText=Number.isFinite(roundTime) ? `${fmt(roundTime,1)}초` : '—';
   setText('enemyRoundTimeQuick',timeText);
   setText('enemyRpTimeQuick', rpTimeText);
@@ -540,7 +537,7 @@ function syncPreCalculationViews(){
   renderXpCut();
 }
 function renderCalculatedViews(s){
-  renderEnemyData(s.enemyData);
+  renderEnemyData(s.enemyData,s);
   renderSkillDamage(s);
   renderDpsSummary(s);
   renderStatSummary(s);
@@ -920,11 +917,18 @@ function buildDpsFloorCards(mode){
     if(floor===current){
       currentFloorDps=value;
       const currentEnemy=Object.fromEntries(enemies);
-      // 탑·행성 모드는 기존 4개 적 정보만 재배치한다. 없는 수치를 생성하지 않는다.
-      currentFloorDetails=renderDpsEnemyPairs([
-        ['생존 정보',[['체력',currentEnemy['체력']??'—'],['실드',currentEnemy['실드']??'—'],['방어력',currentEnemy['방어력']??'—']]],
-        ['전투 정보',[['물량',currentEnemy['물량']??'—']]]
-      ]);
+      const waveCount=currentEnemy['물량']??'—';
+      const totalCount=battleDataModeForDifficulty(diff).totalMode==='current' ? '-' : fullNumber(enemyRoundCountTotal(floor,diff));
+      const roundTime=specDpsRoundTime(floor,diff);
+      const rpBonus=enemyRoundTimeBonus(diff);
+      const enemyGroups=[
+        ['생존 정보', [['체력',currentEnemy['체력']??'—'],['실드',currentEnemy['실드']??'—'],['방어력',currentEnemy['방어력']??'—']]],
+        ['전투 정보', [['물량',waveCount],['총 물량',totalCount],['라운드 시간',Number.isFinite(roundTime)?`${fmt(roundTime,1)}초`:'—'],['RP 추가 시간',rpBonus>0?`RP +${fmt(rpBonus,0)}초 적용 중`:'-']]]
+      ];
+      currentFloorDetails=enemyGroups.map(([title,items])=>`<section class="dps-current-floor-enemy-group" aria-label="${escapeHtml(title)}">
+        <span class="dps-current-floor-enemy-group-title">${escapeHtml(title)}</span>
+        <div class="dps-floor-enemies">${items.map(([label,itemValue],index)=>`<span class="dps-floor-enemy${items.length===3&&index===2?' is-wide':''}"><small>${escapeHtml(String(label))}</small><b>${escapeHtml(String(itemValue))}</b></span>`).join('')}</div>
+      </section>`).join('');
     }
     halves[floor<=middle?0:1].push(`<article class="dps-floor-card${floor===current?' is-current':''}" data-dps-floor="${floor}">
       <div class="dps-floor-pair"><span class="dps-floor-number"><strong>${floor}층</strong></span><span class="dps-floor-score"><b>${formatDpsTableValue(value)} <small class="dps-score-unit">DPS</small></b></span></div>
@@ -2584,8 +2588,16 @@ function bindTraitInputEvents(){
     focusTraitInputRow(nextRow,hostScroll,pageX,pageY);
   }, true);
   document.addEventListener('click', e=>{
-    const input=e.target.closest && e.target.closest('.tv-input[data-row]');
-    if(input) input.select();
+    const target=e.target;
+    if(!(target instanceof Element)) return;
+    const input=target.closest('.tv-input[data-row]');
+    if(input){input.select();return;}
+    const card=target.closest('.trait-invest-card[data-trait-id]');
+    if(!card || target.closest('button, a, select, textarea, input, [role="button"]')) return;
+    const field=card.querySelector('.tv-input[data-row]');
+    if(!field || field.disabled || field.readOnly) return;
+    field.focus({preventScroll:true});
+    field.select();
   }, true);
 }
 function adjustTraitBy(row,d,step=1){

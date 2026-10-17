@@ -4,18 +4,18 @@
 <meta charset="UTF-8"/>
 <meta name="google-site-verification" content="RTuDWbMdnKgbpRpl05eXh9epFwWRSxju4NOl8OtjMsI" />
 <script>
-window.DPS_BUILD_VERSION = "dps-2610170019";
-window.APP_VERSION = "dps-2610170019";
+window.DPS_BUILD_VERSION = "dps-2610170028";
+window.APP_VERSION = "dps-2610170028";
 window.DPS_ASSET_VERSIONS = {
-  "app.js": "dps-2610170019",
-  "calc.js": "dps-2610170019",
-  "data.js": "dps-2610170019",
-  "modal.js": "dps-2610170019",
-  "preset.js": "dps-2610170019",
-  "responsive.js": "dps-2610170019",
-  "style.css": "dps-2610170019",
-  "icon.png": "dps-2610170019",
-  "logo.png": "dps-2610170019"
+  "app.js": "dps-2610170028",
+  "calc.js": "dps-2610170028",
+  "data.js": "dps-2610170028",
+  "modal.js": "dps-2610170028",
+  "preset.js": "dps-2610170028",
+  "responsive.js": "dps-2610170028",
+  "style.css": "dps-2610170028",
+  "icon.png": "dps-2610170028",
+  "logo.png": "dps-2610170028"
 };
 (function(){
   'use strict';
@@ -198,14 +198,14 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 <meta content="https://sldbox.github.io/dps/" property="og:url"/>
 <meta content="개복디 특성 게산기" property="og:title"/>
 <meta content="특성 투자, 재화 사용량, 표기 스탯, 총데미지, DPS를 한 번에 계산할 수 있는 개복디 전용 계산기입니다." property="og:description"/>
-<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2610170019" property="og:image"/>
-<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2610170019" property="og:image:secure_url"/>
+<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2610170028" property="og:image"/>
+<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2610170028" property="og:image:secure_url"/>
 <meta content="image/png" property="og:image:type"/>
 <meta content="개복디 특성 게산기 로고" property="og:image:alt"/>
 <meta content="summary_large_image" name="twitter:card"/>
 <meta content="개복디 특성 게산기" name="twitter:title"/>
 <meta content="특성 투자, 재화 사용량, 표기 스탯, 총데미지, DPS를 한 번에 계산할 수 있는 개복디 전용 계산기입니다." name="twitter:description"/>
-<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2610170019" name="twitter:image"/>
+<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2610170028" name="twitter:image"/>
 <meta content="개복디 특성 게산기 로고" name="twitter:image:alt"/>
 <link href="https://cdn.jsdelivr.net" rel="preconnect"/>
 <link crossorigin="" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" rel="stylesheet"/>
@@ -735,8 +735,7 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 </div></div>
 <div class="damage-board-tab-shell">
 <section class="damage-board-panel is-active" id="damageBoardSpecPanel" role="tabpanel" aria-labelledby="damageBoardSpecTab" data-damage-board-panel="spec">
-<section class="analytics-group analytics-summary-group" aria-label="모드 / 데미지">
-<header class="analytics-group-head analytics-group-head--icon"><span class="analytics-group-head-main"><span class="analytics-group-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 18h16"/><path d="M7 15V9"/><path d="M12 15V6"/><path d="M17 15v-3"/></svg></span><span class="analytics-group-copy"><strong>모드 / 데미지</strong><small>MODE &amp; DPS</small></span></span></header>
+<section class="analytics-group analytics-summary-group" aria-label="스피드 모드, 유물 DPS, 모드 난이도 및 DPS">
 <div class="right-toggle-grid"><input id="specDpsSpeedMode" type="hidden" value="OFF"/><div class="right-toggle-card"><span>스피드 모드</span><div class="spec-dps-speed-switch-wrap" aria-label="스펙 보드 스피드 모드 전환"><button class="artifact-dps-switch" id="specDpsSpeedModeToggle" type="button" role="switch" aria-checked="false" data-spec-dps-speed-toggle><span class="artifact-dps-switch-text">OFF</span><span class="artifact-dps-switch-text">ON</span><i aria-hidden="true"></i></button></div></div><div class="right-toggle-card"><span>유물 DPS</span><div class="artifact-dps-switch-wrap" aria-label="유물 DPS 표시 전환"><button class="artifact-dps-switch" id="artifactDpsViewToggle" type="button" role="switch" aria-checked="false"><span class="artifact-dps-switch-text">OFF</span><span class="artifact-dps-switch-text">ON</span><i aria-hidden="true"></i></button></div></div></div>
 <div class="dps-card stat-dps-summary right-dps-hero" id="statDpsSummary">
   <div class="right-hero-context"><span class="dps-lbl">모드 / 난이도</span><strong class="right-hero-compact-mode" id="rightHeroCompactContext">—</strong><div class="dps-context-summary" id="dpsContextSummary"><strong id="dpsContextMode">—</strong><span class="right-hero-divider">/</span><strong id="dpsContextDiff">—</strong><small id="dpsContextModeDetail" hidden></small><small id="dpsContextDiffDetail" hidden></small></div></div>
@@ -766,29 +765,18 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 <div class="stat-row" role="row"><div class="sc-name" role="cell">유닛 가속</div><div class="sc-val" role="cell" id="sUADisplay">—</div><div class="sc-val" role="cell" id="sUAActual">—</div></div>
 <div class="stat-row" role="row"><div class="sc-name" role="cell">실드 감소</div><div class="sc-val" role="cell" id="sSRDisplay">—</div><div class="sc-val" role="cell" id="sSRActual">—</div></div>
 <div class="stat-row" role="row"><div class="sc-name" role="cell">체력 감소</div><div class="sc-val" role="cell" id="sHRDisplay">—</div><div class="sc-val" role="cell" id="sHRActual">—</div></div>
+<div class="stat-row" role="row"><div class="sc-name" role="cell">적 방어력</div><div class="sc-val" role="cell" id="enemyArmorDisplayQuick">—</div><div class="sc-val" role="cell" id="enemyArmorActualQuick">—</div></div>
+<div class="stat-row" role="row"><div class="sc-name" role="cell">적 물량 / 총물량</div><div class="sc-val" role="cell" id="enemyWaveCountQuick">—</div><div class="sc-val" role="cell" id="enemyTotalCountQuick">—</div></div>
+<div class="stat-row" role="row"><div class="sc-name" role="cell">적 체력 / 실드</div><div class="sc-val" role="cell" id="enemyHpQuick">—</div><div class="sc-val" role="cell" id="enemyShieldQuick">—</div></div>
+<div class="stat-row is-enemy-final-row" role="row"><div class="sc-name" role="cell">라운드 시간</div><div class="sc-val" role="cell" id="enemyRoundTimeQuick">—</div><div class="sc-val" role="cell" id="enemyRpTimeQuick">-</div></div>
 </div>
 </section>
-<section class="analytics-group analytics-enemy-group" aria-label="적 정보">
-<header class="analytics-group-head analytics-group-head--icon"><span class="analytics-group-head-main"><span class="analytics-group-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 4v5c0 4.6-2.9 7.2-7 9-4.1-1.8-7-4.4-7-9V7l7-4Z"/><path d="M9 12h6"/><path d="M12 9v6"/></svg></span><span class="analytics-group-copy"><strong>적 정보</strong><small>ENEMY STATUS</small></span></span></header>
-<section class="dps-table-enemy-summary" aria-label="적 정보"><div class="dps-table-enemy-grid dps-table-enemy-grid--paired">
-<div class="dps-table-enemy-stat"><span class="dps-table-enemy-stat-title">생존 정보</span><div class="dps-table-enemy-lines">
-<div class="dps-table-enemy-line"><span>체력</span><strong id="enemyHpQuick">—</strong></div>
-<div class="dps-table-enemy-line"><span>실드</span><strong id="enemyShieldQuick">—</strong></div>
-<div class="dps-table-enemy-line"><span>방어력</span><strong id="enemyArmorQuick">—</strong></div>
-</div></div>
-<div class="dps-table-enemy-stat"><span class="dps-table-enemy-stat-title">전투 정보</span><div class="dps-table-enemy-lines">
-<div class="dps-table-enemy-line"><span>물량</span><strong id="enemyWaveCountQuick">—</strong></div>
-<div class="dps-table-enemy-line"><span>총 물량</span><strong id="enemyTotalCountQuick">—</strong></div>
-<div class="dps-table-enemy-line"><span>라운드 시간</span><strong id="enemyRoundTimeQuick">—</strong></div>
-</div></div>
-</div><span id="enemyCountQuick" hidden>0</span><span id="enemyRpTimeQuick" hidden></span></section>
-</section>
+
 </div>
 </section>
 <section class="damage-board-panel" id="damageBoardUnitPanel" role="tabpanel" aria-labelledby="damageBoardUnitTab" data-damage-board-panel="unit" hidden>
 <div class="dps-base-unit-panel" data-dps-base-unit-control>
-<section class="analytics-group analytics-unit-summary-group" aria-label="유닛 DPS 분석">
-<header class="analytics-group-head analytics-group-head--icon"><span class="analytics-group-head-main"><span class="analytics-group-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h4l2 4 4-9 2 5h4"/><path d="M3 3v18h18"/></svg></span><span class="analytics-group-copy"><strong>모드 / 클리어 정보</strong><small>MODE / DPS / CLEAR</small></span></span></header>
+<section class="analytics-group analytics-unit-summary-group" aria-label="스피드 모드, 쥬얼 설정, 유닛 클리어 정보">
 <div class="right-toggle-grid"><div class="right-toggle-card"><span>스피드 모드</span><div class="dps-base-unit-speed-switch-wrap" aria-label="유닛 보드 스피드 모드 전환"><button class="artifact-dps-switch dps-base-unit-speed-switch" id="dpsBaseUnitSpeedModeToggle" type="button" role="switch" aria-checked="false" data-spec-dps-speed-toggle><span class="artifact-dps-switch-text">OFF</span><span class="artifact-dps-switch-text">ON</span><i aria-hidden="true"></i></button></div></div><div class="right-toggle-card"><span>쥬얼 설정</span><div class="dps-base-unit-title-actions"><button class="ui-action-btn ui-update-target-style dps-unit-jewel-open-btn" type="button" data-trait-preset-unit-jewel-open="jewel" aria-haspopup="dialog" aria-controls="traitPresetUnitJewelModal" aria-expanded="false">쥬얼 설정</button></div></div></div>
 <div class="dps-base-unit-summary" id="dpsBaseUnitSummary" aria-label="유닛 보드 모드 및 달성 정보" hidden></div>
 </section>
@@ -854,11 +842,47 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 <h3 class="zero-rank-modal-section-title">승단점수 정보</h3>
 <section class="zero-rank-score-info" aria-label="승단 점수 정보">
 <div class="zero-rank-score-grid">
-<article class="zero-rank-score-card is-common"><h5>공통</h5><div class="zero-rank-score-lines"><span>24스타: 한 난이도 개인전/협동전 3가지 별 모두 8별 달성 시 2점</span></div></article>
-<article class="zero-rank-score-card"><h5>일반 고행</h5><div class="zero-rank-score-lines"><span>고행 단계 1~13 = 고행당 1점</span><span>고행 단계 14~16 = 고행당 2점</span><span>고행 단계 17 = 3점</span><span>고행 단계 18~20 = 고행당 7점</span></div></article>
-<article class="zero-rank-score-card"><h5>명예 고행</h5><div class="zero-rank-score-lines"><span>고행 단계 0 = B 2점</span><span>고행 단계 10 = A 2점</span><span>고행 단계 17 = S 2점</span><span>고행 단계 19 = X 2점</span><span>고행 단계 20 = XD 2점 (한국업데이트X)</span></div></article>
-<article class="zero-rank-score-card"><h5>도전의탑</h5><div class="zero-rank-score-lines"><span>도전의탑: 41~60층 1층당 1점</span><span>도전의탑: 61~70층 1층당 2점</span><span>도전의탑: 71~90층 1층당 3점</span></div></article>
-<article class="zero-rank-score-card"><h5>명예 도전의탑</h5><div class="zero-rank-score-lines"><span>명예 도전의탑: 50~68층 2층당 1점</span><span>명예 도전의탑: 70~79층 1층당 1점</span><span>명예 도전의탑: 80~90층 1층당 2점</span></div></article>
+<article class="zero-rank-score-card is-common">
+<h5>공통</h5>
+<div class="zero-rank-score-lines">
+<div class="zero-rank-score-row is-description"><span class="zero-rank-score-range">24스타</span><span class="zero-rank-score-rate">한 난이도 개인전/협동전 3가지 별 모두 8별 달성 시</span><strong class="zero-rank-score-points">2점</strong></div>
+</div>
+</article>
+<article class="zero-rank-score-card">
+<h5>일반 고행</h5>
+<div class="zero-rank-score-lines">
+<div class="zero-rank-score-row"><span class="zero-rank-score-range">1~13단계</span><span class="zero-rank-score-rate">단계당</span><strong class="zero-rank-score-points">1점</strong></div>
+<div class="zero-rank-score-row"><span class="zero-rank-score-range">14~16단계</span><span class="zero-rank-score-rate">단계당</span><strong class="zero-rank-score-points">2점</strong></div>
+<div class="zero-rank-score-row"><span class="zero-rank-score-range">17단계</span><span class="zero-rank-score-rate">달성 시</span><strong class="zero-rank-score-points">3점</strong></div>
+<div class="zero-rank-score-row"><span class="zero-rank-score-range">18~20단계</span><span class="zero-rank-score-rate">단계당</span><strong class="zero-rank-score-points">7점</strong></div>
+</div>
+</article>
+<article class="zero-rank-score-card">
+<h5>명예 고행</h5>
+<div class="zero-rank-score-lines">
+<div class="zero-rank-score-row"><span class="zero-rank-score-range">0단계</span><span class="zero-rank-score-rate">B등급</span><strong class="zero-rank-score-points">2점</strong></div>
+<div class="zero-rank-score-row"><span class="zero-rank-score-range">10단계</span><span class="zero-rank-score-rate">A등급</span><strong class="zero-rank-score-points">2점</strong></div>
+<div class="zero-rank-score-row"><span class="zero-rank-score-range">17단계</span><span class="zero-rank-score-rate">S등급</span><strong class="zero-rank-score-points">2점</strong></div>
+<div class="zero-rank-score-row"><span class="zero-rank-score-range">19단계</span><span class="zero-rank-score-rate">X등급</span><strong class="zero-rank-score-points">2점</strong></div>
+<div class="zero-rank-score-row"><span class="zero-rank-score-range">20단계<small>한국 업데이트 X</small></span><span class="zero-rank-score-rate">XD등급</span><strong class="zero-rank-score-points">2점</strong></div>
+</div>
+</article>
+<article class="zero-rank-score-card">
+<h5>도전의탑</h5>
+<div class="zero-rank-score-lines">
+<div class="zero-rank-score-row"><span class="zero-rank-score-range">41~60층</span><span class="zero-rank-score-rate">1층당</span><strong class="zero-rank-score-points">1점</strong></div>
+<div class="zero-rank-score-row"><span class="zero-rank-score-range">61~70층</span><span class="zero-rank-score-rate">1층당</span><strong class="zero-rank-score-points">2점</strong></div>
+<div class="zero-rank-score-row"><span class="zero-rank-score-range">71~90층</span><span class="zero-rank-score-rate">1층당</span><strong class="zero-rank-score-points">3점</strong></div>
+</div>
+</article>
+<article class="zero-rank-score-card">
+<h5>명예 도전의탑</h5>
+<div class="zero-rank-score-lines">
+<div class="zero-rank-score-row"><span class="zero-rank-score-range">50~68층</span><span class="zero-rank-score-rate">2층당</span><strong class="zero-rank-score-points">1점</strong></div>
+<div class="zero-rank-score-row"><span class="zero-rank-score-range">70~79층</span><span class="zero-rank-score-rate">1층당</span><strong class="zero-rank-score-points">1점</strong></div>
+<div class="zero-rank-score-row"><span class="zero-rank-score-range">80~90층</span><span class="zero-rank-score-rate">1층당</span><strong class="zero-rank-score-points">2점</strong></div>
+</div>
+</article>
 </div>
 </section>
 </section>
