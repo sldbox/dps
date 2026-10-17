@@ -219,16 +219,12 @@ function specBoardPierceValue(){
 /* 입력·화면 동기화 */
 function renderEnemyData(data,stats){
   if(!data) return;
-  const countParts=String(enemyDisplayCountText(data.round)).split(' / ');
-  const armor=Number(data.armor)||0;
-  const actualArmor=armor*Math.max(0,1-(Number(stats?.M12)||0)/100)*Math.max(0,1-(Number(stats?.effectivePierce)||0)/100);
+  const waveCount=enemyDisplayCountText(data.round);
   const values={
-    ArmorDisplayQuick:fullNumber(armor),
-    ArmorActualQuick:fullNumber(actualArmor),
+    ArmorDisplayQuick:fullNumber(Number(data.armor)||0),
     HpQuick:fullNumber(data.hp),
     ShieldQuick:fullNumber(data.shield),
-    WaveCountQuick:countParts[0] || '—',
-    TotalCountQuick:countParts.length>1 ? countParts[1] : '-'
+    WaveCountQuick:waveCount || '—'
   };
   Object.entries(values).forEach(([name,value])=>setText('enemy'+name,value));
 }
@@ -310,6 +306,16 @@ function syncPowerBlessOptions(){
   );
   el.value=current;
 }
+function syncModeChoiceButtons(){
+  const coop=normalizeOnOffValue($('coopMode')?.value,'OFF')==='ON';
+  const bank=normalizeSpBankApplyValue($('spBankApply')?.value);
+  qsa('[data-mode-choice]').forEach(button=>{
+    const group=button.dataset.modeChoice;
+    const selected=group==='battle' ? button.dataset.value===(coop?'coop':'solo') : button.dataset.value===bank;
+    button.setAttribute('aria-pressed',selected ? 'true' : 'false');
+    button.classList.toggle('is-selected',selected);
+  });
+}
 function syncBattleMode(sourceId=''){
   const solo=$('soloMode'), coop=$('coopMode');
   if(!solo || !coop) return;
@@ -322,6 +328,7 @@ function syncBattleMode(sourceId=''){
   coop.value=coopOn ? 'ON' : 'OFF';
   syncPenanceOptions();
   syncTeamSelect({restorePersonal: !!sourceId && !coopOn, preserveCurrent: !sourceId});
+  syncModeChoiceButtons();
 }
 function syncTeamSelect(options={}){
   const el=$('team');
@@ -485,18 +492,6 @@ function renderStatSummary(s){
     setText('s'+key+'Display', displayText);
     setText('s'+key+'Actual', actualText);
   });
-  renderDamageBoardRoundTime(s);
-}
-function currentRoundTimeBonusSeconds(){
-  return enemyRoundTimeBonus(vs('diff'));
-}
-function renderDamageBoardRoundTime(s){
-  const roundTime=Number(s?.roundTime);
-  const bonus=currentRoundTimeBonusSeconds();
-  const rpTimeText=bonus>0 ? `RP +${fmt(bonus,0)}초 적용 중` : '-';
-  const timeText=Number.isFinite(roundTime) ? `${fmt(roundTime,1)}초` : '—';
-  setText('enemyRoundTimeQuick',timeText);
-  setText('enemyRpTimeQuick', rpTimeText);
 }
 function renderResourceSummary(s){
   const totalSp=s.effectiveSP ?? effectiveSP();
@@ -516,13 +511,14 @@ function renderResourceSummary(s){
   syncSpBankDisplay();
 }
 function syncControlDisplays(){
-  [syncSelectButtons,syncDonationBuffControl,syncBuffChoiceButtons,syncBattleMode,syncDifficultyTargetControls,syncErosionControlElements,syncPowerBlessOptions,syncSpecDpsSpeedSwitch,normalizeAllDpsBaseUnitQuantityInputs,formatAllMoneyInputs].forEach(fn=>fn());
+  [syncSelectButtons,syncDonationBuffControl,syncBuffChoiceButtons,syncBattleMode,syncSpBankApplyControl,syncDifficultyTargetControls,syncErosionControlElements,syncPowerBlessOptions,syncSpecDpsSpeedSwitch,normalizeAllDpsBaseUnitQuantityInputs,formatAllMoneyInputs].forEach(fn=>fn());
 }
 function syncSpBankApplyControl(){
   const select=$('spBankApply');
   if(!select) return false;
   const state=normalizeSpBankApplyValue(select.value);
   if(select.value!==state) select.value=state;
+  syncModeChoiceButtons();
   return true;
 }
 function syncPreCalculationViews(){
@@ -732,7 +728,7 @@ function syncSpecDpsSpeedSwitch(){
   const toggles=qsa('[data-spec-dps-speed-toggle]');
   if(!toggles.length) return;
   const {active,disabled}=normalizeUnifiedDpsSpeedModeValue();
-  toggles.forEach(toggle=>syncOnOffSwitch(toggle,{active,disabled,label:'스피드 모드',containerSelector:'.spec-dps-speed-switch-wrap,.dps-base-unit-speed-switch-wrap'}));
+  toggles.forEach(toggle=>syncOnOffSwitch(toggle,{active,disabled,label:'스피드 모드',containerSelector:'.spec-dps-speed-switch-wrap'}));
 }
 function syncPlanetExplorationRestrictedControls(){
   const disabled=planetExplorationRestrictionsActive();
@@ -851,9 +847,12 @@ function selectedDpsVisualDifficulty(mode){
 function selectedCoopDpsTableTeamCount(){
   return normalizeTeamCountValue(vs('team'), 2)==='3' ? 3 : 2;
 }
-// 2열 병합 적 정보: 스펙 보드와 동일하게 항목명·값을 한 줄에 가운데 정렬한다.
-function renderDpsEnemyPairs(groups){
-  return groups.map(([title,items])=>`<div class="dps-table-enemy-stat"><span class="dps-table-enemy-stat-title">${escapeHtml(title)}</span><div class="dps-table-enemy-lines">${items.map(([label,value])=>`<div class="dps-table-enemy-line"><span>${escapeHtml(String(label))}</span><strong>${escapeHtml(String(value))}</strong></div>`).join('')}</div></div>`).join('');
+// DPS표 공통 적 정보: 체력 → 실드 → 방어력 → 물량. 시간·RP는 계산에만 사용한다.
+function renderDpsEnemyDetails(items){
+  return `<div class="dps-enemy-details">${items.map(([label,value])=>`<div class="dps-enemy-detail"><span>${escapeHtml(String(label))}</span><strong>${escapeHtml(String(value))}</strong></div>`).join('')}</div>`;
+}
+function renderDpsStatHead(label){
+  return `<div class="dps-stat-table-head" role="row"><span>${escapeHtml(label)}</span><span>DPS</span><span>적 정보</span></div>`;
 }
 function buildDpsVisualComparison(round,mode){
   const coop=mode==='coop';
@@ -869,28 +868,27 @@ function buildDpsVisualComparison(round,mode){
   }
   const currentValue=values.find(item=>item.pen===current)?.dps;
   const enemy=enemyRoundData(round,difficulty);
-  const enemyFactor=coop ? teamCount : 1;
-  const waveCount=(Number(enemy.count)||0)*enemyFactor;
-  const totalCount=enemyRoundCountTotal(round,difficulty)*enemyFactor;
-  const enemyTime=specDpsRoundTime(round,difficulty);
-  // 스펙 보드와 같은 2칸 구성. 기존 적 수치와 계산식을 그대로 사용한다.
-  const enemyGroups=[
-    ['생존 정보',[['체력',fullNumber(enemy.hp)],['실드',fullNumber(enemy.shield)],['방어력',fullNumber(enemy.armor)]]],
-    ['전투 정보',[['물량',fullNumber(waveCount)],['총 물량',fullNumber(totalCount)],['라운드 시간',Number.isFinite(enemyTime) ? `${fmt(enemyTime,1)}초` : '—']]]
+  const enemyFactor=coop?teamCount:1;
+  const enemyItems=[
+    ['체력',fullNumber(enemy.hp)],
+    ['실드',fullNumber(enemy.shield)],
+    ['방어력',fullNumber(enemy.armor)],
+    ['물량',fullNumber((Number(enemy.count)||0)*enemyFactor)]
   ];
-  const enemyHtml=renderDpsEnemyPairs(enemyGroups);
   const diffOptions=(coop?COOP_DPS_TABLE_DIFFICULTIES:DPS_TABLE_DIFFICULTIES).map(item=>`<option value="${escapeHtml(item)}"${item===difficulty?' selected':''}>${escapeHtml(item)}</option>`).join('');
-  const cells=values.map(({pen,dps})=>`<div class="dps-compact-cell${pen===current?' is-current':''}" data-dps-penance="${pen}">
-      <span class="dps-compact-pen">${pen} 고행</span><strong class="dps-compact-value">${formatDpsTableValue(dps)} <small class="dps-score-unit">DPS</small></strong>
+  const cells=values.map(({pen,dps})=>`<div class="dps-stat-row${pen===current?' is-current':''}" role="row" data-dps-penance="${pen}">
+      <span class="dps-stat-stage" role="cell">${pen} 고행</span>
+      <strong class="dps-stat-dps" role="cell">${formatDpsTableValue(dps)}</strong>
+      <div class="dps-stat-enemies" role="cell">${renderDpsEnemyDetails(enemyItems)}</div>
     </div>`).join('');
   return `<div class="dps-overview">
     <div class="dps-overview-main">
       <div class="dps-overview-condition"><div class="dps-overview-title">모드 / 난이도</div><strong class="dps-overview-mode">${coop?'협동전 · '+teamCount+'인':'개인전'} · ${current} 고행 · ${round} 라운드</strong><label class="dps-overview-select"><span>난이도 선택</span><select id="dpsVisualDifficulty" data-dps-view-diff aria-label="비교할 난이도 선택">${diffOptions}</select></label></div>
       <div class="dps-overview-highlight"><div class="dps-overview-title">현재 DPS</div><strong>${formatDpsTableValue(currentValue)}</strong><span class="dps-overview-dps-unit">DPS</span></div>
-      <section class="dps-table-enemy-summary" aria-label="현재 조건의 적 정보"><div class="dps-overview-title">적 정보</div><div class="dps-table-enemy-grid dps-table-enemy-grid--paired">${enemyHtml}</div></section>
+      <section class="dps-table-enemy-summary" aria-label="현재 조건의 적 정보"><div class="dps-overview-title">적 정보</div>${renderDpsEnemyDetails(enemyItems)}</section>
     </div>
     <div class="dps-overview-results"><div class="dps-overview-list-head"><strong>고행별 DPS</strong><span>${penanceMin}–${penanceMax} · ${values.length}개</span></div>
-      <div class="dps-compact-grid" style="--dps-row-count:${Math.ceil(values.length/3)};--dps-row-count-2:${Math.ceil(values.length/2)}" aria-label="${escapeHtml(difficulty)} 고행별 DPS 비교">${cells}</div></div>
+      <div class="dps-stat-table" role="table" aria-label="${escapeHtml(difficulty)} 고행별 DPS 및 적 정보">${renderDpsStatHead('고행')}${cells}</div></div>
   </div>`;
 }
 function changeDpsVisualDifficulty(value){
@@ -912,37 +910,26 @@ function buildDpsFloorCards(mode){
   let currentFloorDps=NaN;
   for(let floor=min;floor<=max;floor++){
     const value=dpsTablePreviewValue(diff,0,floor,{battleMode:'solo'});
-    const enemies=tower?towerEnemySummaryItems(floor):planetEnemySummaryItems(floor);
-    const details=enemies.map(([label,itemValue])=>`<span class="dps-floor-enemy"><small>${escapeHtml(String(label))}</small><b>${escapeHtml(String(itemValue))}</b></span>`).join('');
+    const enemyItems=tower?towerEnemySummaryItems(floor):planetEnemySummaryItems(floor);
     if(floor===current){
       currentFloorDps=value;
-      const currentEnemy=Object.fromEntries(enemies);
-      const waveCount=currentEnemy['물량']??'—';
-      const totalCount=battleDataModeForDifficulty(diff).totalMode==='current' ? '-' : fullNumber(enemyRoundCountTotal(floor,diff));
-      const roundTime=specDpsRoundTime(floor,diff);
-      const rpBonus=enemyRoundTimeBonus(diff);
-      const enemyGroups=[
-        ['생존 정보', [['체력',currentEnemy['체력']??'—'],['실드',currentEnemy['실드']??'—'],['방어력',currentEnemy['방어력']??'—']]],
-        ['전투 정보', [['물량',waveCount],['총 물량',totalCount],['라운드 시간',Number.isFinite(roundTime)?`${fmt(roundTime,1)}초`:'—'],['RP 추가 시간',rpBonus>0?`RP +${fmt(rpBonus,0)}초 적용 중`:'-']]]
-      ];
-      currentFloorDetails=enemyGroups.map(([title,items])=>`<section class="dps-current-floor-enemy-group" aria-label="${escapeHtml(title)}">
-        <span class="dps-current-floor-enemy-group-title">${escapeHtml(title)}</span>
-        <div class="dps-floor-enemies">${items.map(([label,itemValue],index)=>`<span class="dps-floor-enemy${items.length===3&&index===2?' is-wide':''}"><small>${escapeHtml(String(label))}</small><b>${escapeHtml(String(itemValue))}</b></span>`).join('')}</div>
-      </section>`).join('');
+      currentFloorDetails=renderDpsEnemyDetails(enemyItems);
     }
-    halves[floor<=middle?0:1].push(`<article class="dps-floor-card${floor===current?' is-current':''}" data-dps-floor="${floor}">
-      <div class="dps-floor-pair"><span class="dps-floor-number"><strong>${floor}층</strong></span><span class="dps-floor-score"><b>${formatDpsTableValue(value)} <small class="dps-score-unit">DPS</small></b></span></div>
-      <div class="dps-floor-enemies">${details}</div>
+    halves[floor<=middle?0:1].push(`<article class="dps-floor-card dps-stat-row${floor===current?' is-current':''}" role="row" data-dps-floor="${floor}">
+      <span class="dps-stat-stage" role="cell">${floor}층</span>
+      <strong class="dps-stat-dps" role="cell">${formatDpsTableValue(value)}</strong>
+      <div class="dps-stat-enemies" role="cell">${renderDpsEnemyDetails(enemyItems)}</div>
     </article>`);
   }
   const halfHtml=halves.map((half,index)=>`<section class="dps-floor-half" aria-label="${index===0?min:middle+1}층부터 ${index===0?middle:max}층">
     <header class="dps-floor-range">${index===0?min:middle+1}–${index===0?middle:max}층</header>
-    <div class="dps-floor-half-entries">${half.join('')}</div>
+    <div class="dps-floor-half-entries" role="table">${renderDpsStatHead('층')}${half.join('')}</div>
   </section>`).join('');
   return `<div class="dps-floor-view">
     <div class="dps-current-floor-summary" aria-label="현재 선택 ${current}층 DPS 및 적 정보">
-      <div class="dps-current-floor-pair"><div class="dps-current-floor-number"><small>현재 선택 층</small><strong>${current}층</strong></div><div class="dps-current-floor-score"><small>예상 DPS</small><strong>${formatDpsTableValue(currentFloorDps)} <span class="dps-score-unit">DPS</span></strong></div></div>
-      <div class="dps-current-floor-enemies"><span class="dps-current-floor-label">적 정보</span><div class="dps-current-floor-enemy-items">${currentFloorDetails||'<span>정보 없음</span>'}</div></div>
+      <div class="dps-current-floor-number"><small>현재 선택 층</small><strong>${current}층</strong></div>
+      <div class="dps-current-floor-score"><small>예상 DPS</small><strong>${formatDpsTableValue(currentFloorDps)}</strong></div>
+      <div class="dps-current-floor-enemies"><span class="dps-current-floor-label">적 정보</span>${currentFloorDetails||'<span>정보 없음</span>'}</div>
     </div>
     <div class="dps-floor-split-grid">${halfHtml}</div>
   </div>`;
@@ -1445,7 +1432,7 @@ function dpsJewelFinalStatItemHtml(label,value,suffix='%'){
   return `<span class="dps-jewel-final-item"><em>${escapeHtml(label)}</em><b>${escapeHtml(value)}${escapeHtml(suffix)}</b></span>`;
 }
 function dpsJewelFinalStatsHtml(finalStats){
-  return `<span class="dps-jewel-final-label"><span class="jewel-final-heading-icon" aria-hidden="true">✦</span>최종 능력치</span>
+  return `<span class="dps-jewel-final-label">최종 능력치</span>
       ${dpsJewelFinalStatItemHtml('공격력',finalStats.ad)}
       ${dpsJewelFinalStatItemHtml('공격속도',finalStats.as)}
       ${dpsJewelFinalStatItemHtml('총데미지',finalStats.td)}
@@ -1462,7 +1449,7 @@ function dpsJewelConfigCardHtml(name,settings){
     }
     return options[key];
   };
-  const field=(key,label)=>`<label class="dps-jewel-field" data-jewel-stat="${key}"><span><i class="jewel-field-icon" aria-hidden="true"></i>${label}</span><select data-dps-jewel-name="${escapeHtml(name)}" data-dps-jewel-field="${key}" aria-label="${escapeHtml(name)} ${label}">${dpsJewelOptionHtml(fieldOptions(key),input[key])}</select></label>`;
+  const field=(key,label)=>`<label class="dps-jewel-field" data-jewel-stat="${key}"><span>${label}</span><select data-dps-jewel-name="${escapeHtml(name)}" data-dps-jewel-field="${key}" aria-label="${escapeHtml(name)} ${label}">${dpsJewelOptionHtml(fieldOptions(key),input[key])}</select></label>`;
   const mythic=finalStats.mythic==='Y';
   const gradeClass=mythic?'is-mythic':'is-legendary';
   const gradeText=mythic?'신화':'전설';
@@ -1482,7 +1469,7 @@ function dpsJewelConfigCardHtml(name,settings){
       ${renderJewelAbility('전설', ability.legendary)}
       ${renderJewelAbility('신화', ability.mythic)}
     </div>
-    <div class="dps-jewel-settings-title"><span class="jewel-settings-heading-icon" aria-hidden="true">✧</span>능력치 설정</div>
+    <div class="dps-jewel-settings-title">능력치 설정</div>
     <div class="dps-jewel-fields">${field('ad','공격력')}${field('as','공격속도')}${field('td','총데미지')}${field('ua','가속')}${field('enhance','강화')}${field('mythic','신화 여부')}</div>
     <div class="dps-jewel-final" aria-label="${escapeHtml(name)} 최종 옵션">
       ${dpsJewelFinalStatsHtml(finalStats)}
@@ -2315,6 +2302,23 @@ function bindDamageBoardSwitchEvents(){
 const INFINITE_TRAIT_TIER='무한∞';
 const TIERS=['루키','비기너','아마추어','프로','엑스퍼트','마스터','디바인','더원1','더원2',INFINITE_TRAIT_TIER,'EP특성','RP특성','심연특성'];
 const OPTIMIZATION_TIERS=TIERS.filter(tier=>tier!==INFINITE_TRAIT_TIER).concat(INFINITE_TRAIT_TIER);
+// 펼침 여부는 화면 상태로만 관리하며 프리셋 데이터에는 저장하지 않는다.
+const expandedTraitTiers=new Set();
+function setTraitTierExpanded(tier,expanded){
+  if(!TIERS.includes(tier)) return;
+  if(expanded) expandedTraitTiers.add(tier);
+  else expandedTraitTiers.delete(tier);
+  const panel=Array.from(qsa('.trait-tier-panel[data-tier]')).find(el=>el.dataset.tier===tier);
+  if(!panel) return;
+  const toggle=panel.querySelector('.trait-tier-toggle');
+  const list=panel.querySelector('.trait-invest-list');
+  panel.classList.toggle('is-expanded',expanded);
+  if(toggle) toggle.setAttribute('aria-expanded',String(expanded));
+  if(list) list.hidden=!expanded;
+}
+function setAllTraitTiersExpanded(expanded){
+  TIERS.forEach(tier=>setTraitTierExpanded(tier,expanded));
+}
 function updateTraits(){
   const body=$('traitBody');
   if(!body) return;
@@ -2330,8 +2334,7 @@ function updateTraits(){
         <div class="trait-invest-main">
           <span class="trait-invest-index" aria-hidden="true">${String(index+1).padStart(2,'0')}</span>
           <div class="trait-row-detail">
-            <div class="trait-invest-topline"><div class="tr-name">${escapeHtml(name)}</div><span class="trait-invest-level">LV <b>${fullNumber(n)}</b><i>/ ${fullNumber(mx)}</i></span></div>
-            <div class="tr-type"><span class="trait-effect-text">${escapeHtml(rStr)}</span><span class="trait-cost-chip ${isMax?'is-complete':''}">${isMax?'✓ 마스터 완료':`다음 투자 · ${fullNumber(cost)}`}</span></div>
+            <div class="trait-invest-topline"><div class="tr-name">${escapeHtml(name)}</div><div class="tr-type"><span class="trait-effect-text">${escapeHtml(rStr)}</span><span class="trait-cost-chip ${isMax?'is-complete':''}">${isMax?'✓ 마스터 완료':`다음 투자 · ${fullNumber(cost)}`}</span></div></div>
           </div>
         </div>
         <div class="tr-ctrl" aria-label="${escapeHtml(name)} 투자 조절">
@@ -2345,9 +2348,10 @@ function updateTraits(){
         </div>
       </article>`;
     }).join('');
-    return `<section class="trait-group trait-tier-panel" data-tier-index="${tierIndex+1}">
-      <h4><span class="trait-title"><span class="trait-tier-index" aria-hidden="true">${String(tierIndex+1).padStart(2,'0')}</span><span class="trait-tier-name">${tier}<small class="trait-tier-caption">TRAIT COLLECTION</small></span></span><span class="trait-tools"><button type="button" class="ui-action-btn mini-btn master" data-action="masterTier" data-tier="${tier}">구간 마스터</button><button type="button" class="ui-action-btn mini-btn reset danger" data-action="resetTier" data-tier="${tier}">초기화</button></span></h4>
-      <div class="trait-invest-list">${rows}</div>
+    const isExpanded=expandedTraitTiers.has(tier);
+    return `<section class="trait-group trait-tier-panel${isExpanded?' is-expanded':''}" data-tier-index="${tierIndex+1}" data-tier="${tier}">
+      <h4><button type="button" class="trait-tier-toggle" data-action="toggleTraitTier" data-tier="${tier}" aria-expanded="${isExpanded}" aria-controls="traitTierContent${tierIndex+1}"><span class="trait-title"><span class="trait-tier-index" aria-hidden="true">${String(tierIndex+1).padStart(2,'0')}</span><span class="trait-tier-name">${tier}<small class="trait-tier-caption">TRAIT COLLECTION</small></span></span></button><span class="trait-tools"><button type="button" class="ui-action-btn mini-btn master" data-action="masterTier" data-tier="${tier}">구간 마스터</button><button type="button" class="ui-action-btn mini-btn reset danger" data-action="resetTier" data-tier="${tier}">초기화</button></span></h4>
+      <div class="trait-invest-list" id="traitTierContent${tierIndex+1}" ${isExpanded?'':'hidden'}>${rows}</div>
     </section>`;
   }).join('');
 }
@@ -2559,6 +2563,8 @@ function focusTraitInputRow(row,hostScroll,pageX,pageY){
   const focusNow=()=>{
     const next=qs(`.tv-input[data-row="${row}"]`);
     if(!next) return false;
+    const panel=next.closest('.trait-tier-panel[data-tier]');
+    if(panel && !expandedTraitTiers.has(panel.dataset.tier)) setTraitTierExpanded(panel.dataset.tier,true);
     try{next.focus({preventScroll:true});}catch{next.focus();}
     if(typeof next.select==='function') next.select();
     if(host) host.scrollTop=hostScroll;
@@ -2941,12 +2947,17 @@ function buildZeroScoreCalcRow(config){
   const honorTarget=penance ? zeroScoreHonorSelectHtml(config.targetHonorClass,`${config.name} 명예 목표`) : zeroScoreInputHtml(config.targetHonorClass,{...config.honorOptions,label:`${config.name} 명예 목표`});
   const group=(label,note,cssClass,current,target)=>`<section class="zero-calc-group ${cssClass}"><div class="zero-calc-group-head"><strong>${label}</strong><small>${note}</small></div><div class="zero-calc-pair"><label class="zero-calc-field"><span>현재</span>${current}</label><span class="zero-calc-arrow" aria-hidden="true">→</span><label class="zero-calc-field"><span>목표</span>${target}</label></div></section>`;
   return `<article class="zero-calc-row" data-row-type="${config.type}">
-    <div class="zero-calc-row-head"><div class="zero-calc-name"><span class="zero-calc-row-symbol" aria-hidden="true">✦</span><strong>${name}</strong><small>${penance?'DIFFICULTY':'CHALLENGE TOWER'}</small></div><div class="zero-calc-score"><span>추가점수</span><b class="zero-row-score">0</b><small>POINTS</small></div></div>
-    <div class="zero-calc-fields">
-      ${group(penance?'일반 고행':'도전의탑','현재 → 목표','zero-calc-general',generalCurrent,generalTarget)}
-      ${group(penance?'명예':'명예의탑','현재 → 목표','zero-calc-honor',honorCurrent,honorTarget)}
+    <button class="zero-calc-row-head" type="button" aria-expanded="false" aria-label="${name} 승단 점수 입력 펼치기">
+      <span class="zero-calc-name"><span class="zero-calc-row-symbol" aria-hidden="true">✦</span><strong>${name}</strong><small>${penance?'DIFFICULTY':'CHALLENGE TOWER'}</small></span>
+      <span class="zero-calc-score"><span>추가점수</span><b class="zero-row-score">0</b><small>POINTS</small></span>
+    </button>
+    <div class="zero-calc-details" hidden>
+      <div class="zero-calc-fields">
+        ${group(penance?'일반 고행':'도전의탑','현재 → 목표','zero-calc-general',generalCurrent,generalTarget)}
+        ${group(penance?'명예':'명예의탑','현재 → 목표','zero-calc-honor',honorCurrent,honorTarget)}
+      </div>
+      ${config.star !== false ? `<div class="zero-calc-star"><span class="zero-calc-star-copy"><strong>24스타 보너스</strong><small>적용 시 +2점 · 기존 계산 유지</small></span>${zeroScoreStarButtonHtml()}</div>` : ''}
     </div>
-    ${config.star !== false ? `<div class="zero-calc-star"><span class="zero-calc-star-copy"><strong>24스타 보너스</strong><small>적용 시 +2점 · 기존 계산 유지</small></span>${zeroScoreStarButtonHtml()}</div>` : ''}
   </article>`;
 }
 function buildZeroPenanceCalcRow(name){
@@ -3105,9 +3116,25 @@ function normalizeZeroHonorInputElement(el){
   if(!el || !el.classList?.contains('zero-honor-input') || el.tagName==='SELECT') return;
   el.value=normalizeZeroHonorValue(el.value).toUpperCase();
 }
+function setZeroScoreRowExpanded(header,expanded){
+  const details=header?.nextElementSibling;
+  if(!details?.classList.contains('zero-calc-details')) return;
+  header.setAttribute('aria-expanded',String(expanded));
+  header.setAttribute('aria-label',`${header.querySelector('.zero-calc-name strong')?.textContent || '승단'} 승단 점수 입력 ${expanded?'접기':'펼치기'}`);
+  details.hidden=!expanded;
+}
+function setAllZeroScoreRowsExpanded(expanded){
+  $('zeroScoreRows')?.querySelectorAll('.zero-calc-row-head').forEach(header=>setZeroScoreRowExpanded(header,expanded));
+}
 function bindZeroScoreCalculator(){
   if(document.documentElement.dataset.zeroScoreCalcBound==='1') return;
   document.documentElement.dataset.zeroScoreCalcBound='1';
+  const rows=$('zeroScoreRows');
+  rows?.addEventListener('click',event=>{
+    const header=event.target.closest('.zero-calc-row-head');
+    if(!header || !rows.contains(header)) return;
+    setZeroScoreRowExpanded(header,header.getAttribute('aria-expanded')!=='true');
+  });
   const updateAndSave=(target,finalize=false)=>{
     if(!(target && target.closest && target.closest('.zero-score-calc'))) return;
     const penanceRow=target.closest('.zero-calc-row[data-row-type="penance"]');
@@ -3152,6 +3179,8 @@ const ACTION_HANDLERS={
   openBusPassengerModal:()=>window.DpsModal.openBoardModal('busPassengerModal'),
   openZeroRankInfoModal:()=>window.DpsModal.openBoardModal('zeroRankInfoModal'),
   zeroScoreStar:(trigger)=>toggleZeroScoreStar(trigger),
+  expandAllZeroScoreRows:()=>setAllZeroScoreRowsExpanded(true),
+  collapseAllZeroScoreRows:()=>setAllZeroScoreRowsExpanded(false),
   decreaseFont:()=>changeFontScale(-DPS_CONFIG.ui.fontScaleStep),
   increaseFont:()=>changeFontScale(DPS_CONFIG.ui.fontScaleStep),
   resetFont:()=>applyFontScale(DPS_CONFIG.ui.fontScaleDefault),
@@ -3162,6 +3191,9 @@ const ACTION_HANDLERS={
     return adjustTraitBy(+trigger.dataset.row,+trigger.dataset.delta,1);
   },
   traitMax:(trigger)=>adjMax(+trigger.dataset.row),
+  toggleTraitTier:(trigger)=>{ const tier=trigger.dataset.tier||''; setTraitTierExpanded(tier,!expandedTraitTiers.has(tier)); },
+  collapseAllTraitTiers:()=>setAllTraitTiersExpanded(false),
+  expandAllTraitTiers:()=>setAllTraitTiersExpanded(true),
   masterTier:(trigger)=>masterTier(trigger.dataset.tier||''),
   resetTier:(trigger)=>{ const tier=trigger.dataset.tier||''; return requestConfirmAction(`resetTier:${tier}`, `한 번 더 누르면 ${tier} 초기화`, ()=>resetTier(tier)); }
 };
@@ -3202,6 +3234,22 @@ function shouldHandleReactiveInput(target){
   return target.matches && target.matches('input, select, textarea');
 }
 function bindReactiveInputs(){
+  document.addEventListener('click',event=>{
+    const button=event.target?.closest?.('[data-mode-choice]');
+    if(!button || button.disabled) return;
+    event.preventDefault();
+    if(button.dataset.modeChoice==='battle'){
+      const coop=$('coopMode');
+      if(!coop || coop.value===(button.dataset.value==='coop'?'ON':'OFF')) return;
+      coop.value=button.dataset.value==='coop' ? 'ON' : 'OFF';
+      coop.dispatchEvent(new Event('change',{bubbles:true}));
+    }else if(button.dataset.modeChoice==='sp-bank'){
+      const bank=$('spBankApply');
+      if(!bank || bank.value===button.dataset.value) return;
+      bank.value=button.dataset.value;
+      bank.dispatchEvent(new Event('change',{bubbles:true}));
+    }
+  });
   let raf=0;
   const schedule=(target)=>{
     if(!shouldHandleReactiveInput(target)) return;

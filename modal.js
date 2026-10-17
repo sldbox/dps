@@ -185,10 +185,10 @@ body .trait-preset-guide-trigger:focus-visible, .trait-preset-guide-close:focus-
 .trait-preset-guide-shell{position:fixed;inset:0;z-index:10040;display:none;align-items:center;justify-content:center;padding:18px;box-sizing:border-box;}
 .trait-preset-guide-shell.is-open{display:flex;}
 .trait-preset-guide-backdrop{position:absolute;inset:0;background:rgba(2,9,20,.83);backdrop-filter:blur(11px);-webkit-backdrop-filter:blur(11px);}
-.trait-preset-guide-dialog{position:relative;z-index:1;display:grid;grid-template-rows:auto minmax(0,1fr) auto;width:min(680px,100%);max-height:calc(100dvh - 36px);border:1px solid #4e729c;border-radius:21px;background:var(--ui-panel-body-bg);color:#e8f1ff;box-shadow:0 32px 94px rgba(0,0,0,.72),0 0 0 1px rgba(159,198,244,.09),inset 0 1px rgba(255,255,255,.07);overflow:hidden;transition:width .3s ease;}
+.trait-preset-guide-dialog{position:relative;z-index:1;display:grid;grid-template-rows:auto minmax(0,1fr) auto;width:min(680px,100%);max-height:calc(100dvh - 36px);border:1px solid #4e729c;border-radius:21px;background:var(--ui-panel-body-bg);color:#e8f1ff;box-shadow:0 32px 94px rgba(0,0,0,.72),0 0 0 1px rgba(159,198,244,.09),inset 0 1px rgba(255,255,255,.07);overflow:hidden;transition:width .3s ease;border-color:var(--ui-panel-border);}
 .trait-preset-guide-dialog.is-practice{width:min(920px,100%);}
 .trait-preset-guide-dialog::before{content:"";position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,#5fafff,#8a93f8,#4ad3bc);z-index:2;}
-.trait-preset-guide-top{display:flex;justify-content:space-between;align-items:center;gap:12px;min-height:51px;padding:10px 21px 6px;border-bottom:1px solid rgba(63,103,147,.28);background:linear-gradient(110deg,#204769,#152e48);}
+.trait-preset-guide-top{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 21px 6px;height:auto;min-height:var(--ui-integrated-head-height);max-height:none;background:var(--ui-integrated-head-bg);border-bottom:1px solid var(--ui-integrated-head-line);color:var(--ui-integrated-head-text);}
 .trait-preset-guide-overline{display:flex;align-items:center;gap:9px;color:#94b9e3;font-size:10px;letter-spacing:1.5px;font-weight:950;white-space:nowrap;}
 .trait-preset-guide-overline-dot{width:7px;height:7px;border-radius:50%;background:#6dd8bd;box-shadow:0 0 0 4px rgba(109,216,189,.1);}
 .trait-preset-guide-top-tag{margin-left:3px;padding:4px 7px;border:1px solid rgba(137,187,239,.25);border-radius:5px;background:rgba(105,159,222,.08);color:#c5defd;letter-spacing:.65px;font-size:9px;}
@@ -197,8 +197,8 @@ body .trait-preset-guide-trigger:focus-visible, .trait-preset-guide-close:focus-
 .trait-preset-guide-close{display:grid;place-items:center;flex:0 0 31px;width:31px;height:31px;padding:0;border:1px solid #3c597c;border-radius:9px;background:#14283f;color:#acc8e7;font-size:22px;line-height:1;cursor:pointer;}
 
 .trait-preset-guide-content{min-height:0;background:var(--ui-panel-body-bg);overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;scrollbar-color:#3c638d transparent;}
-.trait-preset-guide-page{min-width:0;padding:14px 27px 21px;animation:traitGuideEnter .27s ease-out both;}
-.trait-preset-guide-page[hidden],.trait-preset-guide-explain-step[hidden],.trait-preset-guide-footer-actions button[hidden]{display:none!important;}
+.trait-preset-guide-page{min-width:0;padding:14px 27px 21px;animation:traitGuideEnter .38s cubic-bezier(.22,1,.36,1) both;}
+.trait-preset-guide-shell .trait-preset-guide-page[hidden],.trait-preset-guide-shell .trait-preset-guide-explain-step[hidden],.trait-preset-guide-shell .trait-preset-guide-footer-actions button[hidden]{display:none;}
 .trait-preset-guide-hero{display:flex;align-items:center;gap:17px;margin:5px 0 13px;min-width:0;}
 .trait-preset-guide-hero-copy{min-width:0;}
 .trait-preset-guide-hero-mark{display:grid;place-items:center;flex:0 0 69px;width:69px;height:69px;border:1px solid rgba(123,182,252,.48);border-radius:19px;background:radial-gradient(circle at 28% 12%,rgba(102,184,252,.28),transparent 70%),linear-gradient(145deg,#193958,#0c1d32);box-shadow:0 10px 28px rgba(23,82,158,.29),inset 0 1px rgba(255,255,255,.13),0 0 0 5px rgba(79,137,205,.08);}
@@ -310,14 +310,14 @@ body.trait-preset-guide-open{overflow:hidden;}
 .trait-preset-guide-preview-card>div span{color:#9bcafa;font-size:9px;font-weight:900;}
 .trait-preset-guide-preview-card>div.is-single span{color:#d8bafa;}
 .trait-preset-guide-preview-card>div b{color:#dce9f7;font-size:9.5px;font-weight:750;word-break:keep-all;}
-.trait-preset-guide-backup-included{color:#95b0d3!important;font-size:9.5px!important;}
+.trait-preset-guide-backup-included{color:#95b0d3;font-size:9.5px;}
 .trait-preset-guide-backup-filename{display:grid;gap:6px;padding:10px;border:1px solid #446892;border-radius:8px;background:#162e49;color:#cbdff5;font-size:10px;font-weight:900;}
 .trait-preset-guide-backup-filename input{width:100%;height:32px;padding:0 9px;border:1px solid #5888be;border-radius:6px;background:#dceafd;color:#18314e;font-size:11px;font-weight:850;box-sizing:border-box;}
 .trait-preset-guide-download.btn{min-height:37px;margin:0;border:1px solid #8ec4ff;border-radius:7px;background:linear-gradient(110deg,#2568d6,#3a8cf5);color:#fff;font-size:11px;font-weight:950;cursor:pointer;}
 .trait-preset-guide-backup-disclaimer{color:#819cba;text-align:center;font-size:9px;font-weight:750;}
 .trait-preset-guide-success-icon{display:grid;place-items:center;width:56px;height:56px;margin-top:19px;border:1px solid #56b5a4;border-radius:50%;background:#174743;color:#8bedd5;font-size:29px;box-shadow:0 0 0 7px rgba(65,186,158,.075);}
 .trait-preset-guide-retry{margin-top:4px;padding:10px 13px;border:1px solid #579ad6;border-radius:8px;background:#1c4770;color:#c9e4ff;font-size:11px;font-weight:900;cursor:pointer;}
-@keyframes traitGuideEnter{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:translateY(0)}}
+@keyframes traitGuideEnter{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
 @media(max-width:720px){
   .trait-preset-guide-dialog.is-practice{width:min(680px,100%);}
   .trait-preset-guide-practice-grid{grid-template-columns:minmax(0,1fr);}
@@ -334,8 +334,8 @@ body.trait-preset-guide-open{overflow:hidden;}
   body .trait-preset-guide-trigger{width:auto;min-width:80px;min-height:44px;padding:0 5px;font-size:calc(11.8px * var(--app-font-scale));}
   body .trait-preset-guide-trigger svg{width:15px;height:15px;}
   .trait-preset-guide-shell{padding:9px;}
-  .trait-preset-guide-dialog{max-height:calc(100dvh - 18px);border-radius:15px;}
-  .trait-preset-guide-top{min-height:46px;padding:8px 13px;}
+  .trait-preset-guide-dialog{max-height:calc(100dvh - 18px);border-radius:15px;border-color:var(--ui-panel-border);}
+  .trait-preset-guide-top{padding:8px 13px;height:auto;min-height:var(--ui-integrated-head-height);max-height:none;background:var(--ui-integrated-head-bg);border-bottom:1px solid var(--ui-integrated-head-line);color:var(--ui-integrated-head-text);}
   .trait-preset-guide-overline{font-size:9px;letter-spacing:.65px;gap:6px;}
   .trait-preset-guide-top-tag{display:none;}
   .trait-preset-guide-page-label{font-size:9px;}
@@ -369,9 +369,51 @@ body.trait-preset-guide-open{overflow:hidden;}
 
 /* PREMIUM GUIDE · independent styles (no cross-module selectors) */
 .trait-preset-guide-shell{isolation:isolate}
-.trait-preset-guide-dialog{border-color:#527fab;box-shadow:0 40px 110px rgba(0,0,0,.8),0 0 0 1px rgba(100,167,240,.16);}
-.trait-preset-guide-top{background:linear-gradient(100deg,rgba(29,65,109,.53),rgba(12,26,44,.2));}
+.trait-preset-guide-dialog{box-shadow:0 40px 110px rgba(0,0,0,.8),0 0 0 1px rgba(100,167,240,.16);border-color:var(--ui-panel-border);}
+.trait-preset-guide-top{height:auto;min-height:var(--ui-integrated-head-height);max-height:none;background:var(--ui-integrated-head-bg);border-bottom:1px solid var(--ui-integrated-head-line);color:var(--ui-integrated-head-text);}
 .trait-preset-guide-intro{background:radial-gradient(ellipse at 95% -18%,rgba(49,115,191,.13),transparent 68%)}
+/* 제작자 환영 화면 · 기존 이용 가이드 앞 단계 */
+.trait-preset-guide-welcome{background:radial-gradient(ellipse at 12% 0%,rgba(57,144,226,.17),transparent 55%),radial-gradient(ellipse at 100% 65%,rgba(37,119,149,.10),transparent 55%),var(--ui-panel-body-bg);}
+.guide-welcome-hero{position:relative;overflow:hidden;display:flex;align-items:center;gap:17px;padding:19px;border:1px solid #466e92;border-radius:15px;background:linear-gradient(130deg,#204c70 0%,#162f4b 54%,#102339 100%);box-shadow:0 9px 25px rgba(3,15,30,.22),inset 0 1px rgba(255,255,255,.08);}
+.guide-welcome-hero::after{content:"";position:absolute;right:-38px;top:-63px;width:180px;height:180px;border:1px solid rgba(166,211,255,.12);border-radius:50%;box-shadow:0 0 0 21px rgba(137,194,244,.035),0 0 0 47px rgba(137,194,244,.025);pointer-events:none;}
+.guide-welcome-emblem{position:relative;z-index:1;display:grid;place-items:center;flex:0 0 69px;width:69px;height:69px;border:1px solid #78b6e4;border-radius:17px;background:linear-gradient(145deg,#3478a4,#142e51);box-shadow:inset 0 1px rgba(255,255,255,.20),0 7px 24px rgba(9,21,38,.30);}
+.guide-welcome-emblem svg{width:48px;height:48px;filter:drop-shadow(0 2px 8px rgba(116,195,254,.25));}
+.guide-welcome-heading{z-index:1;min-width:0;position:relative;}
+.guide-welcome-eyebrow{color:#9fd3f4;font-size:10px;font-weight:900;letter-spacing:1.35px;}
+.trait-preset-guide-content .guide-welcome-heading h2{font-size:clamp(19px,3.8vw,26px);line-height:1.3;margin:7px 0 0;letter-spacing:-.6px;word-break:keep-all;}
+.guide-welcome-heading h2 span{color:#98d6ff;}
+.guide-welcome-message{padding:15px 6px 9px;}
+.guide-welcome-message strong{display:block;margin-bottom:10px;color:#f0f7ff;font-size:13px;line-height:1.55;word-break:keep-all;}
+.guide-welcome-message p{margin:0;color:#c3d6e9;font-size:12px;line-height:1.86;word-break:keep-all;}
+.guide-welcome-signature{margin-top:12px;color:#92cff4;font-size:11px;font-weight:900;text-align:right;letter-spacing:.2px;}
+.guide-welcome-contact-heading{display:flex;align-items:center;gap:10px;margin:5px 0 10px;color:#ecf5ff;font-weight:900;font-size:12px;}
+.guide-welcome-contact-heading::after{content:"";height:1px;flex:1;background:linear-gradient(90deg,#436787,transparent);}
+.guide-welcome-contacts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;}
+.guide-welcome-contact{display:flex;flex-direction:column;align-items:center;gap:7px;min-width:0;min-height:146px;box-sizing:border-box;padding:13px 11px;border:1px solid #3c6487;border-radius:12px;background:linear-gradient(155deg,#1d405d,#142a42);text-align:center;box-shadow:inset 0 1px rgba(255,255,255,.065);}
+.guide-welcome-contact-icon{display:grid;place-items:center;width:31px;height:31px;border-radius:10px;background:rgba(100,177,242,.12);color:#9fd8ff;}
+.guide-welcome-contact-icon svg{width:18px;height:18px;stroke:currentColor;stroke-width:1.8;fill:none;stroke-linecap:round;stroke-linejoin:round;}
+.guide-welcome-contact strong{color:#f4f9ff;font-size:12px;line-height:1.2;}
+.guide-welcome-contact small{color:#bfd5e8;font-size:10px;line-height:1.3;min-height:13px;}
+.guide-welcome-contact button,.guide-welcome-contact a{display:flex;align-items:center;justify-content:center;gap:5px;width:100%;min-height:32px;box-sizing:border-box;margin-top:auto;padding:5px 6px;border:1px solid #5d9ccd;border-radius:8px;background:#244f75;color:#ecf8ff;font-size:10.5px;font-weight:900;line-height:1.3;text-decoration:none;cursor:pointer;}
+.guide-welcome-contact a{border-color:#707ad1;background:linear-gradient(120deg,#475ca7,#3c4c91);}
+.guide-welcome-contact button:hover,.guide-welcome-contact a:hover{filter:brightness(1.12);}
+.guide-welcome-copy-status{min-height:14px;margin:8px 0 0;color:#9addcd;font-size:10px;font-weight:800;text-align:center;}
+.trait-preset-guide-welcome .guide-welcome-copy-status:empty{visibility:hidden;}
+@media(max-width:600px){
+  .guide-welcome-hero{gap:12px;padding:13px;}
+  .guide-welcome-emblem{flex-basis:50px;width:50px;height:50px;border-radius:13px;}
+  .guide-welcome-emblem svg{width:37px;height:37px;}
+  .guide-welcome-eyebrow{font-size:9px;letter-spacing:.8px;}
+  .trait-preset-guide-content .guide-welcome-heading h2{font-size:clamp(17px,4.8vw,22px);}
+  .guide-welcome-message{padding:12px 2px 8px;}
+  .guide-welcome-message strong{font-size:12px;margin-bottom:7px;}
+  .guide-welcome-message p{font-size:11px;line-height:1.7;}
+  .guide-welcome-contact{min-height:135px;padding:10px 7px;gap:6px;}
+  .guide-welcome-contact strong{font-size:11px;}
+  .guide-welcome-contact small{font-size:9.5px;}
+  .guide-welcome-contact button,.guide-welcome-contact a{font-size:10px;}
+}
+@media(prefers-reduced-motion:reduce){.trait-preset-guide-page{animation:none;}}
 .guide-intro-section-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:15px;color:#9dc9fd;font-size:10px;font-weight:950;letter-spacing:1.1px;}
 .guide-intro-section-head small{color:#7097c1;letter-spacing:.2px;font-size:9px}
 .trait-preset-guide-timeline{position:relative;margin-top:9px;gap:11px}
@@ -399,13 +441,13 @@ body.trait-preset-guide-open{overflow:hidden;}
 .guide-connector-path{fill:none;stroke:url(#traitGuideGradient);stroke-width:3;stroke-linejoin:round;stroke-linecap:round;stroke-dasharray:6 7;animation:guideMarch 1.6s linear infinite}
 .guide-connector-glow{fill:none;stroke:rgba(88,180,255,.15);stroke-width:13;stroke-linecap:round}
 #traitGuideConnectorDot{fill:#b9ebff;stroke:#368cdb;stroke-width:3}
-.trait-preset-guide-shell .guide-is-target{position:relative;z-index:4;outline:2px solid #92d4ff!important;outline-offset:3px;box-shadow:0 0 0 6px rgba(60,146,247,.19),0 0 20px rgba(72,168,255,.37)!important;animation:guideTarget 2.1s ease-in-out infinite}
+.trait-preset-guide-shell .guide-is-target{position:relative;z-index:4;outline:2px solid #92d4ff;outline-offset:3px;box-shadow:0 0 0 6px rgba(60,146,247,.19),0 0 20px rgba(72,168,255,.37);animation:guideTarget 2.1s ease-in-out infinite}
 .trait-preset-guide-shell .guide-is-alternate{position:relative;z-index:4;outline:2px dashed #7cc0ff;outline-offset:2px}
 .trait-preset-guide-shell .trait-preset-guide-field:has(.guide-is-target){color:#fff}
 .trait-preset-guide-progress>span.is-current{box-shadow:0 0 0 1px rgba(92,167,252,.25),inset 0 1px rgba(255,255,255,.06)}
 .guide-dismiss{border-color:#496481;background:#20354e;color:#eef6ff;min-width:155px;justify-content:center;text-align:center;font-size:12px;}
 .trait-preset-guide-confirm{min-width:155px;}
-.trait-preset-guide-secondary[hidden]{display:none!important}
+.trait-preset-guide-shell .trait-preset-guide-secondary[hidden]{display:none}
 .trait-preset-guide-footer-actions{flex-wrap:wrap;justify-content:center}
 @keyframes guidePulse{0%,100%{box-shadow:0 0 0 4px rgba(68,152,241,.10),0 0 13px rgba(72,155,250,.23)}50%{box-shadow:0 0 0 7px rgba(68,152,241,.18),0 0 24px rgba(72,155,250,.46)}}
 @keyframes guideMarch{to{stroke-dashoffset:-26}}
@@ -434,7 +476,7 @@ body.trait-preset-guide-open{overflow:hidden;}
   .trait-preset-guide-demo-actions .preset-command-main small{font-size:7.5px;}
   .trait-preset-guide-demo-actions .preset-command-pill{font-size:7.5px;padding:4px 5px;}
 }
-@media(prefers-reduced-motion:reduce){.guide-navigation-pulse,.trait-preset-guide-shell .guide-is-target,.guide-connector-path{animation:none!important}}
+@media(prefers-reduced-motion:reduce){.guide-navigation-pulse,.trait-preset-guide-shell .guide-is-target,.guide-connector-path{animation:none}}
 `;
 /* 이용 안내 · 실제 프리셋 규칙을 재현한 독립형 연습 가이드 */
 let traitPresetGuideReturnFocus=null;
@@ -464,12 +506,40 @@ function createTraitPresetGuideModal(){
     <div class="trait-preset-guide-backdrop" data-trait-preset-guide-close></div>
     <section class="trait-preset-guide-dialog" role="dialog" aria-modal="true" aria-labelledby="traitPresetGuideTitle" aria-describedby="traitPresetGuideDescription" tabindex="-1">
       <header class="trait-preset-guide-top">
-        <span class="trait-preset-guide-overline"><span class="trait-preset-guide-overline-dot"></span> DPS / BUILD STUDIO <span class="trait-preset-guide-top-tag">PRESET GUIDE</span></span>
-        <span class="trait-preset-guide-page-label" id="traitPresetGuidePageLabel">01 <i>/</i> 02 · 사용 안내</span>
+        <span class="trait-preset-guide-overline"><span class="trait-preset-guide-overline-dot"></span> DPS / BUILD STUDIO <span class="trait-preset-guide-top-tag">OFFICIAL GUIDE</span></span>
+        <span class="trait-preset-guide-page-label" id="traitPresetGuidePageLabel">01 <i>/</i> 03 · 제작자 인사</span>
         <button type="button" class="trait-preset-guide-close" data-trait-preset-guide-close aria-label="안내 닫기">×</button>
       </header>
       <div class="trait-preset-guide-content">
-        <section class="trait-preset-guide-page trait-preset-guide-intro" data-trait-preset-guide-page="intro">
+        <section class="trait-preset-guide-page trait-preset-guide-welcome" data-trait-preset-guide-page="welcome">
+          <div class="guide-welcome-hero">
+            <span class="guide-welcome-emblem" aria-hidden="true"><svg viewBox="0 0 48 48" focusable="false"><use href="#dpsHeaderBrandGlyph"/></svg></span>
+            <div class="guide-welcome-heading">
+              <span class="guide-welcome-eyebrow">A MESSAGE FROM THE CREATOR</span>
+              <h2 id="traitPresetGuideWelcomeTitle">개복디 특성 계산기에<br/><span>오신 것을 환영합니다!</span></h2>
+            </div>
+          </div>
+          <div class="guide-welcome-message" id="traitPresetGuideWelcomeDescription">
+            <strong>안녕하세요. 제작자 회장입니다.</strong>
+            <p>특성 투자와 DPS 분석을 더욱 편리하게 이용하실 수 있도록 이 계산기를 만들었습니다.<br/>사용하시면서 느끼신 점과 건의 사항을 바탕으로 계속 다듬어 나가겠습니다.<br/>이용해 주셔서 감사합니다.</p>
+            <div class="guide-welcome-signature">— 제작자 회장 드림</div>
+          </div>
+          <div class="guide-welcome-contact-heading">연락 및 피드백</div>
+          <div class="guide-welcome-contacts">
+            <div class="guide-welcome-contact">
+              <span class="guide-welcome-contact-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6 8h12a3 3 0 0 1 3 3l1 6a2 2 0 0 1-3 2l-3-2H8l-3 2a2 2 0 0 1-3-2l1-6a3 3 0 0 1 3-3zM7 12v5m-2.5-2.5h5M16 13h.01M19 16h.01"/></svg></span>
+              <strong>블리자드 배틀태그</strong><small>회장#31977</small>
+              <button type="button" data-trait-preset-guide-copy-tag>배틀태그 복사</button>
+            </div>
+            <div class="guide-welcome-contact">
+              <span class="guide-welcome-contact-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 5.8a18 18 0 0 1 14 0L22 18a15 15 0 0 1-5 2l-1-2a16 16 0 0 0 3-1.4 19 19 0 0 1-14 0A16 16 0 0 0 8 18l-1 2a15 15 0 0 1-5-2L5 5.8zM8.3 12.7h.01m7.4 0h.01"/></svg></span>
+              <strong>디스코드</strong><small>피드백 및 건의</small>
+              <a href="https://discord.gg/z7DwqvGeB5" target="_blank" rel="noopener noreferrer">참여하기 ↗</a>
+            </div>
+          </div>
+          <div class="guide-welcome-copy-status" id="traitPresetGuideCopyStatus" role="status" aria-live="polite"></div>
+        </section>
+        <section class="trait-preset-guide-page trait-preset-guide-intro" data-trait-preset-guide-page="intro" hidden>
           <div class="trait-preset-guide-hero">
             <span class="trait-preset-guide-hero-mark" aria-hidden="true"><svg viewBox="0 0 48 48" focusable="false"><use href="#dpsHeaderBrandGlyph"/></svg></span>
             <div class="trait-preset-guide-hero-copy"><span class="trait-preset-guide-kicker">변경사항을 안전하게 관리하세요</span>
@@ -626,22 +696,25 @@ function renderTraitPresetGuideDemo(){
 function showTraitPresetGuidePage(page){
   const modal=$('traitPresetGuideModal');
   if(!modal?.classList.contains('is-open')) return;
+  const welcome=page==='welcome';
   const practice=page==='practice';
+  const intro=page==='intro';
+  if(!welcome && !practice && !intro) return;
   modal.querySelectorAll('[data-trait-preset-guide-page]').forEach(node=>{node.hidden=node.dataset.traitPresetGuidePage!==page;});
   const label=$('traitPresetGuidePageLabel');
-  if(label) label.innerHTML=practice ? '02 <i>/</i> 02 · 체험 모드' : '01 <i>/</i> 02 · 사용 안내';
+  if(label) label.innerHTML=welcome?'01 <i>/</i> 03 · 제작자 인사':intro?'02 <i>/</i> 03 · 이용 가이드':'03 <i>/</i> 03 · 체험 모드';
   const dialog=modal.querySelector('.trait-preset-guide-dialog');
   if(dialog){
     dialog.classList.toggle('is-practice',practice);
-    dialog.setAttribute('aria-labelledby',practice?'traitPresetGuidePracticeTitle':'traitPresetGuideTitle');
-    dialog.setAttribute('aria-describedby',practice?'traitPresetGuidePracticeDescription':'traitPresetGuideDescription');
+    dialog.setAttribute('aria-labelledby',welcome?'traitPresetGuideWelcomeTitle':practice?'traitPresetGuidePracticeTitle':'traitPresetGuideTitle');
+    dialog.setAttribute('aria-describedby',welcome?'traitPresetGuideWelcomeDescription':practice?'traitPresetGuidePracticeDescription':'traitPresetGuideDescription');
   }
   const back=modal.querySelector('[data-trait-preset-guide-back]');
-  if(back) back.hidden=!practice;
+  if(back){back.hidden=welcome;back.textContent=practice?'← 이용 가이드로':'← 제작자 인사로';}
   const next=modal.querySelector('[data-trait-preset-guide-next]');
-  if(next) next.innerHTML=practice ? '가이드 닫기 <span aria-hidden="true">×</span>' : '체험 하러가기 <span aria-hidden="true">→</span>';
+  if(next) next.innerHTML=welcome?'이용 가이드 보기 <span aria-hidden="true">→</span>':intro?'체험 하러가기 <span aria-hidden="true">→</span>':'가이드 닫기 <span aria-hidden="true">×</span>';
   const dismiss=modal.querySelector('[data-trait-preset-guide-dismiss]');
-  if(dismiss) dismiss.hidden=practice;
+  if(dismiss) dismiss.hidden=welcome || practice;
   if(practice){
     traitPresetGuideDemo=newTraitPresetGuideDemo();
     renderTraitPresetGuideDemo();
@@ -650,10 +723,11 @@ function showTraitPresetGuidePage(page){
   }
   const content=modal.querySelector('.trait-preset-guide-content');
   if(content) content.scrollTop=0;
-  const firstControl=practice ? $('traitPresetGuideDemoSelect') : modal.querySelector('[data-trait-preset-guide-next]');
+  const firstControl=practice ? $('traitPresetGuideDemoSelect') : welcome ? modal.querySelector('[data-trait-preset-guide-copy-tag]') : modal.querySelector('[data-trait-preset-guide-next]');
   firstControl?.focus({preventScroll:true});
   updateTraitGuideTarget();
 }
+
 function chooseTraitPresetGuideDemo(value){
   const demo=traitPresetGuideDemo;
   if(!demo || demo.stage>=3) return;
@@ -721,7 +795,7 @@ function openTraitPresetGuideModal(options={}){
   const modal=createTraitPresetGuideModal();
   traitPresetGuideReturnFocus=options.trigger || document.activeElement;
   window.DpsModal.setOpen('traitPresetGuideModal','trait-preset-guide-open',true);
-  showTraitPresetGuidePage('intro');
+  showTraitPresetGuidePage('welcome');
   modal.querySelector('.trait-preset-guide-close')?.focus({preventScroll:true});
 }
 /* 단계별 목표 지정 · 실제 요소의 위치를 기준으로 화살표 경로 계산 */
@@ -798,15 +872,32 @@ function bindTraitGuideEvents(){
     const opener=event.target.closest?.('[data-trait-preset-guide-open]');
     if(opener){event.preventDefault();openTraitPresetGuideModal({trigger:opener});return;}
     if(!event.target.closest?.('#traitPresetGuideModal')) return;
-    const action=event.target.closest('[data-trait-preset-guide-close],[data-trait-preset-guide-dismiss],[data-trait-preset-guide-next],[data-trait-preset-guide-back],[data-trait-preset-guide-import],[data-trait-preset-guide-update],[data-trait-preset-guide-backup],[data-trait-preset-guide-finish],[data-trait-preset-guide-restart]');
+    const action=event.target.closest('[data-trait-preset-guide-close],[data-trait-preset-guide-dismiss],[data-trait-preset-guide-next],[data-trait-preset-guide-back],[data-trait-preset-guide-copy-tag],[data-trait-preset-guide-import],[data-trait-preset-guide-update],[data-trait-preset-guide-backup],[data-trait-preset-guide-finish],[data-trait-preset-guide-restart]');
     if(!action) return;
     event.preventDefault();
+    if(action.matches('[data-trait-preset-guide-copy-tag]')){
+      const status=$('traitPresetGuideCopyStatus');
+      const value='회장#31977';
+      const legacyCopy=()=>{
+        const field=document.createElement('textarea');
+        field.value=value;field.setAttribute('readonly','');field.style.position='fixed';field.style.opacity='0';
+        document.body.appendChild(field);field.select();
+        let copied=false;
+        try{copied=document.execCommand('copy');}catch(error){copied=false;}
+        field.remove();return copied;
+      };
+      const showResult=ok=>{if(status) status.textContent=ok?'배틀태그가 복사되었습니다.':'복사할 수 없습니다. 회장#31977을 직접 복사해 주세요.';};
+      if(navigator.clipboard?.writeText){navigator.clipboard.writeText(value).then(()=>showResult(true),()=>showResult(legacyCopy()));}
+      else showResult(legacyCopy());
+      return;
+    }
     if(action.matches('[data-trait-preset-guide-dismiss]')){saveTraitPresetGuideConfirmedAt();closeTraitPresetGuideModal();}
     else if(action.matches('[data-trait-preset-guide-close]')) closeTraitPresetGuideModal();
     else if(action.matches('[data-trait-preset-guide-next]')){
-      if(document.querySelector('[data-trait-preset-guide-page="intro"]:not([hidden])')) showTraitPresetGuidePage('practice');
+      if(document.querySelector('[data-trait-preset-guide-page="welcome"]:not([hidden])')) showTraitPresetGuidePage('intro');
+      else if(document.querySelector('[data-trait-preset-guide-page="intro"]:not([hidden])')) showTraitPresetGuidePage('practice');
       else closeTraitPresetGuideModal();
-    }else if(action.matches('[data-trait-preset-guide-back]')) showTraitPresetGuidePage('intro');
+    }else if(action.matches('[data-trait-preset-guide-back]')) showTraitPresetGuidePage(document.querySelector('[data-trait-preset-guide-page="practice"]:not([hidden])')?'intro':'welcome');
     else if(action.matches('[data-trait-preset-guide-import]')) chooseTraitPresetGuideDemo('a');
     else if(action.matches('[data-trait-preset-guide-update]')) applyTraitPresetGuideDemoUpdate();
     else if(action.matches('[data-trait-preset-guide-backup]')) startTraitPresetGuideBackup();
@@ -848,7 +939,7 @@ function insertTraitGuideEntry(){
   const button=document.createElement('button');
   button.type='button';button.className='trait-preset-guide-trigger';
   button.dataset.traitPresetGuideOpen='';
-  button.setAttribute('aria-label','프리셋 업데이트·백업 사용 안내 보기');
+  button.setAttribute('aria-label','제작자 인사 및 이용 가이드 보기');
   button.title='프리셋 이용 가이드';
   button.innerHTML='<svg viewBox="0 0 48 48" aria-hidden="true" focusable="false"><use href="#dpsHeaderBrandGlyph"></use></svg><span>이용 가이드</span>';
   const actions=toolbar.querySelector('.trait-preset-title-actions');

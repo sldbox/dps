@@ -4,18 +4,18 @@
 <meta charset="UTF-8"/>
 <meta name="google-site-verification" content="RTuDWbMdnKgbpRpl05eXh9epFwWRSxju4NOl8OtjMsI" />
 <script>
-window.DPS_BUILD_VERSION = "dps-2610170030";
-window.APP_VERSION = "dps-2610170030";
+window.DPS_BUILD_VERSION = "dps-2610180007";
+window.APP_VERSION = "dps-2610180007";
 window.DPS_ASSET_VERSIONS = {
-  "app.js": "dps-2610170030",
-  "calc.js": "dps-2610170030",
-  "data.js": "dps-2610170030",
-  "modal.js": "dps-2610170030",
-  "preset.js": "dps-2610170030",
-  "responsive.js": "dps-2610170030",
-  "style.css": "dps-2610170030",
-  "icon.png": "dps-2610170030",
-  "logo.png": "dps-2610170030"
+  "app.js": "dps-2610180007",
+  "calc.js": "dps-2610180007",
+  "data.js": "dps-2610180007",
+  "modal.js": "dps-2610180007",
+  "preset.js": "dps-2610180007",
+  "responsive.js": "dps-2610180007",
+  "style.css": "dps-2610180007",
+  "icon.png": "dps-2610180007",
+  "logo.png": "dps-2610180007"
 };
 (function(){
   'use strict';
@@ -198,14 +198,14 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 <meta content="https://sldbox.github.io/dps/" property="og:url"/>
 <meta content="개복디 특성 게산기" property="og:title"/>
 <meta content="특성 투자, 재화 사용량, 표기 스탯, 총데미지, DPS를 한 번에 계산할 수 있는 개복디 전용 계산기입니다." property="og:description"/>
-<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2610170030" property="og:image"/>
-<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2610170030" property="og:image:secure_url"/>
+<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2610180007" property="og:image"/>
+<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2610180007" property="og:image:secure_url"/>
 <meta content="image/png" property="og:image:type"/>
 <meta content="개복디 특성 게산기 로고" property="og:image:alt"/>
 <meta content="summary_large_image" name="twitter:card"/>
 <meta content="개복디 특성 게산기" name="twitter:title"/>
 <meta content="특성 투자, 재화 사용량, 표기 스탯, 총데미지, DPS를 한 번에 계산할 수 있는 개복디 전용 계산기입니다." name="twitter:description"/>
-<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2610170030" name="twitter:image"/>
+<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2610180007" name="twitter:image"/>
 <meta content="개복디 특성 게산기 로고" name="twitter:image:alt"/>
 <link href="https://cdn.jsdelivr.net" rel="preconnect"/>
 <link crossorigin="" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" rel="stylesheet"/>
@@ -288,7 +288,7 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 <div class="trait-preset-brand"><span class="trait-preset-brand-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M12 2.8 21 8l-9 5.2L3 8 12 2.8Z"/><path d="m3 12 9 5.2 9-5.2M3 16l9 5.2 9-5.2"/></svg></span><span class="trait-preset-brand-copy"><strong class="trait-preset-heading">특성 프리셋</strong><small>PRESET MANAGER</small></span></div>
 <div class="trait-preset-title-actions" aria-label="프리셋 관리 기능">
 <button class="btn subtle danger ui-action-btn trait-preset-title-btn is-delete" data-action="deleteTraitPreset" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 4h4m-8 3 1 13h10l1-13M10 11v5m4-5v5"/></svg><span>프리셋 삭제</span></button>
-<button class="btn subtle danger ui-action-btn trait-preset-title-btn is-reset" data-action="resetAllTraitPresetState" id="traitPresetResetAllBtn" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11a9 9 0 1 1 2.5 6.3M3 4v7h7m2-4v5l3 2"/></svg><span>전체 초기화</span></button>
+<button class="btn subtle danger ui-action-btn trait-preset-title-btn is-reset" data-action="resetAllTraitPresetState" id="traitPresetResetAllBtn" type="button" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11a9 9 0 1 1 2.5 6.3M3 4v7h7m2-4v5l3 2"/></svg><span>전체 초기화</span></button>
 </div>
 </div>
 <div class="trait-preset-body trait-subgroup-body">
@@ -297,11 +297,12 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 <button class="btn subtle ui-action-btn preset-command is-update" data-action="updateTraitPreset" data-state="idle" type="button"><span class="preset-command-top"><span class="preset-command-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8 8 0 0 0-14-5L4 8m0-5v5h5M4 13a8 8 0 0 0 14 5l2-2m0 5v-5h-5"/></svg></span><span class="preset-command-count" aria-hidden="true">02</span></span><span class="preset-command-main"><strong>프리셋 업데이트</strong><small id="traitPresetUpdateHint">먼저 프리셋을 선택하거나 저장하세요.</small></span><span class="preset-command-pill" id="traitPresetUpdateBadge">대기</span></button>
 <button class="btn subtle ui-action-btn preset-command is-backup" data-action="backupTraitPresets" data-state="idle" type="button"><span class="preset-command-top"><span class="preset-command-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v12m-4-4 4 4 4-4"/><path d="M4 16v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></svg></span><span class="preset-command-count" aria-hidden="true">03</span></span><span class="preset-command-main"><strong>통합 프리셋 백업</strong><small id="traitPresetBackupHint">백업할 프리셋이 없습니다.</small></span><span class="preset-command-pill" id="traitPresetBackupBadge">대기</span></button>
 </div>
+<div class="trait-preset-form-grid" aria-label="프리셋 저장과 로드">
 <div class="trait-preset-form-card is-save">
 <div class="trait-preset-form-heading"><span class="trait-preset-form-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h11l3 3v13H5zM8 4v6h8V4M8 20v-7h8v7"/></svg></span><label class="trait-preset-label" for="traitPresetName">프리셋 이름</label><small>SAVE PRESET</small></div>
 <div class="trait-preset-name-row">
 <input id="traitPresetName" type="text" placeholder="예시) 더파300라버스" autocomplete="off" maxlength="40"/>
-<button class="btn pri ui-action-btn trait-preset-form-action" data-action="saveTraitPreset" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h13l3 3v13H4zM8 4v6h8V4M8 20v-7h8v7"/></svg><span>프리셋 저장</span></button>
+<button class="btn pri ui-action-btn trait-preset-form-action" data-action="saveTraitPreset" type="button" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h13l3 3v13H4zM8 4v6h8V4M8 20v-7h8v7"/></svg><span class="trait-preset-button-copy"><strong>프리셋 저장</strong><small>현재 설정을 프리셋으로 저장</small></span></button>
 </div>
 </div>
 <div class="trait-preset-form-card is-load">
@@ -309,11 +310,12 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 <div class="trait-preset-load-row">
 <select id="traitPresetSelect" aria-label="특성 프리셋 목록" disabled><option value="" disabled selected>저장된 프리셋 없음</option></select>
 <div class="trait-preset-load-actions">
-<button class="btn pri ui-action-btn trait-preset-form-action" data-action="loadTraitPreset" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7h7l2 2h9v11H3zM3 7V4h8l2 3M12 12v6m-3-3 3 3 3-3"/></svg><span>프리셋 로드</span></button>
+<button class="btn pri ui-action-btn trait-preset-form-action" data-action="loadTraitPreset" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7h7l2 2h9v11H3zM3 7V4h8l2 3M12 12v6m-3-3 3 3 3-3"/></svg><span class="trait-preset-button-copy"><strong>프리셋 로드</strong><small id="traitPresetLoadHint" aria-live="polite">저장된 설정을 다시 불러오기</small></span></button>
 </div>
 </div>
 </div>
-<input id="traitPresetImportFile" class="hidden-field" type="file" accept=".txt,text/plain"/>
+</div>
+<input id="traitPresetImportFile" class="hidden-field" type="file" accept=".txt,.json,text/plain,application/json"/>
 </div>
 </div>
 <div class="basic-goal-cards">
@@ -332,7 +334,8 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 <div class="basic-info-row readonly-resource" data-basic-row="used-sp-attack"><label>사용한 SP (공격)</label><b id="spAttackView">0</b></div>
 <div class="basic-info-row readonly-resource" data-basic-row="used-sp-utility"><label>사용한 SP (유틸)</label><b id="spUtilityView">0</b></div>
 <div class="basic-info-row readonly-resource" data-basic-row="remain-sp"><label>남은 SP</label><b id="spRemainBasicView">0</b></div>
-<div class="basic-info-row" data-basic-row="sp-bank"><label for="spBankApply">SP 은행</label><select id="spBankApply"><option selected="" value="미반영">OFF</option><option value="반영">ON</option></select></div>
+<div class="basic-info-row" data-basic-row="sp-bank"><label>SP 은행</label><div class="mode-choice-group" role="group" aria-label="SP 은행 반영"><button type="button" data-mode-choice="sp-bank" data-value="미반영" aria-pressed="true">OFF</button><button type="button" data-mode-choice="sp-bank" data-value="반영" aria-pressed="false">ON</button></div></div>
+<select id="spBankApply" hidden aria-hidden="true"><option selected="" value="미반영">OFF</option><option value="반영">ON</option></select>
 </div>
 <div class="basic-info-lane-group is-soul" aria-label="심연의혼">
 <div class="basic-info-row manual-resource" data-basic-row="owned-soul"><label for="soul">본인 심연의혼</label><input class="money-input" id="soul" inputmode="numeric" type="text" value="0"/></div>
@@ -364,12 +367,14 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 <div class="xp-sp-split basic-info-grid">
 <div class="xp-sp-panel basic-info-panel">
 <section class="basic-info-lane is-primary" aria-label="개인전 및 협동전 설정">
-<div class="basic-info-lane-group is-mode" aria-label="개인전 및 협동전 모드">
-<div class="basic-info-row" data-basic-row="solo-mode"><label for="soloMode">개인전</label><select id="soloMode"><option selected="" value="ON">ON</option><option value="OFF">OFF</option></select></div>
-<div class="basic-info-row" data-basic-row="coop-mode"><label for="coopMode">협동전</label><select id="coopMode"><option selected="" value="OFF">OFF</option><option value="ON">ON</option></select></div>
-</div>
-<div class="basic-info-lane-group is-match" aria-label="인원과 난이도 및 라운드">
+<div class="basic-info-lane-group is-mode" aria-label="게임 모드, 스피드 모드, 전투 모드 및 출발 지원 인원수">
+<div class="basic-info-row" data-basic-row="battle-mode"><label>게임 모드</label><div class="mode-choice-group" role="group" aria-label="개인전 또는 협동전"><button type="button" data-mode-choice="battle" data-value="solo" aria-pressed="true">개인전</button><button type="button" data-mode-choice="battle" data-value="coop" aria-pressed="false">협동전</button></div></div>
+<div hidden><select id="soloMode" aria-hidden="true"><option selected="" value="ON">ON</option><option value="OFF">OFF</option></select><select id="coopMode" aria-hidden="true"><option selected="" value="OFF">OFF</option><option value="ON">ON</option></select></div>
+<div class="basic-info-row" data-basic-row="speed-mode"><label>스피드 모드</label><div class="spec-dps-speed-switch-wrap goal-mode-switch-wrap" aria-label="스피드 모드 전환"><button class="artifact-dps-switch goal-mode-switch" id="specDpsSpeedModeToggle" type="button" role="switch" aria-checked="false" data-spec-dps-speed-toggle><span class="artifact-dps-switch-text">OFF</span><span class="artifact-dps-switch-text">ON</span><i aria-hidden="true"></i></button></div></div>
+<div class="basic-info-row" data-basic-row="game-mode"><label>전투 모드</label><div class="artifact-dps-switch-wrap goal-mode-switch-wrap" aria-label="일반 또는 유물 DPS 표시"><button class="artifact-dps-switch goal-mode-switch" id="artifactDpsViewToggle" type="button" role="switch" aria-checked="false"><span class="artifact-dps-switch-text">일반</span><span class="artifact-dps-switch-text">유물</span><i aria-hidden="true"></i></button></div></div>
 <div class="basic-info-row" data-basic-row="team"><label for="team">출발 지원 인원수</label><select id="team"><option selected="" value="1">1</option><option value="2">2</option><option value="3">3</option></select></div>
+</div>
+<div class="basic-info-lane-group is-match" aria-label="난이도와 목표 라운드">
 <div class="basic-info-row" data-basic-row="difficulty"><label for="diff">난이도</label><select id="diff">
 <option selected="">Practice</option><option>Very Easy</option><option>Easy</option>
 <option>Normal</option><option>Hard</option><option>Very Hard</option>
@@ -537,7 +542,7 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 </div>
 <div class="enhance-controls unit-enhance-inline-controls">
 <section class="buff-config-group is-enhance" aria-label="강화 효과">
-<div class="buff-config-heading"><span class="buff-config-symbol" aria-hidden="true">✣</span><div><strong>강화 효과</strong><small>오버핸스·리페핸스·강화의 달인</small></div></div>
+<div class="buff-config-heading"><span class="buff-config-symbol" aria-hidden="true">✣</span><div><strong>강화 효과</strong><small>오버핸스·리페핸스·강화의 달인·방어력 관통</small></div></div>
 <div class="mini-ir mini-ir-button-row unit-enhance-option-row">
 <label>오버핸스</label>
 <div class="seg-btns unit-enhance-button-grid" data-target="overEnhance">
@@ -566,6 +571,20 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 </div>
 <select class="hidden-field" id="enhanceMaster"><option selected="" value="OFF">OFF</option><option value="ON">ON</option><option value="ON+">ON+</option></select>
 </div>
+<div class="mini-ir mini-ir-button-row unit-enhance-option-row spec-board-pierce-row">
+<label for="specBoardPierce">방어력 관통</label>
+<div class="seg-btns unit-enhance-button-grid spec-board-pierce-grid" data-target="specBoardPierce">
+<button class="ui-choice-btn" data-action="selectButton" data-value="0" type="button">선택 안함</button>
+<button class="ui-choice-btn" data-action="selectButton" data-value="10" type="button">10</button>
+<button class="ui-choice-btn" data-action="selectButton" data-value="15" type="button">15</button>
+<button class="ui-choice-btn" data-action="selectButton" data-value="20" type="button">20</button>
+<button class="ui-choice-btn" data-action="selectButton" data-value="25" type="button">25</button>
+<button class="ui-choice-btn" data-action="selectButton" data-value="30" type="button">30</button>
+<button class="ui-choice-btn" data-action="selectButton" data-value="35" type="button">35</button>
+<button class="ui-choice-btn" data-action="selectButton" data-value="40" type="button">40</button>
+</div>
+<select class="hidden-field" id="specBoardPierce"><option selected="" value="0">선택 안함</option><option value="10">10</option><option value="15">15</option><option value="20">20</option><option value="25">25</option><option value="30">30</option><option value="35">35</option><option value="40">40</option></select>
+</div>
 </section>
 <section class="buff-config-group is-selection" aria-label="선택 버프">
 <div class="buff-config-heading"><span class="buff-config-symbol" aria-hidden="true">✓</span><div><strong>선택 버프</strong><small>필요한 효과를 여러 개 선택할 수 있습니다</small></div></div>
@@ -592,22 +611,7 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 </div>
 </div>
 </section>
-<section class="buff-config-group is-pierce" aria-label="방어력 관통">
-<div class="buff-config-heading"><span class="buff-config-symbol" aria-hidden="true">◇</span><div><strong>방어력 관통</strong><small>스펙 보드 전용 효과</small></div></div>
-<div class="mini-ir mini-ir-button-row unit-enhance-option-row spec-board-pierce-row">
-<div class="seg-btns unit-enhance-button-grid spec-board-pierce-grid" data-target="specBoardPierce">
-<button class="ui-choice-btn" data-action="selectButton" data-value="0" type="button">선택 안함</button>
-<button class="ui-choice-btn" data-action="selectButton" data-value="10" type="button">10</button>
-<button class="ui-choice-btn" data-action="selectButton" data-value="15" type="button">15</button>
-<button class="ui-choice-btn" data-action="selectButton" data-value="20" type="button">20</button>
-<button class="ui-choice-btn" data-action="selectButton" data-value="25" type="button">25</button>
-<button class="ui-choice-btn" data-action="selectButton" data-value="30" type="button">30</button>
-<button class="ui-choice-btn" data-action="selectButton" data-value="35" type="button">35</button>
-<button class="ui-choice-btn" data-action="selectButton" data-value="40" type="button">40</button>
-</div>
-<select class="hidden-field" id="specBoardPierce"><option selected="" value="0">선택 안함</option><option value="10">10</option><option value="15">15</option><option value="20">20</option><option value="25">25</option><option value="30">30</option><option value="35">35</option><option value="40">40</option></select>
-</div>
-</section>
+
 </div>
 </div>
 </div>
@@ -637,6 +641,7 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 </div>
 <div class="zero-calc-table-wrap">
 <div class="zero-calc-table" aria-label="난이도별 승단 점수 입력">
+<div class="zero-calc-expand-actions" aria-label="승단 점수 입력 목록 전체 조작"><button type="button" class="zero-calc-expand-btn" data-action="expandAllZeroScoreRows">전체 펼치기</button><button type="button" class="zero-calc-expand-btn" data-action="collapseAllZeroScoreRows">전체 접기</button></div>
 <div id="zeroScoreRows" class="zero-calc-rows"></div>
 </div>
 </div>
@@ -720,7 +725,7 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 </div>
 </section>
 <section class="trait-standalone-panel trait-utility-panel" aria-labelledby="traitUtilityListHeading">
-  <header class="trait-utility-section-head"><span class="trait-utility-section-mark" aria-hidden="true">☷</span><span class="trait-utility-section-label"><strong id="traitUtilityListHeading">특성 유틸 리스트</strong><small>TRAIT / UTILITY COLLECTION</small></span></header>
+  <header class="trait-utility-section-head"><span class="trait-utility-section-mark" aria-hidden="true">☷</span><span class="trait-utility-section-label"><strong id="traitUtilityListHeading">특성 유틸 리스트</strong><small>TRAIT / UTILITY COLLECTION</small></span><div class="trait-utility-toolbar"><div class="trait-expand-actions"><button type="button" class="trait-expand-all-btn" data-action="expandAllTraitTiers">전체 펼치기</button><button type="button" class="trait-expand-all-btn" data-action="collapseAllTraitTiers">전체 접기</button></div></div></header>
   <div class="tp-body" id="traitBody"></div>
 </section>
 </div>
@@ -728,15 +733,15 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 <div class="col-right">
 <!-- 스펙·유닛 보드: 전환 버튼·결과 -->
 <div class="data-card stat-dps-card right-analytics-workspace">
-<div class="right-workspace-navigation"><header class="right-workspace-head"><span class="right-workspace-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M3 16h4l3-8 4 11 3-6h4"/><path d="M3 3v18h18"/></svg></span><span class="right-workspace-copy"><strong>DPS 분석 보드</strong><small>SPEC &amp; UNIT ANALYTICS</small></span><span class="right-workspace-status" aria-hidden="true">LIVE</span></header>
+<div class="right-workspace-navigation"><header class="right-workspace-head"><span class="right-workspace-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M3 16h4l3-8 4 11 3-6h4"/><path d="M3 3v18h18"/></svg></span><span class="right-workspace-copy"><strong>DPS 분석 보드</strong><small>SPEC &amp; UNIT ANALYTICS</small></span></header>
 <div class="damage-board-tabs" role="tablist" aria-label="보드 선택" data-damage-board-tabs>
 <button class="damage-board-tab is-active" id="damageBoardSpecTab" type="button" role="tab" aria-selected="true" aria-controls="damageBoardSpecPanel" data-damage-board-tab="spec"><span class="damage-board-tab-title">스펙 보드</span><span class="damage-board-tab-desc">순수 특성 스펙 기반 DPS 측정</span></button>
 <button class="damage-board-tab" id="damageBoardUnitTab" type="button" role="tab" aria-selected="false" aria-controls="damageBoardUnitPanel" data-damage-board-tab="unit"><span class="damage-board-tab-title">유닛 보드</span><span class="damage-board-tab-desc">히든조합 빌드 기반 DPS 측정</span></button>
 </div></div>
 <div class="damage-board-tab-shell">
 <section class="damage-board-panel is-active" id="damageBoardSpecPanel" role="tabpanel" aria-labelledby="damageBoardSpecTab" data-damage-board-panel="spec">
-<section class="analytics-group analytics-summary-group" aria-label="스피드 모드, 유물 DPS, 모드 난이도 및 DPS">
-<div class="right-toggle-grid"><input id="specDpsSpeedMode" type="hidden" value="OFF"/><div class="right-toggle-card"><span>스피드 모드</span><div class="spec-dps-speed-switch-wrap" aria-label="스펙 보드 스피드 모드 전환"><button class="artifact-dps-switch" id="specDpsSpeedModeToggle" type="button" role="switch" aria-checked="false" data-spec-dps-speed-toggle><span class="artifact-dps-switch-text">OFF</span><span class="artifact-dps-switch-text">ON</span><i aria-hidden="true"></i></button></div></div><div class="right-toggle-card"><span>유물 DPS</span><div class="artifact-dps-switch-wrap" aria-label="유물 DPS 표시 전환"><button class="artifact-dps-switch" id="artifactDpsViewToggle" type="button" role="switch" aria-checked="false"><span class="artifact-dps-switch-text">OFF</span><span class="artifact-dps-switch-text">ON</span><i aria-hidden="true"></i></button></div></div></div>
+<section class="analytics-group analytics-summary-group" aria-label="모드 난이도 및 DPS">
+<input id="specDpsSpeedMode" type="hidden" value="OFF"/>
 <div class="dps-card stat-dps-summary right-dps-hero" id="statDpsSummary">
   <div class="right-hero-context"><span class="dps-lbl">모드 / 난이도</span><strong class="right-hero-compact-mode" id="rightHeroCompactContext">—</strong><div class="dps-context-summary" id="dpsContextSummary"><strong id="dpsContextMode">—</strong><span class="right-hero-divider">/</span><strong id="dpsContextDiff">—</strong><small id="dpsContextModeDetail" hidden></small><small id="dpsContextDiffDetail" hidden></small></div></div>
 <div class="right-hero-metric"><span class="dps-lbl" id="dpsMainLabel">DPS</span><strong class="dps-num" id="dpsVal">—</strong></div>
@@ -765,10 +770,8 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 <div class="stat-row" role="row"><div class="sc-name" role="cell">유닛 가속</div><div class="sc-val" role="cell" id="sUADisplay">—</div><div class="sc-val" role="cell" id="sUAActual">—</div></div>
 <div class="stat-row" role="row"><div class="sc-name" role="cell">실드 감소</div><div class="sc-val" role="cell" id="sSRDisplay">—</div><div class="sc-val" role="cell" id="sSRActual">—</div></div>
 <div class="stat-row" role="row"><div class="sc-name" role="cell">체력 감소</div><div class="sc-val" role="cell" id="sHRDisplay">—</div><div class="sc-val" role="cell" id="sHRActual">—</div></div>
-<div class="stat-row" role="row"><div class="sc-name" role="cell">적 방어력</div><div class="sc-val" role="cell" id="enemyArmorDisplayQuick">—</div><div class="sc-val" role="cell" id="enemyArmorActualQuick">—</div></div>
-<div class="stat-row" role="row"><div class="sc-name" role="cell">적 물량 / 총물량</div><div class="sc-val" role="cell" id="enemyWaveCountQuick">—</div><div class="sc-val" role="cell" id="enemyTotalCountQuick">—</div></div>
 <div class="stat-row" role="row"><div class="sc-name" role="cell">적 체력 / 실드</div><div class="sc-val" role="cell" id="enemyHpQuick">—</div><div class="sc-val" role="cell" id="enemyShieldQuick">—</div></div>
-<div class="stat-row is-enemy-final-row" role="row"><div class="sc-name" role="cell">라운드 시간</div><div class="sc-val" role="cell" id="enemyRoundTimeQuick">—</div><div class="sc-val" role="cell" id="enemyRpTimeQuick">-</div></div>
+<div class="stat-row is-enemy-final-row" role="row"><div class="sc-name" role="cell">적 물량 / 방어력</div><div class="sc-val" role="cell" id="enemyWaveCountQuick">—</div><div class="sc-val" role="cell" id="enemyArmorDisplayQuick">—</div></div>
 </div>
 </section>
 
@@ -776,8 +779,8 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 </section>
 <section class="damage-board-panel" id="damageBoardUnitPanel" role="tabpanel" aria-labelledby="damageBoardUnitTab" data-damage-board-panel="unit" hidden>
 <div class="dps-base-unit-panel" data-dps-base-unit-control>
-<section class="analytics-group analytics-unit-summary-group" aria-label="스피드 모드, 쥬얼 설정, 유닛 클리어 정보">
-<div class="right-toggle-grid"><div class="right-toggle-card"><span>스피드 모드</span><div class="dps-base-unit-speed-switch-wrap" aria-label="유닛 보드 스피드 모드 전환"><button class="artifact-dps-switch dps-base-unit-speed-switch" id="dpsBaseUnitSpeedModeToggle" type="button" role="switch" aria-checked="false" data-spec-dps-speed-toggle><span class="artifact-dps-switch-text">OFF</span><span class="artifact-dps-switch-text">ON</span><i aria-hidden="true"></i></button></div></div><div class="right-toggle-card"><span>쥬얼 설정</span><div class="dps-base-unit-title-actions"><button class="ui-action-btn ui-update-target-style dps-unit-jewel-open-btn" type="button" data-trait-preset-unit-jewel-open="jewel" aria-haspopup="dialog" aria-controls="traitPresetUnitJewelModal" aria-expanded="false">쥬얼 설정</button></div></div></div>
+<section class="analytics-group analytics-unit-summary-group" aria-label="쥬얼 설정 및 유닛 클리어 정보">
+<div class="right-toggle-grid"><button class="right-toggle-card dps-unit-jewel-open-btn" type="button" data-trait-preset-unit-jewel-open="jewel" aria-haspopup="dialog" aria-controls="traitPresetUnitJewelModal" aria-expanded="false">쥬얼 설정</button></div>
 <div class="dps-base-unit-summary" id="dpsBaseUnitSummary" aria-label="유닛 보드 모드 및 달성 정보" hidden></div>
 </section>
 <input id="dpsBaseUnits" type="hidden" value=""/>
