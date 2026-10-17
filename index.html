@@ -4,18 +4,18 @@
 <meta charset="UTF-8"/>
 <meta name="google-site-verification" content="RTuDWbMdnKgbpRpl05eXh9epFwWRSxju4NOl8OtjMsI" />
 <script>
-window.DPS_BUILD_VERSION = "dps-2610180008";
-window.APP_VERSION = "dps-2610180008";
+window.DPS_BUILD_VERSION = "dps-2610180012";
+window.APP_VERSION = "dps-2610180012";
 window.DPS_ASSET_VERSIONS = {
-  "app.js": "dps-2610180008",
-  "calc.js": "dps-2610180008",
-  "data.js": "dps-2610180008",
-  "modal.js": "dps-2610180008",
-  "preset.js": "dps-2610180008",
-  "responsive.js": "dps-2610180008",
-  "style.css": "dps-2610180008",
-  "icon.png": "dps-2610180008",
-  "logo.png": "dps-2610180008"
+  "app.js": "dps-2610180012",
+  "calc.js": "dps-2610180012",
+  "data.js": "dps-2610180012",
+  "modal.js": "dps-2610180012",
+  "preset.js": "dps-2610180012",
+  "responsive.js": "dps-2610180012",
+  "style.css": "dps-2610180012",
+  "icon.png": "dps-2610180012",
+  "logo.png": "dps-2610180012"
 };
 (function(){
   'use strict';
@@ -198,14 +198,14 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 <meta content="https://sldbox.github.io/dps/" property="og:url"/>
 <meta content="개복디 특성 게산기" property="og:title"/>
 <meta content="특성 투자, 재화 사용량, 표기 스탯, 총데미지, DPS를 한 번에 계산할 수 있는 개복디 전용 계산기입니다." property="og:description"/>
-<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2610180008" property="og:image"/>
-<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2610180008" property="og:image:secure_url"/>
+<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2610180012" property="og:image"/>
+<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2610180012" property="og:image:secure_url"/>
 <meta content="image/png" property="og:image:type"/>
 <meta content="개복디 특성 게산기 로고" property="og:image:alt"/>
 <meta content="summary_large_image" name="twitter:card"/>
 <meta content="개복디 특성 게산기" name="twitter:title"/>
 <meta content="특성 투자, 재화 사용량, 표기 스탯, 총데미지, DPS를 한 번에 계산할 수 있는 개복디 전용 계산기입니다." name="twitter:description"/>
-<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2610180008" name="twitter:image"/>
+<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2610180012" name="twitter:image"/>
 <meta content="개복디 특성 게산기 로고" name="twitter:image:alt"/>
 <link href="https://cdn.jsdelivr.net" rel="preconnect"/>
 <link crossorigin="" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" rel="stylesheet"/>
@@ -287,8 +287,8 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 <div class="trait-preset-title trait-subgroup-title">
 <div class="trait-preset-brand"><span class="trait-preset-brand-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M12 2.8 21 8l-9 5.2L3 8 12 2.8Z"/><path d="m3 12 9 5.2 9-5.2M3 16l9 5.2 9-5.2"/></svg></span><span class="trait-preset-brand-copy"><strong class="trait-preset-heading">특성 프리셋</strong><small>PRESET MANAGER</small></span></div>
 <div class="trait-preset-title-actions" aria-label="프리셋 관리 기능">
+<button class="btn subtle danger ui-action-btn trait-preset-title-btn is-reset" data-action="resetAllTraitPresetState" id="traitPresetResetAllBtn" type="button" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11a9 9 0 1 1 2.5 6.3M3 4v7h7m2-4v5l3 2"/></svg><span>프리셋 초기화</span></button>
 <button class="btn subtle danger ui-action-btn trait-preset-title-btn is-delete" data-action="deleteTraitPreset" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 4h4m-8 3 1 13h10l1-13M10 11v5m4-5v5"/></svg><span>프리셋 삭제</span></button>
-<button class="btn subtle danger ui-action-btn trait-preset-title-btn is-reset" data-action="resetAllTraitPresetState" id="traitPresetResetAllBtn" type="button" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11a9 9 0 1 1 2.5 6.3M3 4v7h7m2-4v5l3 2"/></svg><span>전체 초기화</span></button>
 </div>
 </div>
 <div class="trait-preset-body trait-subgroup-body">
@@ -940,7 +940,6 @@ function loadScriptSequence(files, onComplete){
 loadScriptSequence(['data.js','calc.js','modal.js','app.js','preset.js','responsive.js'],function(){
   if(typeof window.dpsStartApp==='function'){
     window.dpsStartApp();
-    window.DpsGuide?.init();
   }
   else if(typeof window.dpsShowBootError==='function') window.dpsShowBootError('D1003',new Error('app start function missing'));
 });

@@ -27,7 +27,7 @@ const DPS_CONFIG={
     planet:{minFloor:1,maxFloor:100},
     penanceMin:0,
     penanceMax:20,
-    decimals:1
+    decimals:2
   },
 
   ui:{
@@ -841,11 +841,13 @@ function syncDpsTableLabels(){
 let dpsVisualDifficulty='';
 function selectedDpsVisualDifficulty(mode){
   const options=mode==='coop'?COOP_DPS_TABLE_DIFFICULTIES:DPS_TABLE_DIFFICULTIES;
-  if(!options.includes(dpsVisualDifficulty)) dpsVisualDifficulty=options.includes(vs('diff'))?vs('diff'):options[0];
-  return dpsVisualDifficulty;
+  return options.includes(dpsVisualDifficulty)
+    ? dpsVisualDifficulty
+    : (options.includes(vs('diff'))?vs('diff'):options[0]);
 }
-function selectedCoopDpsTableTeamCount(){
-  return normalizeTeamCountValue(vs('team'), 2)==='3' ? 3 : 2;
+function selectedDpsTableTeamCount(coop=false){
+  const teamCount=Number(normalizeTeamCountValue(vs('team'),coop?2:1));
+  return coop ? Math.max(2,teamCount) : teamCount;
 }
 // DPS표 공통 적 정보: 체력 → 실드 → 방어력 → 물량. 시간·RP는 계산에만 사용한다.
 function renderDpsEnemyDetails(items){
@@ -857,13 +859,13 @@ function renderDpsStatHead(label){
 function buildDpsVisualComparison(round,mode){
   const coop=mode==='coop';
   const difficulty=selectedDpsVisualDifficulty(mode);
-  const teamCount=coop?selectedCoopDpsTableTeamCount():1;
+  const teamCount=selectedDpsTableTeamCount(coop);
   const penanceMin=coop?COOP_DPS_TABLE_PENANCE_MIN:DPS_TABLE_PENANCE_MIN;
   const penanceMax=coop?COOP_DPS_TABLE_PENANCE_MAX:DPS_TABLE_PENANCE_MAX;
   const current=Math.max(penanceMin,Math.min(penanceMax,Math.round(v('penance'))));
   const values=[];
   for(let pen=penanceMin;pen<=penanceMax;pen++){
-    const dps=dpsTablePreviewValue(difficulty,pen,round,{battleMode:coop?'coop':'solo',...(coop?{teamCount}:{})});
+    const dps=dpsTablePreviewValue(difficulty,pen,round,{battleMode:coop?'coop':'solo',teamCount});
     values.push({pen,dps});
   }
   const currentValue=values.find(item=>item.pen===current)?.dps;
@@ -904,12 +906,13 @@ function buildDpsFloorCards(mode){
   const min=Math.max(1,Math.round(config.minFloor||1));
   const max=Math.max(min,Math.round(config.maxFloor||(tower?90:100)));
   const diff=tower?'도전의 탑':(isPlanetExplorationDifficulty()?vs('diff'):'행성탐사-코랄');
+  const teamCount=selectedDpsTableTeamCount();
   const middle=Math.floor((min+max)/2);
   const halves=[[],[]];
   let currentFloorDetails='';
   let currentFloorDps=NaN;
   for(let floor=min;floor<=max;floor++){
-    const value=dpsTablePreviewValue(diff,0,floor,{battleMode:'solo'});
+    const value=dpsTablePreviewValue(diff,0,floor,{battleMode:'solo',teamCount});
     const enemyItems=tower?towerEnemySummaryItems(floor):planetEnemySummaryItems(floor);
     if(floor===current){
       currentFloorDps=value;
@@ -979,7 +982,6 @@ function renderDpsTablePanelContent(){
 function switchDpsTableMode(mode){
   if(!DPS_MODAL_MODES.includes(mode) || activeDpsTableMode===mode) return;
   activeDpsTableMode=mode;
-  dpsVisualDifficulty='';
   renderDpsTablePanelContent();
 }
 let dpsTowerResizeTimer=0;
