@@ -1597,6 +1597,7 @@ body.is-mobile .trait-subgroup-body{padding:8px;}
 body .xp-sp-card .xp-sp-split.basic-info-grid{--basic-label-width:clamp(88px,45%,154px);display:grid;grid-template-columns:minmax(0,1fr);gap:10px;align-items:start;width:100%;padding:0 12px;box-sizing:border-box;}
 body .xp-sp-card .basic-info-panel{display:grid;grid-template-columns:minmax(0,1fr);gap:14px;align-items:start;min-width:0;width:100%;margin:0;padding:0;background:transparent;border:0;border-radius:0;box-shadow:none;}
 body .xp-sp-card .basic-info-lane{display:grid;align-content:start;gap:16px;min-width:0;padding:4px 0 2px;border:0;border-radius:0;background:transparent;box-sizing:border-box;}
+body .xp-sp-card .basic-info-lane.is-secondary{padding-top:14px;border-top:1px solid #355371;}
 body .xp-sp-card .basic-info-lane-group{display:grid;align-content:start;gap:7px;min-width:0;}
 body .xp-sp-card .basic-info-lane-group + .basic-info-lane-group{padding-top:14px;border-top:1px solid #355371;}
 body .goal-settings-card .basic-info-lane{gap:18px;}
