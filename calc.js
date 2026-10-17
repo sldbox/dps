@@ -543,7 +543,7 @@ function specDpsRoundTimeDpsMultiplier(round,diffName=vs('diff')){
   const parts=specDpsRoundTimeParts(round,diffName);
   return parts.timeLoss>0 ? parts.speedAdjustedTime/parts.finalTime : 1;
 }
-function battleModeLabel(diffName=vs('diff')){return isCoopActive(diffName) ? '협동' : '개인';}
+function battleModeLabel(diffName=vs('diff')){return isCoopActive(diffName) ? '협동전' : '개인전';}
 function dpsContextModeValues(diffName=vs('diff')){
   const players=isCoopActive(diffName) ? ` · ${effectiveTeamCount(diffName)}인` : '';
   const displayMode=(isTowerDifficulty(diffName) || isPlanetExplorationDifficulty(diffName)) ? '클래식' : enemyDisplayModeLabel(diffName);

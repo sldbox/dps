@@ -185,7 +185,7 @@ body .trait-preset-guide-trigger:focus-visible, .trait-preset-guide-close:focus-
 .trait-preset-guide-shell{position:fixed;inset:0;z-index:10040;display:none;align-items:center;justify-content:center;padding:18px;box-sizing:border-box;}
 .trait-preset-guide-shell.is-open{display:flex;}
 .trait-preset-guide-backdrop{position:absolute;inset:0;background:rgba(2,9,20,.83);backdrop-filter:blur(11px);-webkit-backdrop-filter:blur(11px);}
-.trait-preset-guide-dialog{position:relative;z-index:1;display:grid;grid-template-rows:auto minmax(0,1fr) auto;width:min(680px,100%);max-height:calc(100dvh - 36px);border:1px solid #4e729c;border-radius:21px;background:#000000;color:#e8f1ff;box-shadow:0 32px 94px rgba(0,0,0,.72),0 0 0 1px rgba(159,198,244,.09),inset 0 1px rgba(255,255,255,.07);overflow:hidden;transition:width .3s ease;}
+.trait-preset-guide-dialog{position:relative;z-index:1;display:grid;grid-template-rows:auto minmax(0,1fr) auto;width:min(680px,100%);max-height:calc(100dvh - 36px);border:1px solid #4e729c;border-radius:21px;background:var(--ui-panel-body-bg);color:#e8f1ff;box-shadow:0 32px 94px rgba(0,0,0,.72),0 0 0 1px rgba(159,198,244,.09),inset 0 1px rgba(255,255,255,.07);overflow:hidden;transition:width .3s ease;}
 .trait-preset-guide-dialog.is-practice{width:min(920px,100%);}
 .trait-preset-guide-dialog::before{content:"";position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,#5fafff,#8a93f8,#4ad3bc);z-index:2;}
 .trait-preset-guide-top{display:flex;justify-content:space-between;align-items:center;gap:12px;min-height:51px;padding:10px 21px 6px;border-bottom:1px solid rgba(63,103,147,.28);background:linear-gradient(110deg,#204769,#152e48);}
@@ -196,7 +196,7 @@ body .trait-preset-guide-trigger:focus-visible, .trait-preset-guide-close:focus-
 .trait-preset-guide-page-label i{color:#567ba2;font-style:normal;}
 .trait-preset-guide-close{display:grid;place-items:center;flex:0 0 31px;width:31px;height:31px;padding:0;border:1px solid #3c597c;border-radius:9px;background:#14283f;color:#acc8e7;font-size:22px;line-height:1;cursor:pointer;}
 
-.trait-preset-guide-content{min-height:0;background:#000000;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;scrollbar-color:#3c638d transparent;}
+.trait-preset-guide-content{min-height:0;background:var(--ui-panel-body-bg);overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;scrollbar-color:#3c638d transparent;}
 .trait-preset-guide-page{min-width:0;padding:14px 27px 21px;animation:traitGuideEnter .27s ease-out both;}
 .trait-preset-guide-page[hidden],.trait-preset-guide-explain-step[hidden],.trait-preset-guide-footer-actions button[hidden]{display:none!important;}
 .trait-preset-guide-hero{display:flex;align-items:center;gap:17px;margin:5px 0 13px;min-width:0;}
@@ -226,8 +226,8 @@ body .trait-preset-guide-trigger:focus-visible, .trait-preset-guide-close:focus-
 .trait-preset-guide-mini-status.is-done{color:#81dec7;}
 .trait-preset-guide-note{display:flex;gap:9px;align-items:flex-start;margin:12px 0 0;padding:10px 12px;border:1px solid #31546a;border-radius:10px;background:#102d39;color:#b8e5ea;font-size:10.5px;line-height:1.55;word-break:keep-all;}
 .trait-preset-guide-note span{color:#78e0d2;font-size:13px;}
-.trait-preset-guide-footer{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:66px;padding:12px 25px;border-top:1px solid #294460;background:#0b1625;}
-.trait-preset-guide-footer-actions{display:flex;align-items:center;justify-content:center;gap:12px;flex:1 1 auto;min-width:0;width:100%;}
+.trait-preset-guide-footer{display:flex;align-items:center;justify-content:center;gap:12px;min-height:66px;padding:12px 25px;border-top:1px solid #294460;background:var(--ui-panel-body-bg);}
+.trait-preset-guide-footer-actions{display:flex;align-items:center;justify-content:center;gap:12px;flex:1 1 280px;min-width:0;width:auto;}
 .trait-preset-guide-secondary{min-height:48px;padding:0 20px;border:1px solid #3e5d80;border-radius:9px;background:#142840;color:#c2d8f1;font-size:11px;font-weight:900;cursor:pointer;}
 
 .trait-preset-guide-confirm{display:flex;align-items:center;gap:12px;justify-content:center;min-height:48px;padding:0 20px;border:1px solid #70b9ff;border-radius:10px;background:linear-gradient(110deg,#3d94f3,#2871c7);color:#fff;font-size:12px;font-weight:950;box-shadow:0 6px 19px rgba(40,113,199,.3);cursor:pointer;transition:filter .15s,transform .15s;}
@@ -282,7 +282,7 @@ body.trait-preset-guide-open{overflow:hidden;}
 .trait-preset-guide-demo-actions .preset-command.is-update[data-state="pending"] .preset-command-pill{background:#543e24;border-color:#bc8b49;color:#ffe5b0;}
 .trait-preset-guide-demo-actions .preset-command.is-backup.is-backup-needed{border-color:#a2d2ff;background:linear-gradient(135deg,#315d8c,#173956);box-shadow:0 0 16px rgba(76,156,250,.28);}
 .trait-preset-guide-demo-actions .preset-command.is-backup.is-backup-needed .preset-command-pill{background:#c4e2ff;color:#153a65;border-color:#c4e2ff;}
-.trait-preset-guide-snapshot{display:grid;gap:8px;padding:11px 13px;border-top:1px solid #304c6b;background:#0d1b2c;}
+.trait-preset-guide-snapshot{display:grid;gap:8px;padding:11px 13px;border-top:1px solid #304c6b;background:#17324b;}
 .trait-preset-guide-snapshot>span{color:#8cacd0;font-size:9.5px;font-weight:900;}
 .trait-preset-guide-snapshot-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;}
 .trait-preset-guide-snapshot-grid>div{display:flex;align-items:center;gap:6px;min-width:0;padding:7px 8px;border:1px solid #2b4969;border-radius:7px;background:#172c43;}
@@ -350,7 +350,7 @@ body.trait-preset-guide-open{overflow:hidden;}
   .trait-preset-guide-item-copy p{font-size:10px;}
   .trait-preset-guide-mini{flex-basis:125px;width:125px;padding:7px;}
   .trait-preset-guide-mini-button.btn{font-size:9px;}
-  .trait-preset-guide-footer{min-height:57px;padding:10px 13px;gap:8px;}
+  .trait-preset-guide-footer{flex-wrap:wrap;min-height:57px;padding:10px 13px;gap:8px;}
   .trait-preset-guide-confirm{gap:7px;padding:0 11px;font-size:10.5px;}
   .trait-preset-guide-secondary{padding:0 9px;font-size:10px;}
   .trait-preset-guide-practice-header{margin-bottom:12px;}
@@ -440,6 +440,25 @@ body.trait-preset-guide-open{overflow:hidden;}
 let traitPresetGuideReturnFocus=null;
 let traitPresetGuideDemo=null;
 const $=id=>document.getElementById(id);
+const TRAIT_PRESET_GUIDE_STORAGE_KEY='gbd_dps_calculator:trait_preset_guide';
+const TRAIT_PRESET_GUIDE_COOLDOWN_MS=7*24*60*60*1000;
+function traitPresetGuideConfirmedAt(){
+  try{
+    const saved=JSON.parse(localStorage.getItem(TRAIT_PRESET_GUIDE_STORAGE_KEY)||'null');
+    return Number.isFinite(saved?.confirmedAt) ? saved.confirmedAt : 0;
+  }catch(error){ return 0; }
+}
+function saveTraitPresetGuideConfirmedAt(){
+  try{ localStorage.setItem(TRAIT_PRESET_GUIDE_STORAGE_KEY,JSON.stringify({confirmedAt:Date.now()})); }
+  catch(error){ /* Storage can be unavailable in private/restricted contexts. */ }
+}
+function maybeShowTraitPresetGuide(){
+  const confirmedAt=traitPresetGuideConfirmedAt();
+  const elapsed=Date.now()-confirmedAt;
+  if(confirmedAt>0 && elapsed>=0 && elapsed<TRAIT_PRESET_GUIDE_COOLDOWN_MS) return;
+  if(document.querySelector('.trait-preset-modal-shell.is-open,.board-modal-shell.is-open,.trait-preset-unit-jewel-modal-shell.is-open,.dps-table-modal-shell.is-open')) return;
+  openTraitPresetGuideModal();
+}
 function createTraitPresetGuideModal(){
   return window.DpsModal.createShell('traitPresetGuideModal','trait-preset-guide-shell',`
     <div class="trait-preset-guide-backdrop" data-trait-preset-guide-close></div>
@@ -509,7 +528,7 @@ function createTraitPresetGuideModal(){
         </section>
       </div>
       <footer class="trait-preset-guide-footer">
-        <div class="trait-preset-guide-footer-actions"><button type="button" class="trait-preset-guide-secondary" data-trait-preset-guide-back hidden>← 처음으로</button><button type="button" class="trait-preset-guide-secondary guide-dismiss" data-trait-preset-guide-dismiss>확인했어요</button><button type="button" class="trait-preset-guide-confirm" data-trait-preset-guide-next>체험 하러가기 <span aria-hidden="true">→</span></button></div>
+        <div class="trait-preset-guide-footer-actions"><button type="button" class="trait-preset-guide-secondary" data-trait-preset-guide-back hidden>← 처음으로</button><button type="button" class="trait-preset-guide-secondary guide-dismiss" data-trait-preset-guide-dismiss>이제 확인했어요</button><button type="button" class="trait-preset-guide-confirm" data-trait-preset-guide-next>체험 하러가기 <span aria-hidden="true">→</span></button></div>
       </footer>
     </section>`);
 }
@@ -782,7 +801,8 @@ function bindTraitGuideEvents(){
     const action=event.target.closest('[data-trait-preset-guide-close],[data-trait-preset-guide-dismiss],[data-trait-preset-guide-next],[data-trait-preset-guide-back],[data-trait-preset-guide-import],[data-trait-preset-guide-update],[data-trait-preset-guide-backup],[data-trait-preset-guide-finish],[data-trait-preset-guide-restart]');
     if(!action) return;
     event.preventDefault();
-    if(action.matches('[data-trait-preset-guide-close],[data-trait-preset-guide-dismiss]')) closeTraitPresetGuideModal();
+    if(action.matches('[data-trait-preset-guide-dismiss]')){saveTraitPresetGuideConfirmedAt();closeTraitPresetGuideModal();}
+    else if(action.matches('[data-trait-preset-guide-close]')) closeTraitPresetGuideModal();
     else if(action.matches('[data-trait-preset-guide-next]')){
       if(document.querySelector('[data-trait-preset-guide-page="intro"]:not([hidden])')) showTraitPresetGuidePage('practice');
       else closeTraitPresetGuideModal();
@@ -842,6 +862,7 @@ function initTraitGuide(){
   injectTraitGuideStyle();
   insertTraitGuideEntry();
   bindTraitGuideEvents();
+  setTimeout(maybeShowTraitPresetGuide,850);
 }
 window.DpsGuide=Object.freeze({init:initTraitGuide,open:openTraitPresetGuideModal,close:closeTraitPresetGuideModal});
 

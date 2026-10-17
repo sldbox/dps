@@ -219,14 +219,19 @@ function specBoardPierceValue(){
 /* 입력·화면 동기화 */
 function renderEnemyData(data){
   if(!data) return;
-  setText('enemyArmorQuick', fullNumber(data.armor));
-  setText('enemyHpQuick', fullNumber(data.hp));
-  setText('enemyShieldQuick', fullNumber(data.shield));
-  setText('enemyCountQuick', enemyDisplayCountText(data.round));
   const countText=enemyDisplayCountText(data.round);
   const countParts=String(countText).split(' / ');
-  setText('enemyWaveCountQuick',countParts[0] || '—');
-  setText('enemyTotalCountQuick',countParts.length>1 ? countParts[1] : countParts[0] || '—');
+  const values={
+    ArmorQuick:fullNumber(data.armor),
+    HpQuick:fullNumber(data.hp),
+    ShieldQuick:fullNumber(data.shield),
+    WaveCountQuick:countParts[0] || '—',
+    TotalCountQuick:countParts.length>1 ? countParts[1] : countParts[0] || '—'
+  };
+  Object.entries(values).forEach(([name,value])=>{
+    setText('enemy'+name,value);
+  });
+  setText('enemyCountQuick', countText);
 }
 function syncRuneChoice(){
   const type=vs('runeChoiceType') || 'harmony';
@@ -492,7 +497,8 @@ function renderDamageBoardRoundTime(s){
   const rpTimeText=bonus>0 || isTowerDifficulty(vs('diff'))
     ? `RP ${fmt(bonus,0)}초 / 최대 8초`
     : '-';
-  setText('enemyRoundTimeQuick', Number.isFinite(roundTime) ? `${fmt(roundTime,1)}초` : '—');
+  const timeText=Number.isFinite(roundTime) ? `${fmt(roundTime,1)}초` : '—';
+  setText('enemyRoundTimeQuick',timeText);
   setText('enemyRpTimeQuick', rpTimeText);
 }
 function renderResourceSummary(s){
@@ -645,7 +651,7 @@ function renderEnchantPreview(){
 
 const XP_CUT_DIVISOR_GROUPS=[
   {
-    label:'협동 2인',
+    label:'협동전 2인',
     rows:[
       {stage:'1단계', divisor:10},
       {stage:'2단계', divisor:20},
@@ -654,7 +660,7 @@ const XP_CUT_DIVISOR_GROUPS=[
     ]
   },
   {
-    label:'협동 3인',
+    label:'협동전 3인',
     rows:[
       {stage:'1단계', divisor:6},
       {stage:'2단계', divisor:12},
@@ -848,6 +854,10 @@ function selectedDpsVisualDifficulty(mode){
 function selectedCoopDpsTableTeamCount(){
   return normalizeTeamCountValue(vs('team'), 2)==='3' ? 3 : 2;
 }
+// 2열 병합 적 정보: 스펙 보드와 동일하게 항목명·값을 한 줄에 가운데 정렬한다.
+function renderDpsEnemyPairs(groups){
+  return groups.map(([title,items])=>`<div class="dps-table-enemy-stat"><span class="dps-table-enemy-stat-title">${escapeHtml(title)}</span><div class="dps-table-enemy-lines">${items.map(([label,value])=>`<div class="dps-table-enemy-line"><span>${escapeHtml(String(label))}</span><strong>${escapeHtml(String(value))}</strong></div>`).join('')}</div></div>`).join('');
+}
 function buildDpsVisualComparison(round,mode){
   const coop=mode==='coop';
   const difficulty=selectedDpsVisualDifficulty(mode);
@@ -866,17 +876,21 @@ function buildDpsVisualComparison(round,mode){
   const waveCount=(Number(enemy.count)||0)*enemyFactor;
   const totalCount=enemyRoundCountTotal(round,difficulty)*enemyFactor;
   const enemyTime=specDpsRoundTime(round,difficulty);
-  const enemyItems=[['체력',fullNumber(enemy.hp)],['실드',fullNumber(enemy.shield)],['방어력',fullNumber(enemy.armor)],['물량',fullNumber(waveCount)],['총물량',fullNumber(totalCount)],['라운드 시간',Number.isFinite(enemyTime) ? `${fmt(enemyTime,1)}초` : '—']];
-  const enemyHtml=enemyItems.map(([label,value])=>`<div class="dps-table-enemy-stat"><span>${label}</span><strong>${escapeHtml(String(value))}</strong></div>`).join('');
+  // 스펙 보드와 같은 2칸 구성. 기존 적 수치와 계산식을 그대로 사용한다.
+  const enemyGroups=[
+    ['생존 정보',[['체력',fullNumber(enemy.hp)],['실드',fullNumber(enemy.shield)],['방어력',fullNumber(enemy.armor)]]],
+    ['전투 정보',[['물량',fullNumber(waveCount)],['총 물량',fullNumber(totalCount)],['라운드 시간',Number.isFinite(enemyTime) ? `${fmt(enemyTime,1)}초` : '—']]]
+  ];
+  const enemyHtml=renderDpsEnemyPairs(enemyGroups);
   const diffOptions=(coop?COOP_DPS_TABLE_DIFFICULTIES:DPS_TABLE_DIFFICULTIES).map(item=>`<option value="${escapeHtml(item)}"${item===difficulty?' selected':''}>${escapeHtml(item)}</option>`).join('');
   const cells=values.map(({pen,dps})=>`<div class="dps-compact-cell${pen===current?' is-current':''}" data-dps-penance="${pen}">
       <span class="dps-compact-pen">${pen} 고행</span><strong class="dps-compact-value">${formatDpsTableValue(dps)} <small class="dps-score-unit">DPS</small></strong>
     </div>`).join('');
   return `<div class="dps-overview">
     <div class="dps-overview-main">
-      <div class="dps-overview-condition"><div class="dps-overview-title">모드 / 난이도</div><strong class="dps-overview-mode">${coop?'협동 · '+teamCount+'인':'개인'} · ${current} 고행 · ${round} 라운드</strong><label class="dps-overview-select"><span>난이도 선택</span><select id="dpsVisualDifficulty" data-dps-view-diff aria-label="비교할 난이도 선택">${diffOptions}</select></label></div>
+      <div class="dps-overview-condition"><div class="dps-overview-title">모드 / 난이도</div><strong class="dps-overview-mode">${coop?'협동전 · '+teamCount+'인':'개인전'} · ${current} 고행 · ${round} 라운드</strong><label class="dps-overview-select"><span>난이도 선택</span><select id="dpsVisualDifficulty" data-dps-view-diff aria-label="비교할 난이도 선택">${diffOptions}</select></label></div>
       <div class="dps-overview-highlight"><div class="dps-overview-title">현재 DPS</div><strong>${formatDpsTableValue(currentValue)}</strong><span class="dps-overview-dps-unit">DPS</span></div>
-      <section class="dps-table-enemy-summary" aria-label="현재 조건의 적 정보"><div class="dps-overview-title">적 정보</div><div class="dps-table-enemy-grid">${enemyHtml}</div></section>
+      <section class="dps-table-enemy-summary" aria-label="현재 조건의 적 정보"><div class="dps-overview-title">적 정보</div><div class="dps-table-enemy-grid dps-table-enemy-grid--paired">${enemyHtml}</div></section>
     </div>
     <div class="dps-overview-results"><div class="dps-overview-list-head"><strong>고행별 DPS</strong><span>${penanceMin}–${penanceMax} · ${values.length}개</span></div>
       <div class="dps-compact-grid" style="--dps-row-count:${Math.ceil(values.length/3)};--dps-row-count-2:${Math.ceil(values.length/2)}" aria-label="${escapeHtml(difficulty)} 고행별 DPS 비교">${cells}</div></div>
@@ -903,7 +917,15 @@ function buildDpsFloorCards(mode){
     const value=dpsTablePreviewValue(diff,0,floor,{battleMode:'solo'});
     const enemies=tower?towerEnemySummaryItems(floor):planetEnemySummaryItems(floor);
     const details=enemies.map(([label,itemValue])=>`<span class="dps-floor-enemy"><small>${escapeHtml(String(label))}</small><b>${escapeHtml(String(itemValue))}</b></span>`).join('');
-    if(floor===current){currentFloorDps=value;currentFloorDetails=details;}
+    if(floor===current){
+      currentFloorDps=value;
+      const currentEnemy=Object.fromEntries(enemies);
+      // 탑·행성 모드는 기존 4개 적 정보만 재배치한다. 없는 수치를 생성하지 않는다.
+      currentFloorDetails=renderDpsEnemyPairs([
+        ['생존 정보',[['체력',currentEnemy['체력']??'—'],['실드',currentEnemy['실드']??'—'],['방어력',currentEnemy['방어력']??'—']]],
+        ['전투 정보',[['물량',currentEnemy['물량']??'—']]]
+      ]);
+    }
     halves[floor<=middle?0:1].push(`<article class="dps-floor-card${floor===current?' is-current':''}" data-dps-floor="${floor}">
       <div class="dps-floor-pair"><span class="dps-floor-number"><strong>${floor}층</strong></span><span class="dps-floor-score"><b>${formatDpsTableValue(value)} <small class="dps-score-unit">DPS</small></b></span></div>
       <div class="dps-floor-enemies">${details}</div>
@@ -923,8 +945,8 @@ function buildDpsFloorCards(mode){
 }
 function renderDpsTableTabs(){
   return [
-    {key:'solo',label:'개인'},
-    {key:'coop',label:'협동'},
+    {key:'solo',label:'개인전'},
+    {key:'coop',label:'협동전'},
     {key:'tower',label:'도전의탑'},
     {key:'planet',label:'행성탐사'}
   ].map(tab=>{
@@ -940,7 +962,7 @@ function dpsTablePanelInnerHtml(){
   const round=normalizedRoundNumber(targetRoundStoredValue());
   const mode=activeDpsTableMode;
   const floorMode=mode==='tower'||mode==='planet';
-  const modeNames={solo:'개인',coop:'협동',tower:'도전의탑',planet:'행성탐사'};
+  const modeNames={solo:'개인전',coop:'협동전',tower:'도전의탑',planet:'행성탐사'};
   const content=floorMode?buildDpsFloorCards(mode):buildDpsVisualComparison(round,mode);
   return `<section class="dps-table-panel dps-table-mode-panel dps-redesigned-panel ${floorMode?'dps-floor-panel':'dps-comparison-panel'}">
     <div class="dps-analysis-strip"><div class="dps-analysis-heading"><span class="dps-analysis-kicker">DAMAGE OVERVIEW</span><strong>${modeNames[mode]} · DPS 한눈에 보기</strong><small>${floorMode?'층별 DPS와 적 정보':'난이도 선택 · 고행별 DPS 비교'}</small></div></div>
@@ -996,8 +1018,8 @@ const FIELD_REGISTRY={
   round:{kind:'목표설정',name:'목표 라운드',save:true},
   challengeTowerFloor:{kind:'목표설정',name:'도전의탑 층',save:true},
   planetExplorationFloor:{kind:'목표설정',name:'행성탐사 층',save:true},
-  soloMode:{kind:'목표설정',name:'개인',save:true},
-  coopMode:{kind:'목표설정',name:'협동',save:true},
+  soloMode:{kind:'목표설정',name:'개인전',save:true},
+  coopMode:{kind:'목표설정',name:'협동전',save:true},
   coopPassenger2Dr:{kind:'목표설정',name:'승객 2P 방어력 감소',save:true},
   coopPassenger3Dr:{kind:'목표설정',name:'승객 3P 방어력 감소',save:true},
   team:{kind:'목표설정',name:'출발 지원 인원수',save:true},
@@ -1403,7 +1425,7 @@ function renderJewelAbility(label, text){
   const isUnreleased=value==='미발견';
   return `
     <div class="jewel-ability ${isUnreleased?'is-unreleased':''}">
-      <b>${escapeHtml(label)}</b>
+      <b><span class="jewel-ability-grade-icon" aria-hidden="true">${label==='신화'?'✦':'◆'}</span>${escapeHtml(label)}</b>
       <span>${escapeHtml(value)}</span>
     </div>
   `;
@@ -1419,7 +1441,7 @@ function dpsJewelFinalStatItemHtml(label,value,suffix='%'){
   return `<span class="dps-jewel-final-item"><em>${escapeHtml(label)}</em><b>${escapeHtml(value)}${escapeHtml(suffix)}</b></span>`;
 }
 function dpsJewelFinalStatsHtml(finalStats){
-  return `<span class="dps-jewel-final-label">최종 능력치</span>
+  return `<span class="dps-jewel-final-label"><span class="jewel-final-heading-icon" aria-hidden="true">✦</span>최종 능력치</span>
       ${dpsJewelFinalStatItemHtml('공격력',finalStats.ad)}
       ${dpsJewelFinalStatItemHtml('공격속도',finalStats.as)}
       ${dpsJewelFinalStatItemHtml('총데미지',finalStats.td)}
@@ -1436,7 +1458,7 @@ function dpsJewelConfigCardHtml(name,settings){
     }
     return options[key];
   };
-  const field=(key,label)=>`<label class="dps-jewel-field"><span>${label}</span><select data-dps-jewel-name="${escapeHtml(name)}" data-dps-jewel-field="${key}" aria-label="${escapeHtml(name)} ${label}">${dpsJewelOptionHtml(fieldOptions(key),input[key])}</select></label>`;
+  const field=(key,label)=>`<label class="dps-jewel-field" data-jewel-stat="${key}"><span><i class="jewel-field-icon" aria-hidden="true"></i>${label}</span><select data-dps-jewel-name="${escapeHtml(name)}" data-dps-jewel-field="${key}" aria-label="${escapeHtml(name)} ${label}">${dpsJewelOptionHtml(fieldOptions(key),input[key])}</select></label>`;
   const mythic=finalStats.mythic==='Y';
   const gradeClass=mythic?'is-mythic':'is-legendary';
   const gradeText=mythic?'신화':'전설';
@@ -1456,7 +1478,7 @@ function dpsJewelConfigCardHtml(name,settings){
       ${renderJewelAbility('전설', ability.legendary)}
       ${renderJewelAbility('신화', ability.mythic)}
     </div>
-    <div class="dps-jewel-settings-title">능력치 설정</div>
+    <div class="dps-jewel-settings-title"><span class="jewel-settings-heading-icon" aria-hidden="true">✧</span>능력치 설정</div>
     <div class="dps-jewel-fields">${field('ad','공격력')}${field('as','공격속도')}${field('td','총데미지')}${field('ua','가속')}${field('enhance','강화')}${field('mythic','신화 여부')}</div>
     <div class="dps-jewel-final" aria-label="${escapeHtml(name)} 최종 옵션">
       ${dpsJewelFinalStatsHtml(finalStats)}

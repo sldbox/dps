@@ -556,9 +556,12 @@ function createTraitPresetUnitJewelModal(){
     <div class="trait-preset-unit-jewel-backdrop" data-trait-preset-unit-jewel-close="1"></div>
     <section class="trait-preset-unit-jewel-modal is-jewel" role="dialog" aria-modal="true" aria-labelledby="traitPresetUnitJewelTitle">
       <header class="trait-preset-unit-jewel-head">
-        <div class="trait-preset-unit-jewel-heading">
-          <h2 id="traitPresetUnitJewelTitle">${title}</h2>
-          <p>전설 · 신화 쥬얼 능력치 관리</p>
+        <div class="trait-preset-unit-jewel-heading-wrap">
+          <span class="trait-preset-unit-jewel-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4h12l4 6-10 11L2 10l4-6Z"/><path d="M2 10h20M9 4l-2 6 5 11 5-11-2-6"/></svg></span>
+          <div class="trait-preset-unit-jewel-heading">
+            <h2 id="traitPresetUnitJewelTitle">${title}</h2>
+            <p>전설 · 신화 쥬얼 능력치 관리</p>
+          </div>
         </div>
         <span class="trait-preset-unit-jewel-total">${window.DPS_DATA?.DPS_JEWEL_NAMES?.length || 0}종</span>
         <button type="button" class="ui-icon-btn trait-preset-unit-jewel-close" data-trait-preset-unit-jewel-close="1" aria-label="${title} 닫기">×</button>
@@ -1095,8 +1098,8 @@ function selectedTraitPresetContext(message){
 }
 
 const TRAIT_PRESET_SELECT_GROUPS=[
-  {key:'solo', label:'개인'},
-  {key:'coop', label:'협동'},
+  {key:'solo', label:'개인전'},
+  {key:'coop', label:'협동전'},
   {key:'tower', label:'도전의탑'},
   {key:'planet', label:'행성탐사'}
 ];
@@ -1170,7 +1173,7 @@ function firstTraitPresetSelectId(store){
 function traitPresetOptionName(preset, categoryKey){
   const {values,meta}=traitPresetValueSource(preset);
   let name=normalizeTraitPresetName(preset?.name || '');
-  name=name.replace(/^(개인|솔로|협동|버스)\s*[-–—:·]\s*/,'').trim();
+  name=name.replace(/^(개인전|개인|솔로|협동전|협동|버스)\s*[-–—:·]\s*/,'').trim();
   if(categoryKey==='tower'){
     name=name.replace(/^(도전의\s*탑|도전의탑)\s*[-–—:·]?\s*/,'').trim();
     if(/^\d+$/.test(name)) name=`${name}층`;
@@ -1506,18 +1509,66 @@ function renderTraitPresetUpdateStatus(store=loadTraitPresetStore()){
     btn.setAttribute('aria-label',status.needsUpdate?'현재 프리셋 업데이트 필요':'현재 프리셋 업데이트');
     btn.classList.toggle('is-update-needed',status.needsUpdate);
   });
+  if(!status.needsUpdate){
+    hidePresetRestoreHint();
+    presetRestoreHintShownForDirty=false;
+  }
   setTraitPresetActionDisplay('updateTraitPreset',status.preset ? (status.needsUpdate ? 'pending' : 'done') : 'idle',
     status.needsUpdate ? '업데이트 필요' : (status.preset ? '반영 완료' : '대기'),
     status.needsUpdate ? '현재 입력값이 선택한 프리셋과 달라요. 업데이트가 필요합니다.' :
       (status.preset ? '현재 입력값이 선택한 프리셋과 일치합니다.' : '먼저 프리셋을 선택하거나 저장하세요.'));
   return status.needsUpdate;
 }
+/* 프리셋 변경 감지: 업데이트 버튼 주변에만 복원 안내를 4초간 표시 */
+let presetRestoreHintNode=null,presetRestoreHintTimer=0,presetRestoreHintShownForDirty=false;
+function hidePresetRestoreHint(){
+  clearTimeout(presetRestoreHintTimer);
+  presetRestoreHintTimer=0;
+  if(presetRestoreHintNode) presetRestoreHintNode.hidden=true;
+}
+function showPresetRestoreHint(button){
+  if(!button?.isConnected) return false;
+  const rect=button.getBoundingClientRect();
+  const stickyHeader=document.querySelector('.hdr.app-header');
+  const headerBottom=stickyHeader && getComputedStyle(stickyHeader).position==='sticky' ? stickyHeader.getBoundingClientRect().bottom : 0;
+  if(rect.top<Math.max(0,headerBottom)+4 || rect.bottom>window.innerHeight-8) return false;
+  if(!presetRestoreHintNode){
+    presetRestoreHintNode=document.createElement('div');
+    presetRestoreHintNode.className='dps-preset-restore-hint';
+    presetRestoreHintNode.setAttribute('role','status');
+    presetRestoreHintNode.setAttribute('aria-live','off');
+    const heading=document.createElement('strong');
+    heading.textContent='수치만 확인하셨나요?';
+    presetRestoreHintNode.append(heading,document.createTextNode('저장하지 않으려면 프리셋 로드로 복구하세요.'));
+    document.body.appendChild(presetRestoreHintNode);
+  }
+  hidePresetRestoreHint();
+  presetRestoreHintNode.hidden=false;
+  const width=presetRestoreHintNode.offsetWidth;
+  const height=presetRestoreHintNode.offsetHeight;
+  const left=Math.max(10,Math.min(window.innerWidth-width-10,rect.left+(rect.width-width)/2));
+  const top=rect.bottom+8;
+  if(top+height>window.innerHeight-8){ hidePresetRestoreHint(); return false; }
+  presetRestoreHintNode.style.left=`${Math.round(left)}px`;
+  presetRestoreHintNode.style.top=`${Math.round(top)}px`;
+  presetRestoreHintNode.style.setProperty('--dps-hint-arrow-x',`${Math.max(11,Math.min(width-11,rect.left+rect.width/2-left))}px`);
+  presetRestoreHintTimer=setTimeout(hidePresetRestoreHint,4000);
+  return true;
+}
+window.addEventListener('scroll',hidePresetRestoreHint,{capture:true,passive:true});
+window.addEventListener('resize',hidePresetRestoreHint);
 let traitPresetGuidanceRefreshTimer=0;
 function scheduleTraitPresetGuidanceRefresh(){
   if(traitPresetGuidanceRefreshTimer) clearTimeout(traitPresetGuidanceRefreshTimer);
   traitPresetGuidanceRefreshTimer=setTimeout(()=>{
     traitPresetGuidanceRefreshTimer=0;
-    try{ renderTraitPresetUpdateStatus(); }
+    try{
+      const updateButton=document.querySelector('[data-action="updateTraitPreset"]');
+      const changed=renderTraitPresetUpdateStatus();
+      if(changed && !presetRestoreHintShownForDirty && selectedTraitPresetId() && !storageState.isLoading && !document.querySelector('.trait-preset-guide-shell.is-open')){
+        presetRestoreHintShownForDirty=showPresetRestoreHint(updateButton);
+      }
+    }
     catch(error){ rememberAppIssue('warn','프리셋 변경 상태 표시',error); }
   },260);
 }
@@ -1873,7 +1924,7 @@ function traitPresetBackupTargetsHtml(plan){
   const cards=updatedRows.map(row=>{
     const preset=plan.store.presets.find(item=>item.id===row.id);
     const group=TRAIT_PRESET_SELECT_GROUPS.find(item=>item.key===traitPresetCategoryKey(preset));
-    const mode=group?.label || '개인';
+    const mode=group?.label || '개인전';
     const commonNames=row.common ? plan.commonChangeNames : [];
     const individualNames=row.single ? (singleChanges.get(row.id) || []) : [];
     return `<article class="trait-preset-backup-card">
