@@ -1338,10 +1338,9 @@ function refreshTraitPresetControls(selectedId){
   qsa('[data-action="loadTraitPreset"],[data-action="updateTraitPreset"],[data-action="deleteTraitPreset"]').forEach(btn=>{
     btn.disabled=!current;
   });
-  // 최초 가져오기 전이나 목록을 모두 비운 경우에는 저장·초기화를 잠급니다.
-  qsa('[data-action="saveTraitPreset"],[data-action="resetAllTraitPresetState"]').forEach(btn=>{
-    btn.disabled=!store.presets.length;
-  });
+  // 새 프리셋은 가져오기 없이도 저장할 수 있고, 전체 초기화는 저장된 프리셋이 있을 때만 허용합니다.
+  qsa('[data-action="saveTraitPreset"]').forEach(btn=>{ btn.disabled=false; });
+  qsa('[data-action="resetAllTraitPresetState"]').forEach(btn=>{ btn.disabled=!store.presets.length; });
   qsa('[data-action="backupTraitPresets"]').forEach(btn=>{ btn.disabled=!store.presets.length; });
   renderTraitPresetStatus(status, store);
   renderTraitPresetUpdateStatus(store);
@@ -1349,7 +1348,6 @@ function refreshTraitPresetControls(selectedId){
 }
 
 function saveTraitPreset(){
-  if(!loadTraitPresetStore().presets.length) return false;
   const input=$('traitPresetName');
   const name=normalizeTraitPresetName(input?.value || '');
   if(!name){
