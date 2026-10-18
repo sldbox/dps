@@ -678,8 +678,7 @@ body .right-analytics-workspace .analytics-unit-slots-group .dps-base-unit-slot-
 body .right-analytics-workspace .analytics-unit-slots-group .unit-list-collection{border:0;border-radius:0;background:transparent;}
 body .right-analytics-workspace .analytics-unit-slots-group .right-unit-collection-heading{min-height:56px;padding:10px 12px;background:transparent;border-bottom:1px solid var(--ui-integrated-head-line);color:var(--ui-integrated-subhead-text);border-radius:0;}
 body .right-analytics-workspace .right-dps-hero{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-items:stretch;justify-items:stretch;margin:0;padding:0;border:0;border-radius:0;background:none;gap:8px;}
-body .right-hero-metric,body .right-hero-context{display:flex;flex-direction:column;align-items:center;justify-content:space-evenly;gap:11px;min-width:0;min-height:184px;height:100%;text-align:center;padding:15px 10px;border:0;border-radius:9px;background:#163249;box-shadow:none;box-sizing:border-box;}
-body .right-hero-context + .right-hero-metric{border-left:0;background:#163249;}
+body .right-hero-metric,body .right-hero-context{display:flex;flex-direction:column;align-items:center;justify-content:space-evenly;gap:11px;min-width:0;min-height:184px;height:100%;text-align:center;padding:15px 10px;border:0;border-radius:9px;background:transparent;box-shadow:none;box-sizing:border-box;}
 body .right-hero-metric .dps-lbl,body .right-hero-context .dps-lbl{color:#d8edff;font-size:calc(12.5px * var(--app-font-scale));font-weight:950;letter-spacing:.2px;}
 body .right-hero-metric #dpsVal{color:#c9f4ff;font-size:clamp(22px,2.4vw,35px);font-weight:1000;line-height:1.12;overflow-wrap:anywhere;font-variant-numeric:tabular-nums;text-shadow:0 0 18px rgba(50,173,255,.45);}
 body .right-hero-context .dps-context-summary{display:none;}
@@ -1140,13 +1139,8 @@ body .trait-optimizer-panel .trait-dashboard-tools .trait-optimizer-row > .trait
 body .trait-optimizer-panel .trait-dashboard-tools .trait-optimizer-row > .trait-scope-run.utility{background:linear-gradient(110deg,#237f88,#1b626d);border-color:#46999c;}
 body .trait-optimizer-panel .trait-dashboard-tools .trait-optimizer-row > .trait-scope-run.utility::before{content:"♛";}
 body .trait-utility-panel{width:100%;min-width:0;margin:0 0 var(--trait-card-gap,12px);padding:0;overflow:hidden;}
-body .trait-utility-section-head{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:7px;padding:8px 10px;height:auto;min-height:var(--ui-integrated-head-height);max-height:none;background:var(--ui-integrated-head-bg);border-bottom:1px solid var(--ui-integrated-head-line);color:var(--ui-integrated-head-text);}
-body .trait-utility-toolbar{display:flex;align-items:center;justify-content:flex-end;min-width:0;}
-body .trait-expand-actions{display:flex;align-items:center;gap:6px;}
-body .trait-expand-all-btn{min-height:32px;padding:0 10px;border:1px solid #5487b0;border-radius:8px;background:#20486b;color:#eaf6ff;font-size:calc(10px * var(--app-font-scale));font-weight:850;cursor:pointer;white-space:nowrap;}
-body .trait-expand-all-btn:hover{border-color:#8cc7f7;background:#2c6290;}
-body .trait-expand-all-btn:focus-visible{outline:2px solid #b7e6ff;outline-offset:2px;}
-@media(max-width:600px){body .trait-utility-section-head{gap:5px;padding:7px;}body .trait-expand-all-btn{padding:0 6px;min-height:31px;font-size:calc(9px * var(--app-font-scale));}}
+body .trait-utility-section-head{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;gap:7px;padding:8px 10px;height:auto;min-height:var(--ui-integrated-head-height);max-height:none;background:var(--ui-integrated-head-bg);border-bottom:1px solid var(--ui-integrated-head-line);color:var(--ui-integrated-head-text);}
+@media(max-width:600px){body .trait-utility-section-head{gap:5px;padding:7px;}}
 body .trait-utility-section-mark{display:grid;place-items:center;flex:0 0 31px;width:31px;height:31px;border:1px solid #79b8eb;border-radius:9px;background:#225b87;color:#d5f0ff;font-size:23px;}
 body .trait-utility-section-label{display:grid;gap:4px;min-width:0;}
 body .trait-utility-section-label strong{color:#f5faff;font-size:calc(13px * var(--app-font-scale));font-weight:950;}
@@ -1611,7 +1605,7 @@ body .dps-base-unit-panel{display:grid;grid-template-columns:minmax(0,1fr);gap:1
 body .dps-base-unit-summary:not([hidden]){display:contents;}
 body .dps-base-unit-summary[hidden]{display:none;}
 body .dps-base-unit-summary-row{display:contents;}
-body .dps-base-unit-results{display:grid;grid-column:2;grid-row:1;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px;min-width:0;min-height:184px;padding:12px 7px;border:0;border-radius:9px;background:#17354a;box-sizing:border-box;}
+body .dps-base-unit-results{display:grid;grid-column:2;grid-row:1;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px;min-width:0;min-height:184px;padding:12px 7px;border:0;border-radius:9px;background:transparent;box-sizing:border-box;}
 body .dps-base-unit-summary-item{display:grid;grid-template-rows:auto minmax(0,1fr);align-content:center;align-items:center;justify-items:center;gap:8px;min-width:0;height:auto;color:#eaf2ff;text-align:center;box-sizing:border-box;}
 body .dps-base-unit-summary-item .dps-lbl, body .dps-base-unit-summary-item .dps-num{display:flex;align-items:center;justify-content:center;width:100%;min-width:0;margin:0;padding:0;border:0;border-radius:0;background:transparent;color:#eaf2ff;text-align:center;box-sizing:border-box;overflow:visible;text-overflow:clip;white-space:nowrap;}
 body .dps-base-unit-summary-item .dps-lbl{font-size:calc(11.5px * var(--app-font-scale));font-weight:900;line-height:1.3;letter-spacing:0;white-space:normal;word-break:keep-all;}
@@ -1619,7 +1613,7 @@ body .dps-base-unit-summary-item .dps-num{flex-wrap:wrap;align-items:baseline;fo
 body .dps-base-unit-summary-item .dps-num-main{display:inline-flex;align-items:baseline;justify-content:center;flex:0 0 auto;min-width:0;font:inherit;line-height:inherit;letter-spacing:inherit;white-space:nowrap;}
 body .dps-base-unit-summary-item .dps-num-unit{display:inline-block;flex:0 0 auto;margin-left:.08em;font-family:var(--font-main);font-size:.56em;font-weight:900;line-height:1;letter-spacing:-.04em;white-space:nowrap;transform:translateY(-.02em);}
 /* 유닛 요약: 모드·쥬얼 / 클리어 기준·기대값 2×2 카드 */
-body .dps-base-unit-summary-row .dps-base-unit-context{grid-column:1;grid-row:1;min-height:184px;height:100%;padding:14px 9px;gap:10px;border:0;border-radius:9px;background:#17354a;}
+body .dps-base-unit-summary-row .dps-base-unit-context{grid-column:1;grid-row:1;min-height:184px;height:100%;padding:14px 9px;gap:10px;border:0;border-radius:9px;background:transparent;}
 body .dps-base-unit-summary-row .right-hero-compact-mode{gap:8px;}
 body .dps-base-unit-summary-item{grid-column:auto;grid-row:auto;min-height:0;height:100%;padding:8px 1px;border:0;border-radius:0;background:transparent;box-shadow:none;gap:10px;}
 body .dps-base-unit-summary-item.dps-base-unit-expected{grid-column:2;border-left:0;background:transparent;}
@@ -1874,10 +1868,6 @@ body .zero-rank-info-open-btn{margin-left:auto;}
 .zero-calc-result-card b em{font-style:normal;white-space:nowrap;}
 .zero-calc-result-card b i{margin:0 3px;color:var(--color-slate-400);font-style:normal;}
 /* 승단정보: 난이도별 직접 입력 보드. 기존 점수/프리셋 필드는 유지. */
-.zero-calc-expand-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;padding:10px 14px;border-bottom:1px solid var(--ui-integrated-head-line);}
-.zero-calc-expand-btn{display:flex;align-items:center;justify-content:center;min-width:0;min-height:36px;padding:7px 8px;border:1px solid #4f84b2;border-radius:8px;background:#224666;color:#eaf5ff;font-size:calc(11px * var(--app-font-scale));font-weight:900;cursor:pointer;}
-.zero-calc-expand-btn:first-child{border-color:#6ca9de;background:#255d91;}
-.zero-calc-expand-btn:focus-visible{outline:2px solid #a2d5ff;outline-offset:2px;}
 .zero-calc-table-wrap{min-width:0;overflow:visible;background:var(--ui-panel-body-bg);padding:0;}
 .zero-calc-table,.zero-calc-rows{display:grid;grid-template-columns:minmax(0,1fr);min-width:0;width:100%;gap:0;}
 .zero-calc-row{min-width:0;overflow:hidden;border:0;border-radius:0;background:transparent;box-shadow:none;border-top:1px solid var(--ui-integrated-head-line);}
@@ -2133,38 +2123,39 @@ body.is-narrow-mobile .btn.subtle.header-reference-btn#dpsTableMenuButton{width:
 body.is-narrow-mobile .header-nexus-link{min-width:64px;}
 
 
-/* 0021 · 중앙 프리셋 상태 관리자: 안내를 하나의 영역으로 통합 */
-body .trait-preset-agent{--agent-edge:#82baff;--agent-light:rgba(89,176,255,.20);--agent-bg:#204366;position:relative;isolation:isolate;display:grid;grid-template-rows:minmax(0,1fr);min-width:0;height:260px;min-height:260px;margin:10px 12px 0;padding:13px 15px;overflow:hidden;text-align:center;border:0;border-radius:9px;background:radial-gradient(ellipse at 50% -75%,var(--agent-light),transparent 76%),linear-gradient(135deg,var(--agent-bg),#143249 85%);box-shadow:none;transition:background .32s;}
-body .trait-preset-agent[data-tone="change"]{--agent-edge:#ffd18a;--agent-light:rgba(255,193,93,.32);--agent-bg:#5c452e;}
-body .trait-preset-agent[data-tone="backup"]{--agent-edge:#95bfff;--agent-light:rgba(130,149,245,.38);--agent-bg:#344c77;}
-body .trait-preset-agent[data-tone="success"]{--agent-edge:#8fe9d3;--agent-light:rgba(101,235,190,.32);--agent-bg:#21544e;}
-body .trait-preset-agent[data-tone="ready"]{--agent-edge:#8cbcdf;--agent-light:rgba(116,172,212,.26);--agent-bg:#243e54;}
-body .trait-preset-agent[data-tone="welcome"]{--agent-edge:#86dfff;--agent-light:rgba(74,198,242,.4);--agent-bg:#20506a;}
-body .trait-preset-agent-content{display:grid;justify-items:center;align-content:safe center;align-self:stretch;gap:6px;min-width:0;min-height:0;width:100%;height:100%;padding:3px;box-sizing:border-box;overflow:clip;overscroll-behavior:auto;}
-body .trait-preset-agent-shine{position:absolute;inset:-45% -30%;z-index:-1;pointer-events:none;background:radial-gradient(ellipse at 50% 36%,rgba(226,246,255,.17),transparent 57%);animation:traitAgentAmbient 4.2s ease-in-out infinite alternate;}
-body .trait-preset-agent-label{display:flex;align-items:center;gap:8px;color:var(--agent-edge);font-size:calc(12px * var(--app-font-scale));font-weight:850;letter-spacing:.25px;}
-body .trait-preset-agent-indicator{width:7px;height:7px;border-radius:50%;background:currentColor;box-shadow:0 0 13px var(--agent-edge);}
-body .trait-preset-agent h3{margin:0;max-width:100%;font-size:clamp(calc(20px * var(--app-font-scale)),2.2vw,calc(24px * var(--app-font-scale)));font-weight:950;line-height:1.25;color:#fff;overflow-wrap:anywhere;word-break:keep-all;text-shadow:0 2px 18px rgba(0,0,0,.25);}
-body .trait-preset-agent p{display:grid;justify-items:center;gap:2px;margin:0;max-width:600px;font-size:clamp(calc(14px * var(--app-font-scale)),1.5vw,calc(16px * var(--app-font-scale)));font-weight:720;line-height:1.42;color:#def0ff;word-break:keep-all;overflow-wrap:anywhere;}
+/* 0021 · 중앙 프리셋 상태 안내: 배경 없이 구분선·텍스트로 상태를 명료하게 표시 */
+body .trait-preset-agent{--agent-edge:#86d4ef;--agent-title:#e5f7ff;--agent-copy:#c4def0;--agent-emphasis:#a9ecf5;position:relative;isolation:isolate;display:grid;grid-template-rows:minmax(0,1fr);min-width:0;height:260px;min-height:260px;margin:10px 12px 0;padding:13px 15px;overflow:hidden;text-align:center;border:0;border-radius:0;background:transparent;box-shadow:none;}
+body .trait-preset-agent[data-tone="change"]{--agent-edge:#ffd28d;--agent-title:#ffe1ad;--agent-copy:#e8d6be;--agent-emphasis:#fff0cf;}
+body .trait-preset-agent[data-tone="backup"]{--agent-edge:#b3baff;--agent-title:#e4e6ff;--agent-copy:#cbd4ed;--agent-emphasis:#c4caff;}
+body .trait-preset-agent[data-tone="success"]{--agent-edge:#83e5cb;--agent-title:#d5fff1;--agent-copy:#b7e7df;--agent-emphasis:#97f4ce;}
+body .trait-preset-agent[data-tone="ready"]{--agent-edge:#8be3dc;--agent-title:#e2fff7;--agent-copy:#bfebe6;--agent-emphasis:#91f2d1;}
+body .trait-preset-agent[data-tone="welcome"]{--agent-edge:#8edfff;--agent-title:#e1f8ff;--agent-copy:#c4e7f7;--agent-emphasis:#b5f1ff;}
+body .trait-preset-agent-content{display:grid;justify-items:center;align-content:safe center;align-self:stretch;gap:8px;min-width:0;min-height:0;width:100%;height:100%;padding:3px;box-sizing:border-box;overflow:clip;overscroll-behavior:auto;}
+body .trait-preset-agent-label{display:flex;align-items:center;justify-content:center;gap:8px;padding-bottom:3px;color:var(--agent-edge);font-size:calc(12px * var(--app-font-scale));font-weight:900;letter-spacing:.45px;}
+body .trait-preset-agent-indicator{width:7px;height:7px;flex:none;border-radius:50%;background:currentColor;box-shadow:0 0 9px currentColor;}
+body .trait-preset-agent h3{margin:0;max-width:100%;font-size:clamp(calc(20px * var(--app-font-scale)),2.2vw,calc(24px * var(--app-font-scale)));font-weight:950;line-height:1.25;letter-spacing:-.45px;color:var(--agent-title);overflow-wrap:anywhere;word-break:keep-all;}
+body .trait-preset-agent p{display:grid;justify-items:center;gap:3px;margin:0;max-width:600px;font-size:clamp(calc(14px * var(--app-font-scale)),1.5vw,calc(16px * var(--app-font-scale)));font-weight:720;line-height:1.45;color:var(--agent-copy);word-break:keep-all;overflow-wrap:anywhere;}
 body .trait-preset-agent-description-line{display:block;max-width:100%;text-wrap:pretty;}
-body .trait-preset-agent-details{display:flex;justify-content:center;flex-wrap:wrap;gap:5px;margin:0;}
+body .trait-preset-agent-description-line+ .trait-preset-agent-description-line{color:var(--agent-emphasis);font-weight:880;}
+body .trait-preset-agent-details{display:flex;justify-content:center;flex-wrap:wrap;gap:6px;margin:0;}
 body .trait-preset-agent-details[hidden]{display:none;}
-body .trait-preset-agent-counter,body .trait-preset-agent-choice{padding:5px 10px;border:1px solid rgba(255,228,182,.4);border-radius:7px;background:rgba(10,23,42,.45);color:#fff5e4;font-size:calc(14px * var(--app-font-scale));font-weight:850;}
-body .trait-preset-agent-choice{color:#f5faff;border-color:rgba(183,220,255,.32);font-size:calc(14px * var(--app-font-scale));}
-body .trait-preset-agent-options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;width:min(100%,615px);margin:0 auto;}
+body .trait-preset-agent-counter,body .trait-preset-agent-choice{padding:4px 10px;border:1px solid rgba(255,219,159,.48);border-radius:20px;background:transparent;color:#ffefcf;font-size:calc(13px * var(--app-font-scale));font-weight:850;}
+body .trait-preset-agent-choice{color:#e8f7ff;border-color:rgba(183,220,255,.32);}
+body .trait-preset-agent-options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0;width:min(100%,615px);margin:0 auto;}
 body .trait-preset-agent-options[hidden]{display:none;}
-body .trait-preset-agent-option{display:flex;align-items:center;justify-content:center;flex-direction:column;gap:3px;box-sizing:border-box;min-height:82px;height:82px;padding:5px 7px;border:0;border-radius:8px;background:linear-gradient(155deg,rgba(48,111,165,.40),rgba(10,29,47,.48));}
-body .trait-preset-agent-option-icon{display:grid;place-items:center;flex:0 0 25px;width:25px;height:25px;border:1px solid #65a9df;border-radius:9px;background:linear-gradient(155deg,#316f9d,#1a456a);color:#d8f0ff;box-shadow:inset 0 1px rgba(255,255,255,.17);}
+/* 메시지 내부의 두 선택지에는 배경색을 넣지 않는다. 실제 조작 버튼과는 별개다. */
+body .trait-preset-agent-option{display:flex;align-items:center;justify-content:center;flex-direction:column;gap:3px;box-sizing:border-box;min-height:78px;height:78px;padding:5px 7px;border:0;border-radius:0;background:transparent;box-shadow:none;}
+body .trait-preset-agent-option.is-restore{border-right:1px solid rgba(145,193,225,.32);}
+body .trait-preset-agent-option.is-commit{background:transparent;}
+body .trait-preset-agent-option-icon{display:grid;place-items:center;flex:0 0 25px;width:25px;height:25px;border:1px solid rgba(130,195,241,.65);border-radius:8px;background:transparent;color:#a8ddff;box-shadow:none;}
 body .trait-preset-agent-option-icon svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;}
-body .trait-preset-agent-option.is-commit .trait-preset-agent-option-icon{border-color:#e7b66b;background:linear-gradient(155deg,#916936,#5b3d24);color:#fff2ca;}
-body .trait-preset-agent-option.is-commit{border-color:transparent;background:linear-gradient(155deg,rgba(141,98,37,.34),rgba(42,30,20,.48));}
-body .trait-preset-agent-option-head{font-size:calc(16px * var(--app-font-scale));font-weight:900;color:#eaf6ff;word-break:keep-all;}
-body .trait-preset-agent-option.is-commit .trait-preset-agent-option-head{color:#fff0cd;}
-body .trait-preset-agent-option-caption{font-size:calc(13px * var(--app-font-scale));font-weight:700;line-height:1.3;color:#c6ddef;word-break:keep-all;}
-body .trait-preset-agent-option.is-commit .trait-preset-agent-option-caption{color:#f4dcb4;}
+body .trait-preset-agent-option.is-commit .trait-preset-agent-option-icon{border-color:rgba(255,198,122,.65);background:transparent;color:#ffdea8;}
+body .trait-preset-agent-option-head{font-size:calc(16px * var(--app-font-scale));font-weight:900;color:#ccecff;word-break:keep-all;}
+body .trait-preset-agent-option.is-commit .trait-preset-agent-option-head{color:#ffe4b6;}
+body .trait-preset-agent-option-caption{font-size:calc(13px * var(--app-font-scale));font-weight:700;line-height:1.3;color:#afcfe1;word-break:keep-all;}
+body .trait-preset-agent-option.is-commit .trait-preset-agent-option-caption{color:#e6cfad;}
 body .trait-preset-agent-next[hidden]{display:none;}
-body .trait-preset-agent-next{margin-top:0;padding:5px 12px;max-width:100%;border:1px solid rgba(219,243,255,.24);border-radius:30px;background:rgba(5,20,35,.34);color:#fff;font-size:calc(12px * var(--app-font-scale));font-weight:850;line-height:1.35;word-break:keep-all;}
-@keyframes traitAgentAmbient{to{opacity:.65;transform:scale(1.09);}}
+body .trait-preset-agent-next{margin-top:2px;padding:5px 12px;max-width:100%;border:1px solid rgba(170,215,241,.34);border-radius:30px;background:transparent;color:var(--agent-edge);font-size:calc(12px * var(--app-font-scale));font-weight:850;line-height:1.35;word-break:keep-all;}
 /* 조작 버튼은 버튼으로만 사용: 안내/카운트/상태 뱃지 제거 */
 body .trait-preset-actions .preset-command{height:93px;min-height:93px;max-height:93px;justify-content:center;gap:5px;padding:10px 6px;}
 body .trait-preset-actions .preset-command-top{justify-content:center;}
@@ -2185,13 +2176,13 @@ body .trait-preset-body .trait-preset-form-action{flex-direction:column;}
 @media(max-width:650px){body .trait-preset-agent{margin:9px 9px 0;height:275px;min-height:275px;padding:12px 11px;}body .trait-preset-agent-content{gap:6px;}body .trait-preset-agent h3{font-size:calc(20px * var(--app-font-scale));}body .trait-preset-agent p{font-size:calc(14px * var(--app-font-scale));}body .trait-preset-agent-next{font-size:calc(12px * var(--app-font-scale));}body .trait-preset-actions .preset-command{min-height:90px;max-height:90px;height:90px;}body .trait-preset-actions .preset-command-main strong{font-size:calc(10px * var(--app-font-scale));}}
 @media(max-width:520px){body .trait-preset-agent{height:307px;min-height:307px;}body .trait-preset-agent-options{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;}body .trait-preset-agent-option{min-height:78px;height:78px;padding:5px 4px;gap:3px;}body .trait-preset-agent-option-icon{width:25px;height:25px;flex-basis:25px;}body .trait-preset-agent-option-icon svg{width:16px;height:16px;}body .trait-preset-agent-option-head{font-size:calc(14px * var(--app-font-scale));}body .trait-preset-agent-option-caption{font-size:calc(12px * var(--app-font-scale));}}
 @media(max-width:360px){body .trait-preset-agent{height:330px;min-height:330px;}body .trait-preset-agent h3{font-size:calc(19px * var(--app-font-scale));}body .trait-preset-agent p{font-size:calc(14px * var(--app-font-scale));}body .trait-preset-agent-details{gap:4px;}body .trait-preset-agent-counter,body .trait-preset-agent-choice{font-size:calc(13px * var(--app-font-scale));padding:5px 8px;}body .trait-preset-agent-option-head{font-size:calc(13px * var(--app-font-scale));}body .trait-preset-agent-option-caption{font-size:calc(11.5px * var(--app-font-scale));}body .trait-preset-agent-next{font-size:calc(12px * var(--app-font-scale));}}
-@media(prefers-reduced-motion:reduce){body .trait-preset-agent-shine,body .trait-preset-actions .preset-command.is-import.is-first-use,body .trait-preset-body .btn.pri.trait-preset-form-action.is-first-use{animation:none;}}
+@media(prefers-reduced-motion:reduce){body .trait-preset-actions .preset-command.is-import.is-first-use,body .trait-preset-body .btn.pri.trait-preset-form-action.is-first-use{animation:none;}}
 
 /* 0030 · 공통 헤더: 장식용 부제/번호 정리, 한글 제목·높이 통일 */
 :root{--v0030-head-height:56px;--v0030-head-font:calc(16px * var(--app-font-scale));--v0030-sub-height:48px;}
 body :is(.trait-preset-title,.basic-goal-title,.right-workspace-head,.rune-section-header,.trait-recommendation-heading,.trait-limit-section>.optimizer-head,.trait-optimizer-panel>.optimizer-head,.zero-rank-title){min-height:var(--v0030-head-height);height:auto;max-height:none;padding-top:8px;padding-bottom:8px;box-sizing:border-box;}
 body :is(.basic-goal-section-heading,.analytics-group-head,.right-unit-collection-heading,.trait-limit-group-heading,.trait-scope-heading){min-height:var(--v0030-sub-height);height:auto;box-sizing:border-box;}
-body :is(.trait-preset-brand,.basic-goal-brand-copy,.rune-section-copy,.right-workspace-copy,.analytics-group-copy,.trait-limit-heading-copy,.trait-preset-form-heading,.basic-goal-section-copy,.trait-limit-group-heading>div,.trait-scope-heading){gap:0;}
+body :is(.trait-preset-brand,.basic-goal-brand-copy,.rune-section-copy,.right-workspace-copy,.analytics-group-copy,.trait-limit-heading-copy,.basic-goal-section-copy,.trait-limit-group-heading>div,.trait-scope-heading){gap:0;}
 body :is(.trait-preset-brand,.basic-goal-brand-copy,.rune-section-copy,.right-workspace-copy,.analytics-group-copy,.basic-goal-section-copy) > small,
 body .trait-preset-form-heading>small,
 body .trait-limit-heading-copy>small,
@@ -2208,8 +2199,6 @@ body .trait-recommendation-heading h3,body .trait-limit-heading-title,body .trai
 body.is-mobile .trait-preset-panel > .trait-preset-title,body.is-tabbed .mobile-page .trait-preset-panel > .trait-preset-title{min-height:var(--v0030-head-height);}
 @media(max-width:520px){:root{--v0030-head-height:52px;--v0030-head-font:calc(14px * var(--app-font-scale));--v0030-sub-height:44px;}body .right-workspace-head{padding:8px 10px;}}
 /* 프리셋 안내에 별도 색상을 부여하지 않고 기존 안내색을 전체 본문에 연장 */
-body .trait-preset-panel .trait-preset-body{background:var(--ui-integrated-head-bg);}
-body .trait-preset-panel .trait-preset-agent{background:transparent;}
 /* 스펙 비교표: 배경 블록을 없애고 헤더와 조화를 이루는 구분선만 남김 */
 body .right-analytics-workspace .analytics-detail-group{background:transparent;}
 body .right-spec-unified-table{background:transparent;}
@@ -2282,8 +2271,6 @@ body .trait-preset-panel .trait-preset-brand-copy>small{display:none;}
 
 /* 0031 · v0028 preset structure with v0029 unboxed status guidance */
 body .trait-preset-panel .trait-preset-body{background:var(--ui-panel-body-bg);}
-body .trait-preset-panel .trait-preset-agent{background:transparent;box-shadow:none;}
-body .trait-preset-panel .trait-preset-agent-shine{display:none;}
 /* 0031 · the comparison table needs only the column-header underline. */
 body .right-analytics-workspace .right-spec-unified-table .stat-row:not(.stat-head-row){border-bottom:0;}
 /* 0031 · one touch target per unit slot; visible speed uses actual battle calculations. */

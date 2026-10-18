@@ -2456,10 +2456,6 @@ function setTraitTierExpanded(tier,expanded){
   if(toggle) toggle.setAttribute('aria-expanded',String(expanded));
   setAccordionContentExpanded(list,expanded);
 }
-function setAllTraitTiersExpanded(expanded){
-  if(expanded) setTraitTierExpanded(TIERS[0],true);
-  else [...expandedTraitTiers].forEach(tier=>setTraitTierExpanded(tier,false));
-}
 function updateTraits(){
   const body=$('traitBody');
   if(!body) return;
@@ -3273,12 +3269,6 @@ function setZeroScoreRowExpanded(header,expanded){
   header.setAttribute('aria-label',`${header.querySelector('.zero-calc-name strong')?.textContent || '승단'} 승단 점수 입력 ${expanded?'접기':'펼치기'}`);
   setAccordionContentExpanded(details,expanded);
 }
-function setAllZeroScoreRowsExpanded(expanded){
-  const headers=$('zeroScoreRows')?.querySelectorAll('.zero-calc-row-head');
-  if(!headers?.length) return;
-  if(expanded) setZeroScoreRowExpanded(headers[0],true);
-  else headers.forEach(header=>setZeroScoreRowExpanded(header,false));
-}
 function bindZeroScoreCalculator(){
   if(document.documentElement.dataset.zeroScoreCalcBound==='1') return;
   document.documentElement.dataset.zeroScoreCalcBound='1';
@@ -3332,8 +3322,6 @@ const ACTION_HANDLERS={
   openBusPassengerModal:()=>window.DpsModal.openBoardModal('busPassengerModal'),
   openZeroRankInfoModal:()=>window.DpsModal.openBoardModal('zeroRankInfoModal'),
   zeroScoreStar:(trigger)=>toggleZeroScoreStar(trigger),
-  expandAllZeroScoreRows:()=>setAllZeroScoreRowsExpanded(true),
-  collapseAllZeroScoreRows:()=>setAllZeroScoreRowsExpanded(false),
   decreaseFont:()=>changeFontScale(-DPS_CONFIG.ui.fontScaleStep),
   increaseFont:()=>changeFontScale(DPS_CONFIG.ui.fontScaleStep),
   resetFont:()=>applyFontScale(DPS_CONFIG.ui.fontScaleDefault),
@@ -3345,8 +3333,6 @@ const ACTION_HANDLERS={
   },
   traitMax:(trigger)=>adjMax(+trigger.dataset.row),
   toggleTraitTier:(trigger)=>{ const tier=trigger.dataset.tier||''; setTraitTierExpanded(tier,!expandedTraitTiers.has(tier)); },
-  collapseAllTraitTiers:()=>setAllTraitTiersExpanded(false),
-  expandAllTraitTiers:()=>setAllTraitTiersExpanded(true),
   masterTier:(trigger)=>masterTier(trigger.dataset.tier||''),
   resetTier:(trigger)=>{ const tier=trigger.dataset.tier||''; return requestConfirmAction(`resetTier:${tier}`, `한 번 더 누르면 ${tier} 초기화`, ()=>resetTier(tier)); }
 };
