@@ -98,7 +98,7 @@
       <div class="dps-table-modal-backdrop" data-dps-table-close="1"></div>
       <section class="dps-table-modal" role="dialog" aria-modal="true" aria-labelledby="dpsTableTitle">
         <header class="dps-table-modal-head">
-          <div class="dps-table-modal-brand"><span class="dps-table-modal-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round" stroke-linecap="round"><rect x="2.5" y="3" width="19" height="18" rx="4"/><path d="m6 16 4-4 3 2 5-6m-3 0h3v3"/></svg></span><div><h2 id="dpsTableTitle" class="dps-table-modal-title">DPS표</h2><small>DAMAGE ANALYTICS</small></div></div>
+          <div class="dps-table-modal-brand"><span class="dps-table-modal-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round" stroke-linecap="round"><rect x="2.5" y="3" width="19" height="18" rx="4"/><path d="m6 16 4-4 3 2 5-6m-3 0h3v3"/></svg></span><div><h2 id="dpsTableTitle" class="dps-table-modal-title">DPS표</h2></div></div>
           <div class="dps-table-modal-actions" id="dpsTableHeaderActions"></div>
           <button type="button" class="ui-icon-btn dps-table-modal-close" data-dps-table-close="1" aria-label="DPS표 닫기">×</button>
         </header>

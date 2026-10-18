@@ -407,8 +407,15 @@ function normalizeTraitPresetUnitBoardState(value){
       if(extra.legendaryMythicJewel) usedLegendaryJewels.add(extra.legendaryMythicJewel);
     });
   });
+  // Older JSON files do not contain visibleSlotCount; recover from the last assigned unit.
+  const minVisible=units.reduce((last,item)=>Math.max(last,item.slot+1),1);
+  const requestedVisible=Number(source.visibleSlotCount ?? source.slotCount);
+  const visibleSlotCount=Number.isFinite(requestedVisible)
+    ? Math.max(minVisible,Math.min(dpsBaseUnitSelectionLimit(),Math.max(1,Math.trunc(requestedVisible))))
+    : minVisible;
   return {
     units,
+    visibleSlotCount,
     slotExpansions,
     additionalUnitSettings:normalizeDpsBaseUnitExtraSettings(additionalUnitSettings)
   };
@@ -434,6 +441,7 @@ function captureTraitPresetUnitBoardState(){
   const selectedExtras=Object.fromEntries(Object.entries(extras).filter(([unitId])=>selectedIds.has(unitId)));
   return normalizeTraitPresetUnitBoardState({
     units,
+    visibleSlotCount:dpsUnitVisibleCount(currentDpsBaseUnitSlots()),
     slotExpansions:dpsBaseUnitSlotExpansionIds().filter(unitId=>selectedIds.has(unitId)),
     additionalUnitSettings:selectedExtras
   });
@@ -467,6 +475,9 @@ function applyTraitPresetUnitBoardState(value,options={}){
     writeTraitPresetUnitBoardStoreValues(unit,item);
   });
   if(options.resetArtifactView!==false) setArtifactDpsViewEnabled(false);
+  // The preset, never the previous unsaved editing session, owns the visible slot count.
+  const visibleCountInput=$('dpsBaseUnitVisibleSlotCount');
+  if(visibleCountInput) visibleCountInput.value=String(state.visibleSlotCount);
   setDpsBaseUnitStoredValue(slots.filter(Boolean),false,{slots});
   if(options.recalculate!==false) recalc({save:options.save});
   return state;
@@ -1169,13 +1180,6 @@ function finishTraitPresetSelection(id, options={}){
   const selectedId=String(id || '').trim();
   rememberTraitPresetSelection(selectedId);
   if(options.refresh!==false) refreshTraitPresetControls(selectedId);
-}
-function selectedTraitPresetContext(message){
-  const id=selectedTraitPresetId();
-  const store=loadTraitPresetStore();
-  const preset=store.presets.find(item=>item.id===id);
-  if(!preset){ notifyStorageAction(message,'err'); return null; }
-  return {id,store,preset};
 }
 
 const TRAIT_PRESET_SELECT_GROUPS=[

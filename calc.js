@@ -579,9 +579,6 @@ function enemyRoundCountTotal(round, diffName=vs('diff')){
 function enemyRoundDisplayCount(round, diffName=vs('diff')){
   return enemyRoundData(round, diffName).count * battleEnemyCountMultiplier(diffName);
 }
-function enemyTotalDisplayCount(round, diffName=vs('diff')){
-  return enemyRoundCountTotal(round, diffName) * battleEnemyCountMultiplier(diffName);
-}
 function enemyDisplayCountText(round){
   if(isTowerDifficulty() || isPlanetExplorationDifficulty()) return fullNumber(enemyRoundData(round).count);
   return fullNumber(enemyRoundDisplayCount(round));
