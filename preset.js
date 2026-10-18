@@ -664,6 +664,7 @@ function resetToFactoryState(){
 }
 function safeJsonParse(raw){
   const text=String(raw??'').replace(/^\uFEFF/,'').trim();
+  if(!text) return null;
   const attempts=[text];
   const first=text.indexOf('{'), last=text.lastIndexOf('}');
   if(first>=0 && last>first) attempts.push(text.slice(first,last+1));
