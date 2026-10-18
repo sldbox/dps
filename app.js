@@ -316,7 +316,7 @@ function syncModeChoiceButtons(){
     button.classList.toggle('is-selected',selected);
   });
 }
-function syncBattleMode(sourceId=''){
+function syncBattleMode(sourceId='', options={}){
   const solo=$('soloMode'), coop=$('coopMode');
   if(!solo || !coop) return;
   const normalizedCoop=normalizeOnOffValue(coop.value,'OFF');
@@ -327,7 +327,7 @@ function syncBattleMode(sourceId=''){
   solo.value=coopOn ? 'OFF' : 'ON';
   coop.value=coopOn ? 'ON' : 'OFF';
   syncPenanceOptions();
-  syncTeamSelect({restorePersonal: !!sourceId && !coopOn, preserveCurrent: !sourceId});
+  syncTeamSelect({restorePersonal: !!sourceId && !coopOn, preserveCurrent: !sourceId, defaultCoop: !!options.defaultCoop && coopOn});
   syncModeChoiceButtons();
 }
 function syncTeamSelect(options={}){
@@ -347,8 +347,10 @@ function syncTeamSelect(options={}){
   row?.classList.remove('is-locked');
   if(coopActive){
     if(current==='1') el.dataset.personalTeamValue=current;
-    const source=options.preserveCurrent ? current : (el.dataset.coopTeamValue || current);
-    const value=normalizeTeamCountValue(source, 2)==='1' ? '2' : normalizeTeamCountValue(source, 2);
+    // 사용자가 개인전에서 협동전으로 전환하면 3인을 기본 선택한다.
+    // 프리셋 로드·난이도 갱신에는 이 기본값을 강제하지 않고 저장된 2/3인을 유지한다.
+    const source=options.defaultCoop ? '3' : ((current==='2' || current==='3') ? current : (el.dataset.coopTeamValue || '3'));
+    const value=normalizeTeamCountValue(source, 3)==='1' ? '3' : normalizeTeamCountValue(source, 3);
     el.value=value;
     el.dataset.coopTeamValue=value;
     syncCoopPassengerRows();
@@ -775,181 +777,6 @@ function renderSkillDamage(s){
   if(!el) return;
   el.innerHTML=rows.items.map(row=>`<tr><td>${row.name}</td><td>${fmt(row.total,1)}%</td><td>AP ${fmt(ap,0)} / 더블 ${fmt(rows.doubleSpace,2)}</td></tr>`).join('');
 }
-/* 공통 모달
- * - 포커스/닫기 처리
- * - DPS표와 프리셋 등 공용 모달 동작
- */
-(() => {
-  'use strict';
-
-  /* 공통 모달 상태·쉘 */
-  const DPS_TABLE_MODAL_ID='dpsTableModal';
-  const BOARD_MODAL_IDS=Object.freeze(['sanctuarySkillModal','busPassengerModal','zeroRankInfoModal']);
-  let eventsBound=false;
-
-  function createShell(id,className,innerHtml){
-    const existing=document.getElementById(id);
-    if(existing) return existing;
-    const modal=document.createElement('div');
-    modal.id=id;
-    modal.className=className;
-    modal.setAttribute('aria-hidden','true');
-    modal.innerHTML=innerHtml;
-    document.body.appendChild(modal);
-    return modal;
-  }
-
-  function setOpen(id,bodyClass,open,options={}){
-    const modal=document.getElementById(id);
-    if(!modal) return null;
-    const active=!!open;
-    modal.classList.toggle('is-open',active);
-    modal.setAttribute('aria-hidden',active?'false':'true');
-    if(bodyClass){
-      document.body?.classList.toggle(bodyClass,active);
-      if(options.rootClass) document.documentElement?.classList.toggle(bodyClass,active);
-    }
-    return modal;
-  }
-
-  function isOpen(id){
-    return document.getElementById(id)?.classList.contains('is-open')===true;
-  }
-
-  function syncModeClasses(dialog,modes,activeMode=''){
-    const variants=Array.isArray(modes)?modes:[];
-    variants.forEach(mode=>{
-      dialog?.classList.remove(`is-dps-mode-${mode}`);
-      document.body?.classList.remove(`is-dps-mode-${mode}`);
-    });
-    if(!variants.includes(activeMode)) return;
-    dialog?.classList.add(`is-dps-mode-${activeMode}`);
-    document.body?.classList.add(`is-dps-mode-${activeMode}`);
-  }
-
-  /* 보드 분리 모달 */
-  function closeBoardModal(id=''){
-    const ids=BOARD_MODAL_IDS.includes(id) ? [id] : BOARD_MODAL_IDS;
-    ids.forEach(modalId=>setOpen(modalId,'board-modal-open',false,{rootClass:true}));
-    if(!BOARD_MODAL_IDS.some(isOpen)){
-      document.body?.classList.remove('board-modal-open');
-      document.documentElement?.classList.remove('board-modal-open');
-    }
-  }
-  function openBoardModal(id){
-    if(!BOARD_MODAL_IDS.includes(id)) return;
-    closeBoardModal();
-    const modal=setOpen(id,'board-modal-open',true,{rootClass:true});
-    requestAnimationFrame(()=>{
-      const closeButton=modal?.querySelector('.board-modal-close');
-      if(closeButton && typeof closeButton.focus==='function') closeButton.focus({preventScroll:true});
-    });
-  }
-  function getOpenBoardModalId(){
-    return BOARD_MODAL_IDS.find(isOpen) || '';
-  }
-
-  /* DPS표 */
-  function renderDpsTableModalHeader(){
-    const modal=document.getElementById(DPS_TABLE_MODAL_ID);
-    if(!modal) return;
-    const title=dpsTableDisplayTitle();
-    const titleEl=document.getElementById('dpsTableTitle');
-    const actions=document.getElementById('dpsTableHeaderActions');
-    const closeButton=modal.querySelector('.dps-table-modal-close');
-    if(titleEl) titleEl.textContent=title;
-    if(closeButton) closeButton.setAttribute('aria-label',`${title} 닫기`);
-    if(actions){
-      actions.innerHTML=`<div class="dps-table-tabs dps-table-header-tabs" id="dpsTableTabsMount" data-dps-table-tabs-mount role="tablist" aria-label="DPS 기준 선택">${renderDpsTableTabs()}</div>`;
-    }
-  }
-
-  function renderDpsTablePanel(){
-    return `<section class="dps-table-modal-panel dps-table-inline-panel" role="tabpanel" aria-labelledby="dpsTableTitle">
-      <div class="dps-table-body" id="dpsTableMount" data-dps-table-mount></div>
-    </section>`;
-  }
-
-  function createDpsTableModal(){
-    return createShell(DPS_TABLE_MODAL_ID,'dps-table-modal-shell',`
-      <div class="dps-table-modal-backdrop" data-dps-table-close="1"></div>
-      <section class="dps-table-modal" role="dialog" aria-modal="true" aria-labelledby="dpsTableTitle">
-        <header class="dps-table-modal-head">
-          <div class="dps-table-modal-brand"><span class="dps-table-modal-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round" stroke-linecap="round"><rect x="2.5" y="3" width="19" height="18" rx="4"/><path d="m6 16 4-4 3 2 5-6m-3 0h3v3"/></svg></span><div><h2 id="dpsTableTitle" class="dps-table-modal-title">DPS표</h2><small>DAMAGE ANALYTICS</small></div></div>
-          <div class="dps-table-modal-actions" id="dpsTableHeaderActions"></div>
-          <button type="button" class="ui-icon-btn dps-table-modal-close" data-dps-table-close="1" aria-label="DPS표 닫기">×</button>
-        </header>
-        <div class="dps-table-modal-body">
-          ${renderDpsTablePanel()}
-        </div>
-      </section>`);
-  }
-
-  function openDpsTableModal(){
-    createDpsTableModal();
-    renderDpsTableModalHeader();
-    renderDpsTablePanelContent();
-    setOpen(DPS_TABLE_MODAL_ID,'dps-table-modal-open',true);
-  }
-
-  function closeDpsTableModal(){
-    if(!isOpen(DPS_TABLE_MODAL_ID)) return;
-    const modal=document.getElementById(DPS_TABLE_MODAL_ID);
-    setOpen(DPS_TABLE_MODAL_ID,'dps-table-modal-open',false);
-    syncModeClasses(modal?.querySelector('.dps-table-modal'),DPS_MODAL_MODES);
-  }
-
-  /* 통합 이벤트·공개 API */
-  function handleDocumentClick(event){
-    const target=event.target instanceof Element?event.target:null;
-    if(!target) return;
-    const boardModalClose=target.closest('[data-board-modal-close]');
-    if(boardModalClose){
-      closeBoardModal(boardModalClose.closest('.board-modal-shell')?.id || '');
-      return;
-    }
-    if(target.closest('[data-dps-table-close]')){
-      closeDpsTableModal();
-      return;
-    }
-    const modeTarget=target.closest('[data-dps-table-mode]');
-    if(modeTarget) switchDpsTableMode(modeTarget.getAttribute('data-dps-table-mode'));
-  }
-
-  function handleDocumentKeydown(event){
-    if(event.key==='Escape'){
-      const openBoardId=getOpenBoardModalId();
-      if(openBoardId){
-        closeBoardModal(openBoardId);
-        event.preventDefault();
-        return;
-      }
-      if(isOpen(DPS_TABLE_MODAL_ID)) closeDpsTableModal();
-      return;
-    }
-  }
-
-  function bindEvents(){
-    if(eventsBound) return;
-    eventsBound=true;
-    document.addEventListener('click',handleDocumentClick);
-    document.addEventListener('change',event=>{if(event.target?.matches?.('[data-dps-view-diff]')) changeDpsVisualDifficulty(event.target.value);});
-    document.addEventListener('keydown',handleDocumentKeydown,true);
-  }
-
-  window.DpsModal=Object.freeze({
-    createShell,
-    setOpen,
-    isOpen,
-    syncModeClasses,
-    openDpsTableModal,
-    closeDpsTableModal,
-    openBoardModal,
-    closeBoardModal,
-    bindEvents
-  });
-})();
-
 /* DPS표 모드·미리보기·모달 */
 const DPS_TABLE_DIFFICULTIES=DPS_CONFIG.dpsTable.difficulties;
 const COOP_DPS_TABLE_DIFFICULTIES=DPS_TABLE_DIFFICULTIES.slice(0, DPS_TABLE_DIFFICULTIES.indexOf('Hall Of Fame') + 1);
@@ -2045,7 +1872,7 @@ function dpsBaseUnitSlotsHtml(slots){
     const unitName=unit ? dpsBaseUnitDisplayLabel(unit) : '';
     const quantity=unit ? (dpsBaseUnitHasQuantity(unit) ? dpsBaseUnitQuantityText(unit) : '1') : '';
     const selected=index===dpsUnitSelectedSlot && dpsUnitDetailOpen;
-    return `<div class="unit-list-row${selected?' is-selected':''}${unit?'':' is-unassigned'}"><b class="unit-list-index">${index+1}</b><strong class="unit-list-name-readonly" title="${escapeHtml(unitName)}">${escapeHtml(unitName)}</strong><span class="unit-list-quantity">${escapeHtml(quantity)}</span><span class="unit-list-attack">${escapeHtml(attack)}</span><span class="unit-list-pierce">${escapeHtml(pierce)}</span><strong class="unit-list-dps">${escapeHtml(dps)}</strong><div class="unit-list-actions"><button type="button" class="unit-list-settings" data-unit-list-select="${index}" aria-label="슬롯 ${index+1} 설정 열기" aria-haspopup="dialog" aria-expanded="${selected}" aria-controls="dpsUnitSlotModal" title="슬롯 ${index+1} 설정">설정</button><button type="button" class="unit-list-remove" data-unit-list-remove="${index}" aria-label="슬롯 ${index+1} 제거" title="슬롯 ${index+1} 제거"${unit?'':' disabled'}>×</button></div></div>`;
+    return `<div class="unit-list-row${selected?' is-selected':''}${unit?'':' is-unassigned'}"><b class="unit-list-index">${index+1}</b><strong class="unit-list-name-readonly">${escapeHtml(unitName)}</strong><span class="unit-list-quantity">${escapeHtml(quantity)}</span><span class="unit-list-attack">${escapeHtml(attack)}</span><span class="unit-list-pierce">${escapeHtml(pierce)}</span><strong class="unit-list-dps">${escapeHtml(dps)}</strong><div class="unit-list-actions"><button type="button" class="unit-list-settings" data-unit-list-select="${index}" aria-label="슬롯 ${index+1} 설정 열기" aria-haspopup="dialog" aria-expanded="${selected}" aria-controls="dpsUnitSlotModal">설정</button><button type="button" class="unit-list-remove" data-unit-list-remove="${index}" aria-label="슬롯 ${index+1} 제거"${unit?'':' disabled'}>×</button></div></div>`;
   }).join('');
   const summaryMessage=activeCount ? `<strong class="unit-list-usage">${activeCount} / ${slots.length} 슬롯 활성화됨</strong>` : '<strong class="unit-list-empty-notice">유닛 설정이 필요합니다</strong>';
   return `<section class="unit-list-collection" aria-label="유닛 슬롯 관리"><header class="right-unit-collection-heading"><span class="right-unit-collection-mark" aria-hidden="true">▦</span><span><strong>유닛 슬롯 관리</strong><small>유닛과 수량은 설정에서 변경</small></span><span class="unit-list-status" role="status" aria-live="polite">${summaryMessage}</span></header><div class="unit-list-panel" aria-label="유닛 슬롯 조회 목록">${headings}${rows}</div></section>`;
@@ -2481,8 +2308,29 @@ const TIERS=['루키','비기너','아마추어','프로','엑스퍼트','마스
 const OPTIMIZATION_TIERS=TIERS.filter(tier=>tier!==INFINITE_TRAIT_TIER).concat(INFINITE_TRAIT_TIER);
 // 펼침 여부는 화면 상태로만 관리하며 프리셋 데이터에는 저장하지 않는다.
 const expandedTraitTiers=new Set();
+// 입력 요소를 DOM에 그대로 둔 채 높이만 애니메이션으로 전환한다.
+function setAccordionContentExpanded(content,expanded){
+  if(!content) return;
+  const oldAnimation=content.getAnimations?.().find(animation=>animation.id==='dpsAccordion');
+  oldAnimation?.cancel();
+  const wasOpen=!content.hidden;
+  const fromHeight=wasOpen ? content.getBoundingClientRect().height : 0;
+  if(expanded) content.hidden=false;
+  content.inert=!expanded;
+  content.setAttribute('aria-hidden',String(!expanded));
+  if(fromHeight===0 && !expanded){content.hidden=true;return;}
+  const toHeight=expanded ? content.scrollHeight : 0;
+  if(Math.abs(fromHeight-toHeight)<1 || window.matchMedia?.('(prefers-reduced-motion: reduce)').matches || !content.animate){
+    content.hidden=!expanded;
+    return;
+  }
+  const animation=content.animate([{height:`${fromHeight}px`,opacity:expanded?0:1},{height:`${toHeight}px`,opacity:expanded?1:0}],{duration:250,easing:'cubic-bezier(.22,1,.36,1)'});
+  animation.id='dpsAccordion';
+  animation.onfinish=()=>{if(!expanded) content.hidden=true;};
+}
 function setTraitTierExpanded(tier,expanded){
   if(!TIERS.includes(tier)) return;
+  if(expanded) [...expandedTraitTiers].filter(open=>open!==tier).forEach(open=>setTraitTierExpanded(open,false));
   if(expanded) expandedTraitTiers.add(tier);
   else expandedTraitTiers.delete(tier);
   const panel=Array.from(qsa('.trait-tier-panel[data-tier]')).find(el=>el.dataset.tier===tier);
@@ -2491,10 +2339,11 @@ function setTraitTierExpanded(tier,expanded){
   const list=panel.querySelector('.trait-invest-list');
   panel.classList.toggle('is-expanded',expanded);
   if(toggle) toggle.setAttribute('aria-expanded',String(expanded));
-  if(list) list.hidden=!expanded;
+  setAccordionContentExpanded(list,expanded);
 }
 function setAllTraitTiersExpanded(expanded){
-  TIERS.forEach(tier=>setTraitTierExpanded(tier,expanded));
+  if(expanded) setTraitTierExpanded(TIERS[0],true);
+  else [...expandedTraitTiers].forEach(tier=>setTraitTierExpanded(tier,false));
 }
 function updateTraits(){
   const body=$('traitBody');
@@ -2527,7 +2376,7 @@ function updateTraits(){
     }).join('');
     const isExpanded=expandedTraitTiers.has(tier);
     return `<section class="trait-group trait-tier-panel${isExpanded?' is-expanded':''}" data-tier-index="${tierIndex+1}" data-tier="${tier}">
-      <h4><button type="button" class="trait-tier-toggle" data-action="toggleTraitTier" data-tier="${tier}" aria-expanded="${isExpanded}" aria-controls="traitTierContent${tierIndex+1}"><span class="trait-title"><span class="trait-tier-index" aria-hidden="true">${String(tierIndex+1).padStart(2,'0')}</span><span class="trait-tier-name">${tier}<small class="trait-tier-caption">TRAIT COLLECTION</small></span></span></button><span class="trait-tools"><button type="button" class="ui-action-btn mini-btn master" data-action="masterTier" data-tier="${tier}">구간 마스터</button><button type="button" class="ui-action-btn mini-btn reset danger" data-action="resetTier" data-tier="${tier}">초기화</button></span></h4>
+      <h4><button type="button" class="trait-tier-toggle" data-action="toggleTraitTier" data-tier="${tier}" aria-expanded="${isExpanded}" aria-controls="traitTierContent${tierIndex+1}"><span class="trait-title"><span class="trait-tier-index" aria-hidden="true">${String(tierIndex+1).padStart(2,'0')}</span><span class="trait-tier-name">${tier}</span></span></button><span class="trait-tools"><button type="button" class="ui-action-btn mini-btn master" data-action="masterTier" data-tier="${tier}">구간 마스터</button><button type="button" class="ui-action-btn mini-btn reset danger" data-action="resetTier" data-tier="${tier}">초기화</button></span></h4>
       <div class="trait-invest-list" id="traitTierContent${tierIndex+1}" ${isExpanded?'':'hidden'}>${rows}</div>
     </section>`;
   }).join('');
@@ -2659,8 +2508,8 @@ function renderTraitRecommendations(){
     table.innerHTML=items.map(item=>`<tr>
       <td>${escapeHtml(traitName(item.row))}</td>
       <td>${fullNumber(item.amount)}</td>
-      <td title="${TRAIT_RECOMMENDATION_RESOURCE_LABELS[item.kind]} ${fullNumber(item.cost)}">${TRAIT_RECOMMENDATION_RESOURCE_LABELS[item.kind]} ${traitRecommendationNumberText(item.cost)}</td>
-      <td><strong title="${fmt(item.dps,1)}">${traitRecommendationNumberText(item.dps,1)}</strong><small title="${item.gain>=0?'+':''}${fmt(item.gain,1)}">${item.gain>=0?'+':''}${traitRecommendationNumberText(item.gain,1)} ${useUnitBoard ? '기대값' : 'DPS'}</small></td>
+      <td>${TRAIT_RECOMMENDATION_RESOURCE_LABELS[item.kind]} ${traitRecommendationNumberText(item.cost)}</td>
+      <td><strong>${traitRecommendationNumberText(item.dps,1)}</strong><small>${item.gain>=0?'+':''}${traitRecommendationNumberText(item.gain,1)} ${useUnitBoard ? '기대값' : 'DPS'}</small></td>
       <td><button class="btn pri ui-action-btn trait-recommendation-apply" data-action="applyTraitRecommendation" data-row="${item.row}" data-amount="${item.amount}" type="button">투자</button></td>
     </tr>`).join('');
     cacheResult();
@@ -2956,311 +2805,6 @@ function clearAll(){
     return false;
   }
 }
-/* 반응형 레이아웃
- * - 뷰포트 상태 클래스 관리
- * - 모바일/태블릿/세로 화면 전환 보조
- */
-(() => {
-  'use strict';
-
-  /* 반응형 상태·측정 헬퍼 */
-  const MODES = ['is-pc-landscape', 'is-pc-portrait', 'is-tablet', 'is-mobile', 'is-portrait-view', 'is-mobile-device', 'is-tablet-device', 'is-narrow-mobile', 'is-tabbed'];
-  const TABBED_PAGES = [
-    { key: 'basic', label: '기본 정보', selectors: ['.trait-preset-panel', '.col-left'] },
-    { key: 'trait', label: '특성 관리', selectors: ['.trait-board-panel'] },
-    { key: 'specUnit', label: '분석 보드', selectors: ['.stat-dps-card'] }
-  ];
-  const state = {
-    tabs: null,
-    pages: [],
-    restore: new Map(),
-    raf: 0,
-    arrangedTabbed: false,
-    layoutWidth: 0,
-    layoutPortrait: null,
-    activeIndex: 0,
-    activeKey: null,
-    resumeRaf: 0,
-    initialized: false
-  };
-  /* 뷰포트 판정 */
-  function getViewportSize() {
-    const root = document.documentElement;
-    return {
-      w: root.clientWidth || window.innerWidth || 0,
-      h: root.clientHeight || window.innerHeight || 0
-    };
-  }
-  function getMode() {
-    const { w, h } = getViewportSize();
-    const shortSide = Math.min(w, h);
-    const longSide = Math.max(w, h);
-    const portrait = h > w;
-    if (shortSide <= 600) return 'is-mobile';
-    if (shortSide <= 1024 && longSide <= 1366) return 'is-tablet';
-    if (portrait) return 'is-pc-portrait';
-    return 'is-pc-landscape';
-  }
-  function updateMobileOffsets() {
-    const header = document.querySelector('.hdr');
-    const tabs = document.querySelector('.mobile-section-tabs');
-    const headerHeight = header ? Math.ceil(header.getBoundingClientRect().height) : 0;
-    const tabsHeight = tabs ? Math.ceil(tabs.getBoundingClientRect().height) : 0;
-    const { w, h } = getViewportSize();
-    document.documentElement.style.setProperty('--mobile-vw', `${w}px`);
-    document.documentElement.style.setProperty('--mobile-header-h', `${headerHeight}px`);
-    document.documentElement.style.setProperty('--mobile-tabs-h', `${tabsHeight}px`);
-    document.documentElement.style.setProperty('--mobile-vh', `${h}px`);
-  }
-  function applyMode() {
-    const mode = getMode();
-    const { w, h } = getViewportSize();
-    const shortSide = Math.min(w, h);
-    const direction = h > w ? 'is-portrait-view' : '';
-    const deviceClass = mode === 'is-mobile' ? 'is-mobile-device' : (mode === 'is-tablet' ? 'is-tablet-device' : '');
-    const widthClass = mode === 'is-mobile' && shortSide <= 430 ? 'is-narrow-mobile' : '';
-    document.body.classList.remove(...MODES);
-    document.documentElement.classList.remove(...MODES);
-    document.body.classList.add(mode);
-    document.documentElement.classList.add(mode);
-    if (mode === 'is-mobile' || mode === 'is-tablet' || mode === 'is-pc-portrait') {
-      document.body.classList.add('is-tabbed');
-      document.documentElement.classList.add('is-tabbed');
-    }
-    if (direction) {
-      document.body.classList.add(direction);
-      document.documentElement.classList.add(direction);
-    }
-    if (deviceClass) {
-      document.body.classList.add(deviceClass);
-      document.documentElement.classList.add(deviceClass);
-    }
-    if (widthClass) {
-      document.body.classList.add(widthClass);
-      document.documentElement.classList.add(widthClass);
-    }
-    state.layoutWidth = w;
-    state.layoutPortrait = h > w;
-    syncTabbedLayout();
-    updateMobileOffsets();
-  }
-  /* 탭 레이아웃 */
-  function rememberPosition(el) {
-    if (!el || state.restore.has(el)) return;
-    const marker = document.createComment(`mobile-restore:${el.className || el.tagName}`);
-    el.parentNode.insertBefore(marker, el);
-    state.restore.set(el, marker);
-  }
-  function getOrCreatePage(key) {
-    let page = document.querySelector(`.mobile-page[data-mobile-page="${key}"]`);
-    if (!page) {
-      page = document.createElement('div');
-      page.className = `mobile-page mobile-page-${key}`;
-      page.dataset.mobilePage = key;
-    }
-    page.id = `mobilePage-${key}`;
-    page.setAttribute('role', 'tabpanel');
-    page.setAttribute('tabindex', '0');
-    return page;
-  }
-  function getPageIndexByKey(key) {
-    if (!key) return -1;
-    return state.pages.findIndex(page => page.key === key);
-  }
-  function buildTabs(colWork, pages) {
-    if (!state.tabs) {
-      state.tabs = document.createElement('div');
-      state.tabs.className = 'mobile-section-tabs';
-      state.tabs.setAttribute('aria-label', '화면 전환');
-      colWork.parentNode.insertBefore(state.tabs, colWork);
-      state.tabs.addEventListener('keydown', handleTabKeydown);
-    }
-    state.tabs.textContent = '';
-    const pageRow = document.createElement('div');
-    pageRow.className = 'mobile-section-page-row';
-    pageRow.setAttribute('role', 'tablist');
-    pageRow.setAttribute('aria-label', '화면 전환');
-    pages.forEach((page, idx) => {
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      btn.id = `mobileTab-${page.key}`;
-      btn.className = ['mobile-section-tab', 'mobile-section-page-tab', page.toneClass].filter(Boolean).join(' ');
-      const glyph = page.key === 'basic' ? '▤' : page.key === 'trait' ? '✦' : '▥';
-      btn.innerHTML = `<span class="mobile-tab-glyph" aria-hidden="true">${glyph}</span><span class="mobile-tab-label">${page.label}</span>`;
-      btn.setAttribute('role', 'tab');
-      btn.setAttribute('aria-selected', 'false');
-      btn.setAttribute('aria-controls', page.el.id);
-      btn.tabIndex = -1;
-      page.el.setAttribute('aria-labelledby', btn.id);
-      btn.addEventListener('click', () => showTabbedPage(idx, true));
-      pageRow.appendChild(btn);
-    });
-    state.tabs.append(pageRow);
-  }
-  function handleTabKeydown(event) {
-    const tabs = Array.from(state.tabs?.querySelectorAll('.mobile-section-page-tab') || []);
-    const currentIndex = tabs.indexOf(document.activeElement);
-    if (currentIndex < 0) return;
-    let nextIndex;
-    if (event.key === 'ArrowRight' || event.key === 'ArrowDown') nextIndex = (currentIndex + 1) % tabs.length;
-    else if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') nextIndex = (currentIndex - 1 + tabs.length) % tabs.length;
-    else if (event.key === 'Home') nextIndex = 0;
-    else if (event.key === 'End') nextIndex = tabs.length - 1;
-    else return;
-    event.preventDefault();
-    showTabbedPage(nextIndex, false);
-    tabs[nextIndex]?.focus();
-  }
-  function setActiveTab(activeIndex) {
-    const nextIndex = Math.max(0, Math.min(state.pages.length - 1, activeIndex));
-    state.activeIndex = nextIndex;
-    state.activeKey = state.pages[nextIndex]?.key || state.activeKey;
-    if (state.tabs) {
-      state.tabs.querySelectorAll('.mobile-section-page-tab').forEach((btn, idx) => {
-        const active = idx === nextIndex;
-        btn.classList.toggle('active', active);
-        btn.setAttribute('aria-selected', active ? 'true' : 'false');
-        btn.tabIndex = active ? 0 : -1;
-      });
-    }
-    state.pages.forEach((page, idx) => {
-      const active = idx === nextIndex;
-      page.el.classList.toggle('active', active);
-      page.el.hidden = !active;
-      page.el.setAttribute('aria-hidden', active ? 'false' : 'true');
-    });
-  }
-  function showTabbedPage(index, resetPageScroll = false) {
-    if (!state.pages.length) return;
-    const nextIndex = Math.max(0, Math.min(state.pages.length - 1, index));
-    setActiveTab(nextIndex);
-    if (resetPageScroll) state.pages[nextIndex].el.scrollTop = 0;
-    updateMobileOffsets();
-  }
-  function arrangeTabbed(colWork) {
-    const pages = [];
-    const keepKey = state.activeKey || state.pages[state.activeIndex]?.key || 'basic';
-    TABBED_PAGES.forEach((config) => {
-      const elements = config.selectors.map(selector => document.querySelector(selector)).filter(Boolean);
-      if (!elements.length) return;
-      const page = getOrCreatePage(config.key);
-      page.textContent = '';
-      page.dataset.mobileLabel = config.label;
-      elements.forEach((el) => {
-        rememberPosition(el);
-        page.appendChild(el);
-      });
-      colWork.appendChild(page);
-      pages.push({ ...config, el: page });
-    });
-    state.pages = pages;
-    buildTabs(colWork, pages);
-    colWork.classList.add('is-mobile-arranged');
-    state.arrangedTabbed = true;
-    const keepIndex = getPageIndexByKey(keepKey);
-    showTabbedPage(keepIndex >= 0 ? keepIndex : state.activeIndex);
-  }
-  function restoreDesktop() {
-    if (!state.arrangedTabbed) return;
-    state.restore.forEach((marker, el) => {
-      if (marker.parentNode) marker.parentNode.insertBefore(el, marker.nextSibling);
-    });
-    Array.from(document.querySelectorAll('.mobile-page')).forEach(page => page.remove());
-    if (state.tabs) state.tabs.remove();
-    document.querySelector('.col-work')?.classList.remove('is-mobile-arranged');
-    state.tabs = null;
-    state.pages = [];
-    state.arrangedTabbed = false;
-  }
-  function syncTabbedLayout() {
-    const colWork = document.querySelector('.col-work');
-    if (!colWork) return;
-    if (document.body.classList.contains('is-tabbed')) {
-      if (!state.arrangedTabbed) arrangeTabbed(colWork);
-      else {
-        showTabbedPage(getPageIndexByKey(state.activeKey));
-      }
-    } else {
-      restoreDesktop();
-    }
-  }
-
-  function isTextInput(el) {
-    if (!el || el.disabled || el.readOnly) return false;
-    if (el.tagName === 'TEXTAREA') return true;
-    if (el.tagName !== 'INPUT') return false;
-    return !['button', 'checkbox', 'color', 'file', 'hidden', 'image', 'radio', 'range', 'reset', 'submit'].includes((el.type || '').toLowerCase());
-  }
-  function bindInputAutoSelect() {
-    if (document.documentElement.dataset.inputAutoSelectBound === '1') return;
-    document.documentElement.dataset.inputAutoSelectBound = '1';
-    document.addEventListener('focusin', (event) => {
-      const el = event.target;
-      if (!isTextInput(el)) return;
-      requestAnimationFrame(() => {
-        if(typeof el.select==='function') el.select();
-      });
-    });
-  }
-  /* 갱신·초기화 */
-  function scheduleApply() {
-    if (state.raf) cancelAnimationFrame(state.raf);
-    state.raf = requestAnimationFrame(() => {
-      state.raf = 0;
-      const { w, h } = getViewportSize();
-      const portrait = h > w;
-      const widthChanged = Math.abs(w - state.layoutWidth) > 1;
-      const orientationChanged = state.layoutPortrait !== portrait;
-      if (widthChanged || orientationChanged) applyMode();
-      else updateMobileOffsets();
-    });
-  }
-  function scheduleResumeApply() {
-    if (state.resumeRaf) return;
-    state.resumeRaf = requestAnimationFrame(() => {
-      state.resumeRaf = 0;
-      applyMode();
-    });
-  }
-  function markResponsiveReady() {
-    window.__dpsResponsiveLayoutReady = true;
-    if (typeof window.dpsMarkResponsiveLayoutReady === 'function') {
-      window.dpsMarkResponsiveLayoutReady();
-    }
-  }
-
-  function initializeResponsiveLayout() {
-    if (state.initialized) {
-      markResponsiveReady();
-      return;
-    }
-    state.initialized = true;
-    applyMode();
-    bindInputAutoSelect();
-    markResponsiveReady();
-  }
-  function syncResponsiveLayout() {
-    if (!state.initialized) {
-      initializeResponsiveLayout();
-      return;
-    }
-    applyMode();
-    markResponsiveReady();
-  }
-  window.dpsSyncResponsiveLayout = syncResponsiveLayout;
-  // Script loading: data → calc → app → preset. Initialize only after preset has loaded.
-  window.dpsInitializeResponsiveLayout = initializeResponsiveLayout;
-  window.addEventListener('resize', scheduleApply, { passive: true });
-  window.addEventListener('orientationchange', scheduleApply, { passive: true });
-  if (window.visualViewport) window.visualViewport.addEventListener('resize', scheduleApply, { passive: true });
-  window.addEventListener('pageshow', scheduleResumeApply, { passive: true });
-  window.addEventListener('focus', scheduleResumeApply, { passive: true });
-  document.addEventListener('visibilitychange', () => {
-    if (!document.hidden) scheduleResumeApply();
-  }, { passive: true });
-  window.addEventListener('load', updateMobileOffsets, { once: true });
-})();
-
 /* 화면 설정 */
 function isFontScaleLockedViewport(){
   const w=window.innerWidth || document.documentElement.clientWidth || 0;
@@ -3418,7 +2962,7 @@ function zeroScoreHonorSelectHtml(className, label){
   return `<select class="${className}" aria-label="${escapeHtml(label)}">${options.map(([value,name])=>`<option value="${value}">${name}</option>`).join('')}</select>`;
 }
 function zeroScoreStarButtonHtml(){
-  return '<button class="ui-toggle-btn zero-star-toggle" data-action="zeroScoreStar" type="button" aria-pressed="false" aria-label="24 스타 미적용">24 스타 미적용</button>';
+  return '<button class="ui-toggle-btn zero-star-toggle" data-action="zeroScoreStar" type="button" aria-pressed="false" aria-label="24스타 미적용">24스타</button>';
 }
 function buildZeroScoreCalcRow(config){
   const name=escapeHtml(config.name);
@@ -3429,16 +2973,18 @@ function buildZeroScoreCalcRow(config){
   const honorTarget=penance ? zeroScoreHonorSelectHtml(config.targetHonorClass,`${config.name} 명예 목표`) : zeroScoreInputHtml(config.targetHonorClass,{...config.honorOptions,label:`${config.name} 명예 목표`});
   const group=(label,note,cssClass,current,target)=>`<section class="zero-calc-group ${cssClass}"><div class="zero-calc-group-head"><strong>${label}</strong><small>${note}</small></div><div class="zero-calc-pair"><label class="zero-calc-field"><span>현재</span>${current}</label><span class="zero-calc-arrow" aria-hidden="true">→</span><label class="zero-calc-field"><span>목표</span>${target}</label></div></section>`;
   return `<article class="zero-calc-row" data-row-type="${config.type}">
-    <button class="zero-calc-row-head" type="button" aria-expanded="false" aria-label="${name} 승단 점수 입력 펼치기">
-      <span class="zero-calc-name"><span class="zero-calc-row-symbol" aria-hidden="true">✦</span><strong>${name}</strong><small>${penance?'DIFFICULTY':'CHALLENGE TOWER'}</small></span>
-      <span class="zero-calc-score"><span>추가점수</span><b class="zero-row-score">0</b><small>POINTS</small></span>
-    </button>
+    <div class="zero-calc-row-bar">
+      <button class="zero-calc-row-head" type="button" aria-expanded="false" aria-label="${name} 승단 점수 입력 펼치기">
+        <span class="zero-calc-name"><span class="zero-calc-row-symbol" aria-hidden="true">✦</span><strong>${name}</strong></span>
+      </button>
+      ${config.star !== false ? zeroScoreStarButtonHtml() : ''}
+      <span class="zero-calc-score"><span>추가점수</span><b class="zero-row-score">0</b></span>
+    </div>
     <div class="zero-calc-details" hidden>
       <div class="zero-calc-fields">
         ${group(penance?'일반 고행':'도전의탑','현재 → 목표','zero-calc-general',generalCurrent,generalTarget)}
         ${group(penance?'명예':'명예의탑','현재 → 목표','zero-calc-honor',honorCurrent,honorTarget)}
       </div>
-      ${config.star !== false ? `<div class="zero-calc-star"><span class="zero-calc-star-copy"><strong>24스타 보너스</strong><small>적용 시 +2점 · 기존 계산 유지</small></span>${zeroScoreStarButtonHtml()}</div>` : ''}
     </div>
   </article>`;
 }
@@ -3570,8 +3116,8 @@ function collectZeroScoreState(){
   };
 }
 function setZeroScoreStarButton(starBtn,active){
-  setTogglePressed(starBtn, active, {activeText:'24 스타 적용중', inactiveText:'24 스타 미적용'});
-  if(starBtn) starBtn.setAttribute('aria-label',active?'24 스타 적용중':'24 스타 미적용');
+  setTogglePressed(starBtn, active, {activeText:'24스타 ✓', inactiveText:'24스타'});
+  if(starBtn) starBtn.setAttribute('aria-label',active?'24스타 적용중':'24스타 미적용');
 }
 function applyZeroScoreState(zeroScore){
   const calc=qs('.zero-score-calc');
@@ -3599,14 +3145,24 @@ function normalizeZeroHonorInputElement(el){
   el.value=normalizeZeroHonorValue(el.value).toUpperCase();
 }
 function setZeroScoreRowExpanded(header,expanded){
-  const details=header?.nextElementSibling;
-  if(!details?.classList.contains('zero-calc-details')) return;
+  const row=header?.closest('.zero-calc-row');
+  const details=row?.querySelector('.zero-calc-details');
+  if(!details) return;
+  if(expanded){
+    $('zeroScoreRows')?.querySelectorAll('.zero-calc-row-head[aria-expanded="true"]').forEach(other=>{
+      if(other!==header) setZeroScoreRowExpanded(other,false);
+    });
+  }
   header.setAttribute('aria-expanded',String(expanded));
+  row.classList.toggle('is-expanded',expanded);
   header.setAttribute('aria-label',`${header.querySelector('.zero-calc-name strong')?.textContent || '승단'} 승단 점수 입력 ${expanded?'접기':'펼치기'}`);
-  details.hidden=!expanded;
+  setAccordionContentExpanded(details,expanded);
 }
 function setAllZeroScoreRowsExpanded(expanded){
-  $('zeroScoreRows')?.querySelectorAll('.zero-calc-row-head').forEach(header=>setZeroScoreRowExpanded(header,expanded));
+  const headers=$('zeroScoreRows')?.querySelectorAll('.zero-calc-row-head');
+  if(!headers?.length) return;
+  if(expanded) setZeroScoreRowExpanded(headers[0],true);
+  else headers.forEach(header=>setZeroScoreRowExpanded(header,false));
 }
 function bindZeroScoreCalculator(){
   if(document.documentElement.dataset.zeroScoreCalcBound==='1') return;
@@ -3750,7 +3306,7 @@ function bindReactiveInputs(){
     if(ENCHANT_INPUT_ID_SET.has(target.id)) syncEnchantInputs();
     if(RUNE_OPTION_SELECT_ID_SET.has(target.id)) syncExclusiveRuneOptions();
     if(target.id==='soloMode' || target.id==='coopMode'){
-      syncBattleMode(target.id);
+      syncBattleMode(target.id,{defaultCoop:true});
     }
     if(target?.matches?.('[data-dps-base-unit-quantity-store],[data-dps-base-unit-slot-quantity]')){
       normalizeDpsBaseUnitQuantityInput(target);
@@ -3830,7 +3386,6 @@ window.dpsStartApp=function(){
   if(window.__dpsAppStarted) return;
   window.__dpsAppStarted=true;
   try{
-    window.dpsInitializeResponsiveLayout();
     initApp();
     markAppReady();
   }catch(e){
