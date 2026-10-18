@@ -678,16 +678,18 @@ body .right-analytics-workspace .analytics-unit-slots-group .dps-base-unit-slot-
 body .right-analytics-workspace .analytics-unit-slots-group .unit-list-collection{border:0;border-radius:0;background:transparent;}
 body .right-analytics-workspace .analytics-unit-slots-group .right-unit-collection-heading{min-height:56px;padding:10px 12px;background:transparent;border-bottom:1px solid var(--ui-integrated-head-line);color:var(--ui-integrated-subhead-text);border-radius:0;}
 body .right-analytics-workspace .right-dps-hero{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-items:stretch;justify-items:stretch;margin:0;padding:0;border:0;border-radius:0;background:none;gap:8px;}
-body .right-hero-metric,body .right-hero-context{display:flex;flex-direction:column;align-items:center;justify-content:space-evenly;gap:11px;min-width:0;min-height:162px;height:100%;text-align:center;padding:15px 10px;border:0;border-radius:9px;background:#163249;box-shadow:none;box-sizing:border-box;}
-body .right-hero-context + .right-hero-metric{border-left:0;background:linear-gradient(140deg,#1b425d,#17354e);}
+body .right-hero-metric,body .right-hero-context{display:flex;flex-direction:column;align-items:center;justify-content:space-evenly;gap:11px;min-width:0;min-height:184px;height:100%;text-align:center;padding:15px 10px;border:0;border-radius:9px;background:#163249;box-shadow:none;box-sizing:border-box;}
+body .right-hero-context + .right-hero-metric{border-left:0;background:#163249;}
 body .right-hero-metric .dps-lbl,body .right-hero-context .dps-lbl{color:#d8edff;font-size:calc(12.5px * var(--app-font-scale));font-weight:950;letter-spacing:.2px;}
 body .right-hero-metric #dpsVal{color:#c9f4ff;font-size:clamp(22px,2.4vw,35px);font-weight:1000;line-height:1.12;overflow-wrap:anywhere;font-variant-numeric:tabular-nums;text-shadow:0 0 18px rgba(50,173,255,.45);}
 body .right-hero-context .dps-context-summary{display:none;}
-body .right-hero-compact-mode{display:grid;gap:8px;align-content:center;justify-items:center;width:100%;max-width:100%;min-width:0;color:#effaff;font-size:calc(12px * var(--app-font-scale));font-weight:950;white-space:normal;text-overflow:clip;overflow:visible;}
-body .right-mode-first{display:flex;align-items:center;justify-content:center;gap:4px;flex-wrap:wrap;min-width:0;}
-body .right-mode-first>span{padding:5px 7px;border:1px solid #4f83a7;border-radius:6px;background:#244d6d;color:#e5f5ff;font-size:calc(11.5px * var(--app-font-scale));font-weight:950;}
-body .right-mode-second{display:flex;align-items:center;justify-content:center;gap:4px;flex-wrap:wrap;width:100%;padding-top:7px;border-top:1px solid #3a607d;}
-body .right-mode-second>span{color:#d1eaff;font-size:calc(12px * var(--app-font-scale));font-weight:950;}
+body .right-hero-compact-mode{display:grid;gap:9px;align-content:center;justify-items:center;width:100%;max-width:100%;min-width:0;color:#effaff;font-size:calc(12px * var(--app-font-scale));font-weight:950;white-space:normal;text-overflow:clip;overflow:visible;}
+body .right-mode-first{display:flex;align-items:center;justify-content:center;gap:5px;flex-wrap:wrap;min-width:0;width:100%;}
+body .right-mode-first>span{padding:5px 6px;border:1px solid #4f83a7;border-radius:6px;background:#244d6d;color:#e5f5ff;font-size:calc(13px * var(--app-font-scale));font-weight:900;line-height:1.2;white-space:nowrap;}
+body .right-mode-second{display:flex;align-items:center;justify-content:center;gap:3px 6px;flex-wrap:wrap;width:100%;padding-top:10px;border-top:1px solid #3a607d;line-height:1.35;text-align:center;}
+body .right-mode-second>span{color:#d1eaff;font-size:calc(12px * var(--app-font-scale));font-weight:850;white-space:nowrap;}
+body .right-mode-second>span:first-child{flex:0 0 100%;color:#e4f3ff;font-size:calc(14px * var(--app-font-scale));font-weight:950;}
+body .right-mode-second>span:nth-child(2)::before{content:none;}
 body .right-mode-second>span+span::before{content:'·';margin-right:4px;color:#8db8d4;}
 body .right-spec-sections{display:grid;grid-template-columns:minmax(0,1fr);gap:11px;min-width:0;margin:0;padding:0;border:0;background:transparent;}
 /* 상세 데미지 정보: 슬롯 관리와 연결되는 일체형 3열 프리미엄 스탯 테이블 */
@@ -721,8 +723,9 @@ body .dps-header-jewel-btn svg{display:block;width:16px;height:16px;flex:none;co
 body .dps-header-jewel-btn:hover:not(:disabled){background:#367397;border-color:#76b8d8;}
 body .dps-header-jewel-btn:focus-visible{outline:2px solid #bfefff;outline-offset:2px;}
 body.is-mobile .right-hero-metric #dpsVal{font-size:22px;}
-body.is-mobile .right-mode-first>span{font-size:calc(10.5px * var(--app-font-scale));padding:4px 5px;}
-body.is-mobile .right-mode-second>span{font-size:calc(11px * var(--app-font-scale));}
+body.is-mobile .right-mode-first>span{font-size:calc(12px * var(--app-font-scale));padding:4px 5px;}
+body.is-mobile .right-mode-second>span:first-child{font-size:calc(13.5px * var(--app-font-scale));}
+body.is-mobile .right-mode-second>span{font-size:calc(12.5px * var(--app-font-scale));}
 /* v0027 슬롯 목록: 유닛명과 수량을 별도 읽기 전용 열로 표시 */
 /* 유닛 슬롯 관리: 섹션 헤더 / 슬롯 테이블 / 모바일 배치 */
 body .unit-list-collection{min-width:0;overflow:hidden;border:1px solid #3a6184;border-radius:12px;background:var(--ui-panel-body-bg);}
@@ -1608,7 +1611,7 @@ body .dps-base-unit-panel{display:grid;grid-template-columns:minmax(0,1fr);gap:1
 body .dps-base-unit-summary:not([hidden]){display:contents;}
 body .dps-base-unit-summary[hidden]{display:none;}
 body .dps-base-unit-summary-row{display:contents;}
-body .dps-base-unit-results{display:grid;grid-column:2;grid-row:1;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px;min-width:0;min-height:162px;padding:12px 7px;border:0;border-radius:9px;background:#17354a;box-sizing:border-box;}
+body .dps-base-unit-results{display:grid;grid-column:2;grid-row:1;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px;min-width:0;min-height:184px;padding:12px 7px;border:0;border-radius:9px;background:#17354a;box-sizing:border-box;}
 body .dps-base-unit-summary-item{display:grid;grid-template-rows:auto minmax(0,1fr);align-content:center;align-items:center;justify-items:center;gap:8px;min-width:0;height:auto;color:#eaf2ff;text-align:center;box-sizing:border-box;}
 body .dps-base-unit-summary-item .dps-lbl, body .dps-base-unit-summary-item .dps-num{display:flex;align-items:center;justify-content:center;width:100%;min-width:0;margin:0;padding:0;border:0;border-radius:0;background:transparent;color:#eaf2ff;text-align:center;box-sizing:border-box;overflow:visible;text-overflow:clip;white-space:nowrap;}
 body .dps-base-unit-summary-item .dps-lbl{font-size:calc(11.5px * var(--app-font-scale));font-weight:900;line-height:1.3;letter-spacing:0;white-space:normal;word-break:keep-all;}
@@ -1616,15 +1619,13 @@ body .dps-base-unit-summary-item .dps-num{flex-wrap:wrap;align-items:baseline;fo
 body .dps-base-unit-summary-item .dps-num-main{display:inline-flex;align-items:baseline;justify-content:center;flex:0 0 auto;min-width:0;font:inherit;line-height:inherit;letter-spacing:inherit;white-space:nowrap;}
 body .dps-base-unit-summary-item .dps-num-unit{display:inline-block;flex:0 0 auto;margin-left:.08em;font-family:var(--font-main);font-size:.56em;font-weight:900;line-height:1;letter-spacing:-.04em;white-space:nowrap;transform:translateY(-.02em);}
 /* 유닛 요약: 모드·쥬얼 / 클리어 기준·기대값 2×2 카드 */
-body .dps-base-unit-summary-row .dps-base-unit-context{grid-column:1;grid-row:1;min-height:162px;height:100%;padding:14px 9px;gap:10px;border:0;border-radius:9px;background:#17354a;}
+body .dps-base-unit-summary-row .dps-base-unit-context{grid-column:1;grid-row:1;min-height:184px;height:100%;padding:14px 9px;gap:10px;border:0;border-radius:9px;background:#17354a;}
 body .dps-base-unit-summary-row .right-hero-compact-mode{gap:8px;}
-body .dps-base-unit-summary-row .right-mode-first>span{padding:4px 5px;font-size:calc(10.5px * var(--app-font-scale));}
-body .dps-base-unit-summary-row .right-mode-second>span{font-size:calc(11px * var(--app-font-scale));}
 body .dps-base-unit-summary-item{grid-column:auto;grid-row:auto;min-height:0;height:100%;padding:8px 1px;border:0;border-radius:0;background:transparent;box-shadow:none;gap:10px;}
 body .dps-base-unit-summary-item.dps-base-unit-expected{grid-column:2;border-left:0;background:transparent;}
 body .dps-base-unit-summary-row .dps-base-unit-summary-item .dps-num{font-size:clamp(16px,1.45vw,24px);color:#d8f5ff;text-shadow:none;white-space:normal;}
-body .dps-base-unit-expected{grid-template-rows:auto auto auto;gap:7px;}
-body .unit-achievement{display:grid;gap:4px;min-width:0;width:100%;padding:4px 0 0;}
+body .dps-base-unit-expected{grid-template-rows:auto auto;gap:7px;}
+body .dps-base-unit-results > .unit-achievement{grid-column:1/-1;grid-row:2;align-self:end;display:grid;gap:4px;min-width:0;width:100%;margin-top:0;padding:9px 3px 0;border-top:1px solid #355b72;box-sizing:border-box;}
 body .unit-achievement-label,body .unit-achievement-scale{display:flex;align-items:center;justify-content:space-between;gap:4px;width:100%;line-height:1.25;}
 body .unit-achievement-label{font-size:calc(9px * var(--app-font-scale));color:#a9cce7;font-weight:850;}
 body .unit-achievement-label strong{color:#b9f3ff;font-size:calc(11px * var(--app-font-scale));font-variant-numeric:tabular-nums;}
@@ -1750,9 +1751,9 @@ body .dps-base-unit-extra-slot select{width:100%;min-width:0;height:31px;min-hei
 body.is-mobile .dps-jewel-card, body.is-narrow-mobile .dps-jewel-card{gap:11px;padding:12px;}
 body.is-mobile .dps-base-unit-panel, body.is-narrow-mobile .dps-base-unit-panel{gap:6px;padding:0;margin-top:0;}
 body.is-mobile .right-analytics-workspace .analytics-unit-summary-group,body.is-narrow-mobile .right-analytics-workspace .analytics-unit-summary-group{gap:9px;}
-body.is-mobile .dps-base-unit-summary-row .dps-base-unit-context,body.is-narrow-mobile .dps-base-unit-summary-row .dps-base-unit-context{grid-column:1;grid-row:1;min-height:145px;padding:10px 5px;}
+body.is-mobile .dps-base-unit-summary-row .dps-base-unit-context,body.is-narrow-mobile .dps-base-unit-summary-row .dps-base-unit-context{grid-column:1;grid-row:1;min-height:155px;padding:11px 6px;gap:7px;}
 body.is-mobile .dps-base-unit-summary-item,body.is-narrow-mobile .dps-base-unit-summary-item{grid-template-rows:auto auto;align-content:center;gap:7px;height:auto;min-height:0;padding:7px 1px;}
-body.is-mobile .dps-base-unit-results,body.is-narrow-mobile .dps-base-unit-results{min-height:145px;padding:8px 4px;gap:3px;}
+body.is-mobile .dps-base-unit-results,body.is-narrow-mobile .dps-base-unit-results{min-height:155px;padding:8px 4px;gap:3px;}
 body.is-mobile .dps-base-unit-summary-item .dps-lbl,body.is-narrow-mobile .dps-base-unit-summary-item .dps-lbl{font-size:calc(9px * var(--app-font-scale));line-height:1.25;letter-spacing:-.02em;white-space:normal;word-break:keep-all;}
 body.is-mobile .dps-base-unit-summary-item .dps-num,body.is-narrow-mobile .dps-base-unit-summary-item .dps-num{font-size:calc(14px * var(--app-font-scale));overflow-wrap:anywhere;}
 body.is-narrow-mobile .dps-base-unit-summary-item .dps-num{font-size:calc(12px * var(--app-font-scale));}
@@ -1765,15 +1766,16 @@ body.is-narrow-mobile .dps-base-unit-summary-item .dps-num{font-size:calc(12px *
   body .right-workspace-navigation .damage-board-tab-desc{font-size:calc(8px * var(--app-font-scale));}
   body .right-analytics-workspace .damage-board-tab-shell{padding:0 9px 10px;}
   body .right-analytics-workspace .right-dps-hero,body .right-analytics-workspace .analytics-unit-summary-group{gap:8px;}
-  body .right-hero-metric,body .right-hero-context{min-height:139px;padding:11px 6px;gap:7px;}
+  body .right-hero-metric,body .right-hero-context{min-height:155px;padding:11px 6px;gap:7px;}
   body .dps-feature-heading{gap:5px;}
   body .dps-feature-icon{width:24px;height:24px;padding:4px;border-radius:7px;}
   body .right-hero-metric .dps-lbl,body .right-hero-context .dps-lbl{font-size:calc(11px * var(--app-font-scale));}
   body .right-hero-metric #dpsVal{font-size:clamp(20px,5.5cqw,25px);}
   body .right-hero-compact-mode{gap:6px;}
-  body .right-mode-first>span{padding:4px 5px;font-size:calc(10px * var(--app-font-scale));}
-  body .right-mode-second{padding-top:5px;}
-  body .right-mode-second>span{font-size:calc(10px * var(--app-font-scale));}
+  body .right-mode-first>span{padding:4px 5px;font-size:calc(12px * var(--app-font-scale));}
+  body .right-mode-second{padding-top:8px;gap:2px 5px;}
+  body .right-mode-second>span{font-size:calc(12px * var(--app-font-scale));}
+  body .right-mode-second>span:first-child{font-size:calc(13.5px * var(--app-font-scale));}
   body .dps-base-unit-summary-row .dps-base-unit-context{min-height:145px;}
   body .dps-base-unit-results{min-height:145px;padding:8px 4px;gap:3px;}
   body .dps-base-unit-summary-item{min-height:0;}
