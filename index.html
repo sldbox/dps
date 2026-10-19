@@ -4,7 +4,7 @@
 <meta charset="UTF-8"/>
 <meta name="google-site-verification" content="RTuDWbMdnKgbpRpl05eXh9epFwWRSxju4NOl8OtjMsI" />
 <script>
-window.DPS_BUILD_VERSION = "dps-2610190027";
+window.DPS_BUILD_VERSION = "dps-2610190037";
 window.APP_VERSION = window.DPS_BUILD_VERSION;
 window.DPS_ASSET_VERSIONS = {
   "app.js": window.DPS_BUILD_VERSION,
@@ -198,14 +198,14 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 <meta content="https://sldbox.github.io/dps/" property="og:url"/>
 <meta content="개복디 특성 게산기" property="og:title"/>
 <meta content="특성 투자, 재화 사용량, 표기 스탯, 총데미지, DPS를 한 번에 계산할 수 있는 개복디 전용 계산기입니다." property="og:description"/>
-<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2610190027" property="og:image"/>
-<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2610190027" property="og:image:secure_url"/>
+<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2610190037" property="og:image"/>
+<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2610190037" property="og:image:secure_url"/>
 <meta content="image/png" property="og:image:type"/>
 <meta content="개복디 특성 게산기 로고" property="og:image:alt"/>
 <meta content="summary_large_image" name="twitter:card"/>
 <meta content="개복디 특성 게산기" name="twitter:title"/>
 <meta content="특성 투자, 재화 사용량, 표기 스탯, 총데미지, DPS를 한 번에 계산할 수 있는 개복디 전용 계산기입니다." name="twitter:description"/>
-<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2610190027" name="twitter:image"/>
+<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2610190037" name="twitter:image"/>
 <meta content="개복디 특성 게산기 로고" name="twitter:image:alt"/>
 <link href="https://cdn.jsdelivr.net" rel="preconnect"/>
 <link crossorigin="" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" rel="stylesheet"/>
@@ -982,18 +982,43 @@ loadScriptSequence(['data.js','calc.js','modal.js','app.js','preset.js','respons
 <!-- 달성률 도움말: 보드 카드 바깥에 위치하여 작은 화면에서도 잘리지 않습니다. -->
 <section id="unitAchievementHelpPopover" class="unit-achievement-help-popover" role="dialog" aria-label="달성률 가이드" hidden>
   <h3>달성률 가이드</h3>
-  <p>달성률은 예측 수치이기 때문에 실제 결과에 따라 변동될 수 있습니다. 아래 내용은 현재 일부 수집 데이터의 참고 기준입니다.</p>
+  <p>달성률은 일부 수집 데이터에 기반한 예측치이며 실제 결과는 달라질 수 있습니다.</p>
   <section class="unit-achievement-help-section">
-    <h4>개인전 추천 트리 <span>달성률 3배 이상</span></h4>
-    <ul><li>슈퍼 히든 3마리 이상</li><li>히든 4마리 이상</li><li>레전드 4마리 이상</li></ul>
-  </section>
-  <section class="unit-achievement-help-section is-coop">
-    <h4>협동전 추천 트리 <span>달성률 10배 이상</span></h4>
-    <ul><li>슈퍼 히든 1마리 이상</li><li>히든 1마리 이상</li><li>유물</li><li>꽃</li></ul>
+    <h4>추천 트리</h4>
+    <div class="unit-achievement-help-tabs" role="tablist" aria-label="추천 트리">
+      <button type="button" role="tab" id="achievementTreeSoloTab" aria-controls="achievementTreeSolo" aria-selected="true" tabindex="0">개인전</button>
+      <button type="button" role="tab" id="achievementTreeCoopTab" aria-controls="achievementTreeCoop" aria-selected="false" tabindex="-1">협동전</button>
+    </div>
+    <div class="unit-achievement-help-panel" id="achievementTreeSolo" role="tabpanel" aria-labelledby="achievementTreeSoloTab">
+      <h5>개인전 추천 <span>달성률 3배 이상</span></h5>
+      <ul><li>슈퍼 히든 3마리 이상</li><li>히든 4마리 이상</li><li>레전드 4마리 이상</li></ul>
+    </div>
+    <div class="unit-achievement-help-panel is-coop" id="achievementTreeCoop" role="tabpanel" aria-labelledby="achievementTreeCoopTab" hidden>
+      <h5>협동전 추천 <span>달성률 10배 이상</span></h5>
+      <ul><li>슈퍼 히든 1마리 이상</li><li>히든 1마리 이상</li><li>유물</li><li>꽃</li></ul>
+    </div>
   </section>
   <section class="unit-achievement-help-section is-tip">
-    <h4>달성 배율을 더 높이고 싶다면?</h4>
-    <ul><li>멀티타겟 미투자 여부 확인</li><li>크리티컬 확률에 따른 다중 크리 투자 부족 여부 확인</li></ul>
+    <h4>달성 배율이 더 높아지는 원인?</h4>
+    <div class="unit-achievement-help-tabs" role="tablist" aria-label="달성 배율 원인">
+      <button type="button" role="tab" id="achievementCauseUnitTab" aria-controls="achievementCauseUnit" aria-selected="true" tabindex="0">유닛 생산</button>
+      <button type="button" role="tab" id="achievementCauseMultiTab" aria-controls="achievementCauseMulti" aria-selected="false" tabindex="-1">멀티타겟</button>
+      <button type="button" role="tab" id="achievementCauseCritTab" aria-controls="achievementCauseCrit" aria-selected="false" tabindex="-1">다중 크리</button>
+    </div>
+    <div class="unit-achievement-help-panel" id="achievementCauseUnit" role="tabpanel" aria-labelledby="achievementCauseUnitTab">
+      <h5>유닛 생산량 부족</h5>
+      <p>슈퍼히든·히든·레전드 유닛의 생산량이 적은데 달성률만 보고 도전하면 클리어가 어려울 수 있습니다.</p>
+    </div>
+    <div class="unit-achievement-help-panel" id="achievementCauseMulti" role="tabpanel" aria-labelledby="achievementCauseMultiTab" hidden>
+      <h5>멀티타겟 관련 특성 미투자</h5>
+      <p>관련 특성에 투자하지 않았다면 달성률 추천 배율을 더 높게 설정해야 합니다.</p>
+      <p class="unit-achievement-help-related">관련 특성: 멀티 타겟 · 멀티 확률 증가 · 멀티 크리 확률</p>
+    </div>
+    <div class="unit-achievement-help-panel" id="achievementCauseCrit" role="tabpanel" aria-labelledby="achievementCauseCritTab" hidden>
+      <h5>크리티컬 및 다중 크리 투자 부족</h5>
+      <p>크리티컬 확률 300%를 기준으로 다중 크리가 최대로 발동합니다.</p>
+      <p class="unit-achievement-help-related">관련 특성: 크리티컬 확률 · 다중 크리티컬</p>
+    </div>
   </section>
   <p class="unit-achievement-help-footnote">수집 사례를 바탕으로 한 추천이며, 클리어를 보장하지 않습니다.</p>
 </section>

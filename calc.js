@@ -205,10 +205,10 @@ function towerEnemySummaryItems(floor){
   const armorRow=lookupFloor(TOWER_ARMOR_TABLE, r);
   const unitRow=lookupFloor(TOWER_UNIT_TABLE, r);
   return [
-    ['체력', big(unitRow ? unitRow[2] : 0)],
-    ['실드', big(unitRow ? unitRow[3] : 0)],
-    ['방어력', big(armorRow && armorRow[0]<=r ? armorRow[1] : 0)],
-    ['물량', big(unitRow ? unitRow[1] : 0)]
+    ['체력', fullNumber(unitRow ? unitRow[2] : 0)],
+    ['실드', fullNumber(unitRow ? unitRow[3] : 0)],
+    ['방어력', fullNumber(armorRow && armorRow[0]<=r ? armorRow[1] : 0)],
+    ['물량', fullNumber(unitRow ? unitRow[1] : 0)]
   ];
 }
 function planetEnemySummaryItems(floor){
@@ -216,10 +216,10 @@ function planetEnemySummaryItems(floor){
   const armorRow=lookupFloor(PLANET_ARMOR_TABLE, r);
   const unitRow=lookupFloor(PLANET_UNIT_TABLE, r);
   return [
-    ['체력', big(unitRow ? unitRow[2] : 0)],
-    ['실드', big(unitRow ? unitRow[3] : 0)],
-    ['방어력', big(armorRow && armorRow[0]<=r ? armorRow[1] : 0)],
-    ['물량', big(unitRow ? unitRow[1] : 0)]
+    ['체력', fullNumber(unitRow ? unitRow[2] : 0)],
+    ['실드', fullNumber(unitRow ? unitRow[3] : 0)],
+    ['방어력', fullNumber(armorRow && armorRow[0]<=r ? armorRow[1] : 0)],
+    ['물량', fullNumber(unitRow ? unitRow[1] : 0)]
   ];
 }
 

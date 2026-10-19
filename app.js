@@ -2245,10 +2245,33 @@ function positionDpsBaseUnitAchievementHelp(trigger,popup){
   popup.style.left=`${Math.round(left)}px`;
   popup.style.top=`${Math.round(top)}px`;
 }
+function switchDpsBaseUnitAchievementHelpTab(tab){
+  const tabs=tab.closest('.unit-achievement-help-tabs');
+  const popup=$('unitAchievementHelpPopover');
+  if(!tabs || !popup?.contains(tabs)) return;
+  tabs.querySelectorAll('[role="tab"]').forEach(button=>{
+    const selected=button===tab;
+    button.setAttribute('aria-selected',String(selected));
+    button.tabIndex=selected?0:-1;
+    const panel=$(button.getAttribute('aria-controls'));
+    if(panel) panel.hidden=!selected;
+  });
+  positionDpsBaseUnitAchievementHelp(document.querySelector('[data-action="toggleAchievementHelp"]'),popup);
+}
 function bindDpsBaseUnitControlEvents(){
   if(document.documentElement.dataset.dpsBaseUnitControlBound==='1') return;
   document.documentElement.dataset.dpsBaseUnitControlBound='1';
   document.addEventListener('keydown', e=>{
+    const helpTab=e.target?.closest?.('#unitAchievementHelpPopover .unit-achievement-help-tabs [role="tab"]');
+    if(helpTab && ['ArrowLeft','ArrowRight','Home','End'].includes(e.key)){
+      const tabs=[...helpTab.parentElement.querySelectorAll('[role="tab"]')];
+      const index=tabs.indexOf(helpTab);
+      const next=e.key==='Home'?0:e.key==='End'?tabs.length-1:(index+(e.key==='ArrowRight'?1:-1)+tabs.length)%tabs.length;
+      e.preventDefault();
+      switchDpsBaseUnitAchievementHelpTab(tabs[next]);
+      tabs[next].focus();
+      return;
+    }
     if(e.key==='Escape') closeDpsBaseUnitAchievementHelp();
     if(!dpsUnitDetailOpen) return;
     const shell=$('dpsUnitSlotModal');
@@ -2270,6 +2293,12 @@ function bindDpsBaseUnitControlEvents(){
     if(popup && !popup.hidden) positionDpsBaseUnitAchievementHelp(document.querySelector('[data-action="toggleAchievementHelp"]'),popup);
   });
   document.addEventListener('click', e=>{
+    const helpTab=e.target?.closest?.('#unitAchievementHelpPopover .unit-achievement-help-tabs [role="tab"]');
+    if(helpTab){
+      e.preventDefault();
+      switchDpsBaseUnitAchievementHelpTab(helpTab);
+      return;
+    }
     const helpTrigger=e.target?.closest?.('[data-action="toggleAchievementHelp"]');
     const helpPopover=$('unitAchievementHelpPopover');
     if(helpTrigger){
