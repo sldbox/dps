@@ -200,16 +200,6 @@ function calculateSkillDamageRows({ap=535,doubleSpace=1,round=1,mode='normal'}={
     items:data.map(([name,base,add,tick])=>({name,total:(base + add*skillAp*doubleValue) * tick * (1-penalty) * 100}))
   };
 }
-function chunkDpsTowerFloors(minFloor, maxFloor, groupSize){
-  const chunks=[];
-  for(let start=minFloor; start<=maxFloor; start+=groupSize){
-    const end=Math.min(maxFloor, start+groupSize-1);
-    const floors=[];
-    for(let floor=start; floor<=end; floor++) floors.push(floor);
-    chunks.push(floors);
-  }
-  return chunks;
-}
 function towerEnemySummaryItems(floor){
   const r=Math.max(1, Math.min(90, Math.round(+floor||1)));
   const armorRow=lookupFloor(TOWER_ARMOR_TABLE, r);
@@ -543,7 +533,7 @@ function specDpsRoundTimeDpsMultiplier(round,diffName=vs('diff')){
   const parts=specDpsRoundTimeParts(round,diffName);
   return parts.timeLoss>0 ? parts.speedAdjustedTime/parts.finalTime : 1;
 }
-function battleModeLabel(diffName=vs('diff')){return isCoopActive(diffName) ? '협동' : '개인';}
+function battleModeLabel(diffName=vs('diff')){return isCoopActive(diffName) ? '협동전' : '개인전';}
 function dpsContextModeValues(diffName=vs('diff')){
   const players=isCoopActive(diffName) ? ` · ${effectiveTeamCount(diffName)}인` : '';
   const displayMode=(isTowerDifficulty(diffName) || isPlanetExplorationDifficulty(diffName)) ? '클래식' : enemyDisplayModeLabel(diffName);
@@ -589,12 +579,9 @@ function enemyRoundCountTotal(round, diffName=vs('diff')){
 function enemyRoundDisplayCount(round, diffName=vs('diff')){
   return enemyRoundData(round, diffName).count * battleEnemyCountMultiplier(diffName);
 }
-function enemyTotalDisplayCount(round, diffName=vs('diff')){
-  return enemyRoundCountTotal(round, diffName) * battleEnemyCountMultiplier(diffName);
-}
 function enemyDisplayCountText(round){
   if(isTowerDifficulty() || isPlanetExplorationDifficulty()) return fullNumber(enemyRoundData(round).count);
-  return `${fullNumber(enemyRoundDisplayCount(round))} / ${fullNumber(enemyTotalDisplayCount(round))}`;
+  return fullNumber(enemyRoundDisplayCount(round));
 }
 
 function enemyBurdenDurability(enemyData, displayHR, displaySR){

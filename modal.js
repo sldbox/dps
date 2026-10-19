@@ -88,7 +88,7 @@
   }
 
   function renderDpsTablePanel(){
-    return `<section class="dps-table-modal-panel dps-table-inline-panel" role="tabpanel" aria-labelledby="dpsTableTitle">
+    return `<section class="dps-table-modal-panel" id="dpsTableContent" role="tabpanel" aria-labelledby="dpsTableTitle">
       <div class="dps-table-body" id="dpsTableMount" data-dps-table-mount></div>
     </section>`;
   }
@@ -98,10 +98,10 @@
       <div class="dps-table-modal-backdrop" data-dps-table-close="1"></div>
       <section class="dps-table-modal" role="dialog" aria-modal="true" aria-labelledby="dpsTableTitle">
         <header class="dps-table-modal-head">
-          <h2 id="dpsTableTitle" class="dps-table-modal-title">DPS표</h2>
-          <div class="dps-table-modal-actions" id="dpsTableHeaderActions"></div>
+          <div class="dps-table-modal-brand"><span class="dps-table-modal-mark" aria-hidden="true">✦</span><div><h2 id="dpsTableTitle" class="dps-table-modal-title">DPS표</h2></div></div>
           <button type="button" class="ui-icon-btn dps-table-modal-close" data-dps-table-close="1" aria-label="DPS표 닫기">×</button>
         </header>
+        <div class="dps-table-modal-actions" id="dpsTableHeaderActions"></div>
         <div class="dps-table-modal-body">
           ${renderDpsTablePanel()}
         </div>
@@ -137,9 +137,23 @@
     }
     const modeTarget=target.closest('[data-dps-table-mode]');
     if(modeTarget) switchDpsTableMode(modeTarget.getAttribute('data-dps-table-mode'));
+    if(target.closest('[data-dps-current-row]')){
+      target.closest('.dps-floor-column')?.querySelector('.dps-stat-row.is-current')?.scrollIntoView({block:'center',behavior:'instant'});
+    }
   }
 
   function handleDocumentKeydown(event){
+    const tab=event.target?.closest?.('[data-dps-table-mode]');
+    if(tab && ['ArrowLeft','ArrowRight','Home','End'].includes(event.key)){
+      const tabs=Array.from(document.querySelectorAll('[data-dps-table-mode]'));
+      const index=tabs.indexOf(tab);
+      const next=event.key==='Home'?0:event.key==='End'?tabs.length-1:(index+(event.key==='ArrowRight'?1:-1)+tabs.length)%tabs.length;
+      const mode=tabs[next].getAttribute('data-dps-table-mode');
+      switchDpsTableMode(mode);
+      document.querySelector(`[data-dps-table-mode="${mode}"]`)?.focus({preventScroll:true});
+      event.preventDefault();
+      return;
+    }
     if(event.key==='Escape'){
       const openBoardId=getOpenBoardModalId();
       if(openBoardId){
@@ -156,6 +170,9 @@
     if(eventsBound) return;
     eventsBound=true;
     document.addEventListener('click',handleDocumentClick);
+    document.addEventListener('change',event=>{
+      if(event.target?.matches?.('[data-dps-view-diff]')) changeDpsVisualDifficulty(event.target.value);
+    });
     document.addEventListener('keydown',handleDocumentKeydown,true);
   }
 

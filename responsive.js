@@ -9,8 +9,8 @@
   const MODES = ['is-pc-landscape', 'is-pc-portrait', 'is-tablet', 'is-mobile', 'is-portrait-view', 'is-mobile-device', 'is-tablet-device', 'is-narrow-mobile', 'is-tabbed'];
   const TABBED_PAGES = [
     { key: 'basic', label: '기본 정보', selectors: ['.trait-preset-panel', '.col-left'] },
-    { key: 'trait', label: '특성 보드', selectors: ['.trait-board-panel'] },
-    { key: 'specUnit', label: '스펙/유닛 보드', selectors: ['.stat-dps-card'] }
+    { key: 'trait', label: '특성 관리', selectors: ['.trait-board-panel'] },
+    { key: 'specUnit', label: '분석 보드', selectors: ['.stat-dps-card'] }
   ];
   const state = {
     tabs: null,
@@ -23,8 +23,36 @@
     activeIndex: 0,
     activeKey: null,
     resumeRaf: 0,
-    initialized: false
+    initialized: false,
+    traitScrollObserver: null,
+    traitScrollRaf: 0,
+    touchScrolling: false,
+    viewportUpdatePending: false
   };
+  /* 접힘 애니메이션·회전·제스처 후 변동된 특성 목록의 스크롤 경계를 보정한다.
+   * 모바일/태블릿 특성 탭에만 적용하고 다른 페이지의 스크롤은 유지한다. */
+  function clampTraitScroll() {
+    if (!document.body.classList.contains('is-tabbed')) return;
+    const page = state.pages.find(item => item.key === 'trait')?.el;
+    if (!page || page.hidden || !page.classList.contains('active')) return;
+    const maximum = Math.max(0, page.scrollHeight - page.clientHeight);
+    if (page.scrollTop > maximum + 1) page.scrollTop = maximum;
+  }
+  function scheduleTraitScrollClamp() {
+    if (state.traitScrollRaf) return;
+    state.traitScrollRaf = requestAnimationFrame(() => {
+      state.traitScrollRaf = 0;
+      clampTraitScroll();
+    });
+  }
+  function observeTraitScrollArea() {
+    state.traitScrollObserver?.disconnect();
+    state.traitScrollObserver = null;
+    const panel = state.pages.find(item => item.key === 'trait')?.el.querySelector('.trait-board-panel');
+    if (!panel || typeof ResizeObserver === 'undefined') return;
+    state.traitScrollObserver = new ResizeObserver(scheduleTraitScrollClamp);
+    state.traitScrollObserver.observe(panel);
+  }
   /* 뷰포트 판정 */
   function getViewportSize() {
     const root = document.documentElement;
@@ -52,7 +80,15 @@
     document.documentElement.style.setProperty('--mobile-vw', `${w}px`);
     document.documentElement.style.setProperty('--mobile-header-h', `${headerHeight}px`);
     document.documentElement.style.setProperty('--mobile-tabs-h', `${tabsHeight}px`);
-    document.documentElement.style.setProperty('--mobile-vh', `${h}px`);
+    const visualHeight = window.visualViewport?.height;
+    const focused = document.activeElement;
+    const isEditing = focused && (focused.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(focused.tagName));
+    // Browser toolbar animations must not repeatedly resize the active scroll viewport.
+    // Only shrink it for an actually focused editor with a visible on-screen keyboard.
+    const keyboardVisible = isEditing && Number.isFinite(visualHeight) && visualHeight > 0 && h - visualHeight > 160;
+    const usableHeight = keyboardVisible ? Math.min(h, Math.round(visualHeight)) : h;
+    document.documentElement.style.setProperty('--mobile-vh', `${usableHeight}px`);
+    scheduleTraitScrollClamp();
   }
   function applyMode() {
     const mode = getMode();
@@ -127,7 +163,8 @@
       btn.type = 'button';
       btn.id = `mobileTab-${page.key}`;
       btn.className = ['mobile-section-tab', 'mobile-section-page-tab', page.toneClass].filter(Boolean).join(' ');
-      btn.textContent = page.label;
+      const glyph = page.key === 'basic' ? '▤' : page.key === 'trait' ? '✦' : '▥';
+      btn.innerHTML = `<span class="mobile-tab-glyph" aria-hidden="true">${glyph}</span><span class="mobile-tab-label">${page.label}</span>`;
       btn.setAttribute('role', 'tab');
       btn.setAttribute('aria-selected', 'false');
       btn.setAttribute('aria-controls', page.el.id);
@@ -177,6 +214,7 @@
     setActiveTab(nextIndex);
     if (resetPageScroll) state.pages[nextIndex].el.scrollTop = 0;
     updateMobileOffsets();
+    scheduleTraitScrollClamp();
   }
   function arrangeTabbed(colWork) {
     const pages = [];
@@ -195,6 +233,7 @@
       pages.push({ ...config, el: page });
     });
     state.pages = pages;
+    observeTraitScrollArea();
     buildTabs(colWork, pages);
     colWork.classList.add('is-mobile-arranged');
     state.arrangedTabbed = true;
@@ -203,6 +242,10 @@
   }
   function restoreDesktop() {
     if (!state.arrangedTabbed) return;
+    state.traitScrollObserver?.disconnect();
+    state.traitScrollObserver = null;
+    if (state.traitScrollRaf) cancelAnimationFrame(state.traitScrollRaf);
+    state.traitScrollRaf = 0;
     state.restore.forEach((marker, el) => {
       if (marker.parentNode) marker.parentNode.insertBefore(el, marker.nextSibling);
     });
@@ -245,6 +288,10 @@
   }
   /* 갱신·초기화 */
   function scheduleApply() {
+    if (state.touchScrolling) {
+      state.viewportUpdatePending = true;
+      return;
+    }
     if (state.raf) cancelAnimationFrame(state.raf);
     state.raf = requestAnimationFrame(() => {
       state.raf = 0;
@@ -294,6 +341,17 @@
   } else {
     initializeResponsiveLayout();
   }
+  // Let the browser own native touch momentum; viewport mutations resume after release.
+  document.addEventListener('touchstart', () => { state.touchScrolling = true; }, { passive: true });
+  const finishTouch = () => {
+    state.touchScrolling = false;
+    if (state.viewportUpdatePending) {
+      state.viewportUpdatePending = false;
+      scheduleApply();
+    }
+  };
+  document.addEventListener('touchend', finishTouch, { passive: true });
+  document.addEventListener('touchcancel', finishTouch, { passive: true });
   window.addEventListener('resize', scheduleApply, { passive: true });
   window.addEventListener('orientationchange', scheduleApply, { passive: true });
   if (window.visualViewport) window.visualViewport.addEventListener('resize', scheduleApply, { passive: true });
