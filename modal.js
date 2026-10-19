@@ -98,7 +98,7 @@
       <div class="dps-table-modal-backdrop" data-dps-table-close="1"></div>
       <section class="dps-table-modal" role="dialog" aria-modal="true" aria-labelledby="dpsTableTitle">
         <header class="dps-table-modal-head">
-          <div class="dps-table-modal-brand"><span class="dps-table-modal-mark" aria-hidden="true">✦</span><div><h2 id="dpsTableTitle" class="dps-table-modal-title">DPS표</h2></div></div>
+          <h2 id="dpsTableTitle" class="dps-table-modal-title">DPS표</h2>
           <div class="dps-table-modal-actions" id="dpsTableHeaderActions"></div>
           <button type="button" class="ui-icon-btn dps-table-modal-close" data-dps-table-close="1" aria-label="DPS표 닫기">×</button>
         </header>
@@ -156,7 +156,6 @@
     if(eventsBound) return;
     eventsBound=true;
     document.addEventListener('click',handleDocumentClick);
-    document.addEventListener('change',event=>{if(event.target?.matches?.('[data-dps-view-diff]')) changeDpsVisualDifficulty(event.target.value);});
     document.addEventListener('keydown',handleDocumentKeydown,true);
   }
 
