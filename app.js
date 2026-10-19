@@ -1908,8 +1908,8 @@ function dpsBaseUnitSlotsHtml(slots){
     return `<article class="unit-slot-overview-card${selected?' is-selected':''}${unit?'':' is-unassigned'}" aria-label="${index+1}번 유닛 슬롯">
       <div class="unit-slot-card-head"><div class="unit-slot-heading"><span class="unit-slot-number" aria-hidden="true">${String(index+1).padStart(2,'0')}</span><span class="unit-slot-heading-label">유닛 슬롯</span></div><div class="unit-slot-card-actions">${index>0 ? `<button type="button" class="unit-list-remove" data-unit-list-remove="${index}" aria-label="${index+1}번 슬롯 삭제" title="${index+1}번 슬롯 삭제">×</button>` : '<span class="unit-slot-card-remove-placeholder" aria-hidden="true"></span>'}</div></div>
       <button type="button" class="unit-slot-card-main" data-unit-list-select="${index}" aria-label="${index+1}번 슬롯 상세 설정 열기" aria-haspopup="dialog" aria-expanded="${selected}" aria-controls="dpsUnitSlotModal">
-        <span class="unit-slot-identity"><span class="unit-slot-grade">${escapeHtml(grade)}</span><b>${escapeHtml(unitName)}</b>${unit?`<span class="unit-slot-quantity">${escapeHtml(quantity)}마리</span>`:''}</span>
-        <span class="unit-slot-summary-line"><span class="unit-slot-jewel"><small>쥬얼</small><b title="${escapeHtml(jewel)}">${escapeHtml(jewel)}</b></span>${speedHtml}</span>
+        <span class="unit-slot-identity"><span class="unit-slot-grade">${escapeHtml(grade)}</span><b>${escapeHtml(unitName)}</b></span>
+        <span class="unit-slot-summary-line"><span class="unit-slot-jewel"><small>쥬얼</small><b title="${escapeHtml(jewel)}">${escapeHtml(jewel)}</b></span><span class="unit-slot-quantity"><small>마리 수</small><b>${escapeHtml(quantity)}</b></span>${speedHtml}</span>
         <span class="unit-slot-stats"><span><small>공격력</small><b>${escapeHtml(attack)}</b></span><span><small>DPS</small><b>${escapeHtml(dps)}</b></span><span><small>관통</small><b>${escapeHtml(pierce)}</b></span></span>
         ${dpsUnitDetailTags(unit)}
       </button></article>`;
