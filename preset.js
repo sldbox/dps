@@ -29,8 +29,7 @@ const TRAIT_PRESET_SINGLE_UPDATE_VALUE_IDS=new Set([
   'specDpsSpeedMode','dpsBaseUnitSpeedMode',
   'overEnhance','repairEnhance','enhanceMaster',
   'prodArtifact','prodNova','prodTeratron','prodAmon','prodAdun','prodKerrigan','prodOvermind','prodNarud',
-  'flowerSkill1','flowerSkill2','flowerSkill3',
-  'traitLimitAD','traitLimitAS','traitLimitCRI','traitLimitCD','traitLimitMultiTarget','traitLimitInfinite'
+  'flowerSkill1','flowerSkill2','flowerSkill3'
 ]);
 function isTraitPresetFileType(type){
   return String(type || '')===TRAIT_PRESET_FILE_TYPE;
@@ -569,7 +568,7 @@ function createTraitPresetUnitJewelModal(){
     <section class="trait-preset-unit-jewel-modal is-jewel" role="dialog" aria-modal="true" aria-labelledby="traitPresetUnitJewelTitle">
       <header class="trait-preset-unit-jewel-head">
         <div class="trait-preset-unit-jewel-heading-wrap">
-          <span class="trait-preset-unit-jewel-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4h12l4 6-10 11L2 10l4-6Z"/><path d="M2 10h20M9 4l-2 6 5 11 5-11-2-6"/></svg></span>
+          <span class="trait-preset-unit-jewel-mark" aria-hidden="true">✦</span>
           <div class="trait-preset-unit-jewel-heading">
             <h2 id="traitPresetUnitJewelTitle">${title}</h2>
             <p>전설 · 신화 쥬얼 능력치 관리</p>
@@ -810,6 +809,29 @@ function traitPresetAgentView(status,store,update){
   if(event?.type==='load') return {tone:'success',title:`${event.name} 로드 완료`,description:'저장된 수치와 특성 투자 설정을 불러왔습니다. 수정하지 않을 경우 추가 업데이트는 필요하지 않습니다.',descriptionLines:['저장된 수치와 특성 투자 설정을 불러왔습니다.','수정하지 않을 경우 추가 업데이트는 필요하지 않습니다.'],next:'다음 행동 · 설정 확인 또는 다른 프리셋 선택'};
   return {tone:'ready',title:'프리셋 상태 정상',description:'저장된 설정이 정상적으로 적용되어 있습니다. 추가 작업이 필요하지 않습니다.',descriptionLines:['저장된 설정이 정상적으로 적용되어 있습니다.','추가 작업이 필요하지 않습니다.'],next:'현재 상태 · 추가 작업 없음'};
 }
+/* 현재 프리셋의 미저장 변경을 화면 밖에서도 알리고, 관리 제목이 보이면 확인 처리합니다. */
+let traitPresetChangeNoticePending=false;
+let traitPresetChangeNoticeSeen=false;
+let traitPresetManagerVisible=false;
+function renderTraitPresetChangeNotice(update){
+  if(update){
+    traitPresetChangeNoticePending=Boolean(update.needsUpdate);
+    if(!traitPresetChangeNoticePending) traitPresetChangeNoticeSeen=false;
+  }
+  if(traitPresetChangeNoticePending && traitPresetManagerVisible) traitPresetChangeNoticeSeen=true;
+  const notice=$('traitPresetChangeNotice');
+  if(notice) notice.hidden=!traitPresetChangeNoticePending || traitPresetChangeNoticeSeen;
+}
+function observeTraitPresetManager(){
+  const heading=document.querySelector('.trait-preset-panel > .trait-preset-title');
+  if(!heading || typeof IntersectionObserver!=='function') return;
+  const observer=new IntersectionObserver(entries=>{
+    const entry=entries[0];
+    traitPresetManagerVisible=Boolean(entry?.isIntersecting && entry.intersectionRatio>=0.5);
+    renderTraitPresetChangeNotice();
+  },{threshold:[0,0.5]});
+  observer.observe(heading);
+}
 function renderTraitPresetAgent(status,store,update){
   const card=$('traitPresetAgent');if(!card)return;
   const info=traitPresetAgentView(status,store,update);
@@ -866,7 +888,9 @@ function renderTraitPresetStatus(status,store){
     btn.setAttribute('aria-label','프리셋 백업');
   });
   setTraitPresetActionDisplay('backupTraitPresets',store.presets.length ? (backup?'pending':'done'):'idle');
-  renderTraitPresetAgent(status,store,traitPresetUpdateStatus(store));
+  const update=traitPresetUpdateStatus(store);
+  renderTraitPresetAgent(status,store,update);
+  renderTraitPresetChangeNotice(update);
 }
 function updateTraitPresetStatus(partial={}, options={}){
   const {status,store}=currentTraitPresetStatusData(partial);
@@ -1647,6 +1671,7 @@ function renderTraitPresetUpdateStatus(store=loadTraitPresetStore()){
   const loadCard=document.querySelector('.trait-preset-form-card.is-load');
   if(loadCard) loadCard.classList.toggle('is-restore-needed',Boolean(update.preset && update.needsUpdate));
   renderTraitPresetAgent(loadTraitPresetStatusData(),store,update);
+  renderTraitPresetChangeNotice(update);
   return update.needsUpdate;
 }
 let traitPresetGuidanceRefreshTimer=0;
@@ -2090,7 +2115,7 @@ function createTraitPresetBackupModal(){
     <div class="trait-preset-modal-backdrop" data-trait-preset-backup-close="1"></div>
     <section class="trait-preset-modal trait-preset-backup-modal" role="dialog" aria-modal="true" aria-labelledby="traitPresetBackupTitle">
       <header class="trait-preset-modal-head">
-        <h2 id="traitPresetBackupTitle">프리셋 백업</h2>
+        <div class="trait-preset-modal-heading"><span class="trait-preset-modal-mark" aria-hidden="true">✦</span><h2 id="traitPresetBackupTitle">프리셋 백업</h2></div>
         <button type="button" class="ui-icon-btn trait-preset-modal-close" data-trait-preset-backup-close="1" aria-label="프리셋 백업 닫기">×</button>
       </header>
       <div class="trait-preset-modal-body trait-preset-backup-body" id="traitPresetBackupBody"></div>
@@ -2502,6 +2527,7 @@ window.DpsPreset=Object.freeze({
     try{localStorage.removeItem('gbd_dps_calculator:trait_preset_guide');}catch{}
     refreshTraitPresetControls();
     restoreTraitPresetStatus();
+    observeTraitPresetManager();
   },
   bindEvents:bindTraitPresetEvents,
   saveCurrent:saveTraitPreset,

@@ -269,12 +269,17 @@ function syncDonationBuffControl(){
   if(!select) return;
   const value=normalizeDonationBuffType(select.value);
   if(select.value!==value) select.value=value;
+  qsa('.donation-buff-grid button[data-value]').forEach(button=>{
+    const selected=button.dataset.value===value;
+    button.classList.toggle('active',selected);
+    button.setAttribute('aria-pressed',selected ? 'true' : 'false');
+  });
 }
 function setDonationBuffType(value){
   const select=$('donationBuffType');
   if(!select) return false;
   const normalized=normalizeDonationBuffType(value);
-  select.value=select.value===normalized ? 'none' : normalized;
+  select.value=normalized;
   syncDonationBuffControl();
   syncSelectButtons();
   commitAppUpdate();
@@ -1049,7 +1054,7 @@ const FIELD_REGISTRY={
   flowerSkill2:{kind:'룬효과 버프',name:'바람의 꽃가루',save:true},
   flowerSkill3:{kind:'룬효과 버프',name:'안개의 꽃가루',save:true},
   specBoardPierce:{kind:'룬효과 버프',name:'방어력 관통',save:true},
-  donationBuffType:{kind:'룬효과 버프',name:'나눔후원 적용',save:true},
+  donationBuffType:{kind:'룬효과 버프',name:'나눔 유저 적용',save:true},
   rAD:{kind:'룬정보',name:'공격력',save:true},
   rModAD:{kind:'룬정보',name:'공격력 개조',save:true},
   runeChoiceType:{kind:'룬정보',name:'룬 특수 옵션',save:true},
@@ -1326,9 +1331,9 @@ function renderDpsBaseUnitSummary(s,hidden=false){
   const rawPercent=valid ? dpsBaseUnitAchievementPercent(achievementRate) : null;
   const shownPercent=rawPercent===null ? '—' : dpsBaseUnitAchievementText(achievementRate);
   const fillPercent=rawPercent===null ? 0 : Math.min(100,Math.max(0,achievementRate));
-  const contextHtml=`<div class="right-hero-context dps-base-unit-context" aria-label="유닛 보드 모드 및 난이도"><span class="dps-feature-heading"><span class="dps-feature-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/><path d="M12 2v4m0 12v4M2 12h4m12 0h4"/></svg></span><span class="dps-lbl">모드 / 난이도</span></span><strong class="right-hero-compact-mode">${dpsBoardContextHtml()}</strong></div>`;
-  const requiredHtml=`<div class="dps-base-unit-summary-item"><span class="dps-feature-heading"><span class="dps-feature-icon" aria-hidden="true">▣</span><span class="dps-lbl">클리어 기준</span></span><b class="dps-num">${dpsBaseUnitSummaryMarkup(valid ? dpsBaseUnitNumberText(requiredDps,DPS_BASE_UNIT_SUMMARY_NUMBER_OPTIONS) : '—')}</b></div>`;
-  const expectedHtml=`<div class="dps-base-unit-summary-item dps-base-unit-expected"><span class="dps-feature-heading"><span class="dps-feature-icon" aria-hidden="true">◇</span><span class="dps-lbl">클리어 기대값</span></span><b class="dps-num">${dpsBaseUnitSummaryMarkup(valid ? dpsBaseUnitNumberText(expectedDps,DPS_BASE_UNIT_SUMMARY_NUMBER_OPTIONS) : '—')}</b></div>`;
+  const contextHtml=`<div class="right-hero-context dps-base-unit-context" aria-label="유닛 보드 모드 및 난이도"><span class="dps-feature-heading"><span class="dps-lbl">모드 / 난이도</span></span><strong class="right-hero-compact-mode">${dpsBoardContextHtml()}</strong></div>`;
+  const requiredHtml=`<div class="dps-base-unit-summary-item"><span class="dps-feature-heading"><span class="dps-lbl">클리어 기준</span></span><b class="dps-num">${dpsBaseUnitSummaryMarkup(valid ? dpsBaseUnitNumberText(requiredDps,DPS_BASE_UNIT_SUMMARY_NUMBER_OPTIONS) : '—')}</b></div>`;
+  const expectedHtml=`<div class="dps-base-unit-summary-item dps-base-unit-expected"><span class="dps-feature-heading"><span class="dps-lbl">클리어 기대값</span></span><b class="dps-num">${dpsBaseUnitSummaryMarkup(valid ? dpsBaseUnitNumberText(expectedDps,DPS_BASE_UNIT_SUMMARY_NUMBER_OPTIONS) : '—')}</b></div>`;
   const achievementHtml=`<div class="unit-achievement" aria-label="클리어 달성률 ${escapeHtml(shownPercent)}"><div class="unit-achievement-label"><span>달성률</span><strong>${escapeHtml(shownPercent)}</strong></div><div class="unit-achievement-track" role="progressbar" aria-label="클리어 달성률" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(fillPercent)}"><span class="unit-achievement-fill${fillPercent>=100?' is-complete':''}" style="--achievement-fill:${fillPercent}%"></span></div><div class="unit-achievement-scale"><small>0%</small><small>100%</small></div></div>`;
   // CSS 변수로 실제 달성률과 별개인 0~100% 게이지 채움 폭을 전달합니다.
   el.innerHTML=`<div class="dps-base-unit-summary-row">${contextHtml}<div class="dps-base-unit-results" aria-label="유닛 클리어 결과">${requiredHtml}${expectedHtml}${achievementHtml}</div></div>`;
@@ -1921,7 +1926,7 @@ function dpsBaseUnitSlotsHtml(slots){
   }).join('');
   const next=visibleCount<slots.length ? `<button class="unit-slot-add-card" type="button" data-unit-slot-add="${visibleCount}" aria-label="${visibleCount+1}번 유닛 슬롯 추가"><span class="unit-slot-add-symbol" aria-hidden="true">+</span><strong>${visibleCount+1}번 슬롯 추가</strong></button>` : '';
   const message=activeCount ? `${activeCount}개 유닛 설정 · ${visibleCount} / 10 슬롯` : `${visibleCount} / 10 슬롯`;
-  return `<section class="unit-list-collection" aria-label="유닛 슬롯 관리"><header class="right-unit-collection-heading"><span class="right-unit-collection-mark" aria-hidden="true">▦</span><span class="unit-collection-heading-title"><strong>유닛 슬롯 관리</strong></span><span class="unit-list-status" role="status" aria-live="polite">${message}</span></header><div class="unit-slot-cards-grid" aria-label="유닛 슬롯 카드 목록">${rows}${next}</div></section>`;
+  return `<section class="unit-list-collection" aria-label="유닛 슬롯 관리"><header class="right-unit-collection-heading"><span class="unit-collection-heading-title"><strong>유닛 슬롯 관리</strong></span><span class="unit-list-status" role="status" aria-live="polite">${message}</span></header><div class="unit-slot-cards-grid" aria-label="유닛 슬롯 카드 목록">${rows}${next}</div></section>`;
 }
 
 let dpsUnitSlotModalSyncing=false;
@@ -2514,24 +2519,30 @@ function traitRecommendationNumberText(value,decimals=0){
     : (decimals ? fmt(value,decimals) : fullNumber(value));
 }
 function renderTraitRecommendations(){
-  const table=$('traitRecommendationRows'),status=$('traitRecommendationStatus'),refund=$('traitRecommendationRefund'),investAll=$('traitRecommendationInvestAll');
-  if(!table||!status||!refund||!investAll) return;
+  const table=$('traitRecommendationRows'),status=$('traitRecommendationStatus'),investAll=$('traitRecommendationInvestAll');
+  if(!table||!status||!investAll) return;
   const useUnitBoard=isUnitBoardRecommendationMode();
   setText('traitRecommendationDpsLabel',useUnitBoard ? '클리어 기대값' : 'DPS');
-  synchronizeTraitRecommendationCredits();
-  refund.disabled=!hasTraitRecommendationCredits();
+  const refundable=hasTraitRecommendationCredits();
+  investAll.textContent=refundable?'전체 환불':'전체 투자';
+  investAll.classList.toggle('trait-recommendation-refund',refundable);
+  investAll.classList.toggle('trait-recommendation-invest-all',!refundable);
+  investAll.classList.toggle('pri',!refundable);
+  investAll.classList.toggle('subtle',refundable);
+  investAll.classList.toggle('danger',refundable);
+  investAll.disabled=!refundable;
   const revision=++traitRecommendationRevision;
   cancelTraitRecommendationCalculation();
   const cached=traitRecommendationCache.get(useUnitBoard);
   if(cached && cached.appRevision===appCalculationRevision){
     currentTraitRecommendationPlan=cached.plan;
-    investAll.disabled=!cached.plan;
+    investAll.disabled=!refundable&&!cached.plan;
     status.textContent=cached.status;
     table.innerHTML=cached.rows;
     return;
   }
   currentTraitRecommendationPlan=null;
-  investAll.disabled=true;
+  investAll.disabled=!refundable;
   const snapshot=traitRecommendationPlanSnapshot(useUnitBoard);
   function cacheResult(){
     traitRecommendationCache.set(useUnitBoard,{
@@ -2670,7 +2681,7 @@ function renderTraitRecommendations(){
       rememberAppIssue('error','특성 추천 투자 계획',error);
       status.textContent='특성 추천 계산을 완료하지 못했습니다.';
       table.innerHTML='<tr><td colspan="5">추천 계산 오류 · 현재 투자값은 변경되지 않았습니다.</td></tr>';
-      investAll.disabled=true;
+      investAll.disabled=!refundable;
     }
   }
   scheduleTraitRecommendationCalculation(step);
@@ -3086,7 +3097,7 @@ function buildZeroScoreCalcRow(config){
   return `<article class="zero-calc-row" data-row-type="${config.type}">
     <div class="zero-calc-row-bar">
       <button class="zero-calc-row-head" type="button" aria-expanded="false" aria-label="${name} 승단 점수 입력 펼치기">
-        <span class="zero-calc-name"><span class="zero-calc-row-symbol" aria-hidden="true">✦</span><strong>${name}</strong></span>
+        <span class="zero-calc-name"><span class="zero-calc-row-symbol" aria-hidden="true">${String(config.number).padStart(2,'0')}</span><strong>${name}</strong></span>
       </button>
       ${config.star !== false ? zeroScoreStarButtonHtml() : ''}
       <span class="zero-calc-score"><span>추가점수</span><b class="zero-row-score">0</b></span>
@@ -3099,16 +3110,16 @@ function buildZeroScoreCalcRow(config){
     </div>
   </article>`;
 }
-function buildZeroPenanceCalcRow(name){
-  return buildZeroScoreCalcRow({type:'penance',name,currentHonorClass:'zero-current-honor zero-honor-input',targetHonorClass:'zero-target-honor zero-honor-input',honorOptions:{inputmode:'latin',maxlength:2,placeholder:'B'}});
+function buildZeroPenanceCalcRow(name,number){
+  return buildZeroScoreCalcRow({type:'penance',name,number,currentHonorClass:'zero-current-honor zero-honor-input',targetHonorClass:'zero-target-honor zero-honor-input',honorOptions:{inputmode:'latin',maxlength:2,placeholder:'B'}});
 }
 function buildZeroTowerCalcRow(){
-  return buildZeroScoreCalcRow({type:'towerCombo',name:'도전의탑',star:false,currentHonorClass:'zero-tower-honor-current',targetHonorClass:'zero-tower-honor-target'});
+  return buildZeroScoreCalcRow({type:'towerCombo',name:'도전의탑',number:ZERO_PENANCE_ROWS.length+1,star:false,currentHonorClass:'zero-tower-honor-current',targetHonorClass:'zero-tower-honor-target'});
 }
 function renderZeroScoreCalculatorRows(){
   const rows=$('zeroScoreRows');
   if(!rows || rows.dataset.rendered==='1') return;
-  rows.innerHTML=ZERO_PENANCE_ROWS.map(({name})=>buildZeroPenanceCalcRow(name)).join('') + buildZeroTowerCalcRow();
+  rows.innerHTML=ZERO_PENANCE_ROWS.map(({name},index)=>buildZeroPenanceCalcRow(name,index+1)).join('') + buildZeroTowerCalcRow();
   rows.dataset.rendered='1';
 }
 
@@ -3306,8 +3317,9 @@ const ACTION_HANDLERS={
   optimizeSP,
   optimizeUtility,
   applyTraitRecommendation:(trigger)=>applyTraitRecommendation(+trigger.dataset.row,+trigger.dataset.amount),
-  applyTraitRecommendationPlan:()=>applyCurrentTraitRecommendationPlan(),
-  refundTraitRecommendations:()=>requestConfirmAction('refundTraitRecommendations','한 번 더 누르면 추천 투자만 전체환불',refundTraitRecommendations),
+  toggleTraitRecommendationInvestment:()=>hasTraitRecommendationCredits()
+    ? requestConfirmAction('refundTraitRecommendations','한 번 더 누르면 추천 투자만 전체환불',refundTraitRecommendations)
+    : applyCurrentTraitRecommendationPlan(),
   clearUtility:()=>requestConfirmAction('clearUtility','한 번 더 누르면 유틸 초기화', clearUtility),
   clearAll:()=>requestConfirmAction('clearAll','한 번 더 누르면 유틸 제외 특성 초기화', clearAll),
   saveTraitPreset:(...args)=>window.DpsPreset.saveCurrent(...args),

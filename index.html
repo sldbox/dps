@@ -4,7 +4,7 @@
 <meta charset="UTF-8"/>
 <meta name="google-site-verification" content="RTuDWbMdnKgbpRpl05eXh9epFwWRSxju4NOl8OtjMsI" />
 <script>
-window.DPS_BUILD_VERSION = "dps-2610180008";
+window.DPS_BUILD_VERSION = "dps-2610190000";
 window.APP_VERSION = window.DPS_BUILD_VERSION;
 window.DPS_ASSET_VERSIONS = {
   "app.js": window.DPS_BUILD_VERSION,
@@ -198,14 +198,14 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 <meta content="https://sldbox.github.io/dps/" property="og:url"/>
 <meta content="개복디 특성 게산기" property="og:title"/>
 <meta content="특성 투자, 재화 사용량, 표기 스탯, 총데미지, DPS를 한 번에 계산할 수 있는 개복디 전용 계산기입니다." property="og:description"/>
-<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2610180008" property="og:image"/>
-<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2610180008" property="og:image:secure_url"/>
+<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2610190000" property="og:image"/>
+<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2610190000" property="og:image:secure_url"/>
 <meta content="image/png" property="og:image:type"/>
 <meta content="개복디 특성 게산기 로고" property="og:image:alt"/>
 <meta content="summary_large_image" name="twitter:card"/>
 <meta content="개복디 특성 게산기" name="twitter:title"/>
 <meta content="특성 투자, 재화 사용량, 표기 스탯, 총데미지, DPS를 한 번에 계산할 수 있는 개복디 전용 계산기입니다." name="twitter:description"/>
-<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2610180008" name="twitter:image"/>
+<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2610190000" name="twitter:image"/>
 <meta content="개복디 특성 게산기 로고" name="twitter:image:alt"/>
 <link href="https://cdn.jsdelivr.net" rel="preconnect"/>
 <link crossorigin="" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" rel="stylesheet"/>
@@ -246,6 +246,10 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 })();
 </script>
 <div id="dpsBootScreen" aria-live="polite"><div class="boot-card"><div class="boot-title">특성 계산기 적용 중</div><div class="boot-desc">최신 빌드와 스타일을 불러오는 중입니다.</div></div></div>
+<div class="trait-preset-change-notice" id="traitPresetChangeNotice" role="status" aria-live="polite" aria-atomic="true" hidden>
+  <span class="trait-preset-change-notice-icon" aria-hidden="true">!</span>
+  <span class="trait-preset-change-notice-text">프리셋 변경값이 감지됐어요.<small>프리셋 관리에서 확인해 주세요.</small></span>
+</div>
 <div class="wrap">
 <div class="hdr app-header">
 <div class="hdr-brand">
@@ -270,7 +274,7 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 <div class="hdr-meta">
 <div class="header-convenience" aria-label="빠른 이동">
 <div class="header-reference-actions">
-<button id="dpsTableMenuButton" class="btn subtle ui-action-btn header-reference-btn header-global-reference-btn" data-action="openDpsTable" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="3" width="19" height="18" rx="4"/><path d="M6 16.5l4-4 3 2 5-6.5M15 8h3v3"/><path d="M7 19h10" opacity=".55"/></svg><span class="header-reference-label">DPS표</span></button>
+<button id="dpsTableMenuButton" class="btn subtle ui-action-btn header-reference-btn header-global-reference-btn" data-action="openDpsTable" type="button"><span class="modal-launch-star" aria-hidden="true">✦</span><span class="header-reference-label">DPS표</span></button>
 <a class="btn subtle ui-action-btn header-reference-btn header-global-reference-btn header-convenience-link header-nexus-link" href="https://sldbox.github.io/site/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="4" r="2"/><circle cx="5" cy="17" r="2"/><circle cx="19" cy="17" r="2"/><path d="m11 6-5 9m7-9 5 9M7 17h10"/></svg><span>넥서스</span><span aria-hidden="true">↗</span></a>
 </div>
 </div>
@@ -285,7 +289,7 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 <div class="col-left">
 <div class="trait-standalone-panel trait-preset-panel" aria-label="프리셋 관리">
 <div class="trait-preset-title trait-subgroup-title">
-<div class="trait-preset-brand"><span class="trait-preset-brand-mark" aria-hidden="true"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6c-2.4-1.6-5.1-1.9-8.5-1.2V19c3.4-.6 6.1-.3 8.5 1.3 2.4-1.6 5.1-1.9 8.5-1.3V4.8C17.1 4.1 14.4 4.4 12 6Z"/><path d="M12 6v14.3"/></svg></span><span class="trait-preset-brand-copy"><strong class="trait-preset-heading">프리셋 관리</strong><small>PRESET MANAGER</small></span></div>
+<div class="trait-preset-brand"><span class="trait-preset-brand-mark" aria-hidden="true">✦</span><span class="trait-preset-brand-copy"><strong class="trait-preset-heading">프리셋 관리</strong><small>PRESET MANAGER</small></span></div>
 <div class="trait-preset-title-actions" aria-label="프리셋 관리 기능">
 <button class="btn subtle danger ui-action-btn trait-preset-title-btn is-reset" data-action="resetAllTraitPresetState" id="traitPresetResetAllBtn" type="button" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11a9 9 0 1 1 2.5 6.3M3 4v7h7m2-4v5l3 2"/></svg><span>초기화</span></button>
 </div>
@@ -312,14 +316,14 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 </div>
 <div class="trait-preset-form-grid" aria-label="프리셋 저장과 로드">
 <div class="trait-preset-form-card is-save">
-<div class="trait-preset-form-heading"><span class="trait-preset-form-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h11l3 3v13H5zM8 4v6h8V4M8 20v-7h8v7"/></svg></span><label class="trait-preset-label" for="traitPresetName">프리셋 이름</label><small>SAVE PRESET</small></div>
+<div class="trait-preset-form-heading"><label class="trait-preset-label" for="traitPresetName">프리셋 이름</label><small>SAVE PRESET</small></div>
 <div class="trait-preset-name-row">
 <input id="traitPresetName" type="text" placeholder="예시) 더파300라버스" autocomplete="off" maxlength="40"/>
 <button class="btn pri ui-action-btn trait-preset-form-action" data-action="saveTraitPreset" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h13l3 3v13H4zM8 4v6h8V4M8 20v-7h8v7"/></svg><span class="trait-preset-button-copy"><strong>프리셋 저장</strong><small>현재 설정을 프리셋으로 저장</small></span></button>
 </div>
 </div>
 <div class="trait-preset-form-card is-load">
-<div class="trait-preset-form-heading"><span class="trait-preset-form-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h7l2 2h9v11H3zM3 7V4h8l2 3M12 12v6m-3-3 3 3 3-3"/></svg></span><label class="trait-preset-label" for="traitPresetSelect">프리셋 목록</label><small>LOAD PRESET</small></div>
+<div class="trait-preset-form-heading"><label class="trait-preset-label" for="traitPresetSelect">프리셋 목록</label><small>LOAD PRESET</small></div>
 <div class="trait-preset-load-row">
 <select id="traitPresetSelect" aria-label="프리셋 목록" disabled><option value="" disabled selected>저장된 프리셋 없음</option></select>
 <div class="trait-preset-load-actions">
@@ -333,11 +337,11 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 </div>
 <div class="basic-goal-cards">
 <div class="sg-title basic-info-title basic-goal-title">
-<div class="basic-goal-brand"><span class="basic-goal-brand-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h16"/><circle cx="9" cy="6" r="2" fill="#234d78"/><circle cx="16" cy="12" r="2" fill="#234d78"/><circle cx="11" cy="18" r="2" fill="#234d78"/></svg></span><span class="basic-goal-brand-copy"><strong>기본정보 / 목표설정</strong><small>CONFIGURATION CENTER</small></span></div>
-<div class="basic-info-title-actions"><button class="btn subtle ui-action-btn basic-info-title-btn" data-action="openSanctuarySkillModal" type="button" aria-haspopup="dialog" aria-controls="sanctuarySkillModal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="m12 3 8 5v10l-8 4-8-4V8l8-5Z"/><path d="m12 8-4 3h8l-4-3Zm0 3v7"/></svg><span>성소 스킬</span></button><button class="btn subtle ui-action-btn basic-info-title-btn" data-action="openBusPassengerModal" type="button" aria-haspopup="dialog" aria-controls="busPassengerModal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="8" cy="8" r="3"/><path d="M2.5 20v-2a5.5 5.5 0 0 1 11 0v2M17 5a3 3 0 0 1 0 6m0 3a5 5 0 0 1 4 5v1"/></svg><span>버스 승객</span></button></div></div>
+<div class="basic-goal-brand"><span class="basic-goal-brand-mark" aria-hidden="true">✦</span><span class="basic-goal-brand-copy"><strong>기본정보 / 목표설정</strong><small>CONFIGURATION CENTER</small></span></div>
+<div class="basic-info-title-actions"><button class="btn subtle ui-action-btn basic-info-title-btn" data-action="openSanctuarySkillModal" type="button" aria-haspopup="dialog" aria-controls="sanctuarySkillModal"><span class="modal-launch-star" aria-hidden="true">✦</span><span>성소 스킬</span></button><button class="btn subtle ui-action-btn basic-info-title-btn" data-action="openBusPassengerModal" type="button" aria-haspopup="dialog" aria-controls="busPassengerModal"><span class="modal-launch-star" aria-hidden="true">✦</span><span>버스 승객</span></button></div></div>
 <!-- 기본 정보: 재화 -->
 <div class="sg xp-sp-card basic-info-resource-card">
-<div class="basic-goal-section-heading"><span class="basic-goal-section-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h18v13H3zM3 10h18M6 4h12v3M7 15h5"/></svg></span><span class="basic-goal-section-copy"><strong>기본정보</strong><small>자원 입력과 자동 계산</small></span></div>
+<div class="basic-goal-section-heading"><span class="basic-goal-section-copy"><strong>기본정보</strong><small>자원 입력과 자동 계산</small></span></div>
 <div class="xp-sp-split basic-info-grid">
 <div class="xp-sp-panel basic-info-panel">
 <section class="basic-info-lane is-primary" aria-label="SP와 심연의혼">
@@ -376,7 +380,7 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 </div>
 <!-- 목표설정: 난이도·진행 목표 -->
 <div class="sg xp-sp-card goal-settings-card">
-<div class="basic-goal-section-heading"><span class="basic-goal-section-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1" fill="currentColor"/></svg></span><span class="basic-goal-section-copy"><strong>목표설정</strong><small>난이도와 플레이 조건</small></span></div>
+<div class="basic-goal-section-heading"><span class="basic-goal-section-copy"><strong>목표설정</strong><small>난이도와 플레이 조건</small></span></div>
 <div class="xp-sp-split basic-info-grid">
 <div class="xp-sp-panel basic-info-panel">
 <section class="basic-info-lane is-primary" aria-label="개인전 및 협동전 설정">
@@ -431,10 +435,10 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 </div>
 <!-- 룬 정보·스탯 -->
 <div class="sg rune-spec clean-rune-card">
-<div class="sg-title rune-section-header"><span class="rune-section-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="m12 2 8 7-8 13L4 9l8-7Z"/><path d="M4 9h16M9 9l3 13 3-13M9 9l3-7 3 7"/></svg></span><span class="rune-section-copy"><strong>룬 상세 정보</strong><small>RUNE CONFIGURATION</small></span></div>
+<div class="sg-title rune-section-header"><span class="rune-section-mark" aria-hidden="true">✦</span><span class="rune-section-copy"><strong>룬 상세 정보</strong><small>RUNE CONFIGURATION</small></span></div>
 <div class="rune-panel tidy-rune-panel">
 <div class="rune-option-card">
-<div class="rune-panel-title rune-card-heading"><span class="rune-card-mark" aria-hidden="true">◇</span>룬 옵션 설정</div>
+<div class="rune-panel-title rune-card-heading">룬 옵션 설정</div>
 <div class="rune-option-grid">
 <label>룬 강화 수</label>
 <select id="rReinf"><option selected="" value="0">선택 안함</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option><option>9</option><option>10</option><option>11</option><option>12</option><option>13</option><option>14</option><option>15</option></select>
@@ -451,7 +455,7 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 </div>
 </div>
 <div class="rune-basic-card">
-<div class="rune-panel-title rune-card-heading"><span class="rune-card-mark" aria-hidden="true">◆</span>룬 스텟</div>
+<div class="rune-panel-title rune-card-heading">룬 스텟</div>
 <div class="rune-stat-row rune-stat-head">
 <div></div><div>기본 스텟</div><div>개조 스텟</div>
 </div>
@@ -487,7 +491,7 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 </div>
 </div>
 <div class="enchant-combined">
-<div class="rune-panel-title rune-card-heading"><span class="rune-card-mark" aria-hidden="true">✧</span>인첸트 레벨</div>
+<div class="rune-panel-title rune-card-heading">인첸트 레벨</div>
 <div class="enchant-combined-grid">
 <div class="enchant-combined-row">
 <label class="enchant-result-label"><span>인첸트 공격력</span><b id="enchOutAD" class="enchant-result-value">65</b></label>
@@ -517,7 +521,7 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 <input id="enchantCode" type="hidden" value="000000"/>
 </div>
 <div class="additional-editor">
-<div class="rune-panel-title rune-card-heading additional-title-row"><span class="rune-card-heading-name"><span class="rune-card-mark" aria-hidden="true">✦</span>에디셔널</span><span class="additional-help">최하옵션 / 평균옵션 선택입력</span></div>
+<div class="rune-panel-title rune-card-heading additional-title-row"><span class="rune-card-heading-name">에디셔널</span><span class="additional-help">최하옵션 / 평균옵션 선택입력</span></div>
 <div class="additional-list">
 <div class="additional-row"><label>에디셔널 공격력</label><input id="addAD" type="text" value="0" inputmode="decimal"/></div>
 <div class="additional-row"><label>에디셔널 공격속도</label><input id="addAS" type="text" value="0" inputmode="decimal"/></div>
@@ -536,17 +540,25 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 </div>
 <!-- 효과 및 버프: 독립 카드 -->
 <div class="sg unit-enhance-card spec-unit-enhance rune-effect-panel">
-<div class="sg-title rune-section-header"><span class="rune-section-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M7 4v6m10-6v6M4 15h16M7 12v6m10-6v6M4 20h16"/><circle cx="7" cy="7" r="2" fill="currentColor"/><circle cx="17" cy="15" r="2" fill="currentColor"/></svg></span><span class="rune-section-copy"><strong>효과 및 버프</strong><small>BUFF &amp; ENHANCEMENT</small></span></div>
+<div class="sg-title rune-section-header"><span class="rune-section-mark" aria-hidden="true">✦</span><span class="rune-section-copy"><strong>효과 및 버프</strong><small>BUFF &amp; ENHANCEMENT</small></span></div>
 <div class="unit-enhance-main-row">
 <div class="unit-enhance-left">
 <div class="unit-enhance-control-stack">
 <div class="month-rune-selects">
-<section class="buff-config-group is-donation" aria-label="나눔후원 적용">
-<div class="buff-config-heading"><span class="buff-config-symbol" aria-hidden="true">✦</span><div><strong>나눔후원</strong><small>후원 유형을 선택하세요</small></div></div>
-<div class="mini-ir mini-ir-button-row unit-enhance-option-row donation-buff-row"><div class="seg-btns unit-enhance-button-grid donation-buff-grid" data-target="donationBuffType"><button class="ui-choice-btn" data-action="donationBuff" data-value="sp" type="button">특별 나눔 (-SP 15만)</button><button class="ui-choice-btn" data-action="donationBuff" data-value="paid" type="button" aria-label="특별 나눔 유료">특별 나눔 <svg class="gold-star-symbol" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><defs><linearGradient id="paidGoldStar" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#fff7bf"/><stop offset=".52" stop-color="#ffc846"/><stop offset="1" stop-color="#dd8c11"/></linearGradient></defs><path d="m12 1.6 3.13 6.72 7.38.95-5.48 5.21 1.35 7.3L12 18.25l-6.38 3.53 1.35-7.3-5.48-5.21 7.38-.95L12 1.6Z" fill="url(#paidGoldStar)" stroke="#ffe7a0" stroke-width=".8"/></svg></button></div><select class="hidden-field" id="donationBuffType"><option selected="" value="none">선택 안함</option><option value="sp">특별 나눔 (-SP 15만)</option><option value="paid">특별 나눔 (유료)</option></select></div>
+<section class="buff-config-group is-donation" aria-label="나눔 유저">
+<div class="buff-config-heading"><div><strong>나눔 유저</strong></div></div>
+<div class="mini-ir mini-ir-button-row unit-enhance-option-row donation-buff-row">
+<label id="donationBuffLabel" for="donationBuffType">나눔 적용</label>
+<div class="unit-enhance-button-grid donation-buff-grid" role="group" aria-labelledby="donationBuffLabel">
+<button class="ui-choice-btn" type="button" data-action="donationBuff" data-value="none" aria-pressed="true">미적용</button>
+<button class="ui-choice-btn" type="button" data-action="donationBuff" data-value="sp" aria-pressed="false">일반 나눔</button>
+<button class="ui-choice-btn" type="button" data-action="donationBuff" data-value="paid" aria-pressed="false">특별 나눔</button>
+</div>
+<select class="hidden-field" id="donationBuffType" aria-hidden="true" tabindex="-1"><option selected value="none">선택 안함</option><option value="sp">일반 나눔 - 15만 차감</option><option value="paid">특별 나눔</option></select>
+</div>
 </section>
 <section class="buff-config-group is-season" aria-label="이달의 룬 효과">
-<div class="buff-config-heading"><span class="buff-config-symbol" aria-hidden="true">✧</span><div><strong>이달의 룬 효과</strong><small>4월·9월 일반 / 강화</small></div></div>
+<div class="buff-config-heading"><div><strong>이달의 룬 효과</strong><small>4월·9월 일반 / 강화</small></div></div>
 <div class="mini-ir mini-ir-button-row unit-enhance-option-row month-rune-row"><label>4월 일반</label><div class="seg-btns unit-enhance-button-grid month-rune-grid" data-target="aprRuneNormal"><button class="ui-choice-btn" data-action="selectButton" data-value="0" type="button">선택 안함</button><button class="ui-choice-btn" data-action="selectButton" data-value="1" type="button">1</button><button class="ui-choice-btn" data-action="selectButton" data-value="2" type="button">2</button><button class="ui-choice-btn" data-action="selectButton" data-value="3" type="button">3</button><button class="ui-choice-btn" data-action="selectButton" data-value="4" type="button">4</button><button class="ui-choice-btn" data-action="selectButton" data-value="5" type="button">5</button><button class="ui-choice-btn" data-action="selectButton" data-value="6" type="button">6</button></div><select class="hidden-field" id="aprRuneNormal"><option selected="" value="0">선택 안함</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option></select></div>
 <div class="mini-ir mini-ir-button-row unit-enhance-option-row month-rune-row"><label>4월 강화(+)</label><div class="seg-btns unit-enhance-button-grid month-rune-grid" data-target="aprRunePlus"><button class="ui-choice-btn" data-action="selectButton" data-value="0" type="button">선택 안함</button><button class="ui-choice-btn" data-action="selectButton" data-value="1" type="button">1</button><button class="ui-choice-btn" data-action="selectButton" data-value="2" type="button">2</button><button class="ui-choice-btn" data-action="selectButton" data-value="3" type="button">3</button><button class="ui-choice-btn" data-action="selectButton" data-value="4" type="button">4</button><button class="ui-choice-btn" data-action="selectButton" data-value="5" type="button">5</button><button class="ui-choice-btn" data-action="selectButton" data-value="6" type="button">6</button></div><select class="hidden-field" id="aprRunePlus"><option selected="" value="0">선택 안함</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option></select></div>
 <div class="mini-ir mini-ir-button-row unit-enhance-option-row month-rune-row"><label>9월 일반</label><div class="seg-btns unit-enhance-button-grid month-rune-grid" data-target="sepRuneNormal"><button class="ui-choice-btn" data-action="selectButton" data-value="0" type="button">선택 안함</button><button class="ui-choice-btn" data-action="selectButton" data-value="1" type="button">1</button><button class="ui-choice-btn" data-action="selectButton" data-value="2" type="button">2</button><button class="ui-choice-btn" data-action="selectButton" data-value="3" type="button">3</button><button class="ui-choice-btn" data-action="selectButton" data-value="4" type="button">4</button><button class="ui-choice-btn" data-action="selectButton" data-value="5" type="button">5</button><button class="ui-choice-btn" data-action="selectButton" data-value="6" type="button">6</button></div><select class="hidden-field" id="sepRuneNormal"><option selected="" value="0">선택 안함</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option></select></div>
@@ -555,7 +567,7 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 </div>
 <div class="enhance-controls unit-enhance-inline-controls">
 <section class="buff-config-group is-enhance" aria-label="강화 효과">
-<div class="buff-config-heading"><span class="buff-config-symbol" aria-hidden="true">✣</span><div><strong>강화 효과</strong><small>오버핸스·리페핸스·강화의 달인·방어력 관통</small></div></div>
+<div class="buff-config-heading"><div><strong>강화 효과</strong><small>오버핸스·리페핸스·강화의 달인·방어력 관통</small></div></div>
 <div class="mini-ir mini-ir-button-row unit-enhance-option-row">
 <label>오버핸스</label>
 <div class="seg-btns unit-enhance-button-grid" data-target="overEnhance">
@@ -600,9 +612,10 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 </div>
 </section>
 <section class="buff-config-group is-selection" aria-label="선택 버프">
-<div class="buff-config-heading"><span class="buff-config-symbol" aria-hidden="true">✓</span><div><strong>선택 버프</strong><small>필요한 효과를 여러 개 선택할 수 있습니다</small></div></div>
+<div class="buff-config-heading"><div><strong>선택 버프</strong><small>필요한 효과를 여러 개 선택할 수 있습니다</small></div></div>
 <div class="mini-ir mini-ir-button-row unit-enhance-option-row select-buff-row">
-<div class="unit-enhance-button-grid select-buff-grid">
+<span class="select-buff-label" id="unitBuffLabel">유닛 버프</span>
+<div class="unit-enhance-button-grid select-buff-grid" role="group" aria-labelledby="unitBuffLabel">
 <label class="ui-choice-btn buff-choice-item"><input class="buff-choice-input" id="prodArtifact" type="checkbox"/><span>유물</span></label>
 <label class="ui-choice-btn buff-choice-item"><input class="buff-choice-input" id="prodNova" type="checkbox"/><span>비밀 작전 노바</span></label>
 <label class="ui-choice-btn buff-choice-item"><input class="buff-choice-input" id="prodTeratron" type="checkbox"/><span>테라트론</span></label>
@@ -613,11 +626,9 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 <label class="ui-choice-btn buff-choice-item"><input class="buff-choice-input" id="prodNarud" type="checkbox"/><span>나루드</span></label>
 </div>
 </div>
-</section>
-<section class="buff-config-group is-flower" aria-label="꽃가루 버프">
-<div class="buff-config-heading"><span class="buff-config-symbol" aria-hidden="true">❀</span><div><strong>꽃가루 버프</strong><small>사용할 꽃가루 효과를 선택하세요</small></div></div>
 <div class="mini-ir mini-ir-button-row unit-enhance-option-row flower-buff-row">
-<div class="unit-enhance-button-grid flower-buff-grid">
+<span class="select-buff-label" id="flowerBuffLabel">꽃 버프</span>
+<div class="unit-enhance-button-grid flower-buff-grid" role="group" aria-labelledby="flowerBuffLabel">
 <label class="ui-choice-btn buff-choice-item"><input class="buff-choice-input" id="flowerSkill1" type="checkbox"/><span>근성의 꽃가루</span></label>
 <label class="ui-choice-btn buff-choice-item"><input class="buff-choice-input" id="flowerSkill2" type="checkbox"/><span>바람의 꽃가루</span></label>
 <label class="ui-choice-btn buff-choice-item"><input class="buff-choice-input" id="flowerSkill3" type="checkbox"/><span>안개의 꽃가루</span></label>
@@ -642,7 +653,7 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 </div>
 <!-- 더제로 승단정보 -->
 <div class="data-card zero-rank-card">
-<h3 class="zero-rank-title"><span class="zero-rank-heading-copy"><span class="zero-rank-heading-icon" aria-hidden="true">✦</span><span>더제로 승단 정보</span></span><button class="btn subtle ui-action-btn zero-rank-info-open-btn" data-action="openZeroRankInfoModal" type="button" aria-haspopup="dialog" aria-controls="zeroRankInfoModal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4.5h7a3 3 0 0 1 3 3V20a3 3 0 0 0-3-3H4zM20 4.5h-5a3 3 0 0 0-3 3V20a3 3 0 0 1 3-3h5z"/></svg><span>승단표</span><span class="zero-rank-open-arrow" aria-hidden="true">↗</span></button></h3>
+<h3 class="zero-rank-title"><span class="zero-rank-heading-copy"><span class="zero-rank-heading-icon" aria-hidden="true">✦</span><span>더제로 승단 정보</span></span><button class="btn subtle ui-action-btn zero-rank-info-open-btn" data-action="openZeroRankInfoModal" type="button" aria-haspopup="dialog" aria-controls="zeroRankInfoModal"><span class="modal-launch-star" aria-hidden="true">✦</span><span>승단표</span><span class="zero-rank-open-arrow" aria-hidden="true">↗</span></button></h3>
 <div class="zero-rank-content">
 <section class="zero-rank-panel zero-rank-calc-panel">
 <div class="zero-score-calc">
@@ -667,45 +678,44 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 <div class="trait-optimizer-panel">
 <div class="optimizer-head">
 <span class="optimizer-head-title">최적화 / 마스터</span>
-<div class="trait-board-head-actions">
-<button class="btn subtle danger ui-action-btn trait-board-head-btn" data-action="clearAll" type="button">특성 초기화</button>
-<button class="btn subtle danger ui-action-btn trait-board-head-btn" data-action="clearUtility" type="button">유틸 초기화</button>
-</div>
 </div>
 <div class="trait-dashboard-tools trait-board-control-grid">
   <section class="trait-optimizer-row" aria-labelledby="traitOptimizeScopeTitle">
-    <div class="trait-scope-heading"><span class="trait-scope-icon" aria-hidden="true">✦</span><strong id="traitOptimizeScopeTitle">특성 최적화 범위</strong><small>OPTIMIZE</small></div>
+    <div class="trait-scope-heading"><strong id="traitOptimizeScopeTitle">특성 최적화 범위</strong><small>OPTIMIZE</small></div>
     <div class="trait-scope-pickers"><div class="trait-scope-field"><span>시작 구간 · 고정</span><strong class="trait-scope-fixed">루키</strong></div>
     <label class="trait-scope-field" for="optTier"><span>종료 구간 · 선택</span><select id="optTier" aria-label="특성 최적화 종료 구간"><option selected>루키</option><option>비기너</option><option>아마추어</option><option>프로</option><option>엑스퍼트</option><option>마스터</option><option>디바인</option><option>더원1</option><option>더원2</option><option>EP특성</option><option>RP특성</option><option>심연특성</option><option>무한∞</option></select></label></div>
-    <button class="btn pri ui-action-btn trait-scope-run" data-action="optimizeSP" type="button">특성 최적화 하기</button>
+    <div class="trait-scope-actions">
+      <button class="btn pri ui-action-btn trait-scope-run" data-action="optimizeSP" type="button">특성 최적화 하기</button>
+      <button class="btn subtle danger ui-action-btn trait-scope-reset" data-action="clearAll" type="button">특성 초기화</button>
+    </div>
   </section>
   <section class="trait-optimizer-row" aria-labelledby="traitUtilityScopeTitle">
-    <div class="trait-scope-heading"><span class="trait-scope-icon utility" aria-hidden="true">♛</span><strong id="traitUtilityScopeTitle">유틸 마스터 범위</strong><small>UTILITY MASTER</small></div>
+    <div class="trait-scope-heading"><strong id="traitUtilityScopeTitle">유틸 마스터 범위</strong><small>UTILITY MASTER</small></div>
     <div class="trait-scope-pickers"><div class="trait-scope-field"><span>시작 구간 · 고정</span><strong class="trait-scope-fixed">루키</strong></div>
     <label class="trait-scope-field" for="utilOptTier"><span>종료 구간 · 선택</span><select id="utilOptTier" aria-label="유틸 마스터 종료 구간"><option selected>루키</option><option>비기너</option><option>아마추어</option><option>프로</option><option>엑스퍼트</option><option>마스터</option><option>디바인</option><option>더원1</option><option>더원2</option></select></label></div>
-    <button class="btn pri ui-action-btn trait-scope-run utility" data-action="optimizeUtility" type="button">유틸 마스터 하기</button>
+    <div class="trait-scope-actions">
+      <button class="btn pri ui-action-btn trait-scope-run utility" data-action="optimizeUtility" type="button">유틸 마스터 하기</button>
+      <button class="btn subtle danger ui-action-btn trait-scope-reset" data-action="clearUtility" type="button">유틸 초기화</button>
+    </div>
   </section>
 </div>
 </div>
 <div class="trait-board-integrated-section trait-limit-section" aria-labelledby="traitLimitHeading">
 <h3 class="optimizer-head" id="traitLimitHeading"><span class="trait-limit-heading-copy"><span class="trait-limit-heading-title">특성 투자 제한</span><small>각 항목 투자 제한을 설정</small></span><span class="trait-limit-unlimited-hint">0 = 제한 없음</span></h3>
 <div class="trait-limit-grid">
-<section class="trait-limit-group" aria-labelledby="limitAttackTitle">
-<div class="trait-limit-group-heading"><span class="trait-limit-group-icon" aria-hidden="true">↗</span><div><strong id="limitAttackTitle">공격 계열</strong><small>공격력 · 공격속도 상한 설정</small></div></div>
+<section class="trait-limit-group" aria-label="공격 계열 제한">
 <div class="trait-limit-fields">
 <label class="trait-limit-field" for="traitLimitAD"><span>공격력</span><input id="traitLimitAD" type="text" inputmode="decimal" value="0" aria-label="공격력 제한"></label>
 <label class="trait-limit-field" for="traitLimitAS"><span>공격속도</span><input id="traitLimitAS" type="text" inputmode="decimal" value="0" aria-label="공격속도 제한"></label>
 </div>
 </section>
-<section class="trait-limit-group" aria-labelledby="limitCriticalTitle">
-<div class="trait-limit-group-heading"><span class="trait-limit-group-icon" aria-hidden="true">◎</span><div><strong id="limitCriticalTitle">치명타 계열</strong><small>확률 · 데미지 투자 상한</small></div></div>
+<section class="trait-limit-group" aria-label="치명타 계열 제한">
 <div class="trait-limit-fields">
 <label class="trait-limit-field" for="traitLimitCRI"><span>크리 확률</span><input id="traitLimitCRI" type="text" inputmode="decimal" value="0" aria-label="크리 확률 제한"></label>
 <label class="trait-limit-field" for="traitLimitCD"><span>크리 데미지</span><input id="traitLimitCD" type="text" inputmode="decimal" value="0" aria-label="크리 데미지 제한"></label>
 </div>
 </section>
-<section class="trait-limit-group" aria-labelledby="limitSpecialTitle">
-<div class="trait-limit-group-heading"><span class="trait-limit-group-icon" aria-hidden="true">∞</span><div><strong id="limitSpecialTitle">특수 계열</strong><small>투자 허용 여부 설정</small></div></div>
+<section class="trait-limit-group" aria-label="특수 계열 제한">
 <div class="trait-limit-fields">
 <div class="trait-limit-field trait-limit-special"><span id="traitLimitMultiTargetTitle">멀티타겟</span>
 <select id="traitLimitMultiTarget" class="trait-limit-source" aria-label="멀티타겟 투자" tabindex="-1" aria-hidden="true"><option value="ON">투자 가능</option><option value="OFF" selected>투자 제한</option></select>
@@ -724,8 +734,7 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 <div class="optimizer-head trait-recommendation-heading">
 <h3 id="traitRecommendationHeading">특성 추천</h3>
 <div class="trait-recommendation-heading-actions">
-<button type="button" class="btn pri ui-action-btn trait-recommendation-invest-all" id="traitRecommendationInvestAll" data-action="applyTraitRecommendationPlan" disabled>전체 투자</button>
-<button type="button" class="btn subtle danger ui-action-btn trait-recommendation-refund" data-action="refundTraitRecommendations" id="traitRecommendationRefund" disabled>전체 환불</button>
+<button type="button" class="btn pri ui-action-btn trait-recommendation-invest-all" id="traitRecommendationInvestAll" data-action="toggleTraitRecommendationInvestment" disabled>전체 투자</button>
 </div>
 </div>
 <div class="trait-recommendation-content">
@@ -737,7 +746,7 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 </div>
 </section>
 <section class="trait-standalone-panel trait-utility-panel" aria-labelledby="traitUtilityListHeading">
-  <header class="trait-utility-section-head"><span class="trait-utility-section-mark" aria-hidden="true">☷</span><span class="trait-utility-section-label"><strong id="traitUtilityListHeading">특성 유틸 리스트</strong></span></header>
+  <header class="trait-utility-section-head"><span class="trait-utility-section-mark" aria-hidden="true">✦</span><span class="trait-utility-section-label"><strong id="traitUtilityListHeading">특성 유틸 리스트</strong></span></header>
   <div class="tp-body" id="traitBody"></div>
 </section>
 </div>
@@ -745,7 +754,7 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 <div class="col-right">
 <!-- 스펙·유닛 보드: 전환 버튼·결과 -->
 <div class="data-card stat-dps-card right-analytics-workspace">
-<div class="right-workspace-navigation"><header class="right-workspace-head"><span class="right-workspace-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M3 16h4l3-8 4 11 3-6h4"/><path d="M3 3v18h18"/></svg></span><span class="right-workspace-copy"><strong>DPS 분석 보드</strong><small>SPEC &amp; UNIT ANALYTICS</small></span><button class="btn subtle ui-action-btn dps-header-jewel-btn" id="damageBoardJewelButton" type="button" data-trait-preset-unit-jewel-open="jewel" aria-haspopup="dialog" aria-controls="traitPresetUnitJewelModal" aria-expanded="false" aria-label="쥬얼 설정 열기" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 4h12l4 6-10 11L2 10l4-6Z"/><path d="M2 10h20M9 4l-2 6 5 11 5-11-2-6"/></svg><span>쥬얼 설정</span></button></header>
+<div class="right-workspace-navigation"><header class="right-workspace-head"><span class="right-workspace-mark" aria-hidden="true">✦</span><span class="right-workspace-copy"><strong>DPS 분석 보드</strong><small>SPEC &amp; UNIT ANALYTICS</small></span><button class="btn subtle ui-action-btn dps-header-jewel-btn" id="damageBoardJewelButton" type="button" data-trait-preset-unit-jewel-open="jewel" aria-haspopup="dialog" aria-controls="traitPresetUnitJewelModal" aria-expanded="false" aria-label="쥬얼 설정 열기" hidden><span class="modal-launch-star" aria-hidden="true">✦</span><span>쥬얼 설정</span></button></header>
 <div class="damage-board-tabs" role="tablist" aria-label="보드 선택" data-damage-board-tabs>
 <button class="damage-board-tab is-active" id="damageBoardSpecTab" type="button" role="tab" aria-selected="true" aria-controls="damageBoardSpecPanel" data-damage-board-tab="spec"><span class="damage-board-tab-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="3"/><circle cx="17" cy="9" r="3"/><path d="M2 20v-2a5 5 0 0 1 10 0v2H2Zm10 0v-2a5 5 0 0 1 10 0v2H12Z"/></svg></span><span class="damage-board-tab-copy"><span class="damage-board-tab-title">스펙 보드</span><span class="damage-board-tab-desc">순수 특성 스펙 기반 DPS 측정</span></span></button>
 <button class="damage-board-tab" id="damageBoardUnitTab" type="button" role="tab" aria-selected="false" aria-controls="damageBoardUnitPanel" data-damage-board-tab="unit"><span class="damage-board-tab-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="8" height="8" rx="2"/><rect x="14" y="3" width="8" height="8" rx="2"/><rect x="8" y="14" width="8" height="8" rx="2"/><path d="M6 11v3h6m6-3v3"/></svg></span><span class="damage-board-tab-copy"><span class="damage-board-tab-title">유닛 보드</span><span class="damage-board-tab-desc">히든조합 빌드 기반 DPS 측정</span></span></button>
@@ -755,13 +764,13 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 <section class="analytics-group analytics-summary-group" aria-label="모드 난이도 및 DPS">
 <input id="specDpsSpeedMode" type="hidden" value="OFF"/>
 <div class="dps-card stat-dps-summary right-dps-hero" id="statDpsSummary">
-  <div class="right-hero-context"><span class="dps-feature-heading"><span class="dps-feature-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/><path d="M12 2v4m0 12v4M2 12h4m12 0h4"/></svg></span><span class="dps-lbl">모드 / 난이도</span></span><strong class="right-hero-compact-mode" id="rightHeroCompactContext">—</strong><div class="dps-context-summary" id="dpsContextSummary"><strong id="dpsContextMode">—</strong><span class="right-hero-divider">/</span><strong id="dpsContextDiff">—</strong><small id="dpsContextModeDetail" hidden></small><small id="dpsContextDiffDetail" hidden></small></div></div>
-<div class="right-hero-metric"><span class="dps-feature-heading"><span class="dps-feature-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 2 9 10-9 10L3 12 12 2Z"/><path d="m12 8 4 4-4 4-4-4 4-4Z"/></svg></span><span class="dps-lbl" id="dpsMainLabel">DPS</span></span><strong class="dps-num" id="dpsVal">—</strong></div>
+  <div class="right-hero-context"><span class="dps-feature-heading"><span class="dps-lbl">모드 / 난이도</span></span><strong class="right-hero-compact-mode" id="rightHeroCompactContext">—</strong><div class="dps-context-summary" id="dpsContextSummary"><strong id="dpsContextMode">—</strong><span class="right-hero-divider">/</span><strong id="dpsContextDiff">—</strong><small id="dpsContextModeDetail" hidden></small><small id="dpsContextDiffDetail" hidden></small></div></div>
+<div class="right-hero-metric"><span class="dps-feature-heading"><span class="dps-lbl" id="dpsMainLabel">DPS</span></span><strong class="dps-num" id="dpsVal">—</strong></div>
 </div>
 </section>
 <div class="stat-grid stat-compare-grid right-spec-sections" id="statCompareGrid">
 <section class="analytics-group analytics-detail-group" aria-label="상세 데미지 정보">
-<header class="analytics-group-head analytics-group-head--icon"><span class="analytics-group-head-main"><span class="analytics-group-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="16" height="14" rx="2"/><path d="M8 9h8"/><path d="M8 13h3"/><path d="M14 13h2"/><path d="M8 16h4"/><path d="M15 16h1"/></svg></span><span class="analytics-group-copy"><strong>상세 데미지 정보</strong><small>DISPLAY / ACTUAL STATS</small></span></span></header>
+<header class="analytics-group-head analytics-group-head--icon"><span class="analytics-group-head-main"><span class="analytics-group-copy"><strong>상세 데미지 정보</strong><small>DISPLAY / ACTUAL STATS</small></span></span></header>
 <div class="right-spec-unified-table" role="table" aria-label="전투 스펙 통합 비교표">
 <div class="stat-row stat-head-row" role="row"><div class="sc-name" role="columnheader">능력치</div><div class="sc-val" role="columnheader">표기 스텟</div><div class="sc-val" role="columnheader">실기 스텟</div></div>
 <div class="stat-row" role="row"><div class="sc-name" role="cell">공격력</div><div class="sc-val" role="cell" id="sADDisplay">—</div><div class="sc-val" role="cell" id="sADActual">—</div></div>
@@ -838,7 +847,7 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 <div id="busPassengerModal" class="board-modal-shell busPassengerModal-shell" aria-hidden="true">
 <div class="board-modal-backdrop" data-board-modal-close="1"></div>
 <section class="board-modal board-modal-bus" role="dialog" aria-modal="true" aria-labelledby="busPassengerModalTitle">
-<header class="board-modal-head"><div class="board-modal-title-group"><span class="board-modal-brand-icon is-bus" aria-hidden="true">♧</span><div><h2 id="busPassengerModalTitle" class="board-modal-title">버스 승객</h2><small>BUS PASSENGER · XP GUIDE</small></div></div><button type="button" class="ui-icon-btn board-modal-close" data-board-modal-close="1" aria-label="버스 승객 닫기">×</button></header>
+<header class="board-modal-head"><div class="board-modal-title-group"><span class="board-modal-brand-icon" aria-hidden="true">✦</span><div><h2 id="busPassengerModalTitle" class="board-modal-title">버스 승객</h2><small>BUS PASSENGER · XP GUIDE</small></div></div><button type="button" class="ui-icon-btn board-modal-close" data-board-modal-close="1" aria-label="버스 승객 닫기">×</button></header>
 <div class="board-modal-body bus-passenger-modal-body">
 <div class="data-card bus-cut-card board-modal-card"><div class="board-modal-panel-label"><div><strong>승객별 기준값</strong><small>현재 시작 SP 기준 자동 계산</small></div></div>
 <div class="bus-cut-list" id="xpCutRows"></div>
@@ -849,9 +858,9 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 <div id="zeroRankInfoModal" class="board-modal-shell zeroRankInfoModal-shell" aria-hidden="true">
 <div class="board-modal-backdrop" data-board-modal-close="1"></div>
 <section class="board-modal board-modal-zero-rank" role="dialog" aria-modal="true" aria-labelledby="zeroRankInfoModalTitle">
-<header class="board-modal-head"><div class="board-modal-title-group"><span class="board-modal-brand-icon" aria-hidden="true">✦</span><div><h2 id="zeroRankInfoModalTitle" class="board-modal-title">더제로 승단표</h2><small>RANK REFERENCE · PROGRESSION</small></div></div><button type="button" class="ui-icon-btn board-modal-close" data-board-modal-close="1" aria-label="승단표 닫기">×</button></header>
+<header class="board-modal-head"><div class="board-modal-title-group"><span class="board-modal-brand-icon" aria-hidden="true">✦</span><div><h2 id="zeroRankInfoModalTitle" class="board-modal-title">더제로 승단표</h2></div></div><button type="button" class="ui-icon-btn board-modal-close" data-board-modal-close="1" aria-label="승단표 닫기">×</button></header>
 <div class="board-modal-body zero-rank-info-modal-body">
-<div class="zero-rank-modal-intro" aria-label="승단표 이용 안내"><span class="zero-rank-modal-intro-mark" aria-hidden="true">✦</span><div><strong>THE ZERO · RANK ARCHIVE</strong><p>승단 점수 기준과 등급별 혜택을 한눈에 비교해 보세요. 현재·목표 승단은 자동 강조됩니다.</p></div><span class="zero-rank-modal-intro-count">17 RANKS</span></div>
+<div class="zero-rank-modal-intro" aria-label="승단표 이용 안내"><div><strong>승단 기준 및 혜택</strong><p>승단 점수 기준과 등급별 혜택을 한눈에 비교해 보세요. 현재·목표 승단은 자동 강조됩니다.</p></div><span class="zero-rank-modal-intro-count">전체 17단계</span></div>
 <section class="zero-rank-info-panel">
 <section class="zero-rank-modal-section zero-rank-modal-score-section" aria-label="승단점수 정보">
 <h3 class="zero-rank-modal-section-title">승단점수 정보</h3>
@@ -961,7 +970,7 @@ loadScriptSequence(['data.js','calc.js','modal.js','app.js','preset.js','respons
   <div class="unit-slot-modal-backdrop" data-unit-detail-backdrop aria-hidden="true"></div>
   <section class="unit-slot-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="dpsUnitSlotDetailTitle" aria-describedby="unitSlotModalDescription">
     <header class="unit-slot-modal-header">
-      <span class="unit-slot-modal-icon" aria-hidden="true">▦</span>
+      <span class="unit-slot-modal-icon" aria-hidden="true">✦</span>
       <span class="unit-slot-modal-heading"><strong id="dpsUnitSlotDetailTitle">슬롯 1 상세 설정</strong><small id="unitSlotModalDescription">유닛·수량·강화·한계 돌파·쥬얼을 한곳에서 관리</small></span>
       <button class="unit-detail-close" type="button" id="unitSlotModalClose" data-unit-detail-close aria-label="슬롯 설정 닫기">닫기 ×</button>
     </header>
