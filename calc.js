@@ -519,7 +519,7 @@ function dpsBaseUnitSpeedModeEnabled(diffName=vs('diff')){
   return unifiedDpsSpeedModeEnabled(diffName);
 }
 function specDpsRoundTimeParts(round,diffName=vs('diff')){
-  const timeLoss=isPlanetExplorationDifficulty(diffName) ? 0 : dpsBaseUnitInvulnerabilityTimeLoss(diffName);
+  const timeLoss=specDpsInvulnerabilityTimeLoss(diffName);
   return roundTimeAfterSpeedAndLoss(
     enemyRoundTime(round,diffName),
     specDpsSpeedModeEnabled(diffName),
@@ -1237,15 +1237,16 @@ function dpsBaseUnitWeaponAttack(unit){
 }
 /* 유닛 보드 전투 모드·적 방어 효과 */
 const DPS_BASE_UNIT_ENEMY_BUFF_DIFFICULTIES=new Set(['Hell','Inferno','Lunatic','Holic','Epic','Ultimate','Impossible','The Final','Hall Of Fame','Abyss road','Deep Abyss','도전의 탑','행성탐사-코랄','행성탐사-아이어','행성탐사-제루스']);
-const DPS_BASE_UNIT_FIXED_INVULNERABILITY_DIFFICULTIES=new Set(['Hall Of Fame','Abyss road','Deep Abyss']);
-const DPS_BASE_UNIT_INVULNERABILITY_TIME_LOSS=4;
-const DPS_BASE_UNIT_PLANET_INVULNERABILITY_TIME_LOSS=5;
+const DPS_SPEC_FIXED_INVULNERABILITY_DIFFICULTIES=new Set(['Hall Of Fame','Abyss road','Deep Abyss']);
+const DPS_SPEC_FIXED_INVULNERABILITY_TIME_LOSS=4;
+const DPS_BASE_UNIT_INVULNERABILITY_TIME_LOSS=5;
+function specDpsInvulnerabilityTimeLoss(diffName=vs('diff')){
+  return DPS_SPEC_FIXED_INVULNERABILITY_DIFFICULTIES.has(difficultyName(diffName))
+    ? DPS_SPEC_FIXED_INVULNERABILITY_TIME_LOSS : 0;
+}
 function dpsBaseUnitInvulnerabilityTimeLoss(diffName=vs('diff')){
-  const name=difficultyName(diffName);
-  if(!DPS_BASE_UNIT_ENEMY_BUFF_DIFFICULTIES.has(name)) return 0;
-  if(isPlanetExplorationDifficulty(name)) return DPS_BASE_UNIT_PLANET_INVULNERABILITY_TIME_LOSS;
-  if(DPS_BASE_UNIT_FIXED_INVULNERABILITY_DIFFICULTIES.has(name)) return DPS_BASE_UNIT_INVULNERABILITY_TIME_LOSS;
-  return 0;
+  return DPS_BASE_UNIT_ENEMY_BUFF_DIFFICULTIES.has(difficultyName(diffName))
+    ? DPS_BASE_UNIT_INVULNERABILITY_TIME_LOSS : 0;
 }
 function dpsBaseUnitRoundTime(round,diffName=vs('diff')){
   return roundTimeAfterSpeedAndLoss(
@@ -1281,18 +1282,8 @@ function dpsBaseUnitRequiredDurability(enemyData,displayHR,displaySR){
 function dpsBaseUnitRequiredEnemyCount(enemyData){
   return Math.max(0,Number(enemyData?.count)||0);
 }
-/* 행성탐사 클리어 기준은 선택 층 물량/시간을 쓰되,
- * 내구도와 방어력 기준은 행성탐사 최고 기준층을 참조해 과소 계산을 막는다.
- */
-function dpsBaseUnitRequiredReferenceEnemyData(enemyData,diffName=vs('diff')){
-  if(!isPlanetExplorationDifficulty(diffName)) return enemyData;
-  const mode=battleDataModeForDifficulty(diffName);
-  const baseFloor=Number(mode?.maxRound)||PLANET_EXPLORATION_FLOOR_INPUT_MAX;
-  return enemyRoundData(baseFloor,diffName);
-}
-function dpsBaseUnitTargetProfiles({enemyData,defenseReduce,displayHR,displaySR,diffName=vs('diff'),durabilityEnemyData=null}){
+function dpsBaseUnitTargetProfiles({enemyData,defenseReduce,displayHR,displaySR,diffName=vs('diff')}){
   const count=dpsBaseUnitRequiredEnemyCount(enemyData,diffName);
-  const targetEnemy=durabilityEnemyData || enemyData;
   const profiles=[{
     player:1,
     count,
@@ -1312,15 +1303,14 @@ function dpsBaseUnitTargetProfiles({enemyData,defenseReduce,displayHR,displaySR,
   }
   return profiles.map(profile=>({
     ...profile,
-    durability:dpsBaseUnitRequiredDurability(targetEnemy,profile.hpReduce,profile.shieldReduce)
+    durability:dpsBaseUnitRequiredDurability(enemyData,profile.hpReduce,profile.shieldReduce)
   }));
 }
 function dpsBaseUnitRequiredDps({enemyData,defenseReduce,dmgReduce,round,displayHR,displaySR,diffName=vs('diff')}){
   const clearTime=dpsBaseUnitRoundTime(round,diffName);
-  const referenceEnemyData=dpsBaseUnitRequiredReferenceEnemyData(enemyData,diffName);
-  const enemyArmor=Math.max(0,Number(referenceEnemyData?.armor)||0);
+  const enemyArmor=Math.max(0,Number(enemyData?.armor)||0);
   const protectionFactor=dpsBaseUnitEnemyProtectionFactor(diffName);
-  const profiles=dpsBaseUnitTargetProfiles({enemyData,defenseReduce,displayHR,displaySR,diffName,durabilityEnemyData:referenceEnemyData});
+  const profiles=dpsBaseUnitTargetProfiles({enemyData,defenseReduce,displayHR,displaySR,diffName});
   if(clearTime<=0 || protectionFactor<=0) return 0;
   const requiredWork=profiles.reduce((sum,profile)=>{
     if(profile.count<=0 || profile.durability<=0) return sum;
