@@ -2299,7 +2299,7 @@ const STAT_KO={
 function statKo(type){return STAT_KO[type] || type;}
 function traitEffectText(row,type,rate){return !rate ? statKo(type) : `${statKo(type)} +${rate}${T_UA.has(row)?'%':''}`;}
 const TRAIT_OPT_NORMAL_ROWS={
-  SP:new Set([42,43,46,52,53,58,60,61,68,70,71,77,84,85,86,92,93,94,95,96,99,100,101,102,103,104,108,109,110,111,115,79]),
+  SP:new Set([42,43,44,46,52,53,54,58,60,61,62,68,70,71,77,79,84,85,86,92,93,94,95,96,99,100,101,102,103,104,108,109,110,111,115]),
   EP:new Set([117,118,119,120,121,122]),
   RP:new Set([125,126,127,129,130]),
   SOUL:new Set([131,132,133,134,135,136,137])
@@ -2434,176 +2434,202 @@ function isTraitOptimizationTarget(t){
   if(info.kind==='SP') return allowedRowsByTier().has(row);
   return true;
 }
-function evaluateTraitOptimizationCandidate(base, kind, rem, changes, label, options={}){
+/* VBA V1 효율표: 한 번 투자했을 때의 DPS 증가/다음 투자비용으로 순위를 정한다.
+ * SP 400만 초과 시의 5회 투자는 대상을 선택한 뒤에만 적용한다. */
+const TRAIT_V1_TARGET_ROWS=Object.freeze({
+  SP:Object.freeze([42,43,46,52,53,58,60,61,68,70,71,77,84,85,86,92,93,94,95,96,99,100,101,102,103,104,108,109,110,111,115,44,54,62,79]),
+  EP:Object.freeze([117,118,119,120,121,122]),
+  RP:Object.freeze([125,126,127,129,130]),
+  SOUL:Object.freeze([131,132,133,134,135,136,137])
+});
+const TRAIT_OPTIMIZATION_HARD_STEP_LIMIT=10000;
+function traitV1IsArtifactMode(){
+  return typeof isArtifactDpsViewEnabled==='function' && isArtifactDpsViewEnabled();
+}
+function traitV1TargetRows(kind){
+  const artifact=traitV1IsArtifactMode();
+  return (TRAIT_V1_TARGET_ROWS[kind]||[]).filter(row=>{
+    if(kind==='SP' && [44,54,62,79].includes(row) && !artifact) return false;
+    const t=traitByRow(row);
+    return t && isTraitOptimizationTarget(t) && (!artifact || t[3]!=='AS');
+  });
+}
+function traitV1DpsValue(stats){
+  return traitV1IsArtifactMode() ? calculateArtifactDpsRaw(stats).dps : stats.M19;
+}
+function evaluateTraitV1Changes(base,kind,remaining,changes,label,scoreCost=null){
+  if(!changes?.length) return null;
   let cost=0;
   for(const [row,add] of changes){
-    const info=traitOptimizationResourceInfo(row);
-    if(!info || info.kind!==kind) return null;
-    const c=traitOptimizationDeltaCost(row,add);
-    if(!Number.isFinite(c) || c<=0) return null;
-    cost+=c;
+    if(traitOptimizationResourceInfo(row)?.kind!==kind) return null;
+    const nextCost=traitOptimizationDeltaCost(row,add);
+    if(!Number.isFinite(nextCost) || nextCost<=0) return null;
+    cost+=nextCost;
   }
-  if(cost>rem) return null;
-  const ns=withTemporaryTraitInvestments(changes, computeLightweightStatsRaw);
-  const limitsOk=traitLimitStatsOk(ns);
-  if(!limitsOk) return null;
-  const gain=ns.M19-base.M19;
-  if(gain<=0) return null;
-  const primaryRow=changes[0]?.[0];
-  return {changes,primaryRow,kind,score:gain/cost,gain,cost,label:label||traitName(primaryRow),nextStats:ns};
+  if(cost>remaining) return null;
+  const stats=withTemporaryTraitInvestments(changes,computeLightweightStatsRaw);
+  if(!traitLimitStatsOk(stats)) return null;
+  const gain=traitV1DpsValue(stats)-traitV1DpsValue(base);
+  if(!Number.isFinite(gain) || gain<=0) return null;
+  const divisor=scoreCost===null ? cost : scoreCost;
+  if(!Number.isFinite(divisor) || divisor<=0 || divisor>remaining) return null;
+  return {kind,changes,cost,score:gain/divisor,label};
 }
-function critTraitOptimizationCandidate(base, kind, rem, row, rate, options={}){
-  if((INV[row]||0)>=(TMAX[row]||999)) return null;
-  const s=base;
-  if(s.M8<300) return null;
-  const mod=((s.M8%20)+20)%20;
-  const needStat=mod===0 ? 20 : 20-mod;
-  const add=Math.ceil(needStat/rate);
+function traitV1CritCandidate(base,kind,remaining,row,rate){
+  const t=traitByRow(row);
+  if(!t || !isTraitOptimizationTarget(t) || base.M8<300) return null;
+  const remainder=((base.M8%20)+20)%20;
+  const points=remainder===0 ? 20 : 20-remainder;
+  const add=Math.ceil(points/rate);
   if(add<=0 || (INV[row]||0)+add>(TMAX[row]||999)) return null;
-  return evaluateTraitOptimizationCandidate(base, kind, rem, [[row,add]], options.label || traitName(row), options);
+  return evaluateTraitV1Changes(base,kind,remaining,[[row,add]],`초과 크리티컬 ${row}`);
 }
-function traitOptimizationMultiTargetBundleCandidate(base, rem, options={}){
+function traitV1MultiTargetCandidate(base,remaining){
   if(!traitLimitSwitchOn('traitLimitMultiTarget')) return null;
   const changes=[[100,100],[101,70],[102,80]];
-  if(options.selectedTierOnly && changes.some(([row])=>!allowedRowsByTier().has(row))) return null;
-  if(Number.isFinite(options.currentSumLimit) && changes.reduce((sum,[row])=>sum+(INV[row]||0),0)>options.currentSumLimit) return null;
-  for(const [row,add] of changes){
-    const t=traitByRow(row);
-    if(options.requireTargetTrait!==false && (!t || !isTraitOptimizationTarget(t))) return null;
-    if((INV[row]||0)+add>(TMAX[row]||999)) return null;
-  }
-  if(options.fullCost){
-    let cost=0;
-    for(const [row,add] of changes){
-      cost+=cumCost(row,(INV[row]||0)+add);
-    }
-    if(!Number.isFinite(cost) || cost<=0 || cost>rem) return null;
-    const ns=withTemporaryTraitInvestments(changes, computeLightweightStatsRaw);
-    const limitsOk=traitLimitStatsOk(ns);
-    const gain=ns.M19-base.M19;
-    if(!limitsOk || gain<=0) return null;
-    return {changes,kind:'SP',score:gain/cost,gain,cost,label:'멀티 타겟 분기점',nextStats:ns};
-  }
-  return evaluateTraitOptimizationCandidate(base, 'SP', rem, changes, '멀티 타겟 분기점', options);
+  if(changes.some(([row,add])=>!isTraitOptimizationTarget(traitByRow(row)) || (INV[row]||0)+add>(TMAX[row]||999))) return null;
+  if(changes.reduce((sum,[row])=>sum+(INV[row]||0),0)>50) return null;
+  // VBA H218: 현재 투자치에서의 증가비가 아닌, 목표 투자치의 누적비용으로 평가.
+  const fullCost=changes.reduce((sum,[row,add])=>sum+cumCost(row,(INV[row]||0)+add),0);
+  return evaluateTraitV1Changes(base,'SP',remaining,changes,'멀티 타겟 분기점',fullCost);
 }
-/* 특성 자동 최적화: 재화·구간별 투자 */
-const TRAIT_OPTIMIZATION_HARD_STEP_LIMIT=10000;
-function traitOptimizationNormalAddCount(row,kind,rem){
-  if(kind!=='SP') return 1;
-  if(rem<=4000000) return 1;
-  if(row===77 || row===104 || row===116) return 1;
-  return 5;
-}
-function boundedTraitOptimizationChanges(row,add,rem){
-  const mx=TMAX[row]||999;
-  const current=INV[row]||0;
-  let n=Math.min(add,mx-current);
-  while(n>0 && traitOptimizationDeltaCost(row,n)>rem) n--;
-  return n>0 ? [[row,n]] : null;
-}
-function traitOptimizationTargetTraits(kind,options={}){
-  return TRAITS.filter(t=>traitOptimizationResourceInfo(t[0])?.kind===kind && isTraitOptimizationTarget(t)
-    && (kind!=='SP' || (t[2]===INFINITE_TRAIT_TIER)===Boolean(options.infinite)));
-}
-function preferTraitOptimizationCandidate(current,candidate){
-  return candidate && (!current || candidate.score>current.score) ? candidate : current;
-}
-function bestTraitOptimizationCandidate(base,kind,rem,targetTraits,options={}){
+function traitV1BestCandidate(kind,remaining){
+  const base=computeLightweightStatsRaw();
   let best=null;
-  for(const t of targetTraits){
-    const [row]=t;
-    const current=INV[row]||0;
-    const mx=TMAX[row]||999;
-    if(current>=mx) continue;
-    const add=traitOptimizationNormalAddCount(row,kind,rem);
-    const changes=boundedTraitOptimizationChanges(row,add,rem);
-    if(!changes) continue;
-    best=preferTraitOptimizationCandidate(best,evaluateTraitOptimizationCandidate(base,kind,rem,changes,String(row),{visibleGain:false}));
+  function consider(candidate){
+    // VBA MAX(H181:H218)과 첫 번째 동점 우선 선택을 그대로 유지한다.
+    if(candidate && (!best || candidate.score>best.score)) best=candidate;
   }
-  if(kind==='SP' && !options.infiniteOnly){
-    best=preferTraitOptimizationCandidate(best,critTraitOptimizationCandidate(base,kind,rem,95,0.5,{visibleGain:false,label:'CRI→MC 95'}));
-    best=preferTraitOptimizationCandidate(best,traitOptimizationMultiTargetBundleCandidate(base,rem,{selectedTierOnly:true,currentSumLimit:50,requireTargetTrait:false,fullCost:true,visibleGain:false}));
+  for(const row of traitV1TargetRows(kind)){
+    if((INV[row]||0)>=(TMAX[row]||999)) continue;
+    consider(evaluateTraitV1Changes(base,kind,remaining,[[row,1]],traitName(row)));
   }
-  if(kind==='EP'){
-    best=preferTraitOptimizationCandidate(best,critTraitOptimizationCandidate(base,kind,rem,119,1,{visibleGain:false,label:'CRI→MC 119'}));
-  }
-  if(kind==='RP'){
-    best=preferTraitOptimizationCandidate(best,critTraitOptimizationCandidate(base,kind,rem,127,2,{visibleGain:false,label:'CRI→MC 127'}));
+  if(kind==='SP'){
+    consider(traitV1CritCandidate(base,kind,remaining,95,0.5));
+    consider(traitV1MultiTargetCandidate(base,remaining));
+  }else if(kind==='EP'){
+    consider(traitV1CritCandidate(base,kind,remaining,119,1));
+  }else if(kind==='RP'){
+    consider(traitV1CritCandidate(base,kind,remaining,127,2));
   }
   return best;
 }
-function applyTraitOptimizationCandidate(candidate,kind){
-  if(!candidate) return 0;
-  const rem=resourceOwn(kind)-resourceUsed(kind);
-  const appliedChanges=[];
-  let actualCost=0;
-  for(const [row,add] of candidate.changes){
-    const current=INV[row]||0;
-    const max=TMAX[row]||999;
-    const normalizedAdd=Math.max(0,Math.round(+add||0));
-    const next=Math.min(max,current+normalizedAdd);
-    if(next<=current) return 0;
-    const cost=traitOptimizationDeltaCost(row,next-current);
-    if(!Number.isFinite(cost) || cost<=0) return 0;
-    actualCost+=cost;
-    if(actualCost>rem) return 0;
-    appliedChanges.push([row,current,next-current]);
+function traitV1ApplyCandidate(candidate,kind,remaining){
+  if(!candidate) return false;
+  let changes=candidate.changes;
+  if(kind==='SP' && changes.length===1 && !candidate.label.startsWith('초과 크리티컬')){
+    const row=changes[0][0];
+    if(![77,104].includes(row) && remaining>4000000){
+      // VBA V1: 최고 효율을 1회 투자 기준으로 선택한 뒤, 최대 5회 투자한다.
+      // 웹에서는 추가 4회의 비용까지 재화 범위 안으로 제한하여 초과 투자를 방지한다.
+      let add=Math.min(5,(TMAX[row]||999)-(INV[row]||0));
+      while(add>1 && traitOptimizationDeltaCost(row,add)>remaining) add--;
+      changes=[[row,add]];
+    }
   }
-  if(!Number.isFinite(actualCost) || actualCost<=0) return 0;
-  for(const [row,current,add] of appliedChanges){
-    INV[row]=Math.min(TMAX[row]||999,current+add);
+  let cost=0;
+  for(const [row,add] of changes){
+    const deltaCost=traitOptimizationDeltaCost(row,add);
+    if(!Number.isFinite(deltaCost) || deltaCost<=0) return false;
+    cost+=deltaCost;
   }
-  const changed=appliedChanges.some(([row,current])=>(INV[row]||0)!==current);
-  return changed ? actualCost : 0;
+  if(cost>remaining) return false;
+  const next=withTemporaryTraitInvestments(changes,computeLightweightStatsRaw);
+  if(!traitLimitStatsOk(next)){
+    // 다회 투자에 한해 최대 허용 투자 수로 축소한다.
+    if(changes.length!==1 || changes[0][1]<=1) return false;
+    const row=changes[0][0];
+    for(let add=changes[0][1]-1;add>=1;add--){
+      const smaller=[[row,add]];
+      const smallerCost=traitOptimizationDeltaCost(row,add);
+      if(smallerCost<=remaining && traitLimitStatsOk(withTemporaryTraitInvestments(smaller,computeLightweightStatsRaw))){
+        changes=smaller;
+        break;
+      }
+    }
+    if(changes[0][1]>1 && !traitLimitStatsOk(withTemporaryTraitInvestments(changes,computeLightweightStatsRaw))) return false;
+  }
+  for(const [row,add] of changes) INV[row]=(INV[row]||0)+add;
+  return true;
 }
-function createTraitOptimizationGuard(){
-  return {steps:0,aborted:false,reason:''};
-}
-function abortTraitOptimizationGuard(guard,reason){
-  guard.aborted=true;
-  guard.reason=reason || 'unknown';
-  return false;
-}
+function createTraitOptimizationGuard(){return {steps:0,aborted:false,reason:''};}
 function traitOptimizationGuardCanContinue(guard){
-  if(!guard || guard.aborted) return false;
-  if(guard.steps>=TRAIT_OPTIMIZATION_HARD_STEP_LIMIT) return abortTraitOptimizationGuard(guard,'step-limit');
+  if(guard.aborted) return false;
+  if(guard.steps>=TRAIT_OPTIMIZATION_HARD_STEP_LIMIT){
+    guard.aborted=true;
+    guard.reason='step-limit';
+    return false;
+  }
   return true;
 }
-function runTraitOptimizationStep(kind,targetTraits,guard,options={}){
-  if(!traitOptimizationGuardCanContinue(guard)) return false;
-  const rem=resourceOwn(kind)-resourceUsed(kind);
-  if(rem<=0) return false;
-  const base=computeLightweightStatsRaw();
-  const best=bestTraitOptimizationCandidate(base,kind,rem,targetTraits,options);
-  const actualCost=applyTraitOptimizationCandidate(best,kind);
-  if(actualCost<=0) return false;
-  guard.steps++;
+function traitV1TryCorrection(row,quantity){
+  const t=traitByRow(row);
+  if(!t || !isTraitOptimizationTarget(t)) return false;
+  const kind=traitOptimizationResourceInfo(row)?.kind;
+  if(!kind) return false;
+  const remaining=resourceOwn(kind)-resourceUsed(kind);
+  const available=Math.max(0,(TMAX[row]||999)-(INV[row]||0));
+  let add=Math.min(quantity,available);
+  while(add>0 && traitOptimizationDeltaCost(row,add)>remaining) add--;
+  if(!add) return false;
+  const next=withTemporaryTraitInvestments([[row,add]],computeLightweightStatsRaw);
+  if(!traitLimitStatsOk(next)) return false;
+  INV[row]=(INV[row]||0)+add;
   return true;
 }
-function runTraitOptimizationPass(kind,targetTraits,guard,options={}){
-  const passLimit=targetTraits.reduce((sum,t)=>sum+Math.max(0,(TMAX[t[0]]||999)-(INV[t[0]]||0)),0)+1;
-  for(let pass=0;pass<passLimit && !guard.aborted;pass++){
-    if(!runTraitOptimizationStep(kind,targetTraits,guard,options)) break;
+function traitV1RestoreNegativeStats(guard){
+  // VBA Stat_Induce: 음수 AD/TD인 극한 난이도에서 일반 효율 산출 전에 양수로 복구.
+  // 기존 웹의 투자 제한, 종료 구간, 재화 잔액은 지키며 유틸 특성은 건드리지 않는다.
+  let stats=computeLightweightStatsRaw();
+  if(stats.M4>0 && stats.M11>0) return;
+  traitV1TryCorrection(42,5);
+  traitV1TryCorrection(52,15);
+  for(let i=0;i<50 && traitOptimizationGuardCanContinue(guard);i++){
+    stats=computeLightweightStatsRaw();
+    let changed=false;
+    if(stats.M4<=0){
+      for(const [row,add] of [[60,25],[84,9],[93,4],[96,5],[108,3],[117,2],[125,2],[132,2],[133,2]]){
+        // VBA의 강화/침식 보정은 현재 웹의 기존 특성 투자 제한 범위 내에서만 수행.
+        if(row===132 || row===96) continue;
+        changed=traitV1TryCorrection(row,add)||changed;
+      }
+    }
+    if(stats.M11<=0){
+      for(const [row,add] of [[92,5],[129,1],[131,2],[135,2]]){
+        if(row===131) continue;
+        changed=traitV1TryCorrection(row,add)||changed;
+      }
+    }
+    if(!changed) break;
+    guard.steps++;
+  }
+}
+function traitV1RunResource(kind,guard){
+  if(!traitV1TargetRows(kind).length) return;
+  while(traitOptimizationGuardCanContinue(guard)){
+    const remaining=resourceOwn(kind)-resourceUsed(kind);
+    if(remaining<=0) break;
+    const best=traitV1BestCandidate(kind,remaining);
+    if(!traitV1ApplyCandidate(best,kind,remaining)) break;
+    guard.steps++;
   }
 }
 function optimizeSP(){
   const before=Object.fromEntries(Object.entries(INV));
   const guard=createTraitOptimizationGuard();
   try{
-    const kinds=['SP','EP','RP','SOUL'];
-    for(const kind of kinds){
+    // VBA Optimize_V1: SP를 끝까지 최적화한 후 EP → RP → 혼으로 진행.
+    // 무한 SP도 H207:H211처럼 동일한 SP 효율 후보로 취급한다.
+    traitV1RestoreNegativeStats(guard);
+    for(const kind of ['SP','EP','RP','SOUL']){
       if(guard.aborted) break;
-      runTraitOptimizationPass(kind,traitOptimizationTargetTraits(kind),guard);
-    }
-    if(!guard.aborted){
-      const infiniteTargets=traitOptimizationTargetTraits('SP',{infinite:true});
-      if(infiniteTargets.length) runTraitOptimizationPass('SP',infiniteTargets,guard,{infiniteOnly:true});
+      traitV1RunResource(kind,guard);
     }
     if(guard.aborted) showToast('최적화 계산을 안전하게 중단했습니다. 투자 범위를 줄여 다시 시도해 주세요.','warn');
     commitAppUpdate({recalculate:'now'});
     return !guard.aborted;
   }catch(error){
-    Object.keys(INV).forEach(row=>{ INV[row]=before[row] ?? 0; });
+    Object.keys(INV).forEach(row=>{INV[row]=before[row] ?? 0;});
     if(116 in INV) INV[116]=0;
     rememberAppIssue('error','특성 최적화 계산',error);
     showToast('특성 최적화 계산 중 오류가 발생해 변경사항을 되돌렸습니다.','err');
