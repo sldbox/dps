@@ -1096,6 +1096,17 @@ function dpsBaseUnitInstanceGroups(unitOrId,quantityOverride,jewelSettings=dpsJe
   }
   const bareCount=Math.max(0,quantity-groups.length);
   if(bareCount>0) addGroup(groups.length+1,0,'',bareCount);
+  // 토파즈는 장착한 1기와 같은 유닛의 다른 1기에 고유 옵션만 추가한다.
+  // 상대 유닛이 다른 쥬얼을 장착해도 기존 능력치는 그대로 유지한다.
+  const topazIndex=groups.findIndex(group=>group.name==='토파즈');
+  if(quantity>=2 && topazIndex>=0){
+    const holder=groups[topazIndex];
+    const target=groups.find((group,index)=>index!==topazIndex);
+    if(target){
+      const effect=window.DPS_DATA?.DPS_JEWEL_EFFECTS?.['토파즈']?.[holder.stats.mythic==='Y' ? 'mythic' : 'legendary'] || {};
+      target.stats={...target.stats,as:target.stats.as+(Number(effect.as)||0),td:target.stats.td+(Number(effect.td)||0)};
+    }
+  }
   return groups;
 }
 function dpsBaseUnitJewelStats(unitOrId,settings=null){
@@ -2727,7 +2738,6 @@ function bestTraitRecommendationForRow(t,base,remaining,useUnitBoard=false){
 }
 /* 전체 잔여 재화 기반 투자 계획: 계산 중 실제 INV는 변경하지 않는다. */
 function traitRecommendationPlanSnapshot(useUnitBoard){
-  const base=traitRecommendationStats(useUnitBoard);
   return {
     useUnitBoard,
     investments:TRAITS.map(t=>INV[t[0]]||0),
@@ -2735,20 +2745,18 @@ function traitRecommendationPlanSnapshot(useUnitBoard){
     limits:TRAIT_LIMIT_CONFIG.map(item=>String(vs(item.id))),
     multi:traitLimitSwitchOn('traitLimitMultiTarget'),
     infinite:traitLimitSwitchOn('traitLimitInfinite'),
-    artifact:isArtifactDpsViewEnabled(),
-    dps:traitRecommendationDpsValue(base,useUnitBoard)
+    hasUnit:useUnitBoard ? dpsBaseUnitSelectionIds(vs('dpsBaseUnits')).length>0 : true
   };
 }
 function traitRecommendationPlanMatches(snapshot){
   if(!snapshot || snapshot.useUnitBoard!==isUnitBoardRecommendationMode() ||
-     snapshot.artifact!==isArtifactDpsViewEnabled() ||
+     snapshot.hasUnit!==(snapshot.useUnitBoard ? dpsBaseUnitSelectionIds(vs('dpsBaseUnits')).length>0 : true) ||
      snapshot.multi!==traitLimitSwitchOn('traitLimitMultiTarget') ||
      snapshot.infinite!==traitLimitSwitchOn('traitLimitInfinite')) return false;
   if(TRAITS.some((t,i)=>(INV[t[0]]||0)!==snapshot.investments[i])) return false;
   if(TRAIT_LIMIT_CONFIG.some((item,i)=>String(vs(item.id))!==snapshot.limits[i])) return false;
   if(Object.keys(snapshot.remaining).some(kind=>Math.abs(Math.max(0,resourceOwn(kind)-resourceUsed(kind))-snapshot.remaining[kind])>1e-6)) return false;
-  const dps=traitRecommendationDpsValue(traitRecommendationStats(snapshot.useUnitBoard),snapshot.useUnitBoard);
-  return Number.isFinite(dps) && Math.abs(dps-snapshot.dps)<=1e-7*Math.max(1,Math.abs(dps));
+  return true;
 }
 function applyTraitRecommendation(row,amount){
   synchronizeTraitRecommendationCredits();

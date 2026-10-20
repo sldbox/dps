@@ -613,7 +613,7 @@ function requestAppUpdate(options={}){
 }
 function commitAppUpdate(options={}){
   const recalculate=options.recalculate ?? 'defer';
-  const save=options.save!==false;
+  const save=options.save!==false && !dpsUnitSlotPending;
   const saveNow=options.saveNow===true;
   if(recalculate==='now'){
     if(appUpdateTimer) clearTimeout(appUpdateTimer);
@@ -1091,7 +1091,7 @@ function dpsBaseUnitFieldEntries(){
   const units=dpsBaseUnitList();
   const quantityEntries=units.filter(dpsBaseUnitHasQuantity).map(unit=>[
     dpsBaseUnitQuantityInputId(unit),
-    {kind:'유닛 보드',name:`${unit.label || unit.id} 수량`,save:true}
+    {kind:'유닛 보드',name:`${unit.label || unit.id} 마리수`,save:true}
   ]);
   const settingEntries=units.flatMap(unit=>{
     const entries=[[dpsBaseUnitEnhanceInputId(unit),{kind:'유닛 보드',name:`${unit.label || unit.id} 강화 기대값`,save:true}]];
@@ -1372,7 +1372,7 @@ function dpsBaseUnitQuantityControlHtml(unit, slotIndex, idPrefix='dpsBaseUnitSl
   const value=normalizeDpsBaseUnitQuantityValue(dpsBaseUnitStoreInput('quantity',unit)?.value || 0,unit);
   const increaseDisabled=Number(value)>=limit ? ' disabled aria-disabled="true"' : '';
   const label=escapeHtml(dpsBaseUnitLabel(unit.id));
-  return `<div class="dps-base-unit-qty-control" data-dps-base-unit-qty-control="${escapeHtml(unit.id)}"><button class="ui-choice-btn dps-base-unit-qty-btn" data-dps-base-unit-qty-delta="-1" data-dps-base-unit-id="${escapeHtml(unit.id)}" type="button" aria-label="${label} 수량 감소">−</button><input class="dps-base-unit-qty-input" id="${idPrefix}${slotIndex+1}" data-dps-base-unit-slot-quantity="${escapeHtml(unit.id)}" inputmode="numeric" type="text" min="0" max="${limit}" value="${escapeHtml(value)}" aria-label="${label} 수량"/><button class="ui-choice-btn dps-base-unit-qty-btn" data-dps-base-unit-qty-delta="1" data-dps-base-unit-id="${escapeHtml(unit.id)}" type="button" aria-label="${label} 수량 증가"${increaseDisabled}>+</button></div>`;
+  return `<div class="dps-base-unit-qty-control" data-dps-base-unit-qty-control="${escapeHtml(unit.id)}"><button class="ui-choice-btn dps-base-unit-qty-btn" data-dps-base-unit-qty-delta="-1" data-dps-base-unit-id="${escapeHtml(unit.id)}" type="button" aria-label="${label} 마리수 감소">−</button><input class="dps-base-unit-qty-input" id="${idPrefix}${slotIndex+1}" data-dps-base-unit-slot-quantity="${escapeHtml(unit.id)}" inputmode="numeric" type="text" min="0" max="${limit}" value="${escapeHtml(value)}" aria-label="${label} 마리수"/><button class="ui-choice-btn dps-base-unit-qty-btn" data-dps-base-unit-qty-delta="1" data-dps-base-unit-id="${escapeHtml(unit.id)}" type="button" aria-label="${label} 마리수 증가"${increaseDisabled}>+</button></div>`;
 }
 /* 쥬얼 이미지·표시 및 설정 */
 function getJewelImageSources(name){
@@ -1848,17 +1848,61 @@ function dpsBaseUnitSlotHtml(unitId, slotIndex, slots){
   const attack=result ? dpsBaseUnitAttackText(result) : '—';
   const pierce=result ? dpsBaseUnitPercentText(result.effectivePierce) : (unit ? (dpsBaseUnitIsArtifact(unit) ? '0%' : dpsBaseUnitPercentText(dpsBaseUnitBoardBasePierce + dpsBaseUnitPierceBonus(unit))) : '—');
   const dps=result ? dpsBaseUnitDpsText(result) : '—';
-  const entry=`<div class="dps-base-unit-entry dps-base-unit-slot${empty ? ' is-empty' : ''}${unit && dpsBaseUnitHasQuantity(unit) ? ' has-quantity' : ' is-fixed'}" data-dps-base-unit-slot-row="${slotIndex}">${dpsBaseUnitFieldHtml(dpsBaseUnitNameFieldLabelHtml(unit),'dps-base-unit-name-field',selectControl)}${dpsBaseUnitFieldHtml('공격력','dps-base-unit-attack-field',`<span class="dps-base-unit-board-cell dps-base-unit-board-attack">${escapeHtml(attack)}</span>`)}${dpsBaseUnitFieldHtml('방어력 관통','dps-base-unit-pierce-field',`<span class="dps-base-unit-board-cell dps-base-unit-board-pierce">${escapeHtml(pierce)}</span>`)}${dpsBaseUnitFieldHtml(unit && dpsBaseUnitIsArtifact(unit)?'파장 총 DPS':'총 DPS','dps-base-unit-dps-field',`<b class="dps-base-unit-board-cell dps-base-unit-board-dps">${escapeHtml(dps)}</b>`)}${dpsBaseUnitFieldHtml('수량','dps-base-unit-quantity-field',`<div class="dps-base-unit-board-cell dps-base-unit-board-quantity">${dpsBaseUnitQuantityControlHtml(unit,slotIndex)}</div>`)}</div>`;
+  const entry=`<div class="dps-base-unit-entry dps-base-unit-slot${empty ? ' is-empty' : ''}${unit && dpsBaseUnitHasQuantity(unit) ? ' has-quantity' : ' is-fixed'}" data-dps-base-unit-slot-row="${slotIndex}">${dpsBaseUnitFieldHtml(dpsBaseUnitNameFieldLabelHtml(unit),'dps-base-unit-name-field',selectControl)}${dpsBaseUnitFieldHtml('공격력','dps-base-unit-attack-field',`<span class="dps-base-unit-board-cell dps-base-unit-board-attack">${escapeHtml(attack)}</span>`)}${dpsBaseUnitFieldHtml('방어력 관통','dps-base-unit-pierce-field',`<span class="dps-base-unit-board-cell dps-base-unit-board-pierce">${escapeHtml(pierce)}</span>`)}${dpsBaseUnitFieldHtml(unit && dpsBaseUnitIsArtifact(unit)?'파장 총 DPS':'총 DPS','dps-base-unit-dps-field',`<b class="dps-base-unit-board-cell dps-base-unit-board-dps">${escapeHtml(dps)}</b>`)}${dpsBaseUnitFieldHtml('마리수','dps-base-unit-quantity-field',`<div class="dps-base-unit-board-cell dps-base-unit-board-quantity">${dpsBaseUnitQuantityControlHtml(unit,slotIndex)}</div>`)}</div>`;
   return `<article class="dps-base-unit-card right-unit-slot-card${empty?' is-empty':''}" aria-label="유닛 슬롯 ${slotIndex+1}"><div class="right-unit-slot-performance">${entry}</div><div class="right-unit-slot-settings">${dpsBaseUnitSettingsHtml(unit,slotIndex)}</div></article>`;
 }
 let dpsUnitSelectedSlot=0;
 let dpsUnitDetailOpen=false;
+let dpsUnitSlotPending=null;
+function beginDpsUnitSlotAddition(index){
+  // 기존 상태와 변경된 쥬얼 배정까지 함께 복원할 수 있도록 저장 입력을 보관한다.
+  ensureDpsBaseUnitStore();
+  dpsUnitSlotPending={
+    index,
+    previousSelectedSlot:dpsUnitSelectedSlot,
+    fields:new Map([...USER_STATE_VALUE_IDS].map(id=>[id,$(id)?.value]).filter(([,value])=>value!==undefined))
+  };
+  if(typeof cancelScheduledAutoSave==='function') cancelScheduledAutoSave();
+  dpsUnitSelectedSlot=index;
+  dpsUnitDetailOpen=true;
+  syncDpsBaseUnitControl({skipJewelConfig:true});
+  // 비표시 원본 select 대신 화면에 생성된 실제 선택 버튼으로 포커스를 이동한다.
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{
+    if(!dpsUnitDetailOpen || dpsUnitSlotPending?.index!==index) return;
+    const button=$('dpsBaseUnitSlot'+(index+1))?.nextElementSibling;
+    (button?.matches('.app-select-trigger') ? button : $('unitSlotModalClose'))?.focus({preventScroll:true});
+  }));
+}
+function restorePendingDpsUnitSlot(){
+  const pending=dpsUnitSlotPending;
+  if(!pending) return;
+  dpsUnitSlotPending=null;
+  pending.fields.forEach((value,id)=>{ const field=$(id); if(field) field.value=value; });
+  dpsUnitSelectedSlot=pending.previousSelectedSlot;
+}
+function confirmDpsUnitSlotModal(){
+  if(!dpsUnitDetailOpen) return;
+  if(dpsUnitSlotPending){
+    const pending=dpsUnitSlotPending;
+    // 유닛 미선택 상태는 슬롯 생성 확정으로 취급하지 않는다.
+    if(!dpsBaseUnitById(currentDpsBaseUnitSlots()[pending.index])) return;
+    dpsUnitSlotPending=null;
+    const visible=$('dpsBaseUnitVisibleSlotCount');
+    if(visible) visible.value=String(pending.index+1);
+    dpsUnitDetailOpen=false;
+    syncDpsBaseUnitControl({skipJewelConfig:true});
+    commitAppUpdate();
+    $('dpsBaseUnitSlotStack')?.querySelector(`[data-unit-list-select="${pending.index}"]`)?.focus({preventScroll:true});
+    return;
+  }
+  closeDpsUnitSlotModal();
+}
 // 기존 유닛 배치값은 항상 10칸으로 보존하고, 화면에 표시할 슬롯 수만 따로 관리합니다.
 function dpsUnitVisibleCount(slots){
   const input=$('dpsBaseUnitVisibleSlotCount');
   const parsed=Number.parseInt(input?.value || '1',10);
   const stored=Number.isFinite(parsed) ? Math.min(10,Math.max(1,parsed)) : 1;
-  const lastUsed=slots.reduce((last,id,i)=>id ? i+1 : last,0);
+  const lastUsed=slots.reduce((last,id,i)=>id && i!==dpsUnitSlotPending?.index ? i+1 : last,0);
   const visible=Math.max(stored,lastUsed,1);
   if(input && input.value!==String(visible)) input.value=String(visible);
   return visible;
@@ -1898,23 +1942,23 @@ function dpsBaseUnitSlotsHtml(slots){
     if(unit){
       basicRows.push(`<tr><th scope="row">${String(index+1).padStart(2,'0')}</th><td>${escapeHtml(unitName)}</td><td>${escapeHtml(quantity)}</td><td>${escapeHtml(attack)}</td><td>${escapeHtml(pierce)}</td></tr>`);
     }
-    const jewel=unit && !dpsBaseUnitIsArtifact(unit) ? (normalizeDpsJewelName(dpsBaseUnitStoreInput('jewel',unit)?.value)||'쥬얼 없음') : '쥬얼 없음';
+    const jewel=unit ? (dpsBaseUnitSupportsAdvancedOptions(unit) ? (normalizeDpsJewelName(dpsBaseUnitStoreInput('jewel',unit)?.value)||'쥬얼 없음') : '사용 불가') : '쥬얼 없음';
     const grade=unit ? String(unit.grade || '유닛') : '유닛 선택 대기';
     const maxSpeed=!!unit && !dpsBaseUnitIsArtifact(unit) && dpsBaseUnitResultHasMaxAttackSpeed(info);
     const speedText=unit && !dpsBaseUnitIsArtifact(unit) ? (maxSpeed ? dpsBaseUnitMaxCooldownText(info) : dpsBaseUnitFinalCooldownText(info)) : '';
     const speedLabel=maxSpeed?'최대공속':'공격속도';
-    const speedHtml=speedText ? `<span class="unit-slot-speed${maxSpeed?' is-max-speed':''}" aria-label="${speedLabel} ${escapeHtml(speedText)}"><span class="unit-slot-speed-label">${speedLabel}</span><b class="unit-slot-speed-value">${escapeHtml(speedText)}</b></span>` : '';
+    const speedHtml=unit ? `<span class="unit-slot-speed${maxSpeed?' is-max-speed':''}" aria-label="${speedLabel} ${escapeHtml(speedText || '-')}"><span class="unit-slot-speed-label">${speedLabel}</span><b class="unit-slot-speed-value">${escapeHtml(speedText || '-')}</b></span>` : '';
     const selected=index===dpsUnitSelectedSlot && dpsUnitDetailOpen;
     return `<article class="unit-slot-overview-card${selected?' is-selected':''}${unit?'':' is-unassigned'}" aria-label="${index+1}번 유닛 슬롯">
       <div class="unit-slot-card-head"><div class="unit-slot-heading"><span class="unit-slot-number" aria-hidden="true">${String(index+1).padStart(2,'0')}</span><span class="unit-slot-heading-label">유닛 슬롯</span></div><div class="unit-slot-card-actions">${index>0 ? `<button type="button" class="unit-list-remove" data-unit-list-remove="${index}" aria-label="${index+1}번 슬롯 삭제" title="${index+1}번 슬롯 삭제">×</button>` : '<span class="unit-slot-card-remove-placeholder" aria-hidden="true"></span>'}</div></div>
       <button type="button" class="unit-slot-card-main" data-unit-list-select="${index}" aria-label="${index+1}번 슬롯 상세 설정 열기" aria-haspopup="dialog" aria-expanded="${selected}" aria-controls="dpsUnitSlotModal">
         <span class="unit-slot-identity"><span class="unit-slot-grade">${escapeHtml(grade)}</span><b>${escapeHtml(unitName)}</b></span>
-        <span class="unit-slot-summary-line"><span class="unit-slot-jewel"><small>쥬얼</small><b title="${escapeHtml(jewel)}">${escapeHtml(jewel)}</b></span><span class="unit-slot-quantity"><small>마리 수</small><b>${escapeHtml(quantity)}</b></span>${speedHtml}</span>
+        <span class="unit-slot-summary-line"><span class="unit-slot-jewel"><small>쥬얼</small><b title="${escapeHtml(jewel)}">${escapeHtml(jewel)}</b></span><span class="unit-slot-quantity"><small>마리수</small><b>${escapeHtml(quantity)}</b></span>${speedHtml}</span>
         <span class="unit-slot-stats"><span><small>공격력</small><b>${escapeHtml(attack)}</b></span><span><small>DPS</small><b>${escapeHtml(dps)}</b></span><span><small>관통</small><b>${escapeHtml(pierce)}</b></span></span>
         ${dpsUnitDetailTags(unit)}
       </button></article>`;
   }).join('');
-  const basicInfo=`<div class="unit-basic-summary"><table aria-label="설정된 유닛 기본정보"><colgroup><col class="unit-basic-number"><col class="unit-basic-name"><col class="unit-basic-quantity"><col class="unit-basic-attack"><col class="unit-basic-pierce"></colgroup><thead><tr><th scope="col">슬롯 번호</th><th scope="col">유닛명</th><th scope="col">마리 수</th><th scope="col">공격력</th><th scope="col">관통</th></tr></thead><tbody>${basicRows.join('') || '<tr><td colspan="5" class="unit-basic-empty">유닛을 설정하면 기본정보가 표시됩니다.</td></tr>'}</tbody></table></div>`;
+  const basicInfo=`<div class="unit-basic-summary"><table aria-label="설정된 유닛 기본정보"><colgroup><col class="unit-basic-number"><col class="unit-basic-name"><col class="unit-basic-quantity"><col class="unit-basic-attack"><col class="unit-basic-pierce"></colgroup><thead><tr><th scope="col">슬롯 번호</th><th scope="col">유닛명</th><th scope="col">마리수</th><th scope="col">공격력</th><th scope="col">관통</th></tr></thead><tbody>${basicRows.join('') || '<tr><td colspan="5" class="unit-basic-empty">유닛을 설정하면 기본정보가 표시됩니다.</td></tr>'}</tbody></table></div>`;
   const next=visibleCount<slots.length ? `<button class="unit-slot-add-card" type="button" data-unit-slot-add="${visibleCount}" aria-label="${visibleCount+1}번 유닛 슬롯 추가"><span class="unit-slot-add-symbol" aria-hidden="true">+</span><strong>${visibleCount+1}번 슬롯 추가</strong></button>` : '';
   return `<section class="unit-list-collection" aria-label="유닛 슬롯 관리">${basicInfo}<div class="unit-slot-cards-grid" aria-label="유닛 슬롯 카드 목록">${rows}${next}</div></section>`;
 }
@@ -1937,6 +1981,12 @@ function syncDpsUnitSlotModal(slots){
     return;
   }
   title.textContent=`슬롯 ${dpsUnitSelectedSlot+1} 상세 설정`;
+  const confirmButton=shell.querySelector('[data-unit-detail-confirm]');
+  if(confirmButton){
+    const missingUnit=!!dpsUnitSlotPending && !dpsBaseUnitById(slots[dpsUnitSelectedSlot]);
+    confirmButton.disabled=missingUnit;
+    confirmButton.title=missingUnit ? '유닛을 선택해야 슬롯을 생성할 수 있습니다.' : '';
+  }
   const card=dpsBaseUnitSlotHtml(slots[dpsUnitSelectedSlot],dpsUnitSelectedSlot,slots);
   if(panel.innerHTML!==card){
     const state=captureDpsBaseUnitViewState(panel);
@@ -1950,10 +2000,17 @@ function syncDpsUnitSlotModal(slots){
 }
 function closeDpsUnitSlotModal(){
   if(!dpsUnitDetailOpen) return;
-  $('unitSlotModalClose')?.focus({preventScroll:true});
+  const pendingIndex=dpsUnitSlotPending?.index;
+  if(dpsUnitSlotPending) restorePendingDpsUnitSlot();
   dpsUnitDetailOpen=false;
   syncDpsBaseUnitControl({skipJewelConfig:true});
-  $('dpsBaseUnitSlotStack')?.querySelector(`[data-unit-list-select="${dpsUnitSelectedSlot}"]`)?.focus({preventScroll:true});
+  if(pendingIndex!==undefined){
+    // 닫기/ESC/배경 클릭은 임시 입력을 모두 취소하고, 새 슬롯도 생성하지 않는다.
+    requestAppUpdate({save:false});
+    $('dpsBaseUnitSlotStack')?.querySelector(`[data-unit-slot-add="${pendingIndex}"]`)?.focus({preventScroll:true});
+  }else{
+    $('dpsBaseUnitSlotStack')?.querySelector(`[data-unit-list-select="${dpsUnitSelectedSlot}"]`)?.focus({preventScroll:true});
+  }
 }
 function syncDpsBaseUnitQuantitiesForSelection(selectedIds){
   const selected=new Set(selectedIds || []);
@@ -2337,11 +2394,8 @@ function bindDpsBaseUnitControlEvents(){
       const currentSlots=currentDpsBaseUnitSlots();
       const current=dpsUnitVisibleCount(currentSlots);
       const requested=Number(addSlot.dataset.unitSlotAdd);
-      if(requested===current && current<10){
-        const input=$('dpsBaseUnitVisibleSlotCount');
-        if(input) input.value=String(current+1);
-        syncDpsBaseUnitControl({skipJewelConfig:true});
-        scheduleAutoSave();
+      if(requested===current && current<10 && !dpsUnitSlotPending){
+        beginDpsUnitSlotAddition(current);
       }
       return;
     }
@@ -2358,6 +2412,12 @@ function bindDpsBaseUnitControlEvents(){
       dpsUnitDetailOpen=true;
       syncDpsBaseUnitControl({skipJewelConfig:true});
       $('unitSlotModalClose')?.focus({preventScroll:true});
+      return;
+    }
+    const confirmDetail=e.target?.closest?.('[data-unit-detail-confirm]');
+    if(confirmDetail?.closest?.('#dpsUnitSlotModal')){
+      e.preventDefault();
+      confirmDpsUnitSlotModal();
       return;
     }
     const closeDetail=e.target?.closest?.('[data-unit-detail-close],[data-unit-detail-backdrop]');
@@ -2557,6 +2617,7 @@ function updateTraits(){
 let traitRecommendationTimer=0;
 let traitRecommendationRevision=0;
 const traitRecommendationCache=new Map();
+let traitRecommendationActiveKey='';
 let selectedTraitRecommendationRow=null;
 let traitRecommendationSelectionTimer=0;
 let traitRecommendationSelectionAt=0;
@@ -2600,22 +2661,22 @@ function traitRecommendationNumberText(value,decimals=0){
 function renderTraitRecommendations(){
   const table=$('traitRecommendationRows');
   if(!table) return;
-  clearTraitRecommendationSelection();
   const useUnitBoard=isUnitBoardRecommendationMode();
+  const snapshot=traitRecommendationPlanSnapshot(useUnitBoard);
+  const key=JSON.stringify(snapshot);
+  if(key===traitRecommendationActiveKey) return;
+  traitRecommendationActiveKey=key;
+  clearTraitRecommendationSelection();
   setText('traitRecommendationDpsLabel',useUnitBoard ? '클리어 기대값' : 'DPS');
   const revision=++traitRecommendationRevision;
   cancelTraitRecommendationCalculation();
   const cached=traitRecommendationCache.get(useUnitBoard);
-  if(cached && cached.appRevision===appCalculationRevision){
+  if(cached?.key===key){
     table.innerHTML=cached.rows;
     return;
   }
-  const snapshot=traitRecommendationPlanSnapshot(useUnitBoard);
   function cacheResult(){
-    traitRecommendationCache.set(useUnitBoard,{
-      appRevision:appCalculationRevision,
-      rows:table.innerHTML
-    });
+    traitRecommendationCache.set(useUnitBoard,{key,rows:table.innerHTML});
   }
   const remaining=snapshot.remaining;
   if(!Object.values(remaining).some(value=>value>0)){

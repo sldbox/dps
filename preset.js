@@ -874,7 +874,7 @@ function cancelScheduledAutoSave(){
   }
 }
 function scheduleAutoSave(){
-  if(isStorageLocked()) return;
+  if(isStorageLocked() || (typeof dpsUnitSlotPending!=='undefined' && dpsUnitSlotPending)) return;
   scheduleTraitPresetGuidanceRefresh();
   cancelScheduledAutoSave();
   autoSaveTimer=setTimeout(()=>{
