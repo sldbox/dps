@@ -1230,7 +1230,9 @@ function setTraitPresetCustomSelectOpen(custom, open){
     const rect=custom.getBoundingClientRect();
     const availableBelow=window.innerHeight-rect.bottom;
     const availableAbove=rect.top;
-    custom.classList.toggle('opens-up',availableBelow<205 && availableAbove>availableBelow);
+    const opensUp=availableBelow<205 && availableAbove>availableBelow;
+    custom.classList.toggle('opens-up',opensUp);
+    custom.style.setProperty('--trait-preset-menu-height',`${Math.max(0,Math.floor((opensUp?availableAbove:availableBelow)-8))}px`);
   }else custom.classList.remove('opens-up');
   custom.querySelector('[data-trait-preset-custom-button]')?.setAttribute('aria-expanded',active ? 'true' : 'false');
   const menu=custom.querySelector('[data-trait-preset-custom-menu]');

@@ -1258,9 +1258,9 @@ body .trait-preset-custom-button:focus-visible{outline:2px solid var(--role-manu
 body .trait-preset-custom-button:disabled{cursor:not-allowed;color:var(--ui-text);border-color:#272c32;background:#0a0b0e;box-shadow:inset 0 1px 3px rgba(0,0,0,.42);filter:grayscale(.55);}
 body .trait-preset-custom-button-text{display:block;width:100%;min-width:0;overflow:hidden;text-align:left;text-overflow:ellipsis;white-space:nowrap;}
 body .trait-preset-custom-arrow{position:absolute;right:12px;top:50%;width:7px;height:7px;border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:translateY(-65%) rotate(45deg);pointer-events:none;}
-body .trait-preset-custom-menu{position:absolute;top:calc(100% + 6px);left:0;right:0;z-index:150;max-height:min(270px,48vh);padding:7px;border:1px solid #4c5664;border-radius:10px;background:linear-gradient(180deg,rgba(13,14,17,.98),rgba(11,12,15,.98));box-shadow:0 16px 34px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.08);overflow:auto;overscroll-behavior:contain;}
+body .trait-preset-custom-menu{position:absolute;top:calc(100% + 6px);left:0;right:0;z-index:150;max-height:min(270px,48vh,var(--trait-preset-menu-height,270px));padding:7px;border:1px solid #4c5664;border-radius:10px;background:linear-gradient(180deg,rgba(13,14,17,.98),rgba(11,12,15,.98));box-shadow:0 16px 34px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.08);overflow:auto;overscroll-behavior:contain;}
 body .trait-preset-custom-menu[hidden]{display:none;}
-@media(max-width:650px){body .trait-preset-custom-menu{left:auto;width:min(306px,calc(100vw - 24px));max-width:none;box-sizing:border-box;}}
+@media(max-width:650px){body .trait-preset-custom-menu{left:0;right:0;width:auto;max-width:100%;box-sizing:border-box;}}
 body .trait-preset-custom-group{display:grid;gap:3px;}
 body .trait-preset-custom-group + .trait-preset-custom-group{margin-top:6px;}
 body .trait-preset-custom-group-label{min-height:22px;padding:4px 12px;color:#7f8fa5;font-size:calc(10.75px * var(--app-font-scale));font-weight:900;line-height:1;text-align:left;}
