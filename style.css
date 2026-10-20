@@ -168,7 +168,7 @@ select.choice-input,.rune-stat-row select,.ir select{border-color:#333941;}
 .clean-rune-card .rune-panel.tidy-rune-panel{--rune-label-width:clamp(92px,37%,156px);display:grid;grid-template-columns:repeat(2,minmax(0,1fr));width:100%;overflow:visible;position:relative;z-index:1;min-width:0;box-sizing:border-box;padding:0;gap:0;align-items:stretch;}
 body .clean-rune-card .rune-panel.tidy-rune-panel > :nth-child(even){border-left:1px solid var(--ui-integrated-head-line);}
 body .clean-rune-card .rune-panel.tidy-rune-panel > :nth-child(n+3){border-top:1px solid var(--ui-integrated-head-line);}
-@media(max-width:700px){body .clean-rune-card .rune-panel.tidy-rune-panel > :nth-child(even){border-left:0;}body .clean-rune-card .rune-panel.tidy-rune-panel > :nth-child(n+2){border-top:1px solid var(--ui-integrated-head-line);}}
+@media(max-width:700px){body.is-mobile .clean-rune-card .rune-panel.tidy-rune-panel > :nth-child(even){border-left:0;}body.is-mobile .clean-rune-card .rune-panel.tidy-rune-panel > :nth-child(n+2){border-top:1px solid var(--ui-integrated-head-line);}}
 .clean-rune-card .rune-basic-card{grid-column:auto;}
 .clean-rune-card .rune-option-card{grid-column:auto;}
 .clean-rune-card .additional-editor{grid-column:auto;position:static;transform:none;z-index:auto;}
@@ -184,7 +184,7 @@ body .clean-rune-card .rune-panel.tidy-rune-panel > :nth-child(n+3){border-top:1
 .clean-rune-card .rune-option-grid select{min-width:0;width:100%;text-overflow:ellipsis;padding-left:6px;padding-right:22px;font-size:calc(12px * var(--app-font-scale));}
 .clean-rune-card .additional-row label{white-space:nowrap;min-width:0;width:100%;height:31px;padding:0 6px;font-size:var(--ui-item-label-font);overflow:hidden;text-overflow:ellipsis;}
 .clean-rune-card .enchant-combined{grid-column:auto;margin-top:0;}
-@media (max-width:700px){.clean-rune-card .rune-panel.tidy-rune-panel{grid-template-columns:minmax(0,1fr);padding:0;gap:0;align-items:stretch;}}
+@media (max-width:700px){body.is-mobile .clean-rune-card .rune-panel.tidy-rune-panel{grid-template-columns:minmax(0,1fr);padding:0;gap:0;align-items:stretch;}}
 .hdr.app-header h1{font-size:calc(14.5px * var(--app-font-scale));font-weight:900;line-height:1.15;}
 .hdr-meta{font-size:calc(11.25px * var(--app-font-scale));color:var(--color-slate-700);font-weight:800;}
 .col-left input,.col-left select,.tv-input{border-color:#47566a;background:var(--role-interactive-bg);color:#fff;}
@@ -856,7 +856,7 @@ body.is-pc-portrait .col-mid,body.is-tablet .col-mid,body.is-mobile .col-mid{ord
 body.is-pc-portrait .col-right,body.is-tablet .col-right,body.is-mobile .col-right{order:3;}
 body.is-pc-portrait .hdr-meta,body.is-tablet-device .hdr-meta,body.is-mobile-device .hdr-meta{display:flex;align-items:center;justify-content:flex-end;gap:6px;width:auto;margin-left:auto;visibility:visible;opacity:1;overflow:visible;}
 body.is-tablet-device .font-scale-ctrl,body.is-mobile-device .font-scale-ctrl{display:none;}
-body.is-pc-portrait .rune-basic-card,body.is-pc-portrait .stat-dps-card,body.is-tablet .stat-dps-card{grid-column:1/-1;}
+body.is-pc-portrait .stat-dps-card,body.is-tablet .stat-dps-card{grid-column:1/-1;}
 body.is-pc-portrait .trait-group .tr,body.is-tablet .trait-group .tr{grid-template-columns:minmax(0,1fr) max-content;min-height:34px;}
 body.is-mobile .col-work{padding:8px;}
 body.is-mobile .sg,body.is-mobile .data-card{margin-bottom:var(--section-gap);}
