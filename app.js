@@ -1763,15 +1763,9 @@ function sanitizeDpsBaseUnitVoidPowerAvailability(selectedIds=null){
     const input=dpsBaseUnitStoreInput('voidPower',unit);
     if(!dpsBaseUnitSupportsAdvancedOptions(unit) || !input || normalizeDpsBaseUnitVoidPowerValue(input.value)!=='ON') return;
     const cost=dpsBaseUnitVoidPowerCost(unit);
-    if(!available || unitId==='prodNarud' || used+cost>limit) input.value='OFF';
+    if(unitId==='prodNarud' || used+cost>limit) input.value='OFF';
     else used+=cost;
   });
-  if(!available){
-    dpsBaseUnitList().forEach(unit=>{
-      const input=dpsBaseUnitStoreInput('voidPower',unit);
-      if(input && normalizeDpsBaseUnitVoidPowerValue(input.value)!=='OFF') input.value='OFF';
-    });
-  }
   return available;
 }
 
@@ -1798,12 +1792,11 @@ function dpsBaseUnitSettingsHtml(unit,slotIndex){
   const jewelName=normalizeDpsJewelName(dpsBaseUnitStoreInput('jewel',unit)?.value);
   const canUseEnhance=dpsBaseUnitCanUseEnhance(unit);
   const canUseLimitBreak=dpsBaseUnitCanUseLimitBreak(unit);
-  const voidPowerAvailable=dpsBaseUnitVoidPowerAvailable();
   const voidPowerEligible=unit.id!=='prodNarud';
-  const voidPower=voidPowerAvailable && voidPowerEligible ? normalizeDpsBaseUnitVoidPowerValue(dpsBaseUnitStoreInput('voidPower',unit)?.value) : 'OFF';
+  const voidPower=voidPowerEligible ? normalizeDpsBaseUnitVoidPowerValue(dpsBaseUnitStoreInput('voidPower',unit)?.value) : 'OFF';
   const voidPowerUsage=dpsBaseUnitVoidPowerUsage();
   const voidPowerLimit=dpsBaseUnitVoidPowerLimit();
-  const voidPowerCanEnable=voidPowerAvailable && voidPowerEligible && (voidPower==='ON' || voidPowerUsage+dpsBaseUnitVoidPowerCost(unit)<=voidPowerLimit);
+  const voidPowerCanEnable=voidPowerEligible && (voidPower==='ON' || voidPowerUsage+dpsBaseUnitVoidPowerCost(unit)<=voidPowerLimit);
   const slotExpanded=dpsBaseUnitSlotExpanded(unit);
   const shownEnhance=canUseEnhance ? enhance : '0';
   const limitOptions=canUseLimitBreak
@@ -1854,7 +1847,7 @@ function dpsBaseUnitSlotHtml(unitId, slotIndex, slots){
 let dpsUnitSelectedSlot=0;
 let dpsUnitDetailOpen=false;
 let dpsUnitSlotPending=null;
-function beginDpsUnitSlotAddition(index){
+function beginDpsUnitSlotAddition(index,initialUnitId=''){
   // 기존 상태와 변경된 쥬얼 배정까지 함께 복원할 수 있도록 저장 입력을 보관한다.
   ensureDpsBaseUnitStore();
   dpsUnitSlotPending={
@@ -1865,7 +1858,8 @@ function beginDpsUnitSlotAddition(index){
   if(typeof cancelScheduledAutoSave==='function') cancelScheduledAutoSave();
   dpsUnitSelectedSlot=index;
   dpsUnitDetailOpen=true;
-  syncDpsBaseUnitControl({skipJewelConfig:true});
+  if(initialUnitId) changeDpsBaseUnitSlot(index,initialUnitId,{notify:false});
+  else syncDpsBaseUnitControl({skipJewelConfig:true});
   // 비표시 원본 select 대신 화면에 생성된 실제 선택 버튼으로 포커스를 이동한다.
   requestAnimationFrame(()=>requestAnimationFrame(()=>{
     if(!dpsUnitDetailOpen || dpsUnitSlotPending?.index!==index) return;
@@ -1888,7 +1882,7 @@ function confirmDpsUnitSlotModal(){
     if(!dpsBaseUnitById(currentDpsBaseUnitSlots()[pending.index])) return;
     dpsUnitSlotPending=null;
     const visible=$('dpsBaseUnitVisibleSlotCount');
-    if(visible) visible.value=String(pending.index+1);
+    if(visible) visible.value=String(Math.max(dpsUnitVisibleCount(currentDpsBaseUnitSlots()),pending.index+1));
     dpsUnitDetailOpen=false;
     syncDpsBaseUnitControl({skipJewelConfig:true});
     commitAppUpdate();
@@ -1917,8 +1911,9 @@ function dpsUnitDetailTags(unit){
   const metrics=[['강화 기대값',enhance],['한계 돌파',limitBreak],['슬롯 확장',slotExpansion]];
   const cells=metrics.map(([label,value])=>`<span><small>${escapeHtml(label)}</small><b>${escapeHtml(value)}</b></span>`).join('');
   const voidPower=dpsBaseUnitStoreInput('voidPower',unit)?.value || 'OFF';
-  const voidHtml=!dpsBaseUnitIsArtifact(unit) && dpsBaseUnitVoidPowerAvailable() && unit.id!=='prodNarud'
-    ? `<span class="unit-slot-sub-info">공허의 힘 <b>${voidPower==='ON'?'사용':'미사용'}</b></span>` : '';
+  const voidPowerUsage=`${dpsBaseUnitVoidPowerUsage()} / ${dpsBaseUnitVoidPowerLimit()}`;
+  const voidHtml=!dpsBaseUnitIsArtifact(unit)
+    ? `<span class="unit-slot-sub-info">공허의 힘 <b>${unit.id==='prodNarud' ? `전체 사용량 ${voidPowerUsage}` : `${voidPower==='ON'?'사용':'미사용'} · 전체 ${voidPowerUsage}`}</b></span>` : '';
   let extraHtml='';
   if(expanded){
     const items=dpsBaseUnitExtraSlotSettings(unit);
@@ -1927,9 +1922,20 @@ function dpsUnitDetailTags(unit){
   }
   return `<span class="unit-slot-metrics" aria-label="유닛 상세 설정">${cells}</span>${voidHtml}${extraHtml}`;
 }
+function dpsBaseUnitNarudTargetSlot(slots){
+  const visible=dpsUnitVisibleCount(slots);
+  const vacant=slots.findIndex((unitId,index)=>!unitId && index<visible && index!==dpsUnitSlotPending?.index);
+  return vacant>=0 ? vacant : (visible<slots.length ? visible : -1);
+}
+function dpsBaseUnitNarudPlaceholderHtml(index){
+  const enabled=dpsBaseUnitAllowedForCurrentPlanet('prodNarud');
+  return `<button class="unit-slot-add-card is-narud-required" type="button" data-unit-narud-setup aria-label="${index+1}번 슬롯 나루드 활성화 필요"${enabled?'':' disabled'}><span class="unit-slot-add-content" aria-hidden="true"><span class="unit-slot-add-symbol">+</span><strong>${index+1}번 슬롯 추가</strong></span><span class="unit-slot-narud-overlay"><strong><span>나루드</span><span>활성화 필요</span></strong><small>${enabled?'눌러서 상세 설정':'현재 난이도에서 선택 불가'}</small></span></button>`;
+}
 function dpsBaseUnitSlotsHtml(slots){
   dpsUnitSelectedSlot=Math.max(0,Math.min(slots.length-1,dpsUnitSelectedSlot));
   const visibleCount=dpsUnitVisibleCount(slots);
+  const needsNarud=dpsBaseUnitVoidPowerUsage()>0 && !dpsBaseUnitVoidPowerAvailable();
+  const narudTargetIndex=needsNarud ? dpsBaseUnitNarudTargetSlot(slots) : -1;
   const basicRows=[];
   const rows=slots.slice(0,visibleCount).map((unitId,index)=>{
     const unit=dpsBaseUnitById(unitId);
@@ -1949,6 +1955,7 @@ function dpsBaseUnitSlotsHtml(slots){
     const speedLabel=maxSpeed?'최대공속':'공격속도';
     const speedHtml=unit ? `<span class="unit-slot-speed${maxSpeed?' is-max-speed':''}" aria-label="${speedLabel} ${escapeHtml(speedText || '-')}"><span class="unit-slot-speed-label">${speedLabel}</span><b class="unit-slot-speed-value">${escapeHtml(speedText || '-')}</b></span>` : '';
     const selected=index===dpsUnitSelectedSlot && dpsUnitDetailOpen;
+    if(!unit && narudTargetIndex===index) return dpsBaseUnitNarudPlaceholderHtml(index);
     return `<article class="unit-slot-overview-card${selected?' is-selected':''}${unit?'':' is-unassigned'}" aria-label="${index+1}번 유닛 슬롯">
       <div class="unit-slot-card-head"><div class="unit-slot-heading"><span class="unit-slot-number" aria-hidden="true">${String(index+1).padStart(2,'0')}</span><span class="unit-slot-heading-label">유닛 슬롯</span></div><div class="unit-slot-card-actions">${index>0 ? `<button type="button" class="unit-list-remove" data-unit-list-remove="${index}" aria-label="${index+1}번 슬롯 삭제" title="${index+1}번 슬롯 삭제">×</button>` : '<span class="unit-slot-card-remove-placeholder" aria-hidden="true"></span>'}</div></div>
       <button type="button" class="unit-slot-card-main" data-unit-list-select="${index}" aria-label="${index+1}번 슬롯 상세 설정 열기" aria-haspopup="dialog" aria-expanded="${selected}" aria-controls="dpsUnitSlotModal">
@@ -1959,8 +1966,12 @@ function dpsBaseUnitSlotsHtml(slots){
       </button></article>`;
   }).join('');
   const basicInfo=`<div class="unit-basic-summary"><table aria-label="설정된 유닛 기본정보"><colgroup><col class="unit-basic-number"><col class="unit-basic-name"><col class="unit-basic-quantity"><col class="unit-basic-attack"><col class="unit-basic-pierce"></colgroup><thead><tr><th scope="col">슬롯 번호</th><th scope="col">유닛명</th><th scope="col">마리수</th><th scope="col">공격력</th><th scope="col">관통</th></tr></thead><tbody>${basicRows.join('') || '<tr><td colspan="5" class="unit-basic-empty">유닛을 설정하면 기본정보가 표시됩니다.</td></tr>'}</tbody></table></div>`;
-  const next=visibleCount<slots.length ? `<button class="unit-slot-add-card" type="button" data-unit-slot-add="${visibleCount}" aria-label="${visibleCount+1}번 유닛 슬롯 추가"><span class="unit-slot-add-symbol" aria-hidden="true">+</span><strong>${visibleCount+1}번 슬롯 추가</strong></button>` : '';
-  return `<section class="unit-list-collection" aria-label="유닛 슬롯 관리">${basicInfo}<div class="unit-slot-cards-grid" aria-label="유닛 슬롯 카드 목록">${rows}${next}</div></section>`;
+  const next=visibleCount<slots.length
+    ? (narudTargetIndex===visibleCount ? dpsBaseUnitNarudPlaceholderHtml(visibleCount) : `<button class="unit-slot-add-card" type="button" data-unit-slot-add="${visibleCount}" aria-label="${visibleCount+1}번 유닛 슬롯 추가"><span class="unit-slot-add-symbol" aria-hidden="true">+</span><strong>${visibleCount+1}번 슬롯 추가</strong></button>`)
+    : '';
+  const unavailableNotice=needsNarud && narudTargetIndex<0
+    ? `<p class="unit-slot-narud-unavailable" role="status">나루드 활성화 필요 · 빈 슬롯 없음</p>` : '';
+  return `<section class="unit-list-collection" aria-label="유닛 슬롯 관리">${basicInfo}<div class="unit-slot-cards-grid" aria-label="유닛 슬롯 카드 목록">${rows}${next}</div>${unavailableNotice}</section>`;
 }
 
 let dpsUnitSlotModalSyncing=false;
@@ -2007,7 +2018,7 @@ function closeDpsUnitSlotModal(){
   if(pendingIndex!==undefined){
     // 닫기/ESC/배경 클릭은 임시 입력을 모두 취소하고, 새 슬롯도 생성하지 않는다.
     requestAppUpdate({save:false});
-    $('dpsBaseUnitSlotStack')?.querySelector(`[data-unit-slot-add="${pendingIndex}"]`)?.focus({preventScroll:true});
+    ($('dpsBaseUnitSlotStack')?.querySelector(`[data-unit-narud-setup]`) || $('dpsBaseUnitSlotStack')?.querySelector(`[data-unit-slot-add="${pendingIndex}"]`))?.focus({preventScroll:true});
   }else{
     $('dpsBaseUnitSlotStack')?.querySelector(`[data-unit-list-select="${dpsUnitSelectedSlot}"]`)?.focus({preventScroll:true});
   }
@@ -2084,7 +2095,7 @@ function syncDpsBaseUnitLimitBreakControl(select){
 }
 function toggleDpsBaseUnitVoidPower(unitId){
   const unit=dpsBaseUnitById(unitId);
-  if(!unit || !dpsBaseUnitSupportsAdvancedOptions(unit) || unit.id==='prodNarud' || !dpsBaseUnitVoidPowerAvailable()){
+  if(!unit || !dpsBaseUnitSupportsAdvancedOptions(unit) || unit.id==='prodNarud'){
     const store=dpsBaseUnitStoreInput('voidPower',unit);
     if(store) store.value='OFF';
     sanitizeDpsBaseUnitVoidPowerAvailability();
@@ -2097,6 +2108,14 @@ function toggleDpsBaseUnitVoidPower(unitId){
   if(store) store.value=next;
   syncDpsBaseUnitControl();
   return next;
+}
+function beginDpsBaseUnitNarudSetup(){
+  if(dpsUnitSlotPending || dpsBaseUnitVoidPowerAvailable() || !dpsBaseUnitAllowedForCurrentPlanet('prodNarud')) return false;
+  const slots=currentDpsBaseUnitSlots();
+  const next=dpsBaseUnitNarudTargetSlot(slots);
+  if(next<0 || slots[next]) return false;
+  beginDpsUnitSlotAddition(next,'prodNarud');
+  return true;
 }
 function writeDpsBaseUnitSelection(input,slotInput,slots){
   const selectedIds=slots.filter(Boolean);
@@ -2388,6 +2407,12 @@ function bindDpsBaseUnitControlEvents(){
         && removeDpsBaseUnitSlot(pending.index,{confirmed:true})) commitAppUpdate();
       return;
     }
+    const narudSetup=e.target?.closest?.('[data-unit-narud-setup]');
+    if(narudSetup?.closest?.('#dpsBaseUnitSlotStack')){
+      e.preventDefault();
+      beginDpsBaseUnitNarudSetup();
+      return;
+    }
     const addSlot=e.target?.closest?.('[data-unit-slot-add]');
     if(addSlot?.closest?.('#dpsBaseUnitSlotStack')){
       e.preventDefault();
@@ -2442,8 +2467,9 @@ function bindDpsBaseUnitControlEvents(){
     const voidToggle=e.target?.closest?.('[data-dps-base-unit-void-power-toggle]');
     if(voidToggle?.closest?.('[data-dps-base-unit-control]')){
       e.preventDefault();
-      toggleDpsBaseUnitVoidPower(voidToggle.getAttribute('data-dps-base-unit-void-power-toggle') || '');
+      const state=toggleDpsBaseUnitVoidPower(voidToggle.getAttribute('data-dps-base-unit-void-power-toggle') || '');
       commitAppUpdate();
+      if(state==='ON' && !dpsBaseUnitVoidPowerAvailable()) beginDpsBaseUnitNarudSetup();
       return;
     }
     const slotExpansion=e.target?.closest?.('[data-dps-base-unit-slot-expansion-toggle]');
@@ -2541,7 +2567,7 @@ function bindDamageBoardSwitchEvents(){
 /* 특성 보드: 목록·수동 투자·추천·최적화 */
 const INFINITE_TRAIT_TIER='무한∞';
 const TIERS=['루키','비기너','아마추어','프로','엑스퍼트','마스터','디바인','더원1','더원2',INFINITE_TRAIT_TIER,'EP특성','RP특성','심연특성'];
-const OPTIMIZATION_TIERS=TIERS.filter(tier=>tier!==INFINITE_TRAIT_TIER).concat(INFINITE_TRAIT_TIER);
+const OPTIMIZATION_TIERS=TIERS;
 // 펼침 여부는 화면 상태로만 관리하며 프리셋 데이터에는 저장하지 않는다.
 const expandedTraitTiers=new Set();
 // 입력 요소를 DOM에 그대로 둔 채 높이만 애니메이션으로 전환한다.
@@ -2587,7 +2613,9 @@ function updateTraits(){
       const n=INV[row]||0, mx=TMAX[row]||999;
       const isMax=n>=mx;
       const cost=nextCost(row);
-      const rStr=traitEffectText(row,type,rate);
+      // 어비스 난이도의 특성별 계수는 기존 DPS 계산과 동일하게 표시한다.
+      const currentRate=isAbyssDifficulty() ? ({133:15,134:7.5,135:1.5,136:3}[row] ?? rate) : rate;
+      const rStr=row===58?'강화수 +1':row===96?'2단 강화 +0.5':traitEffectText(row,type,currentRate);
       return `<article class="tr trait-invest-card${isMax?' is-mastered':''}" data-trait-id="${row}">
         <div class="trait-invest-main">
           <span class="trait-invest-index" aria-hidden="true">${String(index+1).padStart(2,'0')}</span>
@@ -2743,7 +2771,11 @@ function renderTraitRecommendations(){
       const dps=traitRecommendationDpsValue(stats,useUnitBoard);
       return {row,kind,amount,cost,dps,gain:dps-originalDps};
     });
-    table.innerHTML=items.map(item=>`<tr class="trait-recommendation-row" data-action="applyTraitRecommendation" data-row="${item.row}" data-amount="${item.amount}" tabindex="0" role="button" aria-pressed="false" aria-label="${escapeHtml(traitName(item.row))} ${fullNumber(item.amount)}개 추천 투자. 두 번 누르면 투자" title="두 번 누르면 추천 투자">
+    // 계산된 추천 계획은 유지하고, 기본 화면에는 재화별 효율 상위 2개만 표시한다.
+    const displayed=kinds.flatMap(kind=>items.filter(item=>item.kind===kind)
+      .sort((a,b)=>(b.gain/Math.max(1,b.cost))-(a.gain/Math.max(1,a.cost)) || b.gain-a.gain)
+      .slice(0,2));
+    table.innerHTML=displayed.map(item=>`<tr class="trait-recommendation-row" data-action="applyTraitRecommendation" data-row="${item.row}" data-amount="${item.amount}" tabindex="0" role="button" aria-pressed="false" aria-label="${escapeHtml(traitName(item.row))} ${fullNumber(item.amount)}개 추천 투자. 두 번 누르면 투자" title="두 번 누르면 추천 투자">
       <td>${escapeHtml(traitName(item.row))}</td>
       <td>${fullNumber(item.amount)}</td>
       <td>${TRAIT_RECOMMENDATION_RESOURCE_LABELS[item.kind]} ${traitRecommendationNumberText(item.cost)}</td>
@@ -2963,11 +2995,12 @@ function resetTier(tier){
 }
 /* 특성 초기화·유틸 최적화 */
 const UTILITY_OPT_TYPES=new Set(['유틸','경험치','AP','RA']);
-const UTILITY_OPT_TIERS=['루키','비기너','아마추어','프로','엑스퍼트','마스터','디바인','더원1','더원2'];
+const UTILITY_OPT_TIERS=OPTIMIZATION_TIERS;
 function isUtilityOptimizationTrait(t, maxTierIndex=null){
   if(!Array.isArray(t)) return false;
   const row=t[0], tier=t[2], type=t[3];
-  if(row===116) return false;
+  if(row===116 || row===112) return false;
+  if((row===131 || row===132) && !isAbyssDifficulty()) return false;
   const tierIdx=UTILITY_OPT_TIERS.indexOf(tier);
   if(tierIdx<0) return false;
   if(maxTierIndex!==null && tierIdx>maxTierIndex) return false;
@@ -2994,13 +3027,14 @@ function optimizeUtility(){
   if(!changed) showToast('보유 재화가 부족하거나 이미 최대입니다','warn');
   return changed>0;
 }
-function isSpClearTrait(t,{utility=false}={}){
-  if(!Array.isArray(t)) return false;
-  const row=+t[0];
-  return Number.isFinite(row) && row!==116 && SP_ROWS.has(row) && isUtilitySpTrait(t)===utility;
+function isUtilityClearTrait(t){
+  if(!Array.isArray(t) || t[0]===116) return false;
+  // 엑셀의 유틸 초기화 범위: SP의 AP/경험치/각성석과 전 재화의 편의·보조 특성.
+  return t[3]==='유틸' || (SP_ROWS.has(t[0]) && isUtilitySpTrait(t));
 }
-function isSpAttackClearTrait(t){return isSpClearTrait(t,{utility:false});}
-function isSpUtilityClearTrait(t){return isSpClearTrait(t,{utility:true});}
+function isAttackClearTrait(t){
+  return Array.isArray(t) && t[0]!==116 && !isUtilityClearTrait(t);
+}
 function clearTraitInvestmentsBy(predicate){
   let changed=0;
   TRAITS.forEach(t=>{
@@ -3016,13 +3050,13 @@ function clearTraitInvestmentsBy(predicate){
   return changed;
 }
 function clearUtility(){
-  const changed=clearTraitInvestmentsBy(isSpUtilityClearTrait);
+  const changed=clearTraitInvestmentsBy(isUtilityClearTrait);
   if(!changed) showToast('초기화할 유틸 특성이 없습니다','warn');
   return changed>0;
 }
 function clearAll(){
   try{
-    const changed=clearTraitInvestmentsBy(isSpAttackClearTrait);
+    const changed=clearTraitInvestmentsBy(isAttackClearTrait);
     if(!changed) showToast('초기화할 공격 특성이 없습니다','warn');
     return changed>0;
   }catch(e){
@@ -3422,7 +3456,7 @@ const ACTION_HANDLERS={
   optimizeUtility,
   applyTraitRecommendation:(trigger)=>activateTraitRecommendationRow(trigger),
   clearUtility:()=>requestConfirmAction('clearUtility','한 번 더 누르면 유틸 초기화', clearUtility),
-  clearAll:()=>requestConfirmAction('clearAll','한 번 더 누르면 유틸 제외 특성 초기화', clearAll),
+  clearAll:()=>requestConfirmAction('clearAll','한 번 더 누르면 편의/보조 제외 공격 특성 초기화', clearAll),
   saveTraitPreset:(...args)=>window.DpsPreset.saveCurrent(...args),
   loadTraitPreset:(...args)=>window.DpsPreset.loadSelected(...args),
   updateTraitPreset:(...args)=>window.DpsPreset.updateCurrent(...args),

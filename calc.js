@@ -2039,7 +2039,7 @@ function nextRpCost(row){
   return rpCost(row,n+1)-rpCost(row,n);
 }
 function isUtilitySpTrait(trait){
-  return trait[3]==='유틸' || trait[3]==='경험치' || trait[3]==='AP';
+  return ['유틸','경험치','AP','각성석'].includes(trait[3]);
 }
 const RESOURCE_TRAIT_ROWS=Object.freeze({
   SP:Object.freeze(TRAITS.filter(t=>SP_ROWS.has(t[0])).map(t=>t[0])),
@@ -2295,7 +2295,7 @@ const STAT_KO={
   AD:'공격력', AS:'공격속도', AP:'마법공격력', CRI:'크리티컬 확률', CD:'크리티컬 데미지',
   MC:'다중 크리티컬', TD:'총 데미지', DR:'방어력 감소', PIERCE:'방어력 관통', UA:'유닛 가속',
   SR:'실드 감소', HR:'체력 감소', MD:'멀티 타겟', MP:'멀티 확률', MCP:'멀티 크리 확률',
-  RA:'강화 관련', 특수:'상시 적용', 유틸:'편의/보조', 경험치:'경험치 보너스'
+  RA:'강화 관련', 특수:'상시 적용', 유틸:'편의/보조', 경험치:'경험치 보너스', 각성석:'각성석 보너스'
 };
 function statKo(type){return STAT_KO[type] || type;}
 function traitEffectText(row,type,rate){return !rate ? statKo(type) : `${statKo(type)} +${rate}${T_UA.has(row)?'%':''}`;}
@@ -2432,7 +2432,8 @@ function isTraitOptimizationTarget(t){
   if(!info) return false;
   const normalSet=TRAIT_OPT_NORMAL_ROWS[info.kind];
   if(!normalSet || !normalSet.has(row)) return false;
-  if(info.kind==='SP') return allowedRowsByTier().has(row);
+  if(!allowedRowsByTier().has(row)) return false;
+  if((row===131 || row===132) && !isAbyssDifficulty()) return false;
   return true;
 }
 /* VBA V1 효율표: 한 번 투자했을 때의 DPS 증가/다음 투자비용으로 순위를 정한다.
@@ -2605,6 +2606,59 @@ function traitV1RestoreNegativeStats(guard){
     guard.steps++;
   }
 }
+/* VBA Pre_Invest: V1 최적화 시작 전에 조건을 만족하는 항목만 선투자한다.
+ * 웹에서는 기본 자동 실행하며 기존 투자, 선택 종료 구간, 투자 제한 및 재화 한도를 보존한다. */
+function traitV1PreInvestSet(row,wanted){
+  const t=traitByRow(row);
+  if(!t || !allowedRowsByTier().has(row) || !traitLimitAllowsTrait(t)) return false;
+  if((row===131 || row===132) && !isAbyssDifficulty()) return false;
+  if((INV[row]||0)>=wanted) return false;
+  const kind=traitOptimizationResourceInfo(row)?.kind;
+  if(!kind) return false;
+  const current=INV[row]||0;
+  const otherCost=resourceUsed(kind)-resourceCostAtInvestment(kind,row,current);
+  const affordable=maximumAffordableInvestment(kind,row,wanted,Math.max(0,resourceOwn(kind)-otherCost));
+  if(affordable<wanted) return false;
+  const changes=[[row,wanted-current]];
+  if(!traitLimitStatsOk(withTemporaryTraitInvestments(changes,computeLightweightStatsRaw))) return false;
+  INV[row]=wanted;
+  return true;
+}
+function traitV1PreInvest(){
+  // 엑셀의 SP 사전 투자 ON 상태에 해당: 현재 미투자 공격 특성만 대상.
+  // 먼저 최대 투자, 남은 SP가 투자 비용 30배 이하면 1/3 투자로 축소한다.
+  for(const t of TRAITS){
+    const [row,,,type]=t;
+    if(row<42 || row>107 || (INV[row]||0)!==0) continue;
+    if(['유틸','경험치','AP','각성석'].includes(type) || !isTraitOptimizationTarget(t)) continue;
+    const max=TMAX[row]||0;
+    const candidates=[max,Math.floor(max/3)];
+    for(const count of candidates){
+      if(count<=0 || !traitV1PreInvestSet(row,count)) continue;
+      const remaining=resourceOwn('SP')-resourceUsed('SP');
+      if(remaining>cumCost(row,count)*30) break;
+      INV[row]=0;
+    }
+  }
+  // VBA EP: 잔여 1145 이상일 때 6개 공격 특성을 먼저 마스터한다.
+  // 보유 EP 1250 이상일 때만 편의/보조 2개를 함께 투자한다.
+  if(resourceOwn('EP')-resourceUsed('EP')>=1145){
+    if(resourceOwn('EP')>=1250){
+      traitV1PreInvestSet(123,10);
+      traitV1PreInvestSet(124,2);
+    }
+    for(const [row,count] of [[117,25],[118,25],[119,20],[120,20],[121,2],[122,1]]){
+      traitV1PreInvestSet(row,count);
+    }
+  }
+  // VBA 혼: 보유 혼 4980 이상일 때 선투자.
+  // 심연·침식 내성은 엑셀의 난이도 조건을 따라 어비스에서만 투자한다.
+  if(resourceOwn('SOUL')>=4980){
+    for(const [row,count] of [[131,10],[132,10],[133,12],[134,12],[135,12],[136,12],[137,10],[138,10]]){
+      traitV1PreInvestSet(row,count);
+    }
+  }
+}
 function traitV1RunResource(kind,guard){
   if(!traitV1TargetRows(kind).length) return;
   while(traitOptimizationGuardCanContinue(guard)){
@@ -2621,6 +2675,7 @@ function optimizeSP(){
   try{
     // VBA Optimize_V1: SP를 끝까지 최적화한 후 EP → RP → 혼으로 진행.
     // 무한 SP도 H207:H211처럼 동일한 SP 효율 후보로 취급한다.
+    traitV1PreInvest();
     traitV1RestoreNegativeStats(guard);
     for(const kind of ['SP','EP','RP','SOUL']){
       if(guard.aborted) break;
