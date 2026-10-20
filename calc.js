@@ -2665,10 +2665,6 @@ function restoreTraitRecommendationSaveState(state){
   }
   synchronizeTraitRecommendationCredits();
 }
-function hasTraitRecommendationCredits(){
-  synchronizeTraitRecommendationCredits();
-  return traitRecommendationCredits.size>0;
-}
 function traitRecommendationMaxAffordable(row,remaining){
   const max=Math.max(0,(TMAX[row]||999)-(INV[row]||0));
   let lo=0,hi=max;
@@ -2754,48 +2750,6 @@ function traitRecommendationPlanMatches(snapshot){
   const dps=traitRecommendationDpsValue(traitRecommendationStats(snapshot.useUnitBoard),snapshot.useUnitBoard);
   return Number.isFinite(dps) && Math.abs(dps-snapshot.dps)<=1e-7*Math.max(1,Math.abs(dps));
 }
-function applyTraitRecommendationPlan(plan){
-  synchronizeTraitRecommendationCredits();
-  if(!plan?.items?.length || !traitRecommendationPlanMatches(plan.snapshot)){
-    showToast('투자 상태가 변경되었습니다. 자동 갱신된 추천을 다시 확인해 주세요.','warn');
-    return false;
-  }
-  const changes=[];
-  const costs={SP:0,EP:0,RP:0,SOUL:0};
-  for(const item of plan.items){
-    const {row,amount,kind}=item;
-    const t=traitByRow(row);
-    if(!t || !traitRecommendationAllowsTrait(t) || traitOptimizationResourceInfo(row)?.kind!==kind ||
-       !Number.isInteger(amount) || amount<=0 || amount>(TMAX[row]||999)-(INV[row]||0)) return false;
-    const cost=traitOptimizationDeltaCost(row,amount);
-    if(!Number.isFinite(cost) || cost<=0) return false;
-    costs[kind]+=cost;
-    changes.push([row,amount]);
-  }
-  for(const kind of Object.keys(costs)){
-    if(costs[kind]>Math.max(0,resourceOwn(kind)-resourceUsed(kind))+1e-6){
-      showToast('투자에 필요한 재화가 부족합니다. 갱신된 추천을 확인해 주세요.','warn');
-      return false;
-    }
-  }
-  const base=traitRecommendationStats(plan.snapshot.useUnitBoard);
-  const next=withTemporaryTraitInvestments(changes,()=>traitRecommendationStats(plan.snapshot.useUnitBoard));
-  if(!traitRecommendationLimitsOk(next,base) ||
-     !(traitRecommendationDpsValue(next,plan.snapshot.useUnitBoard)>traitRecommendationDpsValue(base,plan.snapshot.useUnitBoard))){
-    showToast('현재 투자 제한 또는 효율 조건에서 적용할 수 없습니다.','warn');
-    return false;
-  }
-  let total=0;
-  for(const [row,amount] of changes){
-    INV[row]=(INV[row]||0)+amount;
-    traitRecommendationCredits.set(row,(traitRecommendationCredits.get(row)||0)+amount);
-    traitRecommendationObserved.set(row,INV[row]);
-    total+=amount;
-  }
-  commitAppUpdate({recalculate:'now'});
-  showToast(`추천 계획 ${fullNumber(changes.length)}종 · ${fullNumber(total)}개 전체투자 완료`);
-  return true;
-}
 function applyTraitRecommendation(row,amount){
   synchronizeTraitRecommendationCredits();
   const t=traitByRow(row);
@@ -2820,23 +2774,6 @@ function applyTraitRecommendation(row,amount){
   showToast(`${traitName(row)} ${fullNumber(count)}개 추천 투자 적용`);
   return true;
 }
-function refundTraitRecommendations(){
-  synchronizeTraitRecommendationCredits();
-  if(!traitRecommendationCredits.size){showToast('환불할 추천 투자 내역이 없습니다.','warn');return false;}
-  let total=0;
-  for(const [row,credit] of traitRecommendationCredits){
-    const count=Math.min(credit,INV[row]||0);
-    if(count<=0) continue;
-    INV[row]-=count;
-    total+=count;
-  }
-  traitRecommendationCredits.clear();
-  synchronizeTraitRecommendationCredits();
-  commitAppUpdate({recalculate:'now'});
-  showToast(`추천 투자 ${fullNumber(total)}개 환불 완료`);
-  return total>0;
-}
-
 /* 더제로 승단 */
 function zeroScoreNumber(value, min, max){
   const n=Number(value);

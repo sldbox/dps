@@ -2556,8 +2556,31 @@ function updateTraits(){
 /* 특성 추천: 가상 투자 계획을 단계별로 계산하여 화면 스크롤을 유지 */
 let traitRecommendationTimer=0;
 let traitRecommendationRevision=0;
-let currentTraitRecommendationPlan=null;
 const traitRecommendationCache=new Map();
+let selectedTraitRecommendationRow=null;
+let traitRecommendationSelectionTimer=0;
+let traitRecommendationSelectionAt=0;
+function clearTraitRecommendationSelection(){
+  if(traitRecommendationSelectionTimer) clearTimeout(traitRecommendationSelectionTimer);
+  traitRecommendationSelectionTimer=0;
+  selectedTraitRecommendationRow?.classList.remove('is-selected');
+  selectedTraitRecommendationRow?.setAttribute('aria-pressed','false');
+  selectedTraitRecommendationRow=null;
+  traitRecommendationSelectionAt=0;
+}
+function activateTraitRecommendationRow(row){
+  if(!row?.isConnected || !row.matches('.trait-recommendation-row')) return false;
+  const now=Date.now();
+  const shouldInvest=selectedTraitRecommendationRow===row && now-traitRecommendationSelectionAt<=650;
+  clearTraitRecommendationSelection();
+  if(shouldInvest) return applyTraitRecommendation(+row.dataset.row,+row.dataset.amount);
+  selectedTraitRecommendationRow=row;
+  traitRecommendationSelectionAt=now;
+  row.classList.add('is-selected');
+  row.setAttribute('aria-pressed','true');
+  traitRecommendationSelectionTimer=setTimeout(clearTraitRecommendationSelection,650);
+  return true;
+}
 function cancelTraitRecommendationCalculation(){
   if(traitRecommendationTimer) clearTimeout(traitRecommendationTimer);
   traitRecommendationTimer=0;
@@ -2575,54 +2598,36 @@ function traitRecommendationNumberText(value,decimals=0){
     : (decimals ? fmt(value,decimals) : fullNumber(value));
 }
 function renderTraitRecommendations(){
-  const table=$('traitRecommendationRows'),status=$('traitRecommendationStatus'),investAll=$('traitRecommendationInvestAll');
-  if(!table||!status||!investAll) return;
+  const table=$('traitRecommendationRows');
+  if(!table) return;
+  clearTraitRecommendationSelection();
   const useUnitBoard=isUnitBoardRecommendationMode();
   setText('traitRecommendationDpsLabel',useUnitBoard ? '클리어 기대값' : 'DPS');
-  const refundable=hasTraitRecommendationCredits();
-  investAll.textContent=refundable?'전체 환불':'전체 투자';
-  investAll.classList.toggle('trait-recommendation-refund',refundable);
-  investAll.classList.toggle('trait-recommendation-invest-all',!refundable);
-  investAll.classList.toggle('pri',!refundable);
-  investAll.classList.toggle('subtle',refundable);
-  investAll.classList.toggle('danger',refundable);
-  investAll.disabled=!refundable;
   const revision=++traitRecommendationRevision;
   cancelTraitRecommendationCalculation();
   const cached=traitRecommendationCache.get(useUnitBoard);
   if(cached && cached.appRevision===appCalculationRevision){
-    currentTraitRecommendationPlan=cached.plan;
-    investAll.disabled=!refundable&&!cached.plan;
-    status.textContent=cached.status;
     table.innerHTML=cached.rows;
     return;
   }
-  currentTraitRecommendationPlan=null;
-  investAll.disabled=!refundable;
   const snapshot=traitRecommendationPlanSnapshot(useUnitBoard);
   function cacheResult(){
     traitRecommendationCache.set(useUnitBoard,{
       appRevision:appCalculationRevision,
-      plan:currentTraitRecommendationPlan,
-      status:status.textContent,
       rows:table.innerHTML
     });
   }
   const remaining=snapshot.remaining;
-  const resources=Object.entries(remaining).map(([kind,value])=>`${TRAIT_RECOMMENDATION_RESOURCE_LABELS[kind]} ${traitRecommendationNumberText(value)}`).join(' · ');
   if(!Object.values(remaining).some(value=>value>0)){
-    status.textContent=`남은 재화 없음 · ${resources}`;
-    table.innerHTML='<tr><td colspan="5">추천에 사용할 잔여 재화가 없습니다.</td></tr>';
+    table.innerHTML='<tr><td colspan="4">추천에 사용할 잔여 재화가 없습니다.</td></tr>';
     return;
   }
   const initial=traitRecommendationStats(useUnitBoard);
   if(useUnitBoard && !initial.dpsBaseUnit?.isActive){
-    status.textContent='유닛을 선택하면 클리어 기대값 기준으로 추천을 계산합니다.';
-    table.innerHTML='<tr><td colspan="5">유닛 보드에서 유닛을 먼저 선택해 주세요.</td></tr>';
+    table.innerHTML='<tr><td colspan="4">유닛 보드에서 유닛을 먼저 선택해 주세요.</td></tr>';
     return;
   }
-  status.textContent=`잔여 재화 전체 기준 · 투자 계획 계산 중 · ${resources}`;
-  table.innerHTML='<tr><td colspan="5">여러 특성의 투자 수량과 효율을 계산하는 중입니다.</td></tr>';
+  table.innerHTML='<tr><td colspan="4">여러 특성의 투자 수량과 효율을 계산하는 중입니다.</td></tr>';
   const kinds=['SP','EP','RP','SOUL'];
   const targets=Object.fromEntries(kinds.map(kind=>[kind,TRAITS.filter(t=>t[0]!==116 && traitOptimizationResourceInfo(t[0])?.kind===kind && traitRecommendationAllowsTrait(t))]));
   const allocations=new Map();
@@ -2654,14 +2659,12 @@ function renderTraitRecommendations(){
   function finalize(){
     if(revision!==traitRecommendationRevision) return;
     if(!traitRecommendationPlanMatches(snapshot)){
-      status.textContent='계산 중 입력 상태가 변경되었습니다. 다음 자동 갱신 결과를 확인해 주세요.';
-      table.innerHTML='<tr><td colspan="5">현재 입력 기준으로 다시 계산해 주세요.</td></tr>';
+      table.innerHTML='<tr><td colspan="4">현재 입력 기준으로 다시 계산해 주세요.</td></tr>';
       return;
     }
     const changes=[...allocations];
     if(!changes.length){
-      status.textContent=`${resources} · 제한과 잔여 재화 내에서 투자 가능한 DPS 상승 없음`;
-      table.innerHTML='<tr><td colspan="5">현재 조건에서 DPS를 높이는 투자 계획이 없습니다.</td></tr>';
+      table.innerHTML='<tr><td colspan="4">현재 조건에서 DPS를 높이는 투자 계획이 없습니다.</td></tr>';
       cacheResult();
       return;
     }
@@ -2669,8 +2672,7 @@ function renderTraitRecommendations(){
     const finalDps=traitRecommendationDpsValue(combined,useUnitBoard);
     const originalDps=traitRecommendationDpsValue(initial,useUnitBoard);
     if(!traitRecommendationLimitsOk(combined,initial) || !Number.isFinite(finalDps) || finalDps<=originalDps){
-      status.textContent='최종 투자 제한 검증에 실패했습니다. 현재 값은 변경되지 않았습니다.';
-      table.innerHTML='<tr><td colspan="5">투자 제한과 현재 조건을 확인해 주세요.</td></tr>';
+      table.innerHTML='<tr><td colspan="4">투자 제한과 현재 조건을 확인해 주세요.</td></tr>';
       return;
     }
     const items=changes.map(([row,amount])=>{
@@ -2680,15 +2682,11 @@ function renderTraitRecommendations(){
       const dps=traitRecommendationDpsValue(stats,useUnitBoard);
       return {row,kind,amount,cost,dps,gain:dps-originalDps};
     });
-    currentTraitRecommendationPlan={snapshot,items,finalDps};
-    investAll.disabled=false;
-    status.textContent=`잔여 재화 전체 기준 · ${items.length}개 특성 투자 계획 · ${useUnitBoard ? '클리어 기대값' : 'DPS'} ${traitRecommendationNumberText(originalDps,1)} → ${traitRecommendationNumberText(finalDps,1)} (+${traitRecommendationNumberText(finalDps-originalDps,1)})`;
-    table.innerHTML=items.map(item=>`<tr>
+    table.innerHTML=items.map(item=>`<tr class="trait-recommendation-row" data-action="applyTraitRecommendation" data-row="${item.row}" data-amount="${item.amount}" tabindex="0" role="button" aria-pressed="false" aria-label="${escapeHtml(traitName(item.row))} ${fullNumber(item.amount)}개 추천 투자. 두 번 누르면 투자" title="두 번 누르면 추천 투자">
       <td>${escapeHtml(traitName(item.row))}</td>
       <td>${fullNumber(item.amount)}</td>
       <td>${TRAIT_RECOMMENDATION_RESOURCE_LABELS[item.kind]} ${traitRecommendationNumberText(item.cost)}</td>
       <td><strong>${traitRecommendationNumberText(item.dps,1)}</strong><small>${item.gain>=0?'+':''}${traitRecommendationNumberText(item.gain,1)} ${useUnitBoard ? '기대값' : 'DPS'}</small></td>
-      <td><button class="btn pri ui-action-btn trait-recommendation-apply" data-action="applyTraitRecommendation" data-row="${item.row}" data-amount="${item.amount}" type="button">투자</button></td>
     </tr>`).join('');
     cacheResult();
   }
@@ -2698,13 +2696,11 @@ function renderTraitRecommendations(){
     try{
       const started=performance.now();
       let evaluated=0;
-      let progressKind='';
       // The investment snapshot is the same for every candidate within a pass.
       // Apply it once per batch instead of once per candidate.
       while(evaluated<6 && performance.now()-started<10){
         if(!passStarted && !beginPass()){finalize();return;}
         const kind=kinds[kindIndex];
-        progressKind=kind;
         withTemporaryTraitInvestments([...allocations],()=>{
           while(cursor<passTargets.length && evaluated<6 && performance.now()-started<10){
             const t=passTargets[cursor++];
@@ -2729,22 +2725,13 @@ function renderTraitRecommendations(){
           passStarted=false;
         }
       }
-      if(!passStarted && progressKind){
-        status.textContent=`투자 계획 계산 중 · ${TRAIT_RECOMMENDATION_RESOURCE_LABELS[progressKind]} ${Math.min(pass+1,MAX_PASSES_PER_RESOURCE)}/${MAX_PASSES_PER_RESOURCE} · ${resources}`;
-      }
       scheduleTraitRecommendationCalculation(step);
     }catch(error){
       rememberAppIssue('error','특성 추천 투자 계획',error);
-      status.textContent='특성 추천 계산을 완료하지 못했습니다.';
-      table.innerHTML='<tr><td colspan="5">추천 계산 오류 · 현재 투자값은 변경되지 않았습니다.</td></tr>';
-      investAll.disabled=!refundable;
+      table.innerHTML='<tr><td colspan="4">추천 계산 오류 · 현재 투자값은 변경되지 않았습니다.</td></tr>';
     }
   }
   scheduleTraitRecommendationCalculation(step);
-}
-function applyCurrentTraitRecommendationPlan(){
-  if(!currentTraitRecommendationPlan) return false;
-  return applyTraitRecommendationPlan(currentTraitRecommendationPlan);
 }
 /* 수동 특성 입력·반복 투자 이벤트 */
 let traitKeyNavGuardUntil=0;
@@ -3372,10 +3359,7 @@ let appEventsBound=false;
 const ACTION_HANDLERS={
   optimizeSP,
   optimizeUtility,
-  applyTraitRecommendation:(trigger)=>applyTraitRecommendation(+trigger.dataset.row,+trigger.dataset.amount),
-  toggleTraitRecommendationInvestment:()=>hasTraitRecommendationCredits()
-    ? requestConfirmAction('refundTraitRecommendations','한 번 더 누르면 추천 투자만 전체환불',refundTraitRecommendations)
-    : applyCurrentTraitRecommendationPlan(),
+  applyTraitRecommendation:(trigger)=>activateTraitRecommendationRow(trigger),
   clearUtility:()=>requestConfirmAction('clearUtility','한 번 더 누르면 유틸 초기화', clearUtility),
   clearAll:()=>requestConfirmAction('clearAll','한 번 더 누르면 유틸 제외 특성 초기화', clearAll),
   saveTraitPreset:(...args)=>window.DpsPreset.saveCurrent(...args),
@@ -3413,6 +3397,11 @@ function bindActionEvents(){
     if(!fn) return;
     e.preventDefault();
     fn(trigger, e);
+  });
+  document.addEventListener('keydown', e=>{
+    if((e.key!=='Enter' && e.key!==' ') || !e.target.matches?.('.trait-recommendation-row[data-action="applyTraitRecommendation"]')) return;
+    e.preventDefault();
+    activateTraitRecommendationRow(e.target);
   });
 }
 const REACTIVE_INPUT_EXCLUDED_IDS=new Set([

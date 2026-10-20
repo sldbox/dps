@@ -4,7 +4,7 @@
 <meta charset="UTF-8"/>
 <meta name="google-site-verification" content="RTuDWbMdnKgbpRpl05eXh9epFwWRSxju4NOl8OtjMsI" />
 <script>
-window.DPS_BUILD_VERSION = "dps-2610200001";
+window.DPS_BUILD_VERSION = "dps-2610200003";
 window.APP_VERSION = window.DPS_BUILD_VERSION;
 window.DPS_ASSET_VERSIONS = {
   "app.js": window.DPS_BUILD_VERSION,
@@ -198,14 +198,14 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 <meta content="https://sldbox.github.io/dps/" property="og:url"/>
 <meta content="개복디 특성 게산기" property="og:title"/>
 <meta content="특성 투자, 재화 사용량, 표기 스탯, 총데미지, DPS를 한 번에 계산할 수 있는 개복디 전용 계산기입니다." property="og:description"/>
-<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2610200001" property="og:image"/>
-<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2610200001" property="og:image:secure_url"/>
+<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2610200003" property="og:image"/>
+<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2610200003" property="og:image:secure_url"/>
 <meta content="image/png" property="og:image:type"/>
 <meta content="개복디 특성 게산기 로고" property="og:image:alt"/>
 <meta content="summary_large_image" name="twitter:card"/>
 <meta content="개복디 특성 게산기" name="twitter:title"/>
 <meta content="특성 투자, 재화 사용량, 표기 스탯, 총데미지, DPS를 한 번에 계산할 수 있는 개복디 전용 계산기입니다." name="twitter:description"/>
-<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2610200001" name="twitter:image"/>
+<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2610200003" name="twitter:image"/>
 <meta content="개복디 특성 게산기 로고" name="twitter:image:alt"/>
 <link href="https://cdn.jsdelivr.net" rel="preconnect"/>
 <link crossorigin="" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" rel="stylesheet"/>
@@ -323,7 +323,7 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 </div>
 <div class="basic-goal-cards">
 <div class="sg-title basic-info-title basic-goal-title">
-<div class="basic-goal-brand"><span class="basic-goal-brand-mark" aria-hidden="true">✦</span><span class="basic-goal-brand-copy"><strong>기본정보 / 목표설정</strong><small>CONFIGURATION CENTER</small></span></div>
+<div class="basic-goal-brand"><span class="basic-goal-brand-mark" aria-hidden="true">✦</span><span class="basic-goal-brand-copy"><strong>기본 설정</strong><small>CONFIGURATION CENTER</small></span></div>
 <div class="basic-info-title-actions"><button class="btn subtle ui-action-btn basic-info-title-btn" data-action="openSanctuarySkillModal" type="button" aria-haspopup="dialog" aria-controls="sanctuarySkillModal"><span class="modal-launch-star" aria-hidden="true">✦</span><span>성소 스킬</span></button><button class="btn subtle ui-action-btn basic-info-title-btn" data-action="openBusPassengerModal" type="button" aria-haspopup="dialog" aria-controls="busPassengerModal"><span class="modal-launch-star" aria-hidden="true">✦</span><span>버스 승객</span></button></div></div>
 <!-- 기본 정보: 재화 -->
 <div class="sg xp-sp-card basic-info-resource-card">
@@ -663,7 +663,7 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 <div class="trait-board-panel">
 <div class="trait-optimizer-panel">
 <div class="optimizer-head">
-<span class="optimizer-head-title">최적화 / 마스터</span>
+<span class="optimizer-head-title">빌드 최적화</span>
 </div>
 <div class="trait-dashboard-tools trait-board-control-grid">
   <section class="trait-optimizer-row" aria-labelledby="traitOptimizeScopeTitle">
@@ -719,15 +719,12 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 <section class="trait-board-integrated-section trait-recommendation-section" aria-labelledby="traitRecommendationHeading">
 <div class="optimizer-head trait-recommendation-heading">
 <h3 id="traitRecommendationHeading">특성 추천</h3>
-<div class="trait-recommendation-heading-actions">
-<button type="button" class="btn pri ui-action-btn trait-recommendation-invest-all" id="traitRecommendationInvestAll" data-action="toggleTraitRecommendationInvestment" disabled>전체 투자</button>
-</div>
+<span class="trait-recommendation-hint">추천 특성 두번 클릭 시 적용</span>
 </div>
 <div class="trait-recommendation-content">
-<p class="trait-recommendation-status" id="traitRecommendationStatus" aria-live="polite">남은 재화를 기준으로 추천을 계산합니다.</p>
 <div class="trait-recommendation-scroll"><table class="trait-recommendation-table" aria-label="DPS 효율 특성 추천">
-<thead><tr><th scope="col">특성명</th><th scope="col">추천 투자수</th><th scope="col">필요량</th><th scope="col" id="traitRecommendationDpsLabel">DPS</th><th scope="col">특성 투자</th></tr></thead>
-<tbody id="traitRecommendationRows"><tr><td colspan="5">계산 대기 중</td></tr></tbody>
+<thead><tr><th scope="col">특성명</th><th scope="col">추천 투자수</th><th scope="col">필요량</th><th scope="col" id="traitRecommendationDpsLabel">DPS</th></tr></thead>
+<tbody id="traitRecommendationRows"><tr><td colspan="4">계산 대기 중</td></tr></tbody>
 </table></div>
 </div>
 </section>
