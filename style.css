@@ -1244,6 +1244,23 @@ body .trait-preset-body select:not(:disabled){background:var(--role-manual-selec
 body .trait-preset-body select optgroup{text-align:left;text-align-last:left;}
 body .trait-preset-body select option,body .trait-preset-body select option.trait-preset-name-option{text-align:center;text-align-last:center;direction:ltr;}
 body .trait-preset-body select.trait-preset-native-select{display:none;}
+/* 모든 일반 select의 프리셋형 목록: 원본 select는 계산·저장용, 버튼은 표시·조작용 */
+body select.app-select-native-source{display:none!important;}
+body button.app-select-trigger{display:flex;position:relative;align-items:center;justify-content:center;box-sizing:border-box;min-width:0;width:100%;max-width:100%;height:var(--app-select-control-height,30px);min-height:28px;margin:0;padding:0 23px 0 9px;border:1px solid var(--role-interactive-bd,#47566a);border-radius:var(--app-select-control-radius,8px);background:var(--role-manual-select-bg,var(--role-interactive-bg,#0d0e11));color:#fff;font-family:var(--app-select-control-font-family,var(--font-main));font-size:var(--app-select-control-font-size,12px);font-weight:900;line-height:1.2;box-shadow:inset 0 1px 2px rgba(0,0,0,.13);text-align:center;cursor:pointer;}
+body button.app-select-trigger:disabled{border-color:var(--role-readonly-bd,#373c43);background:var(--role-readonly-bg,#0b0d12);color:var(--ui-sub);cursor:not-allowed;}
+body button.app-select-trigger:focus-visible,body button.app-select-trigger.is-open{outline:2px solid var(--role-manual-active-bd,#85b4f5);outline-offset:1px;border-color:var(--role-manual-active-bd,#85b4f5);background:var(--role-manual-active-bg,#26384f);}
+body .app-select-button-value{display:block;min-width:0;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+body .app-select-button-chevron{position:absolute;right:10px;top:50%;width:7px;height:7px;border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:translateY(-65%) rotate(45deg);pointer-events:none;opacity:.8;}
+body .app-select-menu{position:fixed;z-index:100002;box-sizing:border-box;display:flex;flex-direction:column;gap:2px;padding:7px;border:1px solid #4c5664;border-radius:10px;background:linear-gradient(180deg,#111318,#0b0c0f);color:#eaf2ff;box-shadow:0 16px 34px rgba(0,0,0,.58),inset 0 1px rgba(255,255,255,.08);overflow-y:auto;overscroll-behavior:contain;touch-action:pan-y;}
+body .app-select-menu[hidden]{display:none;}
+body .app-select-group-label{padding:8px 9px 3px;color:#8fa0b6;font-size:calc(11px * var(--app-font-scale));font-weight:900;text-align:left;}
+body .app-select-option{position:relative;display:flex;align-items:center;justify-content:center;flex:0 0 auto;box-sizing:border-box;min-width:0;width:100%;min-height:31px;padding:6px 9px 6px 28px;border:0;border-radius:7px;background:transparent;color:#eaf2ff;font-size:calc(12px * var(--app-font-scale));font-family:var(--font-main);font-weight:850;text-align:left;line-height:1.35;cursor:pointer;}
+body .app-select-option:focus-visible,body .app-select-option:hover{outline:none;background:#253347;color:#fff;}
+body .app-select-option.is-selected{background:#1c2c43;color:#fff;}
+body .app-select-option:disabled{color:#718096;opacity:.65;cursor:not-allowed;}
+body .app-select-option-check{position:absolute;left:9px;top:50%;transform:translateY(-50%);color:#a5c8ff;font-size:13px;font-weight:950;}
+body .app-select-option-text{display:block;min-width:0;width:100%;overflow-wrap:anywhere;}
+
 body .trait-preset-custom-select{position:relative;width:100%;min-width:0;z-index:20;}
 body .trait-preset-custom-select.is-open{z-index:140;}
 /* 열린 목록이 하단 관리 버튼 카드보다 항상 위에 렌더링되도록 상위 stacking context를 승격 */

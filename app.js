@@ -3515,6 +3515,260 @@ function bindAppEvents(){
     bindButtonPressFeedback, bindDamageBoardTabEvents, bindDamageBoardSwitchEvents, bindAppTitleVersion
   ].forEach(fn=>fn());
 }
+// 일반 select는 계산·저장 이벤트의 원본으로 유지하고, 표시와 조작만 앱 내부 목록으로 대체합니다.
+function initAppSelectDropdowns(){
+  if(window.__dpsAppSelectDropdownsReady) return;
+  window.__dpsAppSelectDropdownsReady=true;
+  const nativeSelector='select:not(#traitPresetSelect):not(.hidden-field):not(.trait-limit-source):not(.trait-preset-native-select):not([hidden]):not([aria-hidden="true"])';
+  const triggerClass='app-select-trigger';
+  const menu=document.createElement('div');
+  menu.className='app-select-menu';
+  menu.id='appSelectMenu';
+  menu.setAttribute('role','listbox');
+  menu.setAttribute('aria-label','선택 항목');
+  menu.hidden=true;
+  document.body.appendChild(menu);
+  let activeSelect=null;
+  let activeButton=null;
+  let scheduled=false;
+  const buttons=new Map();
+  const isSupported=select=>select?.matches?.(nativeSelector) && !select.closest('[data-trait-preset-custom-select]');
+  const label=select=>select.getAttribute('aria-label') || (select.id ? document.querySelector(`label[for="${CSS.escape(select.id)}"]`)?.textContent.trim() : '') || select.closest('label')?.querySelector('span')?.textContent.trim() || '항목 선택';
+  function optionsFor(select){
+    return [...select.options].filter(option=>!option.hidden && !option.parentElement?.hidden);
+  }
+  function syncButton(select,button){
+    if(!select.isConnected || !button.isConnected) return;
+    const option=select.selectedOptions?.[0];
+    button.querySelector('.app-select-button-value').textContent=option?.textContent.trim() || '선택 안함';
+    button.disabled=select.disabled || !optionsFor(select).some(item=>!item.disabled && !item.parentElement?.disabled);
+    button.setAttribute('aria-label',`${label(select)}: ${option?.textContent.trim() || '선택 안함'}`);
+    if(activeSelect===select && (button.disabled || button.hidden)) closeMenu();
+  }
+  function enhance(select){
+    if(!isSupported(select)) return;
+    let button=buttons.get(select);
+    if(button?.isConnected && button.previousElementSibling===select){ syncButton(select,button); return; }
+    const computed=window.getComputedStyle(select);
+    if(computed.display==='none' || computed.visibility==='hidden') return;
+    button=document.createElement('button');
+    button.type='button';
+    button.className=triggerClass;
+    button.setAttribute('aria-haspopup','listbox');
+    button.setAttribute('aria-expanded','false');
+    button.setAttribute('aria-controls','appSelectMenu');
+    button.innerHTML='<span class="app-select-button-value"></span><span class="app-select-button-chevron" aria-hidden="true"></span>';
+    button.style.setProperty('--app-select-control-height',computed.height);
+    button.style.setProperty('--app-select-control-font-size',computed.fontSize);
+    button.style.setProperty('--app-select-control-font-family',computed.fontFamily);
+    button.style.setProperty('--app-select-control-radius',computed.borderRadius);
+    // 원본을 먼저 측정한 뒤 숨겨 기존 입력창의 배치·계산 연결을 유지합니다.
+    select.insertAdjacentElement('afterend',button);
+    select.classList.add('app-select-native-source');
+    select.setAttribute('aria-hidden','true');
+    select.tabIndex=-1;
+    buttons.set(select,button);
+    syncButton(select,button);
+  }
+  function closeMenu(restoreFocus=false){
+    if(!activeSelect) return;
+    const button=activeButton;
+    activeSelect=null;
+    activeButton=null;
+    menu.hidden=true;
+    menu.replaceChildren();
+    if(button){
+      button.classList.remove('is-open');
+      button.setAttribute('aria-expanded','false');
+      if(restoreFocus && button.isConnected) button.focus({preventScroll:true});
+    }
+  }
+  function placeMenu(){
+    if(!activeButton?.isConnected){closeMenu();return;}
+    const rect=activeButton.getBoundingClientRect();
+    const viewport=window.visualViewport;
+    const viewTop=viewport ? viewport.offsetTop : 0;
+    const viewHeight=viewport ? viewport.height : window.innerHeight;
+    const viewLeft=viewport ? viewport.offsetLeft : 0;
+    const viewWidth=viewport ? viewport.width : window.innerWidth;
+    const padding=8;
+    const below=Math.max(0,viewTop+viewHeight-rect.bottom-padding);
+    const above=Math.max(0,rect.top-viewTop-padding);
+    const openAbove=below<Math.min(190,above) && above>below;
+    const room=Math.max(84,(openAbove?above:below)-7);
+    const width=Math.min(viewWidth-padding*2,Math.max(rect.width,Math.min(210,viewWidth-padding*2)));
+    const left=Math.max(viewLeft+padding,Math.min(rect.left,viewLeft+viewWidth-padding-width));
+    menu.style.width=`${Math.round(width)}px`;
+    menu.style.maxHeight=`${Math.max(72,Math.min(300,Math.floor(room)))}px`;
+    menu.style.left=`${Math.round(left)}px`;
+    menu.style.top=openAbove ? 'auto' : `${Math.round(rect.bottom+5)}px`;
+    menu.style.bottom=openAbove ? `${Math.round(window.innerHeight-rect.top+5)}px` : 'auto';
+    menu.classList.toggle('opens-up',openAbove);
+  }
+  function getItems(){ return [...menu.querySelectorAll('[data-app-select-value]')]; }
+  function focusItem(item){ if(item){item.focus({preventScroll:true});item.scrollIntoView({block:'nearest'});} }
+  function openMenu(select,button,focusList=false){
+    if(!select || select.disabled || !button?.isConnected) return;
+    if(activeSelect) closeMenu();
+    syncButton(select,button);
+    activeSelect=select;
+    activeButton=button;
+    button.classList.add('is-open');
+    button.setAttribute('aria-expanded','true');
+    menu.setAttribute('aria-label',label(select));
+    menu.replaceChildren();
+    [...select.children].forEach(node=>{
+      if(node.tagName==='OPTGROUP'){
+        if(node.hidden) return;
+        const group=document.createElement('div');
+        group.className='app-select-group-label';
+        group.textContent=node.label;
+        menu.appendChild(group);
+        [...node.children].forEach(appendOption);
+      }else if(node.tagName==='OPTION') appendOption(node);
+    });
+    function appendOption(option){
+      if(option.hidden) return;
+      const item=document.createElement('button');
+      item.type='button';
+      item.className='app-select-option';
+      item.dataset.appSelectValue=option.value;
+      item.setAttribute('role','option');
+      item.setAttribute('aria-selected',String(select.value===option.value));
+      item.disabled=option.disabled || option.parentElement?.disabled || false;
+      if(select.value===option.value) item.classList.add('is-selected');
+      const check=document.createElement('span');
+      check.className='app-select-option-check';
+      check.setAttribute('aria-hidden','true');
+      check.textContent=select.value===option.value ? '✓' : '';
+      const title=document.createElement('span');
+      title.className='app-select-option-text';
+      title.textContent=option.textContent.trim();
+      item.append(check,title);
+      menu.appendChild(item);
+    }
+    menu.hidden=false;
+    placeMenu();
+    if(focusList){focusItem(getItems().find(item=>item.classList.contains('is-selected')&&!item.disabled) || getItems().find(item=>!item.disabled));}
+    else getItems().find(item=>item.classList.contains('is-selected'))?.scrollIntoView({block:'nearest'});
+  }
+  function selectItem(item){
+    if(!activeSelect || !item || item.disabled) return;
+    const select=activeSelect;
+    const button=activeButton;
+    const changed=select.value!==item.dataset.appSelectValue;
+    select.value=item.dataset.appSelectValue;
+    closeMenu(true);
+    syncButton(select,button);
+    if(changed){
+      // 기존 코드가 사용하는 네이티브 change 경로를 반드시 한 번만 실행합니다.
+      select.dispatchEvent(new Event('change',{bubbles:true}));
+    }
+    requestSync();
+  }
+  function refresh(){
+    scheduled=false;
+    document.querySelectorAll(nativeSelector).forEach(select=>{
+      if(select.classList.contains('app-select-native-source')){
+        const button=buttons.get(select);
+        if(button?.isConnected) syncButton(select,button);
+      }else enhance(select);
+    });
+    for(const [select,button] of buttons){
+      if(select.isConnected && button.isConnected) syncButton(select,button);
+      if(!select.isConnected || !button.isConnected){
+        if(select===activeSelect) closeMenu();
+        buttons.delete(select);
+      }
+    }
+  }
+  function requestSync(){
+    if(scheduled) return;
+    scheduled=true;
+    window.requestAnimationFrame(refresh);
+  }
+  document.addEventListener('click',event=>{
+    const option=event.target.closest?.('.app-select-option');
+    if(option?.closest('.app-select-menu')){selectItem(option);return;}
+    const trigger=event.target.closest?.(`.${triggerClass}`);
+    if(trigger){
+      const select=trigger.previousElementSibling;
+      if(activeButton===trigger) closeMenu();
+      else openMenu(select,trigger);
+      return;
+    }
+    const targetLabel=event.target.closest?.('label[for]');
+    if(targetLabel){
+      const select=document.getElementById(targetLabel.htmlFor);
+      const button=buttons.get(select);
+      if(button && !targetLabel.contains(button)){
+        event.preventDefault();
+        if(activeButton===button) closeMenu();
+        else openMenu(select,button);
+        return;
+      }
+    }
+    if(activeSelect && !menu.contains(event.target)) closeMenu();
+    requestSync();
+  });
+  // 유닛 상세 모달의 Escape 단축키보다 먼저 열린 목록만 닫습니다.
+  window.addEventListener('keydown',event=>{
+    if(event.key==='Escape' && activeSelect){
+      event.preventDefault();
+      event.stopPropagation();
+      closeMenu(true);
+    }
+  },true);
+  document.addEventListener('keydown',event=>{
+    const trigger=event.target.closest?.(`.${triggerClass}`);
+    if(trigger && ['ArrowDown','ArrowUp','Home','End',' '].includes(event.key)){
+      event.preventDefault();
+      if(activeButton!==trigger) openMenu(trigger.previousElementSibling,trigger,true);
+      return;
+    }
+    if(!activeSelect) return;
+    if(event.key==='Escape'){
+      event.preventDefault();
+      closeMenu(true);
+      return;
+    }
+    if(!menu.contains(event.target)) return;
+    const items=getItems().filter(item=>!item.disabled);
+    const index=items.indexOf(document.activeElement);
+    if(['ArrowDown','ArrowUp','Home','End'].includes(event.key)){
+      event.preventDefault();
+      let next=index;
+      if(event.key==='Home') next=0;
+      else if(event.key==='End') next=items.length-1;
+      else if(event.key==='ArrowDown') next=(index+1)%items.length;
+      else next=(index-1+items.length)%items.length;
+      focusItem(items[next]);
+    }
+    if(event.key==='Tab') closeMenu();
+  });
+  document.addEventListener('change',event=>{
+    if(event.target.matches?.('select')) requestSync();
+  });
+  document.addEventListener('input',requestSync);
+  document.addEventListener('focusin',event=>{
+    if(activeSelect && !menu.contains(event.target) && event.target!==activeButton) closeMenu();
+  });
+  const observer=new MutationObserver(records=>{
+    if(records.some(record=>{
+      if(record.type==='attributes') return record.target.matches?.('select,option,optgroup');
+      if(record.target.matches?.('select,optgroup')) return true;
+      return [...record.addedNodes].some(node=>node.nodeType===1 && (node.matches?.('select') || node.querySelector?.('select')));
+    })) requestSync();
+  });
+  observer.observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['disabled','hidden','selected','value']});
+  window.addEventListener('resize',()=>{ if(activeSelect) placeMenu();requestSync(); },{passive:true});
+  window.addEventListener('scroll',event=>{if(activeSelect && !menu.contains(event.target)) closeMenu();},{passive:true,capture:true});
+  window.visualViewport?.addEventListener('resize',()=>{if(activeSelect) placeMenu();},{passive:true});
+  // 프리셋 로드 등 직접 .value를 변경하는 기존 코드와 화면 표시를 동기화합니다.
+  window.addEventListener('dps:preset-loaded',requestSync);
+  refresh();
+}
+
 function initApp(){
   loadFontScale();
   renderZeroScoreCalculatorRows();
@@ -3530,6 +3784,7 @@ function initApp(){
   syncTraitLimitInputs();
   loadState();
   window.DpsPreset.init();
+  initAppSelectDropdowns();
 }
 function markAppReady(){
   try{
