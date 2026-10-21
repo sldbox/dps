@@ -742,7 +742,7 @@ function setTraitPresetActionDisplay(action,state){
   });
 }
 function renderTraitPresetStatus(status,store){
-  const backup=store.presets.length>0 && (status.backupNeeded || status.updatedPresetIds.length>0 || status.pendingUnitBoardPresetIds.length>0 || status.pendingJewelSettings);
+  const backup=store.presets.length>0 && (status.backupNeeded || status.updatedPresetIds.length>0 || status.pendingUnitBoardPresetIds.length>0);
   const manager=document.querySelector('.trait-preset-panel');
   if(manager) manager.classList.toggle('has-backup-pending',backup);
   qsa('[data-action="backupTraitPresets"]').forEach(btn=>{
@@ -760,7 +760,8 @@ function updateTraitPresetStatus(partial={}, options={}){
   if(options.persist) saveTraitPresetStatusData(status);
 }
 function restoreTraitPresetStatus(){
-  updateTraitPresetStatus({}, {persist:true});
+  const store=loadTraitPresetStore();
+  updateTraitPresetStatus({pendingJewelSettings:store.presets.length>0 && traitPresetJewelSettingsChanged(store)}, {persist:true});
 }
 function markTraitPresetUpdated(ids, action='update', options={}){
   const previous=loadTraitPresetStatusData();
@@ -799,15 +800,14 @@ function clearTraitPresetUpdatedStatus(action='latest',options={}){
   }
   updateTraitPresetStatus(partial,{persist:true});
 }
-function markTraitPresetJewelSettingsPending(){
-  const store=loadTraitPresetStore();
+function traitPresetJewelSettingsChanged(store){
   const stored=normalizeTraitPresetJewelSettings(store.jewelSettings);
   const current=captureTraitPresetJewelSettings();
-  const pendingJewelSettings=!stored || stableTraitPresetValue(stored)!==stableTraitPresetValue(current);
-  updateTraitPresetStatus({
-    pendingJewelSettings,
-    lastAction:'edit'
-  },{persist:true});
+  return !stored || stableTraitPresetValue(stored)!==stableTraitPresetValue(current);
+}
+function markTraitPresetJewelSettingsPending(){
+  const store=loadTraitPresetStore();
+  updateTraitPresetStatus({pendingJewelSettings:traitPresetJewelSettingsChanged(store),lastAction:'edit'},{persist:true});
   renderTraitPresetUpdateStatus(store);
 }
 function notifyStorageAction(message, type='ok', options={}){
@@ -1352,6 +1352,9 @@ function saveTraitPreset(){
     const state=makeTraitPresetStateObject();
     if(!state) throw new Error('현재 화면값을 프리셋 상태로 저장할 수 없습니다.');
     const index=store.presets.findIndex(preset=>preset.name===name);
+    const previousJewelSettings=normalizeTraitPresetJewelSettings(store.jewelSettings);
+    const currentJewelSettings=captureTraitPresetJewelSettings();
+    const jewelChanged=!previousJewelSettings || stableTraitPresetValue(previousJewelSettings)!==stableTraitPresetValue(currentJewelSettings);
     let id;
     if(index>=0){
       const prev=store.presets[index];
@@ -1362,10 +1365,17 @@ function saveTraitPreset(){
       store.presets.push({id,name,createdAt:now,updatedAt:now,meta:traitPresetMetaFromState(),state});
     }
     setTraitPresetUnitBoardState(store,id,captureTraitPresetUnitBoardState());
-    store.jewelSettings=captureTraitPresetJewelSettings();
-    saveTraitPresetStore(store,{source:'saveTraitPreset'});
+    store.jewelSettings=currentJewelSettings;
+    store=saveTraitPresetStore(store,{source:'saveTraitPreset'});
     clearTraitPresetDraft(id);
-    markTraitPresetUpdated([id],'update');
+    const commonPresetIds=jewelChanged ? store.presets.map(item=>item.id) : [];
+    markTraitPresetUpdated(jewelChanged ? commonPresetIds : [id],'update',{
+      commonChangeKeys:jewelChanged ? ['jewelSettings'] : [],
+      commonPresetIds,
+      singleChangeKeys:['storedPreset'],
+      singlePresetIds:[id]
+    });
+    updateTraitPresetStatus({pendingJewelSettings:false},{persist:true});
     finishTraitPresetSelection(id);
     resetTraitPresetNameInput();
     
@@ -1408,6 +1418,7 @@ function loadTraitPresetById(id,options={}){
       unitBoardState:draft?.unitBoard || traitPresetUnitBoardState(store,id)
     });
     if(options.discardDraft===true) clearTraitPresetDraft(id);
+    updateTraitPresetStatus({pendingJewelSettings:traitPresetJewelSettingsChanged(store)},{persist:true});
     finishTraitPresetSelection(id);
     if(options.notifySuccess!==false){notifyStorageAction(`프리셋 로드 완료: ${preset.name}`,'ok',{statusAction:'load'});}
     
@@ -1513,8 +1524,7 @@ function traitPresetUpdateStatus(store=loadTraitPresetStore()){
   const boardChanged=traitPresetHasUnitBoard(store,id)
     ? stableTraitPresetValue(traitPresetUnitBoardState(store,id))!==stableTraitPresetValue(captureTraitPresetUnitBoardState())
     : true;
-  const jewel=normalizeTraitPresetJewelSettings(store.jewelSettings);
-  const jewelChanged=!jewel || stableTraitPresetValue(jewel)!==stableTraitPresetValue(captureTraitPresetJewelSettings());
+  const jewelChanged=traitPresetJewelSettingsChanged(store);
   return {
     preset,
     needsUpdate:summary.stateChanged || boardChanged || jewelChanged,
@@ -1559,8 +1569,7 @@ function updateTraitPreset(options={}){
     const statusCommonChangeKeys=new Set(stateChangeSummary.sharedKeys);
     const statusSingleChangeKeys=new Set(stateChangeSummary.singleKeys);
     const unitBoardChanged=traitPresetHasUnitBoard(store,id) ? stableTraitPresetValue(traitPresetUnitBoardState(store,id))!==stableTraitPresetValue(currentUnitBoard) : true;
-    const storedJewelSettings=normalizeTraitPresetJewelSettings(store.jewelSettings);
-    const jewelChanged=storedJewelSettings ? stableTraitPresetValue(storedJewelSettings)!==stableTraitPresetValue(currentJewelSettings) : true;
+    const jewelChanged=traitPresetJewelSettingsChanged(store);
     if(unitBoardChanged) statusSingleChangeKeys.add('unitBoard');
     if(jewelChanged) statusCommonChangeKeys.add('jewelSettings');
     if(!stateChanged && !unitBoardChanged && !jewelChanged){
@@ -1853,10 +1862,6 @@ function traitPresetBackupChangePlan(store=loadTraitPresetStore(),currentSnapsho
     if(!commonScopeIds.has(id) && !singleScopeIds.has(id)) addSingleKeys(id,['storedPreset']);
   });
   storedUnitBoardIds.forEach(id=>addSingleKeys(id,['unitBoard']));
-  if(status.pendingJewelSettings){
-    commonChangeKeys.add('jewelSettings');
-    store.presets.forEach(preset=>commonScopeIds.add(preset.id));
-  }
   const idToPresetValues=id=>store.presets.find(preset=>preset.id===id)?.state?.values || null;
   const details=()=>{
     const presetRows=traitPresetBackupPresetRows(store,commonScopeIds,singleScopeIds);
@@ -1871,7 +1876,7 @@ function traitPresetBackupChangePlan(store=loadTraitPresetStore(),currentSnapsho
       singleChangeNames:traitPresetChangeLabels(new Set([...singleChangeKeysByPreset.values()].flatMap(keys=>[...keys]).concat([...legacyUnassignedSingleKeys])))
     };
   };
-  const hasStoredPending=storedUpdatedIds.size>0 || storedUnitBoardIds.size>0 || status.pendingJewelSettings===true;
+  const hasStoredPending=status.backupNeeded || storedUpdatedIds.size>0 || storedUnitBoardIds.size>0;
   if(!selectedPreset){
     return {store,selectedId:'',selectedPreset:null,...details(),hasCurrentPending:false,hasStoredPending,hasDraftPending:false,hasPending:hasStoredPending};
   }
@@ -1887,8 +1892,7 @@ function traitPresetBackupChangePlan(store=loadTraitPresetStore(),currentSnapsho
     ? stableTraitPresetValue(traitPresetUnitBoardState(store,selectedId))!==stableTraitPresetValue(currentUnitBoard)
     : true;
   if(unitBoardChanged) addSingleKeys(selectedId,['unitBoard']);
-  const storedJewelSettings=normalizeTraitPresetJewelSettings(store.jewelSettings);
-  const jewelChanged=!storedJewelSettings || stableTraitPresetValue(storedJewelSettings)!==stableTraitPresetValue(currentJewelSettings);
+  const jewelChanged=traitPresetJewelSettingsChanged(store);
   if(jewelChanged){
     commonChangeKeys.add('jewelSettings');
     store.presets.forEach(preset=>commonScopeIds.add(preset.id));
