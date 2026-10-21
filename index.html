@@ -4,7 +4,7 @@
 <meta charset="UTF-8"/>
 <meta name="google-site-verification" content="RTuDWbMdnKgbpRpl05eXh9epFwWRSxju4NOl8OtjMsI" />
 <script>
-window.DPS_BUILD_VERSION = "dps-2610210029";
+window.DPS_BUILD_VERSION = "dps-2610210000-no-certified";
 window.APP_VERSION = window.DPS_BUILD_VERSION;
 window.DPS_ASSET_VERSIONS = {
   "app.js": window.DPS_BUILD_VERSION,
@@ -274,7 +274,7 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 <div class="header-convenience" aria-label="빠른 이동">
 <div class="header-reference-actions">
 
-<a class="btn subtle ui-action-btn header-reference-btn header-global-reference-btn header-convenience-link header-nexus-link" href="https://sldbox.github.io/site/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="4" r="2"/><circle cx="5" cy="17" r="2"/><circle cx="19" cy="17" r="2"/><path d="m11 6-5 9m7-9 5 9M7 17h10"/></svg><span>넥서스</span><span aria-hidden="true">↗</span></a>
+<a class="btn subtle ui-action-btn header-reference-btn header-global-reference-btn header-convenience-link header-nexus-link" href="https://sldbox.github.io/site/"><span class="header-action-star" aria-hidden="true">✦</span><span>넥서스</span></a>
 </div>
 </div>
 <div aria-label="글씨 크기 조절" class="font-scale-ctrl">
@@ -356,8 +356,7 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 <div class="basic-goal-cards integrated-card">
 <div class="sg-title basic-info-title basic-goal-title">
 <div class="basic-goal-brand"><span class="basic-goal-brand-mark" aria-hidden="true">✦</span><span class="basic-goal-brand-copy"><strong>기본 설정</strong><small>CONFIGURATION CENTER</small></span></div><div class="basic-settings-modal-actions" aria-label="버스·성소 설정">
-<button type="button" class="basic-settings-modal-trigger" data-basic-modal-open="bus" aria-haspopup="dialog" aria-controls="basicSettingsModal"><span aria-hidden="true">✦</span>버스 기사</button>
-<button type="button" class="basic-settings-modal-trigger" data-basic-modal-open="sanctuary" aria-haspopup="dialog" aria-controls="basicSettingsModal"><span aria-hidden="true">✦</span>성소 스킬</button>
+<button type="button" class="basic-settings-modal-trigger" data-basic-modal-open="bus" aria-haspopup="dialog" aria-controls="basicSettingsModal"><span aria-hidden="true">✦</span>버스 성소</button>
 </div>
 </div>
 <div class="integrated-tabs basic-settings-tabs" role="tablist" aria-label="기본 설정" data-integrated-tabs="basicSettings"><button type="button" class="integrated-tab is-active" role="tab" id="basicSettingsTab0" aria-controls="basicSettingsPanel0" aria-selected="true" data-integrated-tab="basicSettings" data-integrated-index="0" tabindex="0">기본 정보</button><button type="button" class="integrated-tab" role="tab" id="basicSettingsTab1" aria-controls="basicSettingsPanel1" aria-selected="false" data-integrated-tab="basicSettings" data-integrated-index="1" tabindex="-1">룬 정보</button><button type="button" class="integrated-tab" role="tab" id="basicSettingsTab2" aria-controls="basicSettingsPanel2" aria-selected="false" data-integrated-tab="basicSettings" data-integrated-index="2" tabindex="-1">효과 및 버프</button></div>
@@ -679,15 +678,15 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 <!-- 효과 및 버프: 독립 카드 -->
 
 <!-- 더제로 승단정보 -->
-<div class="data-card zero-rank-card integrated-card"><h3 class="zero-rank-title"><span class="zero-rank-heading-copy"><span class="zero-rank-heading-icon" aria-hidden="true">✦</span><span>더제로 승단 정보</span></span></h3>
+<div class="data-card zero-rank-card integrated-card"><h3 class="zero-rank-title"><span class="zero-rank-heading-copy"><span class="zero-rank-heading-icon" aria-hidden="true">✦</span><span>더제로 승단 정보</span></span><button type="button" id="zeroRankGuideOpen" class="zero-rank-guide-trigger" aria-haspopup="dialog" aria-controls="zeroRankGuideModal" aria-expanded="false"><span aria-hidden="true">✦</span>승단 점수</button></h3>
 <div class="zero-rank-content">
 <section class="zero-rank-panel zero-rank-calc-panel">
 <div class="zero-score-calc">
 <div class="zero-calc-summary">
-<div class="zero-calc-result-card zero-current-score-box"><span class="zero-score-label-row">현재 승단점수 <button type="button" class="unit-achievement-help-trigger zero-score-help-trigger" data-zero-score-help aria-haspopup="dialog" aria-controls="zeroRankScorePopover" aria-expanded="false" aria-label="더제로 승단 점수 안내 열기">?</button></span><b class="zero-current-score">0</b></div>
+<div class="zero-calc-result-card zero-current-score-box"><span class="zero-score-label-row">현재 승단점수</span><b class="zero-current-score">0</b></div>
 <div class="zero-calc-result-card"><span>목표 추가점수</span><b class="zero-total-add">0</b></div>
 <div class="zero-calc-result-card"><span>목표 완료</span><b class="zero-target-score">0</b></div>
-<div class="zero-calc-result-card zero-rank-result-card"><span class="zero-rank-label-row">현재 / 목표 승단 <button type="button" class="unit-achievement-help-trigger zero-title-benefits-trigger" data-zero-benefits-help aria-haspopup="dialog" aria-controls="zeroTitleBenefitsPopover" aria-expanded="false" aria-label="당신의 타이틀 혜택 안내 열기">?</button></span><b><em class="zero-current-rank">입문</em><i>→</i><em class="zero-target-rank">입문</em></b></div>
+<div class="zero-calc-result-card zero-rank-result-card"><span class="zero-rank-label-row">현재 / 목표 승단</span><b><em class="zero-current-rank">입문</em><i>→</i><em class="zero-target-rank">입문</em></b></div>
 </div>
 
 <div class="zero-calc-table-wrap">
@@ -773,7 +772,7 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 <div class="col-right">
 <!-- 스펙·유닛 보드: 전환 버튼·결과 -->
 <div class="data-card stat-dps-card right-analytics-workspace">
-<div class="right-workspace-navigation"><header class="right-workspace-head"><span class="right-workspace-mark" aria-hidden="true">✦</span><span class="right-workspace-copy"><strong>DPS 분석 보드</strong><small>SPEC &amp; UNIT ANALYTICS</small></span></header>
+<div class="right-workspace-navigation"><header class="right-workspace-head"><span class="right-workspace-mark" aria-hidden="true">✦</span><span class="right-workspace-copy"><strong>DPS 분석 보드</strong><small>SPEC &amp; UNIT ANALYTICS</small></span><button type="button" id="analysisLayoutToggle" class="btn subtle ui-action-btn right-workspace-layout-toggle" aria-pressed="false" aria-label="분석 보드 확장 하기" title="중앙 영역을 숨기고 분석 보드를 확장"><span class="header-action-star" aria-hidden="true">✦</span><span class="header-layout-toggle-label">확장 하기</span></button></header>
 <div class="damage-board-tabs" role="tablist" aria-label="보드 선택" data-damage-board-tabs>
 <button class="damage-board-tab is-active" id="damageBoardSpecTab" type="button" role="tab" aria-selected="true" aria-controls="damageBoardSpecPanel" data-damage-board-tab="spec">스펙 보드</button>
 <button class="damage-board-tab" id="damageBoardUnitTab" type="button" role="tab" aria-selected="false" aria-controls="damageBoardUnitPanel" data-damage-board-tab="unit">유닛 보드</button>
@@ -842,6 +841,7 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 
 </div>
 <div id="unitDetailsPanel1" class="integrated-content" role="tabpanel" aria-labelledby="unitDetailsTab1" data-integrated-panel="unitDetails" data-integrated-index="1" hidden><section class="trait-preset-unit-jewel-panel trait-preset-unit-jewel-settings-panel" data-trait-preset-unit-jewel-panel="jewel"><div class="dps-jewel-settings-body trait-preset-unit-jewel-settings-body" data-dps-jewel-config><div class="dps-jewel-config-grid" id="dpsJewelConfigGrid"></div></div></section></div>
+
 </section>
 <section id="workspace-dps" class="damage-board-panel dps-reference-workspace" data-damage-board-panel="table" role="tabpanel" aria-labelledby="damageBoardTableTab" hidden>
   <div class="dps-reference-toolbar">
@@ -915,8 +915,15 @@ loadScriptSequence(['data.js','calc.js','app.js','preset.js','responsive.js'],fu
     </div>
   </div>
 </dialog>
-<section id="zeroTitleBenefitsPopover" class="unit-achievement-help-popover zero-title-benefits-popover" role="dialog" aria-label="당신의 타이틀 혜택" hidden>
-  <h3>당신의 타이틀 혜택</h3>
+<div id="zeroRankGuideOverlay" class="zero-rank-guide-overlay" hidden>
+<div id="zeroRankGuideModal" class="zero-rank-guide-modal" role="dialog" aria-modal="true" aria-labelledby="zeroRankGuideTitle" tabindex="-1">
+  <header class="zero-rank-guide-header"><h2 id="zeroRankGuideTitle">승단 점수</h2><button type="button" class="zero-rank-guide-close" data-zero-rank-guide-close aria-label="승단 점수 닫기">×</button></header>
+  <div class="zero-rank-guide-tabs" role="tablist" aria-label="승단 정보 안내 선택">
+    <button type="button" id="zeroRankGuideScoreTab" class="zero-rank-guide-tab is-active" data-zero-rank-guide-tab="score" role="tab" aria-controls="zeroRankScorePopover" aria-selected="true" tabindex="0">더제로 승단 점수</button>
+    <button type="button" id="zeroRankGuideBenefitsTab" class="zero-rank-guide-tab" data-zero-rank-guide-tab="benefits" role="tab" aria-controls="zeroTitleBenefitsPopover" aria-selected="false" tabindex="-1">당신의 타이틀 혜택</button>
+  </div>
+  <div class="zero-rank-guide-content">
+<section id="zeroTitleBenefitsPopover" class="zero-rank-guide-view zero-title-benefits-popover" role="tabpanel" aria-labelledby="zeroRankGuideBenefitsTab" hidden>
   <section class="zero-current-benefits" aria-label="승단별 타이틀 혜택">
     <nav class="zero-current-benefits-heading" aria-label="타이틀 혜택 단계 탐색">
       <button type="button" id="zeroBenefitsPrev" data-zero-benefits-step="-1" aria-label="이전 단계 혜택">〈 이전</button>
@@ -929,8 +936,7 @@ loadScriptSequence(['data.js','calc.js','app.js','preset.js','responsive.js'],fu
     <div id="zeroCurrentBenefitsItems" class="zero-current-benefits-items" aria-live="polite" aria-atomic="true"></div>
   </section>
 </section>
-<section id="zeroRankScorePopover" class="unit-achievement-help-popover zero-rank-score-popover" role="dialog" aria-label="더제로 승단 점수" hidden>
-  <h3>더제로 승단 점수</h3>
+<section id="zeroRankScorePopover" class="zero-rank-guide-view zero-rank-score-popover" role="tabpanel" aria-labelledby="zeroRankGuideScoreTab">
   <section class="unit-achievement-help-section zero-score-common-section">
     <h4>공통 점수</h4>
     <div class="unit-achievement-help-panel zero-score-help-panel"><div class="zero-rank-score-lines">
@@ -982,6 +988,9 @@ loadScriptSequence(['data.js','calc.js','app.js','preset.js','responsive.js'],fu
     </div>
   </section>
 </section>
+  </div>
+</div>
+</div>
 <!-- 달성률 도움말: 보드 카드 바깥에 위치하여 작은 화면에서도 잘리지 않습니다. -->
 <section id="unitAchievementHelpPopover" class="unit-achievement-help-popover" role="dialog" aria-label="달성률 가이드" hidden>
   <h3>달성률 가이드</h3>
@@ -1027,14 +1036,18 @@ loadScriptSequence(['data.js','calc.js','app.js','preset.js','responsive.js'],fu
 </section>
 <div id="basicSettingsModalOverlay" class="basic-settings-modal-overlay" hidden>
 <section id="basicSettingsModal" class="basic-settings-modal" role="dialog" aria-modal="true" aria-labelledby="basicSettingsModalTitle" tabindex="-1">
-<header class="basic-settings-modal-header"><div class="basic-settings-modal-heading"><span aria-hidden="true">✦</span><h2 id="basicSettingsModalTitle">버스 기사</h2></div><button type="button" class="basic-settings-modal-close" data-basic-modal-close aria-label="닫기">×</button></header>
+<header class="basic-settings-modal-header"><div class="basic-settings-modal-heading"><span aria-hidden="true">✦</span><h2 id="basicSettingsModalTitle">버스 성소</h2></div><button type="button" class="basic-settings-modal-close" data-basic-modal-close aria-label="버스 성소 닫기">×</button></header>
+<div class="basic-settings-modal-tabs" role="tablist" aria-label="버스 성소 기능 선택">
+<button id="basicSettingsModalBusTab" type="button" class="basic-settings-modal-tab is-active" role="tab" aria-controls="basicSettingsModalBus" aria-selected="true" tabindex="0" data-basic-modal-tab="bus">버스 기사</button>
+<button id="basicSettingsModalSanctuaryTab" type="button" class="basic-settings-modal-tab" role="tab" aria-controls="basicSettingsModalSanctuary" aria-selected="false" tabindex="-1" data-basic-modal-tab="sanctuary">성소 스킬</button>
+</div>
 <div class="basic-settings-modal-content">
-<div id="basicSettingsModalBus" class="basic-settings-modal-view"><div class="basic-tab-bus">
+<div id="basicSettingsModalBus" class="basic-settings-modal-view" role="tabpanel" aria-labelledby="basicSettingsModalBusTab"><div class="basic-tab-bus">
 <div class="data-card bus-cut-card board-modal-card"><div class="board-modal-panel-label"><div><strong>승객별 기준값</strong><small>현재 시작 SP 기준 자동 계산</small></div></div>
 <div class="bus-cut-list" id="xpCutRows"></div>
 </div>
 </div></div>
-<div id="basicSettingsModalSanctuary" class="basic-settings-modal-view" hidden><div class="basic-tab-sanctuary">
+<div id="basicSettingsModalSanctuary" class="basic-settings-modal-view" role="tabpanel" aria-labelledby="basicSettingsModalSanctuaryTab" hidden><div class="basic-tab-sanctuary">
 <div class="data-card final-damage-card board-modal-card">
 <div class="skill-damage-layout" id="skillDamageLayout">
 <div class="skill-setting-panel"><div class="board-modal-panel-label"><div><strong>스킬 설정</strong><small>파란색 입력·선택 / 어두운색 자동 계산</small></div></div>

@@ -2373,7 +2373,7 @@ function positionDpsBaseUnitAchievementHelp(trigger,popup){
 }
 function switchDpsBaseUnitAchievementHelpTab(tab){
   const tabs=tab.closest('.unit-achievement-help-tabs');
-  const popup=tab.closest('.unit-achievement-help-popover');
+  const popup=tab.closest('.unit-achievement-help-popover, .zero-rank-guide-view');
   if(!tabs || !popup?.contains(tabs)) return;
   tabs.querySelectorAll('[role="tab"]').forEach(button=>{
     const selected=button===tab;
@@ -2382,10 +2382,10 @@ function switchDpsBaseUnitAchievementHelpTab(tab){
     const panel=$(button.getAttribute('aria-controls'));
     if(panel) panel.hidden=!selected;
   });
-  const trigger=popup.id==='zeroRankScorePopover'
-    ? document.querySelector('[data-zero-score-help]')
-    : document.querySelector('[data-action="toggleAchievementHelp"]');
-  positionDpsBaseUnitAchievementHelp(trigger,popup);
+  // 승단 점수는 독립 모달로 이동했습니다. 달성률 가이드만 위치를 계산합니다.
+  if(popup.id==='unitAchievementHelpPopover'){
+    positionDpsBaseUnitAchievementHelp(document.querySelector('[data-action="toggleAchievementHelp"]'),popup);
+  }
 }
 function bindDpsBaseUnitControlEvents(){
   if(document.documentElement.dataset.dpsBaseUnitControlBound==='1') return;
@@ -2603,15 +2603,26 @@ function bindIntegratedTabEvents(){
     if(basicModalReturnFocus?.isConnected) basicModalReturnFocus.focus({preventScroll:true});
     basicModalReturnFocus=null;
   }
+  function selectBasicSettingsModalTab(type,focusTab=false){
+    if(type!=='bus' && type!=='sanctuary') return;
+    const items=[['bus','basicSettingsModalBus','basicSettingsModalBusTab'],['sanctuary','basicSettingsModalSanctuary','basicSettingsModalSanctuaryTab']];
+    items.forEach(([key,viewId,tabId])=>{
+      const active=key===type;
+      $(viewId).hidden=!active;
+      const tab=$(tabId);
+      tab.classList.toggle('is-active',active);
+      tab.setAttribute('aria-selected',String(active));
+      tab.tabIndex=active?0:-1;
+      if(active && focusTab) tab.focus({preventScroll:true});
+    });
+  }
   function openBasicSettingsModal(type,trigger){
     if(type!=='bus' && type!=='sanctuary') return;
     const overlay=$('basicSettingsModalOverlay');
     const dialog=$('basicSettingsModal');
     if(!overlay || !dialog) return;
     basicModalReturnFocus=trigger;
-    $('basicSettingsModalBus').hidden=type!=='bus';
-    $('basicSettingsModalSanctuary').hidden=type!=='sanctuary';
-    $('basicSettingsModalTitle').textContent=type==='bus'?'버스 기사':'성소 스킬';
+    selectBasicSettingsModalTab(type);
     overlay.hidden=false;
     document.body.classList.add('basic-settings-modal-open');
     dialog.focus({preventScroll:true});
@@ -2619,12 +2630,21 @@ function bindIntegratedTabEvents(){
   document.addEventListener('click',event=>{
     const trigger=event.target.closest?.('[data-basic-modal-open]');
     if(trigger){openBasicSettingsModal(trigger.dataset.basicModalOpen,trigger);return;}
+    const modalTab=event.target.closest?.('[data-basic-modal-tab]');
+    if(modalTab){selectBasicSettingsModalTab(modalTab.dataset.basicModalTab);return;}
     if(event.target.id==='basicSettingsModalOverlay' || event.target.closest?.('[data-basic-modal-close]')) closeBasicSettingsModal();
   });
   document.addEventListener('keydown',event=>{
     const overlay=$('basicSettingsModalOverlay');
     if(!overlay || overlay.hidden) return;
     if(event.key==='Escape'){event.preventDefault();closeBasicSettingsModal();return;}
+    const modalTab=event.target.closest?.('[data-basic-modal-tab]');
+    if(modalTab && ['ArrowLeft','ArrowRight','Home','End'].includes(event.key)){
+      event.preventDefault();
+      const next=event.key==='Home'?'bus':event.key==='End'?'sanctuary':(modalTab.dataset.basicModalTab==='bus'?'sanctuary':'bus');
+      selectBasicSettingsModalTab(next,true);
+      return;
+    }
     if(event.key!=='Tab') return;
     const dialog=$('basicSettingsModal');
     const focusables=[...dialog.querySelectorAll('button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),a[href],[tabindex]:not([tabindex="-1"])')].filter(el=>!el.closest('[hidden]') && el.getClientRects().length);
@@ -3646,39 +3666,79 @@ function bindZeroScoreCalculator(){
     event.preventDefault();
     stepZeroBenefitsPreview(Number(control.dataset.zeroBenefitsStep));
   });
-  const rankPopovers=[
-    [document.querySelector('[data-zero-score-help]'),$('zeroRankScorePopover')],
-    [document.querySelector('[data-zero-benefits-help]'),$('zeroTitleBenefitsPopover')]
+  // 더제로 승단 정보 헤더의 단일 버튼이 두 가지 안내를 여는 공통 모달.
+  // 표시용 단계 탐색과 승단 계산·프리셋 데이터는 완전히 분리합니다.
+  const rankGuideOverlay=$('zeroRankGuideOverlay');
+  const rankGuideDialog=$('zeroRankGuideModal');
+  const rankGuideTrigger=$('zeroRankGuideOpen');
+  let rankGuideReturnFocus=null;
+  const rankGuideTabs=[
+    ['score','zeroRankScorePopover','zeroRankGuideScoreTab'],
+    ['benefits','zeroTitleBenefitsPopover','zeroRankGuideBenefitsTab']
   ];
-  const closeRankPopovers=()=>rankPopovers.forEach(([trigger,popup])=>{
-    if(popup) popup.hidden=true;
-    trigger?.setAttribute('aria-expanded','false');
-  });
-  rankPopovers.forEach(([trigger,popup])=>trigger?.addEventListener('click',event=>{
-    event.preventDefault();
-    if(!popup) return;
-    const shouldOpen=popup.hidden;
-    closeRankPopovers();
-    if(shouldOpen){
-      if(popup===benefitsHelp){
-        zeroBenefitViewIndex=null; // 팝업을 새로 열 때 실제 현재 승단부터 표시
-        renderZeroBenefitsPreview();
+  function selectRankGuideTab(type,focusTab=false){
+    if(type!=='score' && type!=='benefits') return;
+    rankGuideTabs.forEach(([key,viewId,tabId])=>{
+      const active=key===type;
+      const view=$(viewId),tab=$(tabId);
+      if(view) view.hidden=!active;
+      if(tab){
+        tab.classList.toggle('is-active',active);
+        tab.setAttribute('aria-selected',String(active));
+        tab.tabIndex=active?0:-1;
+        if(active && focusTab) tab.focus({preventScroll:true});
       }
-      popup.hidden=false;
-      trigger.setAttribute('aria-expanded','true');
-      positionDpsBaseUnitAchievementHelp(trigger,popup);
+    });
+    if(type==='benefits') renderZeroBenefitsPreview();
+  }
+  function closeRankGuide(){
+    if(!rankGuideOverlay || rankGuideOverlay.hidden) return;
+    rankGuideOverlay.hidden=true;
+    document.body.classList.remove('zero-rank-guide-open');
+    rankGuideTrigger?.setAttribute('aria-expanded','false');
+    rankGuideReturnFocus?.focus({preventScroll:true});
+    rankGuideReturnFocus=null;
+  }
+  function openRankGuide(){
+    if(!rankGuideOverlay || !rankGuideDialog) return;
+    rankGuideReturnFocus=document.activeElement;
+    zeroBenefitViewIndex=null;
+    renderZeroBenefitsPreview();
+    selectRankGuideTab('score');
+    rankGuideOverlay.hidden=false;
+    document.body.classList.add('zero-rank-guide-open');
+    rankGuideTrigger?.setAttribute('aria-expanded','true');
+    rankGuideDialog.focus({preventScroll:true});
+  }
+  rankGuideTrigger?.addEventListener('click',openRankGuide);
+  rankGuideOverlay?.addEventListener('click',event=>{
+    if(event.target===rankGuideOverlay || event.target.closest('[data-zero-rank-guide-close]')){
+      closeRankGuide();return;
     }
-  }));
-  document.addEventListener('click',event=>{
-    if(rankPopovers.some(([trigger,popup])=>popup && !popup.hidden &&
-       !popup.contains(event.target) && !trigger?.contains(event.target))) closeRankPopovers();
+    const tab=event.target.closest('[data-zero-rank-guide-tab]');
+    if(tab) selectRankGuideTab(tab.dataset.zeroRankGuideTab);
   });
-  document.addEventListener('keydown',event=>{if(event.key==='Escape') closeRankPopovers();});
-  const repositionRankPopovers=()=>rankPopovers.forEach(([trigger,popup])=>{
-    if(popup && !popup.hidden) positionDpsBaseUnitAchievementHelp(trigger,popup);
+  document.addEventListener('keydown',event=>{
+    if(rankGuideOverlay?.hidden!==false) return;
+    if(event.key==='Escape'){
+      event.preventDefault();event.stopPropagation();closeRankGuide();return;
+    }
+    const guideTab=event.target.closest?.('[data-zero-rank-guide-tab]');
+    if(guideTab && ['ArrowLeft','ArrowRight','Home','End'].includes(event.key)){
+      event.preventDefault();
+      const next=event.key==='Home'?'score':event.key==='End'?'benefits':(guideTab.dataset.zeroRankGuideTab==='score'?'benefits':'score');
+      selectRankGuideTab(next,true);
+      return;
+    }
+    if(event.key==='Tab'){
+      const focusables=[...rankGuideDialog.querySelectorAll('button:not(:disabled),a[href],input:not(:disabled),select:not(:disabled),[tabindex="0"]')]
+        .filter(node=>!node.closest('[hidden]') && node.getClientRects().length);
+      if(!focusables.length){event.preventDefault();rankGuideDialog.focus();return;}
+      const first=focusables[0],last=focusables[focusables.length-1];
+      if(event.shiftKey && (document.activeElement===first || !rankGuideDialog.contains(document.activeElement))){event.preventDefault();last.focus();}
+      else if(!event.shiftKey && document.activeElement===last){event.preventDefault();first.focus();}
+    }
   });
-  window.addEventListener('resize',repositionRankPopovers);
-  window.addEventListener('scroll',repositionRankPopovers,true);
   rows?.addEventListener('click',event=>{
     const header=event.target.closest('.zero-calc-row-head');
     if(!header || !rows.contains(header)) return;

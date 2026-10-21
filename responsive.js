@@ -90,6 +90,33 @@
     document.documentElement.style.setProperty('--mobile-vh', `${usableHeight}px`);
     scheduleTraitScrollClamp();
   }
+  /* 세로 PC/태블릿/모바일에서는 확장 버튼과 확장 상태를 모두 해제한다. */
+  function isAnalysisLayoutAllowed() {
+    const { w, h } = getViewportSize();
+    return getMode() === 'is-pc-landscape' && w > h
+      && window.matchMedia('(orientation: landscape) and (hover: hover) and (pointer: fine)').matches;
+  }
+  function setAnalysisExpanded(expanded) {
+    const active = Boolean(expanded) && isAnalysisLayoutAllowed();
+    document.body.classList.toggle('is-analysis-expanded', active);
+    const button = document.getElementById('analysisLayoutToggle');
+    if (!button) return;
+    button.setAttribute('aria-pressed', String(active));
+    button.setAttribute('aria-label', active ? '분석 보드 3분할 복귀' : '분석 보드 확장 하기');
+    button.title = active ? '기본 3분할 레이아웃으로 복귀' : '중앙 영역을 숨기고 분석 보드를 확장';
+    const label = button.querySelector('.header-layout-toggle-label');
+    if (label) label.textContent = active ? '3분할 복귀' : '확장 하기';
+  }
+  function bindAnalysisLayoutToggle() {
+    const button = document.getElementById('analysisLayoutToggle');
+    if (!button || button.dataset.layoutBound === '1') return;
+    button.dataset.layoutBound = '1';
+    button.addEventListener('click', () => {
+      if (!isAnalysisLayoutAllowed()) return;
+      setAnalysisExpanded(!document.body.classList.contains('is-analysis-expanded'));
+    });
+    setAnalysisExpanded(false);
+  }
   function applyMode() {
     const mode = getMode();
     const { w, h } = getViewportSize();
@@ -117,6 +144,7 @@
       document.body.classList.add(widthClass);
       document.documentElement.classList.add(widthClass);
     }
+    if (!isAnalysisLayoutAllowed()) setAnalysisExpanded(false);
     state.layoutWidth = w;
     state.layoutPortrait = h > w;
     syncTabbedLayout();
@@ -324,6 +352,7 @@
     }
     state.initialized = true;
     applyMode();
+    bindAnalysisLayoutToggle();
     bindInputAutoSelect();
     markResponsiveReady();
   }
