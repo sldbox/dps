@@ -1088,7 +1088,9 @@ function dpsBaseUnitInstanceGroups(unitOrId,quantityOverride,jewelSettings=dpsJe
     });
   };
   addGroup(1,dpsBaseUnitLimitBreakValue(unit),dpsBaseUnitJewelName(unit));
-  const extras=dpsBaseUnitExtraSlotSettings(unit,extraSettings);
+  // 1~4마리 및 수량 고정 유닛의 과거 확장 설정은 계산에 반영하지 않습니다.
+  const extras=quantity>=5 && dpsBaseUnitHasQuantity(unit)
+    ? dpsBaseUnitExtraSlotSettings(unit,extraSettings) : [];
   const extraCount=Math.min(DPS_BASE_UNIT_EXTRA_SLOT_COUNT,Math.max(0,quantity-1));
   for(let index=0;index<extraCount;index++){
     const extra=extras[index];

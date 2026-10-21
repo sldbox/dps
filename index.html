@@ -4,13 +4,12 @@
 <meta charset="UTF-8"/>
 <meta name="google-site-verification" content="RTuDWbMdnKgbpRpl05eXh9epFwWRSxju4NOl8OtjMsI" />
 <script>
-window.DPS_BUILD_VERSION = "dps-2610210004";
+window.DPS_BUILD_VERSION = "dps-2610210029";
 window.APP_VERSION = window.DPS_BUILD_VERSION;
 window.DPS_ASSET_VERSIONS = {
   "app.js": window.DPS_BUILD_VERSION,
   "calc.js": window.DPS_BUILD_VERSION,
   "data.js": window.DPS_BUILD_VERSION,
-  "modal.js": window.DPS_BUILD_VERSION,
   "preset.js": window.DPS_BUILD_VERSION,
   "responsive.js": window.DPS_BUILD_VERSION,
   "style.css": window.DPS_BUILD_VERSION,
@@ -274,7 +273,7 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 <div class="hdr-meta">
 <div class="header-convenience" aria-label="빠른 이동">
 <div class="header-reference-actions">
-<button id="dpsTableMenuButton" class="btn subtle ui-action-btn header-reference-btn header-global-reference-btn" data-action="openDpsTable" type="button"><span class="modal-launch-star" aria-hidden="true">✦</span><span class="header-reference-label">DPS표</span></button>
+
 <a class="btn subtle ui-action-btn header-reference-btn header-global-reference-btn header-convenience-link header-nexus-link" href="https://sldbox.github.io/site/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="4" r="2"/><circle cx="5" cy="17" r="2"/><circle cx="19" cy="17" r="2"/><path d="m11 6-5 9m7-9 5 9M7 17h10"/></svg><span>넥서스</span><span aria-hidden="true">↗</span></a>
 </div>
 </div>
@@ -290,12 +289,42 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 <div class="trait-standalone-panel trait-preset-panel" aria-label="프리셋 관리">
 <div class="trait-preset-title trait-subgroup-title">
 <div class="trait-preset-brand"><span class="trait-preset-brand-mark" aria-hidden="true">✦</span><span class="trait-preset-brand-copy"><strong class="trait-preset-heading">프리셋 관리</strong><small>PRESET MANAGER</small></span></div>
-<div class="trait-preset-title-actions"><button class="btn subtle danger ui-action-btn trait-preset-title-btn is-reset" data-action="resetAllTraitPresetState" disabled="" id="traitPresetResetAllBtn" type="button"><svg aria-hidden="true" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" viewbox="0 0 24 24"><path d="M3 11a9 9 0 1 1 2.5 6.3M3 4v7h7m2-4v5l3 2"></path></svg><span>프리셋 초기화</span></button></div>
+
 
 </div>
 <div class="trait-preset-body trait-subgroup-body">
-
-
+<section class="trait-preset-intro" aria-label="빌드 라이브러리 소개 및 변경 안내">
+  <div class="trait-preset-intro-kicker"><span aria-hidden="true">✦</span> YOUR BUILD LIBRARY</div>
+  <h2>좋은 빌드는<br>다음에도 그대로.</h2>
+  <hr class="trait-preset-intro-divider" aria-hidden="true">
+  <p>완성한 설정을 저장하고,<br>필요한 순간 다시 불러오세요.</p>
+  <ol class="trait-preset-intro-steps">
+    <li><span>01</span>빌드에 이름 붙이기</li>
+    <li><span>02</span>설정과 유닛을 함께 저장</li>
+    <li><span>03</span>백업 파일로 안전하게 보관</li>
+  </ol>
+  <div class="trait-preset-change-content" role="status" aria-live="polite" aria-atomic="true">
+    <span class="trait-preset-change-kicker"><span aria-hidden="true">✦</span> BUILD CHANGED</span>
+    <h2>빌드가 변경되었어요.</h2>
+    <hr class="trait-preset-intro-divider" aria-hidden="true">
+    <p>저장된 빌드와 현재 설정이 다릅니다.<br>업데이트하거나 기존 설정을 불러오세요.</p>
+    <ol class="trait-preset-intro-steps trait-preset-change-guide" aria-label="변경사항 처리 안내">
+      <li><span>01</span><span><strong>프리셋 업데이트</strong><small>현재 변경값을 저장</small></span></li>
+      <li><span>02</span><span><strong>프리셋 로드</strong><small>저장된 설정으로 복원</small></span></li>
+    </ol>
+  </div>
+  <div class="trait-preset-backup-content" role="status" aria-live="polite" aria-atomic="true">
+    <span class="trait-preset-change-kicker"><span aria-hidden="true">✦</span> BACKUP NEEDED</span>
+    <h2>프리셋 업데이트 완료.</h2>
+    <hr class="trait-preset-intro-divider" aria-hidden="true">
+    <p>변경한 설정이 저장됐어요.<br>최신 빌드를 파일로 보관하려면<br>프리셋 백업을 진행하세요.</p>
+    <ol class="trait-preset-intro-steps trait-preset-change-guide" aria-label="백업 안내">
+      <li><span>01</span><span><strong>업데이트 완료</strong><small>현재 변경값 저장됨</small></span></li>
+      <li><span>02</span><span><strong>프리셋 백업</strong><small>우측 백업 버튼을 선택</small></span></li>
+    </ol>
+  </div>
+</section>
+<div class="trait-preset-management">
 <div class="trait-preset-work-grid">
 <div class="trait-preset-form-grid" aria-label="프리셋 저장과 로드">
 <div class="trait-preset-form-card is-load">
@@ -311,20 +340,28 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 </div>
 <button class="btn pri ui-action-btn trait-preset-form-action preset-command is-save-command" data-action="saveTraitPreset" aria-label="프리셋 저장" type="button"><svg aria-hidden="true" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" viewbox="0 0 24 24"><path d="M4 4h13l3 3v13H4zM8 4v6h8V4M8 20v-7h8v7"></path></svg><span class="trait-preset-button-copy"><strong>저장</strong></span></button></div>
 </div>
-<div class="trait-preset-actions" aria-label="프리셋 관리 메뉴">
+<div class="trait-preset-actions" aria-label="프리셋 관리 메뉴"><div class="trait-preset-actions-label">프리셋 도구</div>
 <button class="btn subtle ui-action-btn preset-command is-import" data-action="importTraitPresets" data-state="idle" type="button"><svg aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" viewbox="0 0 24 24"><path d="M12 16V4m-4 4 4-4 4 4"></path><path d="M4 16v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"></path></svg><span class="preset-command-main"><strong>프리셋 가져오기</strong></span></button>
+<button class="btn subtle ui-action-btn preset-command is-reset" data-action="resetAllTraitPresetState" disabled="" id="traitPresetResetAllBtn" type="button"><svg aria-hidden="true" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" viewbox="0 0 24 24"><path d="M3 11a9 9 0 1 1 2.5 6.3M3 4v7h7m2-4v5l3 2"></path></svg><span class="preset-command-main"><strong>프리셋 초기화</strong></span></button>
 <button class="btn subtle ui-action-btn preset-command is-update" data-action="updateTraitPreset" type="button"><svg aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" viewbox="0 0 24 24"><path d="M20 11a8 8 0 0 0-14-5L4 8m0-5v5h5M4 13a8 8 0 0 0 14 5l2-2m0 5v-5h-5"></path></svg><span class="preset-command-main"><strong>프리셋 업데이트</strong></span></button>
 <button class="btn subtle ui-action-btn preset-command is-backup" data-action="backupTraitPresets" data-state="idle" type="button"><svg aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" viewbox="0 0 24 24"><path d="M12 4v12m-4-4 4 4 4-4"></path><path d="M4 16v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"></path></svg><span class="preset-command-main"><strong>프리셋 백업</strong></span></button>
 </div>
 
 </div>
 <input id="traitPresetImportFile" class="hidden-field" type="file" accept=".txt,.json,text/plain,application/json"/>
+
 </div>
 </div>
-<div class="basic-goal-cards">
+</div>
+<div class="basic-goal-cards integrated-card">
 <div class="sg-title basic-info-title basic-goal-title">
-<div class="basic-goal-brand"><span class="basic-goal-brand-mark" aria-hidden="true">✦</span><span class="basic-goal-brand-copy"><strong>기본 설정</strong><small>CONFIGURATION CENTER</small></span></div>
-<div class="basic-info-title-actions"><button class="btn subtle ui-action-btn basic-info-title-btn" data-action="openSanctuarySkillModal" type="button" aria-haspopup="dialog" aria-controls="sanctuarySkillModal"><span class="modal-launch-star" aria-hidden="true">✦</span><span>성소 스킬</span></button><button class="btn subtle ui-action-btn basic-info-title-btn" data-action="openBusPassengerModal" type="button" aria-haspopup="dialog" aria-controls="busPassengerModal"><span class="modal-launch-star" aria-hidden="true">✦</span><span>버스 승객</span></button></div></div>
+<div class="basic-goal-brand"><span class="basic-goal-brand-mark" aria-hidden="true">✦</span><span class="basic-goal-brand-copy"><strong>기본 설정</strong><small>CONFIGURATION CENTER</small></span></div><div class="basic-settings-modal-actions" aria-label="버스·성소 설정">
+<button type="button" class="basic-settings-modal-trigger" data-basic-modal-open="bus" aria-haspopup="dialog" aria-controls="basicSettingsModal"><span aria-hidden="true">✦</span>버스 기사</button>
+<button type="button" class="basic-settings-modal-trigger" data-basic-modal-open="sanctuary" aria-haspopup="dialog" aria-controls="basicSettingsModal"><span aria-hidden="true">✦</span>성소 스킬</button>
+</div>
+</div>
+<div class="integrated-tabs basic-settings-tabs" role="tablist" aria-label="기본 설정" data-integrated-tabs="basicSettings"><button type="button" class="integrated-tab is-active" role="tab" id="basicSettingsTab0" aria-controls="basicSettingsPanel0" aria-selected="true" data-integrated-tab="basicSettings" data-integrated-index="0" tabindex="0">기본 정보</button><button type="button" class="integrated-tab" role="tab" id="basicSettingsTab1" aria-controls="basicSettingsPanel1" aria-selected="false" data-integrated-tab="basicSettings" data-integrated-index="1" tabindex="-1">룬 정보</button><button type="button" class="integrated-tab" role="tab" id="basicSettingsTab2" aria-controls="basicSettingsPanel2" aria-selected="false" data-integrated-tab="basicSettings" data-integrated-index="2" tabindex="-1">효과 및 버프</button></div>
+<div id="basicSettingsPanel0" class="integrated-content is-active" role="tabpanel" aria-labelledby="basicSettingsTab0" data-integrated-panel="basicSettings" data-integrated-index="0">
 <!-- 기본 정보: 재화 -->
 <div class="sg xp-sp-card basic-info-resource-card">
 <div class="basic-goal-section-heading"><span class="basic-goal-section-copy"><strong>기본정보</strong><small>자원 입력과 자동 계산</small></span></div>
@@ -419,9 +456,8 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 </div>
 </div>
 </div>
-<!-- 룬 정보·스탯 -->
-<div class="sg rune-spec clean-rune-card">
-<div class="sg-title rune-section-header"><span class="rune-section-mark" aria-hidden="true">✦</span><span class="rune-section-copy"><strong>룬 상세 정보</strong><small>RUNE CONFIGURATION</small></span></div>
+<div id="basicSettingsPanel1" class="integrated-content basic-rune-panel" role="tabpanel" aria-labelledby="basicSettingsTab1" data-integrated-panel="basicSettings" data-integrated-index="1" hidden><div class="sg rune-spec clean-rune-card rune-unified-card"><div id="runeInfoPanel0" class="integrated-content is-active">
+
 <div class="rune-panel tidy-rune-panel">
 <div class="rune-option-card">
 <div class="rune-panel-title rune-card-heading">룬 옵션 설정</div>
@@ -523,10 +559,9 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 <input id="rTD" type="hidden" value="0"/>
 <input id="rUA" type="hidden" value="0"/>
 <input id="rHarmony" type="hidden" value="0"/>
-</div>
-<!-- 효과 및 버프: 독립 카드 -->
-<div class="sg unit-enhance-card spec-unit-enhance rune-effect-panel">
-<div class="sg-title rune-section-header"><span class="rune-section-mark" aria-hidden="true">✦</span><span class="rune-section-copy"><strong>효과 및 버프</strong><small>BUFF &amp; ENHANCEMENT</small></span></div>
+</div></div></div>
+<div id="basicSettingsPanel2" class="integrated-content basic-rune-panel" role="tabpanel" aria-labelledby="basicSettingsTab2" data-integrated-panel="basicSettings" data-integrated-index="2" hidden><div class="sg rune-spec clean-rune-card rune-unified-card"><div id="runeInfoPanel1" class="integrated-content is-active"><div class="sg unit-enhance-card spec-unit-enhance rune-effect-panel">
+
 <div class="unit-enhance-main-row">
 <div class="unit-enhance-left">
 <div class="unit-enhance-control-stack">
@@ -636,19 +671,25 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 <input id="unitLevel" type="hidden" value="0"/>
 </div>
 </div>
+</div></div></div></div>
+
 </div>
+<!-- 룬 정보·스탯 -->
+
+<!-- 효과 및 버프: 독립 카드 -->
+
 <!-- 더제로 승단정보 -->
-<div class="data-card zero-rank-card">
-<h3 class="zero-rank-title"><span class="zero-rank-heading-copy"><span class="zero-rank-heading-icon" aria-hidden="true">✦</span><span>더제로 승단 정보</span></span><button class="btn subtle ui-action-btn zero-rank-info-open-btn" data-action="openZeroRankInfoModal" type="button" aria-haspopup="dialog" aria-controls="zeroRankInfoModal"><span class="modal-launch-star" aria-hidden="true">✦</span><span>승단표</span><span class="zero-rank-open-arrow" aria-hidden="true">↗</span></button></h3>
+<div class="data-card zero-rank-card integrated-card"><h3 class="zero-rank-title"><span class="zero-rank-heading-copy"><span class="zero-rank-heading-icon" aria-hidden="true">✦</span><span>더제로 승단 정보</span></span></h3>
 <div class="zero-rank-content">
 <section class="zero-rank-panel zero-rank-calc-panel">
 <div class="zero-score-calc">
 <div class="zero-calc-summary">
-<div class="zero-calc-result-card zero-current-score-box"><span>현재 승단점수</span><b class="zero-current-score">0</b></div>
+<div class="zero-calc-result-card zero-current-score-box"><span class="zero-score-label-row">현재 승단점수 <button type="button" class="unit-achievement-help-trigger zero-score-help-trigger" data-zero-score-help aria-haspopup="dialog" aria-controls="zeroRankScorePopover" aria-expanded="false" aria-label="더제로 승단 점수 안내 열기">?</button></span><b class="zero-current-score">0</b></div>
 <div class="zero-calc-result-card"><span>목표 추가점수</span><b class="zero-total-add">0</b></div>
 <div class="zero-calc-result-card"><span>목표 완료</span><b class="zero-target-score">0</b></div>
-<div class="zero-calc-result-card zero-rank-result-card"><span>현재 / 목표 승단</span><b><em class="zero-current-rank">입문</em><i>→</i><em class="zero-target-rank">입문</em></b></div>
+<div class="zero-calc-result-card zero-rank-result-card"><span class="zero-rank-label-row">현재 / 목표 승단 <button type="button" class="unit-achievement-help-trigger zero-title-benefits-trigger" data-zero-benefits-help aria-haspopup="dialog" aria-controls="zeroTitleBenefitsPopover" aria-expanded="false" aria-label="당신의 타이틀 혜택 안내 열기">?</button></span><b><em class="zero-current-rank">입문</em><i>→</i><em class="zero-target-rank">입문</em></b></div>
 </div>
+
 <div class="zero-calc-table-wrap">
 <div class="zero-calc-table" aria-label="난이도별 승단 점수 입력">
 <div id="zeroScoreRows" class="zero-calc-rows"></div>
@@ -661,10 +702,8 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 </div>
 <div class="col-mid">
 <div class="trait-board-panel">
-<div class="trait-optimizer-panel">
-<div class="optimizer-head">
-<span class="optimizer-head-title">빌드 최적화</span>
-</div>
+<section class="trait-build-merged-panel integrated-card"><div class="optimizer-head integrated-build-heading"><span class="optimizer-head-title">빌드 최적화</span></div><div class="integrated-tabs" role="tablist" aria-label="buildOptimizer" data-integrated-tabs="buildOptimizer"><button type="button" class="integrated-tab is-active" role="tab" id="buildOptimizerTab0" aria-controls="buildOptimizerPanel0" aria-selected="true" data-integrated-tab="buildOptimizer" data-integrated-index="0" tabindex="0">최적화 마스터</button><button type="button" class="integrated-tab" role="tab" id="buildOptimizerTab1" aria-controls="buildOptimizerPanel1" aria-selected="false" data-integrated-tab="buildOptimizer" data-integrated-index="1" tabindex="-1">특성 투자제한</button><button type="button" class="integrated-tab" role="tab" id="buildOptimizerTab2" aria-controls="buildOptimizerPanel2" aria-selected="false" data-integrated-tab="buildOptimizer" data-integrated-index="2" tabindex="-1">특성 추천</button></div><div id="buildOptimizerPanel0" class="integrated-content is-active" role="tabpanel" aria-labelledby="buildOptimizerTab0" data-integrated-panel="buildOptimizer" data-integrated-index="0"><div class="trait-optimizer-panel">
+
 <div class="trait-dashboard-tools trait-board-control-grid">
   <section class="trait-optimizer-row" aria-labelledby="traitOptimizeScopeTitle">
     <div class="trait-scope-heading"><strong id="traitOptimizeScopeTitle">특성 최적화 범위</strong><small>OPTIMIZE</small></div>
@@ -685,9 +724,8 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
     </div>
   </section>
 </div>
-</div>
-<div class="trait-board-integrated-section trait-limit-section" aria-labelledby="traitLimitHeading">
-<h3 class="optimizer-head" id="traitLimitHeading"><span class="trait-limit-heading-copy"><span class="trait-limit-heading-title">특성 투자 제한</span><small>각 항목 투자 제한을 설정</small></span><span class="trait-limit-unlimited-hint">0 = 제한 없음</span></h3>
+</div></div><div id="buildOptimizerPanel1" class="integrated-content" role="tabpanel" aria-labelledby="buildOptimizerTab1" data-integrated-panel="buildOptimizer" data-integrated-index="1" hidden><div class="trait-board-integrated-section trait-limit-section" aria-label="특성 투자제한">
+
 <div class="trait-limit-grid">
 <section class="trait-limit-group" aria-label="공격 계열 제한">
 <div class="trait-limit-fields">
@@ -714,22 +752,20 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 </div>
 </section>
 </div>
-</div>
-<!-- 특성 추천: 제한 다음, 특성 투자 전 -->
-<section class="trait-board-integrated-section trait-recommendation-section" aria-labelledby="traitRecommendationHeading">
-<div class="optimizer-head trait-recommendation-heading">
-<h3 id="traitRecommendationHeading">특성 추천</h3>
-<span class="trait-recommendation-hint">추천 특성 두번 클릭 시 적용</span>
-</div>
+</div></div><div id="buildOptimizerPanel2" class="integrated-content" role="tabpanel" aria-labelledby="buildOptimizerTab2" data-integrated-panel="buildOptimizer" data-integrated-index="2" hidden><section class="trait-board-integrated-section trait-recommendation-section" aria-label="특성 추천">
+<p class="integrated-panel-hint">추천 특성을 두 번 클릭하면 적용됩니다.</p>
 <div class="trait-recommendation-content">
 <div class="trait-recommendation-scroll"><table class="trait-recommendation-table" aria-label="DPS 효율 특성 추천">
 <thead><tr><th scope="col">특성명</th><th scope="col">추천 투자수</th><th scope="col">필요량</th><th scope="col" id="traitRecommendationDpsLabel">DPS</th></tr></thead>
 <tbody id="traitRecommendationRows"><tr><td colspan="4">계산 대기 중</td></tr></tbody>
 </table></div>
 </div>
-</section>
+</section></div></section>
+
+<!-- 특성 추천: 제한 다음, 특성 투자 전 -->
+
 <section class="trait-standalone-panel trait-utility-panel" aria-labelledby="traitUtilityListHeading">
-  <header class="trait-utility-section-head"><span class="trait-utility-section-mark" aria-hidden="true">✦</span><span class="trait-utility-section-label"><strong id="traitUtilityListHeading">특성 유틸 리스트</strong></span></header>
+  <header class="trait-utility-section-head"><span class="trait-utility-section-mark" aria-hidden="true">✦</span><span class="trait-utility-section-label"><strong id="traitUtilityListHeading">특성 유틸 목록</strong></span></header>
   <div class="tp-body" id="traitBody"></div>
 </section>
 </div>
@@ -737,18 +773,21 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 <div class="col-right">
 <!-- 스펙·유닛 보드: 전환 버튼·결과 -->
 <div class="data-card stat-dps-card right-analytics-workspace">
-<div class="right-workspace-navigation"><header class="right-workspace-head"><span class="right-workspace-mark" aria-hidden="true">✦</span><span class="right-workspace-copy"><strong>DPS 분석 보드</strong><small>SPEC &amp; UNIT ANALYTICS</small></span><button class="btn subtle ui-action-btn dps-header-jewel-btn" id="damageBoardJewelButton" type="button" data-trait-preset-unit-jewel-open="jewel" aria-haspopup="dialog" aria-controls="traitPresetUnitJewelModal" aria-expanded="false" aria-label="쥬얼 설정 열기" hidden><span class="modal-launch-star" aria-hidden="true">✦</span><span>쥬얼 설정</span></button></header>
+<div class="right-workspace-navigation"><header class="right-workspace-head"><span class="right-workspace-mark" aria-hidden="true">✦</span><span class="right-workspace-copy"><strong>DPS 분석 보드</strong><small>SPEC &amp; UNIT ANALYTICS</small></span></header>
 <div class="damage-board-tabs" role="tablist" aria-label="보드 선택" data-damage-board-tabs>
-<button class="damage-board-tab is-active" id="damageBoardSpecTab" type="button" role="tab" aria-selected="true" aria-controls="damageBoardSpecPanel" data-damage-board-tab="spec"><span class="damage-board-tab-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="3"/><circle cx="17" cy="9" r="3"/><path d="M2 20v-2a5 5 0 0 1 10 0v2H2Zm10 0v-2a5 5 0 0 1 10 0v2H12Z"/></svg></span><span class="damage-board-tab-copy"><span class="damage-board-tab-title">스펙 보드</span><span class="damage-board-tab-desc">순수 특성 스펙 기반 DPS 측정</span></span></button>
-<button class="damage-board-tab" id="damageBoardUnitTab" type="button" role="tab" aria-selected="false" aria-controls="damageBoardUnitPanel" data-damage-board-tab="unit"><span class="damage-board-tab-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="8" height="8" rx="2"/><rect x="14" y="3" width="8" height="8" rx="2"/><rect x="8" y="14" width="8" height="8" rx="2"/><path d="M6 11v3h6m6-3v3"/></svg></span><span class="damage-board-tab-copy"><span class="damage-board-tab-title">유닛 보드</span><span class="damage-board-tab-desc">히든조합 빌드 기반 DPS 측정</span></span></button>
+<button class="damage-board-tab is-active" id="damageBoardSpecTab" type="button" role="tab" aria-selected="true" aria-controls="damageBoardSpecPanel" data-damage-board-tab="spec">스펙 보드</button>
+<button class="damage-board-tab" id="damageBoardUnitTab" type="button" role="tab" aria-selected="false" aria-controls="damageBoardUnitPanel" data-damage-board-tab="unit">유닛 보드</button>
+<button class="damage-board-tab" id="damageBoardTableTab" type="button" role="tab" aria-selected="false" aria-controls="workspace-dps" data-damage-board-tab="table"><span id="damageBoardTableLabel">DPS표</span></button>
 </div>
 <div class="damage-board-tab-shell">
 <section class="damage-board-panel is-active" id="damageBoardSpecPanel" role="tabpanel" aria-labelledby="damageBoardSpecTab" data-damage-board-panel="spec">
 <section class="analytics-group analytics-summary-group" aria-label="모드 난이도 및 DPS">
 <input id="specDpsSpeedMode" type="hidden" value="OFF"/>
 <div class="dps-card stat-dps-summary right-dps-hero" id="statDpsSummary">
-  <div class="right-hero-context"><strong class="right-hero-compact-mode" id="rightHeroCompactContext">—</strong><div class="dps-context-summary" id="dpsContextSummary"><strong id="dpsContextMode">—</strong><span class="right-hero-divider">/</span><strong id="dpsContextDiff">—</strong><small id="dpsContextModeDetail" hidden></small><small id="dpsContextDiffDetail" hidden></small></div></div>
-  <div class="right-hero-metric"><span class="dps-spec-board-dps"><span class="dps-feature-heading"><span class="dps-lbl" id="dpsMainLabel">DPS</span></span><strong class="dps-num" id="dpsVal">—</strong></span></div>
+  <div class="right-hero-context"><span class="spec-hero-caption">모드 / 난이도</span><strong class="right-hero-compact-mode" id="rightHeroCompactContext">—</strong><div class="dps-context-summary" id="dpsContextSummary"><strong id="dpsContextMode">—</strong><span class="right-hero-divider">/</span><strong id="dpsContextDiff">—</strong><small id="dpsContextModeDetail" hidden></small><small id="dpsContextDiffDetail" hidden></small></div></div>
+  <div class="right-hero-stage" aria-label="현재 고행 및 라운드"><span class="spec-hero-caption" id="specHeroStageLabel">현재 고행 / 라운드</span><strong id="specHeroStage">—</strong><small id="specHeroRound">—</small></div>
+  <div class="right-hero-metric"><span class="dps-spec-board-dps"><span class="dps-feature-heading"><span class="dps-lbl" id="dpsMainLabel">현재 DPS</span></span><strong class="dps-num" id="dpsVal">—</strong></span></div>
+  <dl class="right-spec-enemies" aria-label="현재 적 정보"><div><dt>체력</dt><dd id="enemyHpQuick">—</dd></div><div><dt>실드</dt><dd id="enemyShieldQuick">—</dd></div><div><dt>방어력</dt><dd id="enemyArmorDisplayQuick">—</dd></div><div><dt>물량</dt><dd id="enemyWaveCountQuick">—</dd></div></dl>
 </div>
 </section>
 
@@ -774,14 +813,14 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 <div class="stat-row" role="row"><div class="sc-name" role="cell">유닛 가속</div><div class="sc-val" role="cell" id="sUADisplay">—</div><div class="sc-val" role="cell" id="sUAActual">—</div></div>
 <div class="stat-row" role="row"><div class="sc-name" role="cell">실드 감소</div><div class="sc-val" role="cell" id="sSRDisplay">—</div><div class="sc-val" role="cell" id="sSRActual">—</div></div>
 <div class="stat-row" role="row"><div class="sc-name" role="cell">체력 감소</div><div class="sc-val" role="cell" id="sHRDisplay">—</div><div class="sc-val" role="cell" id="sHRActual">—</div></div>
-<div class="stat-row" role="row"><div class="sc-name" role="cell">적 체력 / 실드</div><div class="sc-val" role="cell" id="enemyHpQuick">—</div><div class="sc-val" role="cell" id="enemyShieldQuick">—</div></div>
-<div class="stat-row is-enemy-final-row" role="row"><div class="sc-name" role="cell">적 물량 / 방어력</div><div class="sc-val" role="cell" id="enemyWaveCountQuick">—</div><div class="sc-val" role="cell" id="enemyArmorDisplayQuick">—</div></div>
 </div>
 </section>
 
 </div>
 </section>
 <section class="damage-board-panel" id="damageBoardUnitPanel" role="tabpanel" aria-labelledby="damageBoardUnitTab" data-damage-board-panel="unit" hidden>
+<div class="integrated-tabs" role="tablist" aria-label="unitDetails" data-integrated-tabs="unitDetails"><button type="button" class="integrated-tab is-active" role="tab" id="unitDetailsTab0" aria-controls="unitDetailsPanel0" aria-selected="true" data-integrated-tab="unitDetails" data-integrated-index="0" tabindex="0">유닛 슬롯</button><button type="button" class="integrated-tab" role="tab" id="unitDetailsTab1" aria-controls="unitDetailsPanel1" aria-selected="false" data-integrated-tab="unitDetails" data-integrated-index="1" tabindex="-1">쥬얼 설정</button></div>
+<div id="unitDetailsPanel0" class="integrated-content is-active" role="tabpanel" aria-labelledby="unitDetailsTab0" data-integrated-panel="unitDetails" data-integrated-index="0">
 <div class="dps-base-unit-panel" data-dps-base-unit-control>
 <section class="analytics-group analytics-unit-summary-group" aria-label="쥬얼 설정 및 유닛 클리어 정보">
 <div class="dps-base-unit-summary" id="dpsBaseUnitSummary" aria-label="유닛 보드 모드 및 달성 정보" hidden></div>
@@ -800,6 +839,18 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 <section class="analytics-group analytics-unit-slots-group" aria-label="유닛 슬롯 관리" id="damageBoardUnitSlotsPanel" data-damage-board-panel="unit" data-dps-base-unit-control hidden>
 <div class="dps-base-unit-slot-stack" id="dpsBaseUnitSlotStack" aria-label="유닛 보드"></div>
 </section>
+
+</div>
+<div id="unitDetailsPanel1" class="integrated-content" role="tabpanel" aria-labelledby="unitDetailsTab1" data-integrated-panel="unitDetails" data-integrated-index="1" hidden><section class="trait-preset-unit-jewel-panel trait-preset-unit-jewel-settings-panel" data-trait-preset-unit-jewel-panel="jewel"><div class="dps-jewel-settings-body trait-preset-unit-jewel-settings-body" data-dps-jewel-config><div class="dps-jewel-config-grid" id="dpsJewelConfigGrid"></div></div></section></div>
+</section>
+<section id="workspace-dps" class="damage-board-panel dps-reference-workspace" data-damage-board-panel="table" role="tabpanel" aria-labelledby="damageBoardTableTab" hidden>
+  <div class="dps-reference-toolbar">
+    <div class="dps-table-tabs integrated-tabs" data-dps-table-tabs-mount role="tablist" aria-label="DPS 기준 선택"></div>
+    
+  </div>
+  <section id="dpsTableContent" role="tabpanel" aria-label="DPS 기준 비교">
+    <div id="dpsTableMount" data-dps-table-mount></div>
+  </section>
 </section>
 </div>
 </div>
@@ -808,121 +859,9 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 </div>
 </div>
 </div>
-<div id="sanctuarySkillModal" class="board-modal-shell sanctuarySkillModal-shell" aria-hidden="true">
-<div class="board-modal-backdrop" data-board-modal-close="1"></div>
-<section class="board-modal board-modal-sanctuary" role="dialog" aria-modal="true" aria-labelledby="sanctuarySkillModalTitle">
-<header class="board-modal-head"><div class="board-modal-title-group"><span class="board-modal-brand-icon" aria-hidden="true">✦</span><div><h2 id="sanctuarySkillModalTitle" class="board-modal-title">성소 스킬</h2><small>SANCTUARY SKILL · DAMAGE</small></div></div><button type="button" class="ui-icon-btn board-modal-close" data-board-modal-close="1" aria-label="성소 스킬 닫기">×</button></header>
-<div class="board-modal-body sanctuary-skill-modal-body">
-<div class="data-card final-damage-card board-modal-card">
-<div class="skill-damage-layout" id="skillDamageLayout">
-<div class="skill-setting-panel"><div class="board-modal-panel-label"><div><strong>스킬 설정</strong><small>파란색 입력·선택 / 어두운색 자동 계산</small></div></div>
-<div class="ir skill-ir"><label>더블스페</label><select id="skillDouble"><option selected="" value="1">1</option><option value="1.5">1.5</option><option value="1.67">1.67</option></select></div>
-<div class="ir skill-ir"><label>모드</label><select id="skillMode"><option selected="" value="normal">일반모드</option><option value="tower">도전의 탑</option></select></div>
-<div class="ir skill-ir"><label>라운드</label><input id="skillRound" type="text" value="1" inputmode="numeric" max="300"/></div>
-<div class="ir skill-ir"><label>마법공격력</label><b class="skill-display-value" id="skillAPView">자동</b></div>
-<div class="ir skill-ir"><label>데미지감소율</label><b class="skill-display-value" id="skillPenaltyView">—</b></div>
-</div>
-<div class="skill-result-panel"><div class="board-modal-panel-label"><div><strong>스킬 피해량</strong><small>현재 설정 기준 자동 계산 결과</small></div></div>
-<div class="skill-list-head"><span>스킬</span><span>피해량</span></div>
-<table class="mini-table skill-damage-list"><thead><tr><th>스킬</th><th>총 피해량(%)</th><th>설정</th></tr></thead><tbody id="skillRows"></tbody></table>
-</div>
-</div>
-</div>
-</div>
-</section>
-</div>
-<div id="busPassengerModal" class="board-modal-shell busPassengerModal-shell" aria-hidden="true">
-<div class="board-modal-backdrop" data-board-modal-close="1"></div>
-<section class="board-modal board-modal-bus" role="dialog" aria-modal="true" aria-labelledby="busPassengerModalTitle">
-<header class="board-modal-head"><div class="board-modal-title-group"><span class="board-modal-brand-icon" aria-hidden="true">✦</span><div><h2 id="busPassengerModalTitle" class="board-modal-title">버스 승객</h2><small>BUS PASSENGER · XP GUIDE</small></div></div><button type="button" class="ui-icon-btn board-modal-close" data-board-modal-close="1" aria-label="버스 승객 닫기">×</button></header>
-<div class="board-modal-body bus-passenger-modal-body">
-<div class="data-card bus-cut-card board-modal-card"><div class="board-modal-panel-label"><div><strong>승객별 기준값</strong><small>현재 시작 SP 기준 자동 계산</small></div></div>
-<div class="bus-cut-list" id="xpCutRows"></div>
-</div>
-</div>
-</section>
-</div>
-<div id="zeroRankInfoModal" class="board-modal-shell zeroRankInfoModal-shell" aria-hidden="true">
-<div class="board-modal-backdrop" data-board-modal-close="1"></div>
-<section class="board-modal board-modal-zero-rank" role="dialog" aria-modal="true" aria-labelledby="zeroRankInfoModalTitle">
-<header class="board-modal-head"><div class="board-modal-title-group"><span class="board-modal-brand-icon" aria-hidden="true">✦</span><div><h2 id="zeroRankInfoModalTitle" class="board-modal-title">더제로 승단표</h2></div></div><button type="button" class="ui-icon-btn board-modal-close" data-board-modal-close="1" aria-label="승단표 닫기">×</button></header>
-<div class="board-modal-body zero-rank-info-modal-body">
-<div class="zero-rank-modal-intro" aria-label="승단표 이용 안내"><div><strong>승단 기준 및 혜택</strong><p>승단 점수 기준과 등급별 혜택을 한눈에 비교해 보세요. 현재·목표 승단은 자동 강조됩니다.</p></div><span class="zero-rank-modal-intro-count">전체 17단계</span></div>
-<section class="zero-rank-info-panel">
-<section class="zero-rank-modal-section zero-rank-modal-score-section" aria-label="승단점수 정보">
-<h3 class="zero-rank-modal-section-title">승단점수 정보</h3>
-<section class="zero-rank-score-info" aria-label="승단 점수 정보">
-<div class="zero-rank-score-grid">
-<article class="zero-rank-score-card is-common">
-<h5>공통</h5>
-<div class="zero-rank-score-lines">
-<div class="zero-rank-score-row is-description"><span class="zero-rank-score-range">24스타</span><span class="zero-rank-score-rate">한 난이도 개인전/협동전 3가지 별 모두 8별 달성 시</span><strong class="zero-rank-score-points">2점</strong></div>
-</div>
-</article>
-<article class="zero-rank-score-card">
-<h5>일반 고행</h5>
-<div class="zero-rank-score-lines">
-<div class="zero-rank-score-row"><span class="zero-rank-score-range">1~13단계</span><span class="zero-rank-score-rate">단계당</span><strong class="zero-rank-score-points">1점</strong></div>
-<div class="zero-rank-score-row"><span class="zero-rank-score-range">14~16단계</span><span class="zero-rank-score-rate">단계당</span><strong class="zero-rank-score-points">2점</strong></div>
-<div class="zero-rank-score-row"><span class="zero-rank-score-range">17단계</span><span class="zero-rank-score-rate">달성 시</span><strong class="zero-rank-score-points">3점</strong></div>
-<div class="zero-rank-score-row"><span class="zero-rank-score-range">18~20단계</span><span class="zero-rank-score-rate">단계당</span><strong class="zero-rank-score-points">7점</strong></div>
-</div>
-</article>
-<article class="zero-rank-score-card">
-<h5>명예 고행</h5>
-<div class="zero-rank-score-lines">
-<div class="zero-rank-score-row"><span class="zero-rank-score-range">0단계</span><span class="zero-rank-score-rate">B등급</span><strong class="zero-rank-score-points">2점</strong></div>
-<div class="zero-rank-score-row"><span class="zero-rank-score-range">10단계</span><span class="zero-rank-score-rate">A등급</span><strong class="zero-rank-score-points">2점</strong></div>
-<div class="zero-rank-score-row"><span class="zero-rank-score-range">17단계</span><span class="zero-rank-score-rate">S등급</span><strong class="zero-rank-score-points">2점</strong></div>
-<div class="zero-rank-score-row"><span class="zero-rank-score-range">19단계</span><span class="zero-rank-score-rate">X등급</span><strong class="zero-rank-score-points">2점</strong></div>
-<div class="zero-rank-score-row"><span class="zero-rank-score-range">20단계<small>한국 업데이트 X</small></span><span class="zero-rank-score-rate">XD등급</span><strong class="zero-rank-score-points">2점</strong></div>
-</div>
-</article>
-<article class="zero-rank-score-card">
-<h5>도전의탑</h5>
-<div class="zero-rank-score-lines">
-<div class="zero-rank-score-row"><span class="zero-rank-score-range">41~60층</span><span class="zero-rank-score-rate">1층당</span><strong class="zero-rank-score-points">1점</strong></div>
-<div class="zero-rank-score-row"><span class="zero-rank-score-range">61~70층</span><span class="zero-rank-score-rate">1층당</span><strong class="zero-rank-score-points">2점</strong></div>
-<div class="zero-rank-score-row"><span class="zero-rank-score-range">71~90층</span><span class="zero-rank-score-rate">1층당</span><strong class="zero-rank-score-points">3점</strong></div>
-</div>
-</article>
-<article class="zero-rank-score-card">
-<h5>명예 도전의탑</h5>
-<div class="zero-rank-score-lines">
-<div class="zero-rank-score-row"><span class="zero-rank-score-range">50~68층</span><span class="zero-rank-score-rate">2층당</span><strong class="zero-rank-score-points">1점</strong></div>
-<div class="zero-rank-score-row"><span class="zero-rank-score-range">70~79층</span><span class="zero-rank-score-rate">1층당</span><strong class="zero-rank-score-points">1점</strong></div>
-<div class="zero-rank-score-row"><span class="zero-rank-score-range">80~90층</span><span class="zero-rank-score-rate">1층당</span><strong class="zero-rank-score-points">2점</strong></div>
-</div>
-</article>
-</div>
-</section>
-</section>
-<section class="zero-rank-modal-section zero-rank-modal-title-section" aria-label="더제로 승단 타이틀 별 정보">
-<h3 class="zero-rank-modal-section-title">더제로 승단 타이틀 별 정보</h3>
-<div class="zero-rank-list">
-<article class="zero-rank-entry" data-rank-name="입문" data-rank-score="0"><div class="zero-rank-summary"><strong class="zero-rank-name">더제로 입문</strong><span class="zero-rank-score">0 점</span></div><div class="zero-rank-benefits"><span>룬 강화 성공 보정 +10% 버프 부여</span><span>쥬얼 9개 사용 가능</span></div></article>
-<article class="zero-rank-entry" data-rank-name="견습" data-rank-score="100"><div class="zero-rank-summary"><strong class="zero-rank-name">더제로 견습</strong><span class="zero-rank-score">100 점</span></div><div class="zero-rank-benefits"><span>룬 강화 성공 보정 +30% 버프 부여</span><span>쥬얼 10개 사용 가능</span><span>인챈트북 점수 +20%</span></div></article>
-<article class="zero-rank-entry" data-rank-name="숙련" data-rank-score="150"><div class="zero-rank-summary"><strong class="zero-rank-name">더제로 숙련</strong><span class="zero-rank-score">150 점</span></div><div class="zero-rank-benefits"><span>전설 쥬얼 기본 드랍률 보정 +10%</span><span>룬 강화 성공 보정 +50% 버프 부여</span><span>쥬얼 11개 사용 가능</span><span>인챈트북 점수 +30%</span><span>300라운드 도달 시 각성석 1개 추가 지급</span></div></article>
-<article class="zero-rank-entry" data-rank-name="전문" data-rank-score="200"><div class="zero-rank-summary"><strong class="zero-rank-name">더제로 전문</strong><span class="zero-rank-score">200 점</span></div><div class="zero-rank-benefits"><span>전설 쥬얼 기본 드랍률 보정 +20%</span><span>룬 강화 성공 보정 +75% 버프 부여</span><span>쥬얼 12개 사용 가능</span><span>총 데미지 +2%</span><span>인챈트북 점수 +40%</span><span>300라운드 도달 시 각성석 1개 추가 지급</span><span>일일쿠폰 등록 시 인챈트북 1개 추가 지급</span></div></article>
-<article class="zero-rank-entry" data-rank-name="장인" data-rank-score="250"><div class="zero-rank-summary"><strong class="zero-rank-name">더제로 장인</strong><span class="zero-rank-score">250 점</span></div><div class="zero-rank-benefits"><span>전설 쥬얼 기본 드랍률 보정 +30%</span><span>룬 강화 성공 보정 +100% 버프 부여</span><span>쥬얼 13개 사용 가능</span><span>총 데미지 +4%</span><span>인챈트북 점수 +50%</span><span>300라운드 도달 시 각성석 1개 추가 지급</span><span>일일쿠폰 등록 시 인챈트북 1개 추가 지급</span></div></article>
-<article class="zero-rank-entry" data-rank-name="명장" data-rank-score="300"><div class="zero-rank-summary"><strong class="zero-rank-name">더제로 명장</strong><span class="zero-rank-score">300 점</span></div><div class="zero-rank-benefits"><span>전설 쥬얼 기본 드랍률 보정 +40%</span><span>룬 강화 성공 보정 +125% 버프 부여</span><span>쥬얼 14개 사용 가능</span><span>라운드 한계 경험치 +1</span><span>총 데미지 +6%</span><span>인챈트북 점수 +60%</span><span>300라운드 도달 시 각성석 2개 추가 지급</span><span>일일쿠폰 등록 시 인챈트북 1개 추가 지급</span><span>고철 획득시 50% 확률로 1개 추가획득</span></div></article>
-<article class="zero-rank-entry" data-rank-name="명장+" data-rank-score="350"><div class="zero-rank-summary"><strong class="zero-rank-name">더제로 명장+</strong><span class="zero-rank-score">350 점</span></div><div class="zero-rank-benefits"><span>전설 쥬얼 기본 드랍률 보정 +45%</span><span>룬 강화 성공 보정 +125% 버프 부여</span><span>쥬얼 15개 사용 가능</span><span>라운드 한계 경험치 +1</span><span>총 데미지 +6%</span><span>인챈트북 점수 +70%</span><span>XP5 +1</span><span>300라운드 도달 시 각성석 2개 추가 지급</span><span>일일쿠폰 등록 시 인챈트북 1개 추가 지급</span><span>고철 획득시 50% 확률로 1개 추가획득</span></div></article>
-<article class="zero-rank-entry" data-rank-name="도인" data-rank-score="400"><div class="zero-rank-summary"><strong class="zero-rank-name">더제로 도인</strong><span class="zero-rank-score">400 점</span></div><div class="zero-rank-benefits"><span>전설 쥬얼 기본 드랍률 보정 +50%</span><span>룬 강화 성공 보정 +150% 버프 부여</span><span>쥬얼 16개 사용 가능</span><span>라운드 한계 경험치 +2</span><span>총 데미지 +8%</span><span>인챈트북 점수 +80%</span><span>XP5 +1</span><span>300라운드에 각성석 2개 추가 지급</span><span>일일 쿠폰 등록 시 인챈트북 2개 추가 지급</span><span>고철 획득시 50% 확률로 1개 추가획득</span><span>카오스 · 코스모스 룬 옵션 최소치 추가 보정</span></div></article>
-<article class="zero-rank-entry" data-rank-name="도인+" data-rank-score="450"><div class="zero-rank-summary"><strong class="zero-rank-name">더제로 도인+</strong><span class="zero-rank-score">450 점</span></div><div class="zero-rank-benefits"><span>전설 쥬얼 기본 드랍률 보정 +55%</span><span>룬 강화 성공 보정 +150% 버프 부여</span><span>쥬얼 17개 사용 가능</span><span>라운드 한계 경험치 +2</span><span>총 데미지 +8%</span><span>인챈트북 점수 +90%</span><span>XP5 +2</span><span>300라운드에 각성석 2개 추가 지급</span><span>일일 쿠폰 등록 시 인챈트북 2개 추가 지급</span><span>고철 획득시 50% 확률로 1개 추가획득</span><span>카오스 · 코스모스 룬 옵션 최소치 추가 보정</span></div></article>
-<article class="zero-rank-entry" data-rank-name="지존" data-rank-score="500"><div class="zero-rank-summary"><strong class="zero-rank-name">더제로 지존</strong><span class="zero-rank-score">500 점</span></div><div class="zero-rank-benefits"><span>전설 쥬얼 기본 드랍률 보정 +60%</span><span>룬 강화 성공 보정 +200% 버프 부여</span><span>쥬얼 18개 사용 가능</span><span>라운드 한계 경험치 +3</span><span>총 데미지 +10%</span><span>인챈트북 점수 +100%</span><span>XP5 +2</span><span>300라운드에 각성석 2개 추가 지급</span><span>일일 쿠폰 등록 시 인챈트북 2개 추가 지급</span><span>고철 획득시 50% 확률로 1개 추가획득</span><span>카오스 · 코스모스 룬 옵션 최소치 추가 보정</span><span>고유룬 6개 장착 가능</span></div></article>
-<article class="zero-rank-entry" data-rank-name="지존+" data-rank-score="550"><div class="zero-rank-summary"><strong class="zero-rank-name">더제로 지존+</strong><span class="zero-rank-score">550 점</span></div><div class="zero-rank-benefits"><span>전설 쥬얼 기본 드랍률 보정 +65%</span><span>룬 강화 성공 보정 +200% 버프 부여</span><span>쥬얼 19개 사용 가능</span><span>라운드 한계 경험치 +3</span><span>총 데미지 +10%</span><span>인챈트북 점수 +110%</span><span>XP5 +3</span><span>300라운드에 각성석 2개 추가 지급</span><span>일일 쿠폰 등록 시 인챈트북 2개 추가 지급</span><span>고철 획득시 50% 확률로 1개 추가획득</span><span>카오스 · 코스모스 룬 옵션 최소치 추가 보정</span><span>고유룬 6개 장착 가능</span></div></article>
-<article class="zero-rank-entry" data-rank-name="패왕" data-rank-score="600"><div class="zero-rank-summary"><strong class="zero-rank-name">더제로 패왕</strong><span class="zero-rank-score">600 점</span></div><div class="zero-rank-benefits"><span>전설 쥬얼 기본 드랍률 보정 +70%</span><span>룬 강화 성공 보정 +250% 버프 부여</span><span>쥬얼 20개 사용 가능</span><span>라운드 한계 경험치 +4</span><span>총 데미지 +12%</span><span>인챈트북 점수 +120%</span><span>XP5 +3</span><span>300라운드에 각성석 3개 추가 지급</span><span>일일 쿠폰 등록 시 인챈트북 2개 추가 지급</span><span>고철 획득시 100% 확률로 1개 추가획득</span><span>카오스 · 코스모스 룬 옵션 최소치 추가 보정</span><span>고유룬 6개 장착 가능</span><span>고철 상점의 부적 효과 1.5배 증폭</span></div></article>
-<article class="zero-rank-entry" data-rank-name="패왕+" data-rank-score="650"><div class="zero-rank-summary"><strong class="zero-rank-name">더제로 패왕+</strong><span class="zero-rank-score">650 점</span></div><div class="zero-rank-benefits"><span>전설 쥬얼 기본 드랍률 보정 +80%</span><span>룬 강화 성공 보정 +250% 버프 부여</span><span>쥬얼 21개 사용 가능</span><span>라운드 한계 경험치 +4</span><span>총 데미지 +13%</span><span>인챈트북 점수 +130%</span><span>XP5 +4</span><span>300라운드에 각성석 3개 추가 지급</span><span>일일 쿠폰 등록 시 인챈트북 2개 추가 지급</span><span>고철 획득시 100% 확률로 1개 추가획득</span><span>카오스 · 코스모스 룬 옵션 최소치 추가 보정</span><span>고유룬 6개 장착 가능</span><span>고철 상점의 부적 효과 1.5배 증폭</span></div></article>
-<article class="zero-rank-entry" data-rank-name="제왕" data-rank-score="700"><div class="zero-rank-summary"><strong class="zero-rank-name">더제로 제왕</strong><span class="zero-rank-score">700 점</span></div><div class="zero-rank-benefits"><span>전설 쥬얼 기본 드랍률 보정 +100%</span><span>룬 강화 성공 보정 +300% 버프 부여</span><span>쥬얼 22개 사용 가능</span><span>라운드 한계 경험치 +5</span><span>총 데미지 +14%</span><span>인챈트북 점수 +140%</span><span>XP5 +4</span><span>300라운드에 각성석 3개 추가 지급</span><span>일일 쿠폰 등록 시 인챈트북 3개 추가 지급</span><span>고철 획득시 100% 확률로 1개 추가획득</span><span>카오스 · 코스모스 룬 옵션 최소치 추가 보정</span><span>고유룬 6개 장착 가능</span><span>고철 상점의 부적 효과 1.5배 증폭</span><span>카오스 · 코스모스 룬 최종 드랍 확률 2배</span></div></article>
-<article class="zero-rank-entry" data-rank-name="제왕+" data-rank-score="750"><div class="zero-rank-summary"><strong class="zero-rank-name">더제로 제왕+</strong><span class="zero-rank-score">750 점</span></div><div class="zero-rank-benefits"><span>전설 쥬얼 기본 드랍률 보정 +120%</span><span>룬 강화 성공 보정 +300% 버프 부여</span><span>쥬얼 23개 사용 가능</span><span>라운드 한계 경험치 +5</span><span>총 데미지 +15%</span><span>인챈트북 점수 +150%</span><span>XP5 +5</span><span>300라운드에 각성석 3개 추가 지급</span><span>일일 쿠폰 등록 시 인챈트북 3개 추가 지급</span><span>고철 획득시 100% 확률로 1개 추가획득</span><span>카오스 · 코스모스 룬 옵션 최소치 추가 보정</span><span>고유룬 6개 장착 가능</span><span>고철 상점의 부적 효과 1.5배 증폭</span><span>카오스 · 코스모스 룬 최종 드랍 확률 2배</span></div></article>
-<article class="zero-rank-entry" data-rank-name="신황" data-rank-score="800"><div class="zero-rank-summary"><strong class="zero-rank-name">더제로 신황</strong><span class="zero-rank-score">800 점</span></div><div class="zero-rank-benefits"><span>전설 쥬얼 기본 드랍률 보정 +140%</span><span>룬 강화 성공 보정 +350% 버프 부여</span><span>쥬얼 25개 사용 가능</span><span>라운드 한계 경험치 +6</span><span>총 데미지 +16%</span><span>인챈트북 점수 +160%</span><span>XP5 +5</span><span>300라운드에 각성석 3개 추가 지급</span><span>일일 쿠폰 등록 시 인챈트북 4개 추가 지급</span><span>고철 획득시 100% 확률로 1개 추가획득</span><span>카오스 · 코스모스 룬 옵션 최소치 추가 보정</span><span>고유룬 7개 장착 가능</span><span>고철 상점의 부적 효과 1.5배 증폭</span><span>카오스 · 코스모스 룬 최종 드랍 확률 2배</span></div></article>
-<article class="zero-rank-entry" data-rank-name="신황+" data-rank-score="850"><div class="zero-rank-summary"><strong class="zero-rank-name">더제로 신황+</strong><span class="zero-rank-score">850 점</span></div><div class="zero-rank-benefits"><span>전설 쥬얼 기본 드랍률 보정 +160%</span><span>룬 강화 성공 보정 +350% 버프 부여</span><span>쥬얼 26개 사용 가능</span><span>라운드 한계 경험치 +6</span><span>총 데미지 +17%</span><span>인챈트북 점수 +170%</span><span>XP5 +6</span><span>300라운드에 각성석 3개 추가 지급</span><span>일일 쿠폰 등록 시 인챈트북 4개 추가 지급</span><span>고철 획득시 100% 확률로 1개 추가획득</span><span>카오스 · 코스모스 룬 옵션 최소치 추가 보정</span><span>고유룬 7개 장착 가능</span><span>고철 상점의 부적 효과 1.5배 증폭</span><span>카오스 · 코스모스 룬 최종 드랍 확률 2배</span></div></article>
-</div>
-</section>
-</section>
-</div>
-</section>
-</div>
+
+
+
 <div aria-live="polite" class="toast-root" id="toastRoot"></div>
 <script>
 function loadScriptSequence(files, onComplete){
@@ -945,7 +884,7 @@ function loadScriptSequence(files, onComplete){
   }
   next();
 }
-loadScriptSequence(['data.js','calc.js','modal.js','app.js','preset.js','responsive.js'],function(){
+loadScriptSequence(['data.js','calc.js','app.js','preset.js','responsive.js'],function(){
   if(typeof window.dpsStartApp==='function'){
     window.dpsStartApp();
   }
@@ -976,6 +915,73 @@ loadScriptSequence(['data.js','calc.js','modal.js','app.js','preset.js','respons
     </div>
   </div>
 </dialog>
+<section id="zeroTitleBenefitsPopover" class="unit-achievement-help-popover zero-title-benefits-popover" role="dialog" aria-label="당신의 타이틀 혜택" hidden>
+  <h3>당신의 타이틀 혜택</h3>
+  <section class="zero-current-benefits" aria-label="승단별 타이틀 혜택">
+    <nav class="zero-current-benefits-heading" aria-label="타이틀 혜택 단계 탐색">
+      <button type="button" id="zeroBenefitsPrev" data-zero-benefits-step="-1" aria-label="이전 단계 혜택">〈 이전</button>
+      <div class="zero-benefits-title-group">
+        <strong id="zeroCurrentBenefitsTitle">현재 승단 혜택</strong>
+        <div class="zero-benefits-meta"><small id="zeroBenefitsViewLabel">현재 타이틀</small><span id="zeroBenefitsPosition" aria-label="현재 조회 중인 단계">1 / 17</span></div>
+      </div>
+      <button type="button" id="zeroBenefitsNext" data-zero-benefits-step="1" aria-label="다음 단계 혜택">다음 〉</button>
+    </nav>
+    <div id="zeroCurrentBenefitsItems" class="zero-current-benefits-items" aria-live="polite" aria-atomic="true"></div>
+  </section>
+</section>
+<section id="zeroRankScorePopover" class="unit-achievement-help-popover zero-rank-score-popover" role="dialog" aria-label="더제로 승단 점수" hidden>
+  <h3>더제로 승단 점수</h3>
+  <section class="unit-achievement-help-section zero-score-common-section">
+    <h4>공통 점수</h4>
+    <div class="unit-achievement-help-panel zero-score-help-panel"><div class="zero-rank-score-lines">
+<div class="zero-rank-score-row is-description"><span class="zero-rank-score-range">24스타</span><span class="zero-rank-score-rate">한 난이도 개인전/협동전 3가지 별 모두 8별 달성 시</span><strong class="zero-rank-score-points">2점</strong></div>
+</div></div>
+  </section>
+  <section class="unit-achievement-help-section zero-score-tab-section">
+    <h4>고행 / 도전의탑 점수</h4>
+    <div class="unit-achievement-help-tabs zero-score-help-tabs" role="tablist" aria-label="더제로 승단 점수 구분">
+      <button type="button" role="tab" id="zeroScoreHelpTab0" aria-controls="zeroScoreHelpPanel0" aria-selected="true" tabindex="0">일반 고행</button>
+      <button type="button" role="tab" id="zeroScoreHelpTab1" aria-controls="zeroScoreHelpPanel1" aria-selected="false" tabindex="-1">명예 고행</button>
+      <button type="button" role="tab" id="zeroScoreHelpTab2" aria-controls="zeroScoreHelpPanel2" aria-selected="false" tabindex="-1">일반 도전의탑</button>
+      <button type="button" role="tab" id="zeroScoreHelpTab3" aria-controls="zeroScoreHelpPanel3" aria-selected="false" tabindex="-1">명예 도전의탑</button>
+    </div>
+    <div class="unit-achievement-help-panel zero-score-help-panel" role="tabpanel" id="zeroScoreHelpPanel0" aria-labelledby="zeroScoreHelpTab0">
+      <h5>일반 고행</h5>
+      <div class="zero-rank-score-lines">
+<div class="zero-rank-score-row"><span class="zero-rank-score-range">1~13단계</span><span class="zero-rank-score-rate">단계당</span><strong class="zero-rank-score-points">1점</strong></div>
+<div class="zero-rank-score-row"><span class="zero-rank-score-range">14~16단계</span><span class="zero-rank-score-rate">단계당</span><strong class="zero-rank-score-points">2점</strong></div>
+<div class="zero-rank-score-row"><span class="zero-rank-score-range">17단계</span><span class="zero-rank-score-rate">달성 시</span><strong class="zero-rank-score-points">3점</strong></div>
+<div class="zero-rank-score-row"><span class="zero-rank-score-range">18~20단계</span><span class="zero-rank-score-rate">단계당</span><strong class="zero-rank-score-points">7점</strong></div>
+</div>
+    </div>
+    <div class="unit-achievement-help-panel zero-score-help-panel" role="tabpanel" id="zeroScoreHelpPanel1" aria-labelledby="zeroScoreHelpTab1" hidden>
+      <h5>명예 고행</h5>
+      <div class="zero-rank-score-lines">
+<div class="zero-rank-score-row"><span class="zero-rank-score-range">0단계</span><span class="zero-rank-score-rate">B등급</span><strong class="zero-rank-score-points">2점</strong></div>
+<div class="zero-rank-score-row"><span class="zero-rank-score-range">10단계</span><span class="zero-rank-score-rate">A등급</span><strong class="zero-rank-score-points">2점</strong></div>
+<div class="zero-rank-score-row"><span class="zero-rank-score-range">17단계</span><span class="zero-rank-score-rate">S등급</span><strong class="zero-rank-score-points">2점</strong></div>
+<div class="zero-rank-score-row"><span class="zero-rank-score-range">19단계</span><span class="zero-rank-score-rate">X등급</span><strong class="zero-rank-score-points">2점</strong></div>
+<div class="zero-rank-score-row"><span class="zero-rank-score-range">20단계<small>한국 업데이트 X</small></span><span class="zero-rank-score-rate">XD등급</span><strong class="zero-rank-score-points">2점</strong></div>
+</div>
+    </div>
+    <div class="unit-achievement-help-panel zero-score-help-panel" role="tabpanel" id="zeroScoreHelpPanel2" aria-labelledby="zeroScoreHelpTab2" hidden>
+      <h5>일반 도전의탑</h5>
+      <div class="zero-rank-score-lines">
+<div class="zero-rank-score-row"><span class="zero-rank-score-range">41~60층</span><span class="zero-rank-score-rate">1층당</span><strong class="zero-rank-score-points">1점</strong></div>
+<div class="zero-rank-score-row"><span class="zero-rank-score-range">61~70층</span><span class="zero-rank-score-rate">1층당</span><strong class="zero-rank-score-points">2점</strong></div>
+<div class="zero-rank-score-row"><span class="zero-rank-score-range">71~90층</span><span class="zero-rank-score-rate">1층당</span><strong class="zero-rank-score-points">3점</strong></div>
+</div>
+    </div>
+    <div class="unit-achievement-help-panel zero-score-help-panel" role="tabpanel" id="zeroScoreHelpPanel3" aria-labelledby="zeroScoreHelpTab3" hidden>
+      <h5>명예 도전의탑</h5>
+      <div class="zero-rank-score-lines">
+<div class="zero-rank-score-row"><span class="zero-rank-score-range">50~68층</span><span class="zero-rank-score-rate">2층당</span><strong class="zero-rank-score-points">1점</strong></div>
+<div class="zero-rank-score-row"><span class="zero-rank-score-range">70~79층</span><span class="zero-rank-score-rate">1층당</span><strong class="zero-rank-score-points">1점</strong></div>
+<div class="zero-rank-score-row"><span class="zero-rank-score-range">80~90층</span><span class="zero-rank-score-rate">1층당</span><strong class="zero-rank-score-points">2점</strong></div>
+</div>
+    </div>
+  </section>
+</section>
 <!-- 달성률 도움말: 보드 카드 바깥에 위치하여 작은 화면에서도 잘리지 않습니다. -->
 <section id="unitAchievementHelpPopover" class="unit-achievement-help-popover" role="dialog" aria-label="달성률 가이드" hidden>
   <h3>달성률 가이드</h3>
@@ -996,7 +1002,7 @@ loadScriptSequence(['data.js','calc.js','modal.js','app.js','preset.js','respons
     </div>
   </section>
   <section class="unit-achievement-help-section is-tip">
-    <h4>달성 배율이 더 높아지는 원인?</h4>
+    <h4>클리어가 힘들어지는 원인?</h4>
     <div class="unit-achievement-help-tabs" role="tablist" aria-label="달성 배율 원인">
       <button type="button" role="tab" id="achievementCauseUnitTab" aria-controls="achievementCauseUnit" aria-selected="true" tabindex="0">유닛 생산</button>
       <button type="button" role="tab" id="achievementCauseMultiTab" aria-controls="achievementCauseMulti" aria-selected="false" tabindex="-1">멀티타겟</button>
@@ -1019,5 +1025,35 @@ loadScriptSequence(['data.js','calc.js','modal.js','app.js','preset.js','respons
   </section>
   <p class="unit-achievement-help-footnote">수집 사례를 바탕으로 한 추천이며, 클리어를 보장하지 않습니다.</p>
 </section>
+<div id="basicSettingsModalOverlay" class="basic-settings-modal-overlay" hidden>
+<section id="basicSettingsModal" class="basic-settings-modal" role="dialog" aria-modal="true" aria-labelledby="basicSettingsModalTitle" tabindex="-1">
+<header class="basic-settings-modal-header"><div class="basic-settings-modal-heading"><span aria-hidden="true">✦</span><h2 id="basicSettingsModalTitle">버스 기사</h2></div><button type="button" class="basic-settings-modal-close" data-basic-modal-close aria-label="닫기">×</button></header>
+<div class="basic-settings-modal-content">
+<div id="basicSettingsModalBus" class="basic-settings-modal-view"><div class="basic-tab-bus">
+<div class="data-card bus-cut-card board-modal-card"><div class="board-modal-panel-label"><div><strong>승객별 기준값</strong><small>현재 시작 SP 기준 자동 계산</small></div></div>
+<div class="bus-cut-list" id="xpCutRows"></div>
+</div>
+</div></div>
+<div id="basicSettingsModalSanctuary" class="basic-settings-modal-view" hidden><div class="basic-tab-sanctuary">
+<div class="data-card final-damage-card board-modal-card">
+<div class="skill-damage-layout" id="skillDamageLayout">
+<div class="skill-setting-panel"><div class="board-modal-panel-label"><div><strong>스킬 설정</strong><small>파란색 입력·선택 / 어두운색 자동 계산</small></div></div>
+<div class="ir skill-ir"><label>더블스페</label><select id="skillDouble"><option selected="" value="1">1</option><option value="1.5">1.5</option><option value="1.67">1.67</option></select></div>
+<div class="ir skill-ir"><label>모드</label><select id="skillMode"><option selected="" value="normal">일반모드</option><option value="tower">도전의 탑</option></select></div>
+<div class="ir skill-ir"><label>라운드</label><input id="skillRound" inputmode="numeric" max="300" type="text" value="1"/></div>
+<div class="ir skill-ir"><label>마법공격력</label><b class="skill-display-value" id="skillAPView">자동</b></div>
+<div class="ir skill-ir"><label>데미지감소율</label><b class="skill-display-value" id="skillPenaltyView">—</b></div>
+</div>
+<div class="skill-result-panel"><div class="board-modal-panel-label"><div><strong>스킬 피해량</strong><small>현재 설정 기준 자동 계산 결과</small></div></div>
+<div class="skill-list-head"><span>스킬</span><span>피해량</span></div>
+<table class="mini-table skill-damage-list"><thead><tr><th>스킬</th><th>총 피해량(%)</th><th>설정</th></tr></thead><tbody id="skillRows"></tbody></table>
+</div>
+</div>
+</div>
+</div></div>
+</div>
+</section>
+</div>
+<div id="traitPresetBackupOverlay" class="trait-preset-backup-overlay" hidden><section id="traitPresetBackupPanel" class="trait-preset-backup-panel" role="dialog" aria-modal="true" aria-labelledby="traitPresetBackupTitle" tabindex="-1"><header class="trait-preset-modal-head"><div class="trait-preset-modal-heading"><span class="trait-preset-modal-mark" aria-hidden="true">✦</span><h2 id="traitPresetBackupTitle">프리셋 백업</h2></div><button type="button" class="ui-icon-btn trait-preset-modal-close" data-trait-preset-backup-close="1" aria-label="프리셋 백업 닫기">×</button></header><div class="trait-preset-modal-body trait-preset-backup-body" id="traitPresetBackupBody"></div></section></div>
 </body>
 </html>

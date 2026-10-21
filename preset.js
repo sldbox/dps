@@ -547,63 +547,6 @@ function resetTraitPresetUnitBoardValues(values){
   out.dpsBaseUnitExtraSettings='{}';
   return out;
 }
-/* 유닛 쥬얼 모달: 생성·표시·닫기 */
-let traitPresetUnitJewelReturnFocus=null;
-function setTraitPresetUnitJewelButtonExpanded(expanded){
-  qsa('[data-trait-preset-unit-jewel-open]').forEach(button=>{
-    button.setAttribute('aria-expanded',expanded ? 'true' : 'false');
-  });
-}
-function traitPresetUnitJewelPanelHtml(){
-  return `<section class="trait-preset-unit-jewel-panel trait-preset-unit-jewel-settings-panel" id="traitPresetJewelSettingPanel" data-trait-preset-unit-jewel-panel="jewel">
-    <div class="dps-jewel-settings-body trait-preset-unit-jewel-settings-body" data-dps-jewel-config>
-      <div class="dps-jewel-config-grid" id="dpsJewelConfigGrid"></div>
-    </div>
-  </section>`;
-}
-function createTraitPresetUnitJewelModal(){
-  const title='쥬얼 설정';
-  const html=`
-    <div class="trait-preset-unit-jewel-backdrop" data-trait-preset-unit-jewel-close="1"></div>
-    <section class="trait-preset-unit-jewel-modal is-jewel" role="dialog" aria-modal="true" aria-labelledby="traitPresetUnitJewelTitle">
-      <header class="trait-preset-unit-jewel-head">
-        <div class="trait-preset-unit-jewel-heading-wrap">
-          <span class="trait-preset-unit-jewel-mark" aria-hidden="true">✦</span>
-          <div class="trait-preset-unit-jewel-heading">
-            <h2 id="traitPresetUnitJewelTitle">${title}</h2>
-            <p>전설 · 신화 쥬얼 능력치 관리</p>
-          </div>
-        </div>
-        <button type="button" class="ui-icon-btn trait-preset-unit-jewel-close" data-trait-preset-unit-jewel-close="1" aria-label="${title} 닫기">×</button>
-      </header>
-      <div class="trait-preset-unit-jewel-body">
-        ${traitPresetUnitJewelPanelHtml()}
-      </div>
-    </section>`;
-  const existing=$('traitPresetUnitJewelModal');
-  if(existing){ existing.innerHTML=html; return existing; }
-  return window.DpsModal.createShell('traitPresetUnitJewelModal','trait-preset-unit-jewel-modal-shell',html);
-}
-function closeTraitPresetUnitJewelModal(options={}){
-  if(!window.DpsModal?.isOpen?.('traitPresetUnitJewelModal')) return;
-  window.DpsModal.setOpen('traitPresetUnitJewelModal','trait-preset-unit-jewel-modal-open',false);
-  setTraitPresetUnitJewelButtonExpanded(false);
-  if(options.restoreFocus!==false && traitPresetUnitJewelReturnFocus?.isConnected) traitPresetUnitJewelReturnFocus.focus({preventScroll:true});
-  traitPresetUnitJewelReturnFocus=null;
-}
-function openTraitPresetUnitJewelModal(trigger=null){
-  traitPresetUnitJewelReturnFocus=trigger instanceof HTMLElement ? trigger : (document.activeElement instanceof HTMLElement ? document.activeElement : null);
-  createTraitPresetUnitJewelModal();
-  renderDpsJewelConfigGrids();
-  window.DpsModal.setOpen('traitPresetUnitJewelModal','trait-preset-unit-jewel-modal-open',true);
-  setTraitPresetUnitJewelButtonExpanded(true);
-  const body=document.querySelector('#traitPresetUnitJewelModal .trait-preset-unit-jewel-body');
-  if(body) body.scrollTop=0;
-  requestAnimationFrame(()=>{
-    document.querySelector('[data-dps-jewel-config] select')?.focus?.({preventScroll:true});
-  });
-  return true;
-}
 /* 프리셋 상태 병합·화면 적용 */
 function mergeTraitPresetWithLocalState(presetState, localState, options={}){
   const preset=normalizeTraitPresetState(presetState);
@@ -775,6 +718,11 @@ function renderTraitPresetChangeNotice(update){
     if(!traitPresetChangeNoticePending) traitPresetChangeNoticeSeen=false;
   }
   if(traitPresetChangeNoticePending && traitPresetManagerVisible) traitPresetChangeNoticeSeen=true;
+  const manager=document.querySelector('.trait-preset-panel');
+  if(manager){
+    manager.classList.toggle('is-change-pending',traitPresetChangeNoticePending);
+    manager.classList.toggle('is-backup-pending',!traitPresetChangeNoticePending && manager.classList.contains('has-backup-pending'));
+  }
   const notice=$('traitPresetChangeNotice');
   if(notice) notice.hidden=!traitPresetChangeNoticePending || traitPresetChangeNoticeSeen;
 }
@@ -795,6 +743,8 @@ function setTraitPresetActionDisplay(action,state){
 }
 function renderTraitPresetStatus(status,store){
   const backup=store.presets.length>0 && (status.backupNeeded || status.updatedPresetIds.length>0 || status.pendingUnitBoardPresetIds.length>0 || status.pendingJewelSettings);
+  const manager=document.querySelector('.trait-preset-panel');
+  if(manager) manager.classList.toggle('has-backup-pending',backup);
   qsa('[data-action="backupTraitPresets"]').forEach(btn=>{
     btn.classList.toggle('is-backup-needed',backup);
     btn.setAttribute('aria-label','프리셋 백업');
@@ -1838,8 +1788,8 @@ function traitPresetChangeKeyLabel(key,values=null){
     jewelSettings:'쥬얼 설정',
     presetName:'프리셋 이름',
     storedPreset:'저장된 프리셋 변경',
-    'state:shared':'전체 프리셋 업데이트 대상',
-    'state:single':'현재 프리셋 업데이트 대상'
+    'state:shared':'전체 프리셋 대상',
+    'state:single':'현재 프리셋 대상'
   })[normalized] || normalized;
 }
 function traitPresetChangeLabels(keys,values=null){
@@ -1985,8 +1935,8 @@ function traitPresetBackupTargetsHtml(plan){
         <div class="trait-preset-backup-card-identity"><h3>${escapeHtml(row.name)}</h3><span>${escapeHtml(mode)}</span></div>
       </header>
       <div class="trait-preset-backup-card-changes">
-        <section class="trait-preset-backup-scope is-common"><h4>전체 프리셋 업데이트 대상 <span>${commonNames.length}</span></h4>${traitPresetBackupChangeListHtml(commonNames)}</section>
-        <section class="trait-preset-backup-scope is-individual"><h4>현재 프리셋 업데이트 대상 <span>${individualNames.length}</span></h4>${traitPresetBackupChangeListHtml(individualNames)}</section>
+        <section class="trait-preset-backup-scope is-common"><h4>전체 프리셋 대상 <span>${commonNames.length}</span></h4>${traitPresetBackupChangeListHtml(commonNames)}</section>
+        <section class="trait-preset-backup-scope is-individual"><h4>현재 프리셋 대상 <span>${individualNames.length}</span></h4>${traitPresetBackupChangeListHtml(individualNames)}</section>
       </div>
     </article>`;
   }).join('');
@@ -2000,8 +1950,9 @@ function traitPresetBackupTargetsHtml(plan){
     <div class="trait-preset-backup-cards">${list}</div>${unassignedNote}${backupNote}
   </section>`;
 }
-let traitPresetBackupModalPlan=null;
+let traitPresetBackupPanelPlan=null;
 let traitPresetBackupLocked=false;
+let traitPresetBackupPreviousFocus=null;
 function setTraitPresetBackupSavingState(active){
   traitPresetBackupLocked=!!active;
   qsa('[data-trait-preset-backup-run]').forEach(btn=>{btn.disabled=!!active;});
@@ -2016,24 +1967,13 @@ function traitPresetBackupFileNameControlHtml(){
     <div class="trait-preset-backup-actions"><button class="btn pri ui-action-btn" type="button" data-trait-preset-backup-run="apply">백업하기</button></div>
   </section>`;
 }
-function createTraitPresetBackupModal(){
-  window.DpsModal.createShell('traitPresetBackupModal','trait-preset-modal-shell',`
-    <div class="trait-preset-modal-backdrop" data-trait-preset-backup-close="1"></div>
-    <section class="trait-preset-modal trait-preset-backup-modal" role="dialog" aria-modal="true" aria-labelledby="traitPresetBackupTitle">
-      <header class="trait-preset-modal-head">
-        <div class="trait-preset-modal-heading"><span class="trait-preset-modal-mark" aria-hidden="true">✦</span><h2 id="traitPresetBackupTitle">프리셋 백업</h2></div>
-        <button type="button" class="ui-icon-btn trait-preset-modal-close" data-trait-preset-backup-close="1" aria-label="프리셋 백업 닫기">×</button>
-      </header>
-      <div class="trait-preset-modal-body trait-preset-backup-body" id="traitPresetBackupBody"></div>
-    </section>`);
-}
-function renderTraitPresetBackupModal(plan){
+function renderTraitPresetBackupPanel(plan){
   const body=$('traitPresetBackupBody');
   if(!body) return;
-  const modal=body.closest('.trait-preset-backup-modal');
-  if(modal){
-    modal.classList.toggle('has-pending-change',!!plan.hasPending);
-    modal.classList.toggle('has-few-updates',(plan.presetRows || []).filter(row=>row.changed).length<=1);
+  const panel=body.closest('.trait-preset-backup-panel');
+  if(panel){
+    panel.classList.toggle('has-pending-change',!!plan.hasPending);
+    panel.classList.toggle('has-few-updates',(plan.presetRows || []).filter(row=>row.changed).length<=1);
   }
   body.innerHTML=`
     ${traitPresetBackupTargetsHtml(plan)}
@@ -2044,41 +1984,50 @@ function renderTraitPresetBackupModal(plan){
 function renderTraitPresetBackupError(error=''){
   const body=$('traitPresetBackupBody');
   if(!body) return;
-  body.closest('.trait-preset-backup-modal')?.classList.remove('has-pending-change','has-few-updates');
+  body.closest('.trait-preset-backup-panel')?.classList.remove('has-pending-change','has-few-updates');
   body.innerHTML=`<section class="trait-preset-backup-error"><h3>프리셋 백업을 완료하지 못했습니다.</h3><p>${escapeHtml(error)}</p></section>`;
 }
 function notifyTraitPresetBackupFileComplete(fileName){
   const normalized=String(fileName || '').trim() || makeTraitPresetFileName('');
   showToast(`${normalized} 백업이 완료되었습니다.`,'ok');
 }
-function openTraitPresetBackupModal(){
+function openTraitPresetBackupPanel(){
   try{
     const currentSnapshot=makeStateObject();
     if(!isStorageLocked()) saveState({silent:true,state:currentSnapshot});
     const store=loadTraitPresetStore();
     if(!store.presets.length){ notifyStorageAction('백업할 프리셋이 없습니다.','err'); return false; }
-    traitPresetBackupModalPlan=traitPresetBackupChangePlan(store,currentSnapshot);
-    createTraitPresetBackupModal();
-    renderTraitPresetBackupModal(traitPresetBackupModalPlan);
-    window.DpsModal.setOpen('traitPresetBackupModal','trait-preset-modal-open',true);
+    traitPresetBackupPanelPlan=traitPresetBackupChangePlan(store,currentSnapshot);
+    renderTraitPresetBackupPanel(traitPresetBackupPanelPlan);
+    const panel=$('traitPresetBackupPanel');
+    const overlay=$('traitPresetBackupOverlay');
+    traitPresetBackupPreviousFocus=document.activeElement;
+    if(overlay) overlay.hidden=false;
+    if(panel) panel.classList.add('is-open');
+    document.body.classList.add('trait-preset-backup-open');
     const body=$('traitPresetBackupBody');
     if(body) body.scrollTop=0;
-    const input=$('traitPresetBackupName');
-    setTimeout(()=>{ if(body) body.scrollTop=0; input?.focus(); input?.select(); },0);
+    panel?.focus({preventScroll:true});
     return true;
   }catch(e){
-    rememberAppIssue('error','[trait preset backup modal failed]',e);
+    rememberAppIssue('error','[trait preset backup panel failed]',e);
     notifyStorageAction(e?.message || '특성 프리셋 백업 준비 실패','err');
     return false;
   }
 }
-function hideTraitPresetBackupModal(){
-  traitPresetBackupModalPlan=null;
-  window.DpsModal.setOpen('traitPresetBackupModal','trait-preset-modal-open',false);
+function hideTraitPresetBackupPanel(){
+  traitPresetBackupPanelPlan=null;
+  const panel=$('traitPresetBackupPanel');
+  if(panel) panel.classList.remove('is-open');
+  const overlay=$('traitPresetBackupOverlay');
+  if(overlay) overlay.hidden=true;
+  document.body.classList.remove('trait-preset-backup-open');
+  if(traitPresetBackupPreviousFocus?.isConnected) traitPresetBackupPreviousFocus.focus({preventScroll:true});
+  traitPresetBackupPreviousFocus=null;
 }
-function closeTraitPresetBackupModal(){
+function closeTraitPresetBackupPanel(){
   if(traitPresetBackupLocked) return false;
-  hideTraitPresetBackupModal();
+  hideTraitPresetBackupPanel();
   return true;
 }
 function createTraitPresetBackupFile(customName=''){
@@ -2108,7 +2057,7 @@ function restoreTraitPresetBackupSnapshot(snapshot){
 }
 function runTraitPresetBackup(){
   if(traitPresetBackupLocked) return false;
-  const plan=traitPresetBackupModalPlan || traitPresetBackupChangePlan();
+  const plan=traitPresetBackupPanelPlan || traitPresetBackupChangePlan();
   const customName=$('traitPresetBackupName')?.value || '';
   const snapshot={store:localStorage.getItem(TRAIT_PRESET_STORAGE_KEY),status:localStorage.getItem(TRAIT_PRESET_STATUS_STORAGE_KEY),drafts:localStorage.getItem(TRAIT_PRESET_DRAFT_STORAGE_KEY)};
   setTraitPresetBackupSavingState(true);
@@ -2126,7 +2075,7 @@ function runTraitPresetBackup(){
     
     
     notifyTraitPresetBackupFileComplete(fileName);
-    hideTraitPresetBackupModal();
+    hideTraitPresetBackupPanel();
     return true;
   }catch(e){
     try{ restoreTraitPresetBackupSnapshot(snapshot); }catch(rollbackError){ rememberAppIssue('error','[trait preset backup rollback failed]',rollbackError); }
@@ -2362,19 +2311,14 @@ function handleTraitPresetClick(e){
     return;
   }
   if(!e.target.closest('[data-trait-preset-custom-select]')) closeTraitPresetCustomSelects();
-  const unitJewelOpen=e.target.closest('[data-trait-preset-unit-jewel-open]');
-  if(unitJewelOpen){
-    e.preventDefault();
-    e.stopPropagation();
-    openTraitPresetUnitJewelModal(unitJewelOpen);
+  if(e.target.id==='traitPresetBackupOverlay'){
+    closeTraitPresetBackupPanel();
     return;
   }
-  if(e.target.closest('[data-trait-preset-unit-jewel-close]')){
-    e.preventDefault();
-    closeTraitPresetUnitJewelModal({restoreFocus:true});
+  if(e.target.closest('[data-trait-preset-backup-close]')){
+    closeTraitPresetBackupPanel();
     return;
   }
-  if(e.target.closest('[data-trait-preset-backup-close]')) closeTraitPresetBackupModal();
   const backupRun=e.target.closest('[data-trait-preset-backup-run]');
   if(backupRun){
     e.preventDefault();
@@ -2383,6 +2327,23 @@ function handleTraitPresetClick(e){
   }
 }
 function handleTraitPresetKeydown(e){
+  const backupPanel=$('traitPresetBackupPanel');
+  if(backupPanel?.classList.contains('is-open')){
+    if(e.key==='Escape'){
+      e.preventDefault();
+      closeTraitPresetBackupPanel();
+      return;
+    }
+    if(e.key==='Tab'){
+      const focusable=[...backupPanel.querySelectorAll('button:not(:disabled),input:not(:disabled),select:not(:disabled),a[href],[tabindex]:not([tabindex="-1"])')].filter(node=>node.getClientRects().length);
+      if(!focusable.length){e.preventDefault();backupPanel.focus();return;}
+      const first=focusable[0],last=focusable[focusable.length-1];
+      if(e.shiftKey && (document.activeElement===first || document.activeElement===backupPanel)){e.preventDefault();last.focus();}
+      else if(!e.shiftKey && document.activeElement===last){e.preventDefault();first.focus();}
+      else if(!backupPanel.contains(document.activeElement)){e.preventDefault();first.focus();}
+    }
+    return;
+  }
   const customButton=e.target.closest?.('[data-trait-preset-custom-button]');
   if(customButton && ['Enter',' ','ArrowDown'].includes(e.key)){
     e.preventDefault();
@@ -2407,21 +2368,17 @@ function handleTraitPresetKeydown(e){
     next?.focus();
     return;
   }
-  if(e.key==='Escape'){
-    if($('traitPresetBackupModal')?.classList.contains('is-open')) closeTraitPresetBackupModal();
-    if($('traitPresetUnitJewelModal')?.classList.contains('is-open')) closeTraitPresetUnitJewelModal({restoreFocus:true});
-  }
 }
 function bindTraitPresetEvents(){
   document.addEventListener('change',handleTraitPresetChange);
   document.addEventListener('click',handleTraitPresetClick);
   document.addEventListener('keydown',handleTraitPresetKeydown);
   document.addEventListener('input',e=>{
-    if(e.target?.closest?.('.trait-preset-panel,.trait-preset-modal-shell,[aria-modal="true"]')) return;
+    if(e.target?.closest?.('.trait-preset-panel,[aria-modal="true"]')) return;
     scheduleTraitPresetGuidanceRefresh();
   });
   document.addEventListener('change',e=>{
-    if(e.target?.closest?.('.trait-preset-modal-shell,[aria-modal="true"]')) return;
+    if(e.target?.closest?.('[aria-modal="true"]')) return;
     if(e.target?.id==='traitPresetSelect' || e.target?.id==='traitPresetImportFile') return;
     scheduleTraitPresetGuidanceRefresh();
   });
@@ -2442,5 +2399,5 @@ window.DpsPreset=Object.freeze({
   deleteCurrent:deleteTraitPreset,
   resetAll:requestTraitPresetFullReset,
   openImport:openTraitPresetImportPicker,
-  openBackup:openTraitPresetBackupModal
+  openBackup:openTraitPresetBackupPanel
 });

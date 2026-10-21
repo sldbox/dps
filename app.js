@@ -441,7 +441,7 @@ function renderDpsSummary(s){
   updateDpsContextSummary();
   syncDpsBaseUnitControl();
   const artifactView=isArtifactDpsViewEnabled();
-  setText('dpsMainLabel', artifactView ? '유물 DPS' : 'DPS');
+  setText('dpsMainLabel', artifactView ? '현재 유물 DPS' : '현재 DPS');
   if(shouldHideDpsForRound()){
     setText('dpsVal', '—');
     renderDpsBaseUnitSummary(s,true);
@@ -475,14 +475,18 @@ const STAT_COMPARE_ROWS=[
   ['MCP', s=>fmt(s.M18,0), s=>fmt(s.M18,0)]
 ];
 function dpsBoardContextHtml(){
-  const ctx=getDpsContextValues();
-  const modeTokens=String(ctx.modePrimary||'—').split(' · ').map(token=>token.trim()).filter(Boolean);
-  const difficultyTokens=String(ctx.diff||'—').split(' · ').map(token=>token.trim()).filter(Boolean);
-  return `<span class="right-mode-first">${modeTokens.map(token=>`<span>${escapeHtml(token)}</span>`).join('')}</span><span class="right-mode-second">${difficultyTokens.map(token=>`<span>${escapeHtml(token)}</span>`).join('')}</span>`;
+  const context=getDpsContextValues();
+  const difficulty=selectedControlText($('diff'));
+  return `<span class="spec-board-mode">${escapeHtml(context.modePrimary)}</span><span class="spec-board-difficulty">${escapeHtml(difficulty)}</span>`;
 }
 function renderRightHeroContext(){
   const target=$('rightHeroCompactContext');
   if(target) target.innerHTML=dpsBoardContextHtml();
+  const tower=isTowerDifficulty();
+  const planet=isPlanetExplorationDifficulty();
+  setText('specHeroStageLabel',tower||planet?'현재 층':'현재 고행 / 라운드');
+  setText('specHeroStage',tower?`${challengeTowerFloorStoredValue()}층`:planet?`${planetExplorationFloorStoredValue()}층`:`${effectivePenanceValue()} 고행`);
+  setText('specHeroRound',tower||planet?'':`${normalizedRoundNumber(targetRoundStoredValue())} 라운드`);
 }
 function renderStatSummary(s){
   renderRightHeroContext();
@@ -787,13 +791,13 @@ const DPS_TABLE_DIFFICULTIES=DPS_CONFIG.dpsTable.difficulties;
 const COOP_DPS_TABLE_DIFFICULTIES=DPS_TABLE_DIFFICULTIES.slice(0, DPS_TABLE_DIFFICULTIES.indexOf('Hall Of Fame') + 1);
 const COOP_DPS_TABLE_PENANCE_MIN=0;
 const COOP_DPS_TABLE_PENANCE_MAX=COOP_PENANCE_MAX;
-const DPS_TABLE_PENANCE_MIN=DPS_CONFIG.dpsTable.penanceMin ?? 0;
+const DPS_TABLE_PENANCE_MIN=Math.max(0,DPS_CONFIG.dpsTable.penanceMin ?? 0);
 const DPS_TABLE_PENANCE_MAX=DPS_CONFIG.dpsTable.penanceMax ?? 20;
 const DPS_TABLE_DECIMALS=DPS_CONFIG.dpsTable.decimals ?? 1;
-const DPS_MODAL_MODES=['solo','coop','tower','planet'];
+const DPS_TABLE_MODES=['solo','coop','tower','planet'];
 let activeDpsTableMode='solo';
 function isDpsTableOpen(){
-  return $('dpsTableModal')?.classList.contains('is-open')===true;
+  return $('damageBoardTableTab')?.getAttribute('aria-selected')==='true' && !$('workspace-dps')?.hidden;
 }
 function formatDpsTableValue(value){
   if(!Number.isFinite(value)) return '—';
@@ -836,12 +840,8 @@ function dpsTableDisplayTitle(){
 }
 function syncDpsTableLabels(){
   const label=dpsTableDisplayTitle();
-  const menuLabel=$('dpsTableMenuButton')?.querySelector('.header-reference-label');
-  if(menuLabel) menuLabel.textContent=label;
-  const titleEl=$('dpsTableTitle');
-  if(titleEl && isDpsTableOpen()) titleEl.textContent=label;
-  const closeBtn=$('dpsTableModal')?.querySelector('.dps-table-modal-close');
-  if(closeBtn && isDpsTableOpen()) closeBtn.setAttribute('aria-label', `${label} 닫기`);
+  const tabLabel=$('damageBoardTableLabel');
+  if(tabLabel) tabLabel.textContent=label;
 }
 
 // DPS표는 보기 전용 선택값으로 비교하며 기본 설정을 변경하지 않습니다.
@@ -856,20 +856,16 @@ function selectedDpsTableTeamCount(coop=false){
   const teamCount=Number(normalizeTeamCountValue(vs('team'),coop?2:1));
   return coop ? Math.max(2,teamCount) : teamCount;
 }
-function renderDpsStatHead(label,range){
-  return `<thead>${range?`<tr class="dps-stat-range"><th colspan="6">${escapeHtml(range)}</th></tr>`:''}<tr>${[label,'DPS','체력','실드','방어력','물량'].map(text=>`<th scope="col">${escapeHtml(text)}</th>`).join('')}</tr></thead>`;
+function renderDpsStatHead(label){
+  return `<thead><tr>${[label,'DPS','체력','실드','방어력','물량'].map(text=>`<th scope="col">${escapeHtml(text)}</th>`).join('')}</tr></thead>`;
 }
-function renderDpsStatTable(rows,label,context,showRange=true){
+function renderDpsStatTable(rows,label,context){
   const range=`${rows[0].stage}–${rows[rows.length-1].stage} ${label}`;
-  return `<table class="dps-stat-table" aria-label="${escapeHtml(context+' · '+range)}"><colgroup><col class="dps-col-stage"><col class="dps-col-value"><col><col><col><col></colgroup>${renderDpsStatHead(label,showRange?range:'')}<tbody>${rows.map(row=>`<tr class="dps-stat-row${row.current?' is-current':''}" data-dps-${label==='층'?'floor':'penance'}="${row.stage}"${row.current?' aria-current="true"':''}>
+  return `<table class="dps-stat-table" aria-label="${escapeHtml(context+' · '+range)}"><colgroup><col class="dps-col-stage"><col class="dps-col-value"><col><col><col><col></colgroup>${renderDpsStatHead(label)}<tbody>${rows.map(row=>`<tr class="dps-stat-row${row.current?' is-current':''}" data-dps-${label==='층'?'floor':'penance'}="${row.stage}"${row.current?' aria-current="true"':''}>
       <th scope="row" class="dps-stat-stage">${row.stage}<small>${label}</small></th>
       <td class="dps-stat-dps">${formatDpsTableValue(row.dps)}</td>
       ${row.enemyItems.map(([name,value])=>`<td class="dps-stat-enemy" aria-label="${escapeHtml(name)}">${escapeHtml(String(value))}</td>`).join('')}
     </tr>`).join('')}</tbody></table>`;
-}
-function renderDpsStatTables(rows,label,context){
-  const middle=Math.ceil(rows.length/2);
-  return `<div class="dps-stat-grid">${[rows.slice(0,middle),rows.slice(middle)].map(half=>renderDpsStatTable(half,label,context)).join('')}</div>`;
 }
 function renderDpsTableSummary(current,label,dps,enemyItems,mode='',context='',round=null){
   const number=`<span>${mode?'현재 선택 층':'현재 고행 / 라운드'}</span><strong>${current}<small>${label}</small></strong>${round===null?'':`<span class="dps-current-round">${round} 라운드</span>`}`;
@@ -902,7 +898,7 @@ function buildDpsVisualComparison(round,mode){
   const context=`<div class="dps-overview-condition"><span>모드 / 난이도</span><strong class="dps-overview-mode">${coop?'협동 '+teamCount+'인':'개인전'} · ${specDpsSpeedModeEnabled(difficulty)?'스피드':'일반'}</strong><label class="dps-overview-select"><select id="dpsVisualDifficulty" data-dps-view-diff aria-label="비교할 난이도 선택">${diffOptions}</select></label></div>`;
   return `<div class="dps-overview">
     ${renderDpsTableSummary(current,'고행',currentValue,enemyItems,'',context,round)}
-    ${renderDpsStatTables(rows,'고행',difficulty+' 고행별 DPS 및 적 정보')}
+    ${renderDpsStatTable(rows,'고행',difficulty+' 고행별 DPS 및 적 정보')}
   </div>`;
 }
 function changeDpsVisualDifficulty(value){
@@ -929,9 +925,9 @@ function buildDpsFloorCards(mode){
   }
   const currentEnemy=rows.find(row=>row.current)?.enemyItems||[];
   return `<section class="dps-floor-column" data-dps-floor-board="${mode}" aria-label="${tower?'도전의탑':'행성탐사'} DPS">
-    <header class="dps-floor-heading"><h3>${tower?'도전의탑':'행성탐사'}</h3><span>${tower?'':escapeHtml(diff.replace('행성탐사-',''))+' · '}${min}–${max}층</span></header>
+    <header class="dps-floor-heading"><h3>${tower?'도전의탑':'행성탐사'}</h3></header>
     ${renderDpsTableSummary(current,'층',currentFloorDps,currentEnemy,mode)}
-    ${renderDpsStatTable(rows,'층',diff+' 층별 DPS 및 적 정보',false)}
+    ${renderDpsStatTable(rows,'층',diff+' 층별 DPS 및 적 정보')}
   </section>`;
 }
 function renderDpsTableTabs(){
@@ -942,23 +938,17 @@ function renderDpsTableTabs(){
     {key:'floor',label:'도탑 / 행성'}
   ].map(tab=>{
     const active=current===tab.key;
-    return `<button id="dpsTableTab-${tab.key}" type="button" class="ui-tab-btn dps-table-tab${active?' is-active':''}" data-dps-table-mode="${tab.key}" role="tab" aria-controls="dpsTableContent" aria-selected="${active?'true':'false'}" tabindex="${active?'0':'-1'}"><b>${tab.label}</b></button>`;
+    return `<button id="dpsTableTab-${tab.key}" type="button" class="dps-table-tab integrated-tab${active?' is-active':''}" data-dps-table-mode="${tab.key}" role="tab" aria-controls="dpsTableContent" aria-selected="${active?'true':'false'}" tabindex="${active?'0':'-1'}"><b>${tab.label}</b></button>`;
   }).join('');
 }
 function dpsTablePanelInnerHtml(){
   const round=normalizedRoundNumber(targetRoundStoredValue());
   const mode=activeDpsTableMode;
-  return `<section class="dps-table-panel">${mode==='tower'||mode==='planet'?`<div class="dps-stat-grid">${buildDpsFloorCards('tower')}${buildDpsFloorCards('planet')}</div>`:buildDpsVisualComparison(round,mode)}</section>`;
-}
-function syncDpsTableModalModeClass(){
-  const dialog=$('dpsTableModal')?.querySelector('.dps-table-modal');
-  const mode=DPS_MODAL_MODES.includes(activeDpsTableMode) ? activeDpsTableMode : 'solo';
-  window.DpsModal?.syncModeClasses(dialog, DPS_MODAL_MODES, mode);
+  return `<section class="dps-table-panel">${mode==='tower'||mode==='planet'?`<div class="dps-floor-tabs integrated-tabs" role="tablist" aria-label="도탑·행성 전환"><button type="button" role="tab" class="dps-floor-tab integrated-tab${mode==='tower'?' is-active':''}" aria-selected="${mode==='tower'}" data-dps-floor-mode="tower">도전의탑</button><button type="button" role="tab" class="dps-floor-tab integrated-tab${mode==='planet'?' is-active':''}" aria-selected="${mode==='planet'}" data-dps-floor-mode="planet">행성탐사</button></div>${buildDpsFloorCards(mode)}`:buildDpsVisualComparison(round,mode)}</section>`;
 }
 function renderDpsTablePanelContent(){
   const focused=document.activeElement;
-  const focusId=focused?.closest('#dpsTableModal')?focused.id:'';
-  syncDpsTableModalModeClass();
+  const focusId=focused?.closest('#workspace-dps')?focused.id:'';
   syncDpsTableLabels();
   qsa('[data-dps-table-tabs-mount]').forEach(tabs=>{
     tabs.innerHTML=renderDpsTableTabs();
@@ -971,22 +961,53 @@ function renderDpsTablePanelContent(){
   if(content){
     const tab=['tower','planet'].includes(activeDpsTableMode)?'floor':activeDpsTableMode;
     content.setAttribute('aria-labelledby',`dpsTableTab-${tab}`);
-    content.parentElement.scrollTop=0;
   }
   if(focusId) $(focusId)?.focus({preventScroll:true});
 }
 function switchDpsTableMode(mode){
-  const next=mode==='floor'?'tower':mode;
-  if(!DPS_MODAL_MODES.includes(next) || activeDpsTableMode===next) return;
+  const next=mode==='floor'?(['tower','planet'].includes(activeDpsTableMode)?activeDpsTableMode:'tower'):mode;
+  if(!DPS_TABLE_MODES.includes(next) || activeDpsTableMode===next) return;
   activeDpsTableMode=next;
   renderDpsTablePanelContent();
 }
 function openDpsTable(mode='auto'){
   const fallbackMode=isTowerDifficulty() ? 'tower' : (isPlanetExplorationDifficulty() ? 'planet' : (isCoopActive() ? 'coop' : 'solo'));
   const normalizedMode=mode==='round' ? 'solo' : (mode==='auto' ? fallbackMode : mode);
-  activeDpsTableMode=DPS_MODAL_MODES.includes(normalizedMode) ? normalizedMode : fallbackMode;
+  activeDpsTableMode=DPS_TABLE_MODES.includes(normalizedMode) ? normalizedMode : fallbackMode;
   dpsVisualDifficulty='';
-  window.DpsModal.openDpsTableModal();
+  // 모바일·태블릿에서는 분석 보드 페이지도 함께 엽니다.
+  if(document.body.classList.contains('is-tabbed')){
+    const analysisTab=$('mobileTab-specUnit');
+    if(analysisTab && analysisTab.getAttribute('aria-selected')!=='true') analysisTab.click();
+  }
+  setDamageBoardTab('table');
+}
+function bindDpsTableEvents(){
+  const workspace=$('workspace-dps');
+  if(!workspace) return;
+  workspace.addEventListener('click',event=>{
+    const mode=event.target.closest('[data-dps-table-mode]');
+    if(mode) switchDpsTableMode(mode.dataset.dpsTableMode);
+    const floorMode=event.target.closest('[data-dps-floor-mode]');
+    if(floorMode) switchDpsTableMode(floorMode.dataset.dpsFloorMode);
+    if(event.target.closest('[data-dps-current-row]')){
+      event.target.closest('.dps-floor-column')?.querySelector('.dps-stat-row.is-current')?.scrollIntoView({block:'center',behavior:'instant'});
+    }
+  });
+  workspace.addEventListener('change',event=>{
+    if(event.target.matches('[data-dps-view-diff]')) changeDpsVisualDifficulty(event.target.value);
+  });
+  workspace.addEventListener('keydown',event=>{
+    const tab=event.target.closest('[data-dps-table-mode]');
+    if(!tab || !['ArrowLeft','ArrowRight','Home','End'].includes(event.key)) return;
+    const tabs=[...workspace.querySelectorAll('[data-dps-table-mode]')];
+    const index=tabs.indexOf(tab);
+    const next=event.key==='Home'?0:event.key==='End'?tabs.length-1:(index+(event.key==='ArrowRight'?1:-1)+tabs.length)%tabs.length;
+    const mode=tabs[next].dataset.dpsTableMode;
+    switchDpsTableMode(mode);
+    workspace.querySelector(`[data-dps-table-mode="${mode}"]`)?.focus({preventScroll:true});
+    event.preventDefault();
+  });
 }
 /* 기본 정보·유닛 저장 필드 레지스트리 */
 const FIELD_REGISTRY={
@@ -1127,14 +1148,21 @@ function serializeDpsBaseUnitSlotExpansions(value){
 function dpsBaseUnitSlotExpansionIds(){
   return normalizeDpsBaseUnitSlotExpansions($('dpsBaseUnitSlotExpansions')?.value || '[]');
 }
+// 슬롯 확장은 현재 유닛 수량이 5마리 이상일 때만 사용할 수 있습니다.
+// 데하카처럼 수량이 1마리로 고정된 유닛은 자동으로 비활성화됩니다.
+function dpsBaseUnitSlotExpansionAvailable(unitOrId){
+  const unit=resolveDpsBaseUnit(unitOrId);
+  return !!unit && dpsBaseUnitAllowsSlotExpansion(unit) && dpsBaseUnitHasQuantity(unit)
+    && Number(dpsBaseUnitQuantityText(unit))>=5;
+}
 function dpsBaseUnitSlotExpanded(unitOrId){
   const unit=resolveDpsBaseUnit(unitOrId);
-  return !!unit && dpsBaseUnitSlotExpansionIds().includes(unit.id);
+  return dpsBaseUnitSlotExpansionAvailable(unit) && dpsBaseUnitSlotExpansionIds().includes(unit.id);
 }
 function toggleDpsBaseUnitSlotExpansion(unitId){
   const unit=dpsBaseUnitById(unitId);
   const store=$('dpsBaseUnitSlotExpansions');
-  if(!unit || !store || !dpsBaseUnitAllowsSlotExpansion(unit)) return false;
+  if(!unit || !store || !dpsBaseUnitSlotExpansionAvailable(unit)) return false;
   const ids=dpsBaseUnitSlotExpansionIds();
   const index=ids.indexOf(unit.id);
   if(index>=0) ids.splice(index,1);
@@ -1316,14 +1344,28 @@ function renderDpsBaseUnitSummary(s,hidden=false){
   const achievementRate=Math.max(0,Number(info?.achievementRate)||0);
   const rawPercent=valid ? dpsBaseUnitAchievementPercent(achievementRate) : null;
   const shownPercent=rawPercent===null ? '—' : dpsBaseUnitAchievementText(achievementRate);
-  const fillPercent=rawPercent===null ? 0 : Math.min(100,Math.max(0,achievementRate));
-  const contextHtml=`<div class="right-hero-context dps-base-unit-context" aria-label="유닛 보드 모드 및 난이도"><strong class="right-hero-compact-mode">${dpsBoardContextHtml()}</strong></div>`;
+  const contextHtml=`<div class="right-hero-context dps-base-unit-context" aria-label="유닛 보드 모드 및 난이도"><span class="unit-summary-label">모드 / 난이도</span><strong class="right-hero-compact-mode">${dpsBoardContextHtml()}</strong></div>`;
+  const tower=isTowerDifficulty();
+  const planet=isPlanetExplorationDifficulty();
+  const currentStage=tower?`${challengeTowerFloorStoredValue()}층`:planet?`${planetExplorationFloorStoredValue()}층`:`${effectivePenanceValue()} 고행`;
+  const currentRound=tower||planet?'':`${normalizedRoundNumber(targetRoundStoredValue())} 라운드`;
+  const stageHtml=`<div class="unit-summary-stage"><span class="unit-summary-label">현재 ${tower||planet?'층':'고행 / 라운드'}</span><strong>${escapeHtml(currentStage)}</strong><small>${escapeHtml(currentRound||' ')}</small></div>`;
   const requiredHtml=`<div class="dps-base-unit-summary-item"><span class="dps-feature-heading"><span class="dps-lbl">클리어 기준</span></span><b class="dps-num">${dpsBaseUnitSummaryMarkup(valid ? dpsBaseUnitNumberText(requiredDps,DPS_BASE_UNIT_SUMMARY_NUMBER_OPTIONS) : '—')}</b></div>`;
   const expectedHtml=`<div class="dps-base-unit-summary-item dps-base-unit-expected"><span class="dps-feature-heading"><span class="dps-lbl">클리어 기대값</span></span><b class="dps-num">${dpsBaseUnitSummaryMarkup(valid ? dpsBaseUnitNumberText(expectedDps,DPS_BASE_UNIT_SUMMARY_NUMBER_OPTIONS) : '—')}</b></div>`;
-  const achievementHtml=`<div class="unit-achievement" aria-label="클리어 달성률 ${escapeHtml(shownPercent)}"><div class="unit-achievement-label"><span>달성률 <button type="button" class="unit-achievement-help-trigger" data-action="toggleAchievementHelp" aria-label="달성률 안내 열기" aria-controls="unitAchievementHelpPopover" aria-expanded="false">?</button></span></div><b class="dps-num unit-achievement-value">${escapeHtml(shownPercent)}</b><div class="unit-achievement-track" role="progressbar" aria-label="클리어 달성률" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(fillPercent)}"><span class="unit-achievement-fill${fillPercent>=100?' is-complete':''}" style="--achievement-fill:${fillPercent}%"></span></div><div class="unit-achievement-scale"><small>0%</small><small>100%</small></div></div>`;
-  // CSS 변수로 실제 달성률과 별개인 0~100% 게이지 채움 폭을 전달합니다.
+  const achievementHtml=`<div class="unit-achievement" aria-label="클리어 달성률 ${escapeHtml(shownPercent)}"><div class="unit-achievement-label"><span>달성률 <button type="button" class="unit-achievement-help-trigger" data-action="toggleAchievementHelp" aria-label="달성률 안내 열기" aria-controls="unitAchievementHelpPopover" aria-expanded="false">?</button></span></div><b class="dps-num unit-achievement-value">${escapeHtml(shownPercent)}</b></div>`;
+  const enemy=s?.enemyData;
+  const enemyHp=Number(enemy?.hp);
+  const enemyShield=Number(enemy?.shield);
+  const enemyCount=Number.isFinite(Number(enemy?.round))
+    ? enemyDisplayCountText(enemy.round)
+    : Number.isFinite(Number(enemy?.count)) ? fullNumber(Number(enemy.count)) : '—';
+  const enemyStats=[
+    ['체력',enemyHp],['실드',enemyShield],['방어력',Number(enemy?.armor)]
+  ];
+  const enemyCells=enemyStats.map(([label,value])=>`<div><dt>${label}</dt><dd>${Number.isFinite(value)&&value>=0?escapeHtml(fullNumber(value)):'—'}</dd></div>`).join('');
+  const enemyHtml=`<dl class="dps-base-unit-enemies" aria-label="적 정보">${enemyCells}<div><dt>물량</dt><dd>${escapeHtml(enemyCount)}</dd></div></dl>`;
   closeDpsBaseUnitAchievementHelp();
-  el.innerHTML=`<div class="dps-base-unit-summary-row">${contextHtml}<div class="dps-base-unit-results" aria-label="유닛 클리어 결과">${requiredHtml}${expectedHtml}${achievementHtml}</div></div>`;
+  el.innerHTML=`<div class="dps-base-unit-summary-row"><div class="dps-base-unit-top">${contextHtml}${stageHtml}</div><div class="dps-base-unit-results" aria-label="유닛 클리어 결과">${requiredHtml}${expectedHtml}${achievementHtml}</div>${enemyHtml}</div>`;
 
   el.hidden=false;
 }
@@ -1454,13 +1496,15 @@ function dpsJewelConfigCardHtml(name,settings){
   const fallbackAttr=imageSources.fallback && imageSources.fallback!==imageSources.src ? ` data-fallback-src="${escapeHtml(imageSources.fallback)}"` : '';
   const ability=dpsJewelAbilityTexts(name);
   return `<article class="dps-jewel-card${mythic?' is-mythic':''}" data-dps-jewel-card="${escapeHtml(name)}">
-    <header class="dps-jewel-card-head">
+    <button type="button" class="dps-jewel-card-head" data-dps-jewel-toggle aria-expanded="false" aria-label="${escapeHtml(name)} 능력치 설정 펼치기">
       <div class="jewel-card-visual" aria-hidden="true">
         <img src="${escapeHtml(imageSources.src)}"${fallbackAttr} data-jewel-image="1" alt="" loading="lazy">
         <span>${escapeHtml(initial)}</span>
       </div>
       <div class="dps-jewel-title-block"><b class="${gradeClass}">${escapeHtml(gradeText)} ${escapeHtml(name)}</b></div>
-    </header>
+      <span class="dps-jewel-expand-mark" aria-hidden="true">⌄</span>
+    </button>
+    <div class="dps-jewel-card-detail" hidden>
     <div class="jewel-ability-list dps-jewel-ability-list">
       ${renderJewelAbility('전설', ability.legendary)}
       ${renderJewelAbility('신화', ability.mythic)}
@@ -1469,6 +1513,7 @@ function dpsJewelConfigCardHtml(name,settings){
     <div class="dps-jewel-fields">${field('ad','공격력')}${field('as','공격속도')}${field('td','총데미지')}${field('ua','가속')}${field('enhance','강화')}${field('mythic','신화 여부')}</div>
     <div class="dps-jewel-final" aria-label="${escapeHtml(name)} 최종 옵션">
       ${dpsJewelFinalStatsHtml(finalStats)}
+    </div>
     </div>
   </article>`;
 }
@@ -1560,8 +1605,7 @@ function dpsBaseUnitJewelSelectionOrder(){
 }
 function dpsBaseUnitActiveExtraJewelCount(unitOrId){
   const unit=resolveDpsBaseUnit(unitOrId);
-  // 확장 설정은 수량과 무관하게 2~5기 4개 선택창이 모두 나타납니다.
-  // 화면에 있는 모든 확장 쥬얼을 중복 예약 대상으로 취급합니다.
+  // 5마리 이상에서 확장한 유닛만 추가 쥬얼 슬롯을 예약합니다.
   if(!dpsBaseUnitAllowsSlotExpansion(unit) || !dpsBaseUnitSlotExpanded(unit)) return 0;
   return DPS_BASE_UNIT_EXTRA_SLOT_COUNT;
 }
@@ -1798,12 +1842,15 @@ function dpsBaseUnitSettingsHtml(unit,slotIndex){
   const voidPowerLimit=dpsBaseUnitVoidPowerLimit();
   const voidPowerCanEnable=voidPowerEligible && (voidPower==='ON' || voidPowerUsage+dpsBaseUnitVoidPowerCost(unit)<=voidPowerLimit);
   const slotExpanded=dpsBaseUnitSlotExpanded(unit);
+  const slotExpansionAvailable=dpsBaseUnitSlotExpansionAvailable(unit);
   const shownEnhance=canUseEnhance ? enhance : '0';
   const limitOptions=canUseLimitBreak
     ? Array.from({length:7},(_,value)=>`<option value="${value}"${String(value)===limitBreak?' selected':''}>${value}</option>`).join('')
     : '<option value="0" selected>사용 불가</option>';
   const voidButton=`<div class="dps-base-unit-void-power-control"><span class="dps-base-unit-void-power-usage">${voidPowerUsage} / ${voidPowerLimit}</span><button class="ui-choice-btn dps-base-unit-option-btn${voidPower==='ON'?' is-active':''}" id="dpsBaseUnitSlotVoidPower${slotIndex+1}" data-dps-base-unit-void-power-toggle="${unitId}" type="button" aria-pressed="${voidPower==='ON'?'true':'false'}" aria-label="${label} 공허의 힘"${voidPowerCanEnable?'':' disabled'}>공허의 힘</button></div>`;
-  const slotButton=dpsBaseUnitAllowsSlotExpansion(unit) ? `<button class="ui-choice-btn dps-base-unit-option-btn dps-base-unit-slot-expansion-btn${slotExpanded?' is-active':''}" data-dps-base-unit-slot-expansion-toggle="${unitId}" type="button" aria-pressed="${slotExpanded?'true':'false'}" aria-label="${label} 추가 유닛 쥬얼 및 한계 돌파 설정">슬롯 확장</button>` : '';
+  const slotExpansionReason=dpsBaseUnitHasQuantity(unit) ? '수량 5마리 이상 필요' : '수량 1마리 제한';
+  const slotExpansionTitle=slotExpansionAvailable ? '추가 유닛 쥬얼 및 한계 돌파 설정' : `슬롯 확장 불가: ${slotExpansionReason}`;
+  const slotButton=dpsBaseUnitAllowsSlotExpansion(unit) ? `<button class="ui-choice-btn dps-base-unit-option-btn dps-base-unit-slot-expansion-btn${slotExpanded?' is-active':''}" data-dps-base-unit-slot-expansion-toggle="${unitId}" type="button" aria-pressed="${slotExpanded?'true':'false'}" aria-label="${label} 슬롯 확장${slotExpansionAvailable?'':` 불가, ${slotExpansionReason}`}" title="${slotExpansionTitle}"${slotExpansionAvailable?'':' disabled'}>슬롯 확장</button>` : '';
   const actionButtons=`<div class="dps-base-unit-action-buttons">${voidButton}${slotButton}</div>`;
   const mainSettings=`<div class="dps-base-unit-settings" data-dps-base-unit-settings="${unitId}"><label class="dps-base-unit-setting dps-base-unit-enhance-setting${canUseEnhance?'':' is-disabled'}"><span>강화 기대값</span><input class="dps-base-unit-setting-input" id="dpsBaseUnitSlotEnhance${slotIndex+1}" data-dps-base-unit-slot-enhance="${unitId}" type="text" inputmode="decimal" min="0" max="1000" value="${escapeHtml(shownEnhance)}" aria-label="${label} 강화 기대값${canUseEnhance?'':' 사용 불가'}"${canUseEnhance?'':' disabled'}/></label><label class="dps-base-unit-setting${canUseLimitBreak?'':' is-disabled'}"><span>한계 돌파</span><select class="dps-base-unit-setting-select" id="dpsBaseUnitSlotLimitBreak${slotIndex+1}" data-dps-base-unit-slot-limit-break="${unitId}" aria-label="${label} 한계 돌파${canUseLimitBreak?'':' 사용 불가'}"${canUseLimitBreak?'':' disabled'}>${limitOptions}</select></label><label class="dps-base-unit-setting"><span>전설·신화 쥬얼</span><select class="dps-base-unit-setting-select" id="dpsBaseUnitSlotJewel${slotIndex+1}" data-dps-base-unit-slot-jewel="${unitId}" aria-label="${label} 전설·신화 쥬얼">${dpsBaseUnitJewelOptionsHtml(jewelName,dpsBaseUnitJewelOwnerKey(unit.id))}</select></label>${actionButtons}</div>`;
   return mainSettings+dpsBaseUnitAdditionalSettingsHtml(unit);
@@ -2317,13 +2364,16 @@ function positionDpsBaseUnitAchievementHelp(trigger,popup){
   const width=popup.offsetWidth,height=popup.offsetHeight;
   const left=Math.min(Math.max(10,rect.left+rect.width/2-width/2),Math.max(10,window.innerWidth-width-10));
   const below=rect.bottom+9;
-  const top=below+height<=window.innerHeight-10 ? below : Math.max(10,rect.top-height-9);
+  const top=below+height<=window.innerHeight-10
+    ? below
+    : rect.top-height-9>=10 ? rect.top-height-9
+    : Math.min(Math.max(10,below),Math.max(10,window.innerHeight-height-10));
   popup.style.left=`${Math.round(left)}px`;
   popup.style.top=`${Math.round(top)}px`;
 }
 function switchDpsBaseUnitAchievementHelpTab(tab){
   const tabs=tab.closest('.unit-achievement-help-tabs');
-  const popup=$('unitAchievementHelpPopover');
+  const popup=tab.closest('.unit-achievement-help-popover');
   if(!tabs || !popup?.contains(tabs)) return;
   tabs.querySelectorAll('[role="tab"]').forEach(button=>{
     const selected=button===tab;
@@ -2332,7 +2382,10 @@ function switchDpsBaseUnitAchievementHelpTab(tab){
     const panel=$(button.getAttribute('aria-controls'));
     if(panel) panel.hidden=!selected;
   });
-  positionDpsBaseUnitAchievementHelp(document.querySelector('[data-action="toggleAchievementHelp"]'),popup);
+  const trigger=popup.id==='zeroRankScorePopover'
+    ? document.querySelector('[data-zero-score-help]')
+    : document.querySelector('[data-action="toggleAchievementHelp"]');
+  positionDpsBaseUnitAchievementHelp(trigger,popup);
 }
 function bindDpsBaseUnitControlEvents(){
   if(document.documentElement.dataset.dpsBaseUnitControlBound==='1') return;
@@ -2522,31 +2575,141 @@ function bindDpsBaseUnitControlEvents(){
   }, true);
 }
 
+/* 통합 헤더 하위 탭: 원래 DOM을 유지하여 계산·저장 필드 재생성을 방지 */
+function activateIntegratedTab(group,index){
+  const tabs=[...qsa(`[data-integrated-tab="${group}"]`)];
+  const panels=qsa(`[data-integrated-panel="${group}"]`);
+  if(!tabs.some(button=>button.dataset.integratedIndex===String(index))) return;
+  tabs.forEach(button=>{
+    const active=button.dataset.integratedIndex===String(index);
+    button.classList.toggle('is-active',active);
+    button.setAttribute('aria-selected',String(active));
+    button.tabIndex=active?0:-1;
+  });
+  panels.forEach(panel=>{
+    const active=panel.dataset.integratedIndex===String(index);
+    panel.classList.toggle('is-active',active);
+    panel.hidden=!active;
+  });
+  if(group==='unitDetails' && index===1) renderDpsJewelConfigGrids();
+}
+function bindIntegratedTabEvents(){
+  let basicModalReturnFocus=null;
+  function closeBasicSettingsModal(){
+    const overlay=$('basicSettingsModalOverlay');
+    if(!overlay || overlay.hidden) return;
+    overlay.hidden=true;
+    document.body.classList.remove('basic-settings-modal-open');
+    if(basicModalReturnFocus?.isConnected) basicModalReturnFocus.focus({preventScroll:true});
+    basicModalReturnFocus=null;
+  }
+  function openBasicSettingsModal(type,trigger){
+    if(type!=='bus' && type!=='sanctuary') return;
+    const overlay=$('basicSettingsModalOverlay');
+    const dialog=$('basicSettingsModal');
+    if(!overlay || !dialog) return;
+    basicModalReturnFocus=trigger;
+    $('basicSettingsModalBus').hidden=type!=='bus';
+    $('basicSettingsModalSanctuary').hidden=type!=='sanctuary';
+    $('basicSettingsModalTitle').textContent=type==='bus'?'버스 기사':'성소 스킬';
+    overlay.hidden=false;
+    document.body.classList.add('basic-settings-modal-open');
+    dialog.focus({preventScroll:true});
+  }
+  document.addEventListener('click',event=>{
+    const trigger=event.target.closest?.('[data-basic-modal-open]');
+    if(trigger){openBasicSettingsModal(trigger.dataset.basicModalOpen,trigger);return;}
+    if(event.target.id==='basicSettingsModalOverlay' || event.target.closest?.('[data-basic-modal-close]')) closeBasicSettingsModal();
+  });
+  document.addEventListener('keydown',event=>{
+    const overlay=$('basicSettingsModalOverlay');
+    if(!overlay || overlay.hidden) return;
+    if(event.key==='Escape'){event.preventDefault();closeBasicSettingsModal();return;}
+    if(event.key!=='Tab') return;
+    const dialog=$('basicSettingsModal');
+    const focusables=[...dialog.querySelectorAll('button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),a[href],[tabindex]:not([tabindex="-1"])')].filter(el=>!el.closest('[hidden]') && el.getClientRects().length);
+    if(!focusables.length){event.preventDefault();dialog.focus();return;}
+    const first=focusables[0],last=focusables[focusables.length-1];
+    if(event.shiftKey && (document.activeElement===first || document.activeElement===dialog)){event.preventDefault();last.focus();}
+    else if(!event.shiftKey && document.activeElement===last){event.preventDefault();first.focus();}
+    else if(!dialog.contains(document.activeElement)){event.preventDefault();first.focus();}
+  });
+  document.addEventListener('click',event=>{
+    const button=event.target.closest?.('[data-integrated-tab]');
+    if(!button) return;
+    activateIntegratedTab(button.dataset.integratedTab,Number(button.dataset.integratedIndex));
+  });
+  document.addEventListener('keydown',event=>{
+    const button=event.target.closest?.('[data-integrated-tab]');
+    if(!button || !['ArrowLeft','ArrowRight','Home','End'].includes(event.key)) return;
+    const group=button.dataset.integratedTab;
+    const tabs=[...qsa(`[data-integrated-tab="${group}"]`)];
+    const current=tabs.indexOf(button);
+    const next=event.key==='Home'?0:event.key==='End'?tabs.length-1:(current+(event.key==='ArrowRight'?1:-1)+tabs.length)%tabs.length;
+    event.preventDefault();
+    activateIntegratedTab(group,Number(tabs[next].dataset.integratedIndex));
+    tabs[next].focus({preventScroll:true});
+  });
+  // Each jewel disclosure retains its controls and data when folded.
+  document.addEventListener('click',event=>{
+    const toggle=event.target.closest?.('[data-dps-jewel-toggle]');
+    if(!toggle) return;
+    const card=toggle.closest('[data-dps-jewel-card]');
+    const wasOpen=card?.classList.contains('is-expanded');
+    qsa('#dpsJewelConfigGrid [data-dps-jewel-card]').forEach(item=>{
+      item.classList.remove('is-expanded');
+      item.querySelector('[data-dps-jewel-toggle]')?.setAttribute('aria-expanded','false');
+      const content=item.querySelector('.dps-jewel-card-detail');
+      if(content) content.hidden=true;
+    });
+    if(card && !wasOpen){
+      card.classList.add('is-expanded');
+      toggle.setAttribute('aria-expanded','true');
+      const content=card.querySelector('.dps-jewel-card-detail');
+      if(content) content.hidden=false;
+    }
+  });
+}
+
 /* 스펙·유닛 보드 전환 및 상태 이벤트 */
+let activeDamageBoardMode='spec';
 function setDamageBoardTab(active){
-  const next=active==='unit' ? 'unit' : 'spec';
-  const changed=isUnitBoardRecommendationMode() !== (next==='unit');
+  const next=['unit','table'].includes(active) ? active : 'spec';
+  const changed=next!=='table' && activeDamageBoardMode!==next;
+  if(next!=='table') activeDamageBoardMode=next;
   qsa('[data-damage-board-tab]').forEach(tab=>{
     const isActive=tab.dataset.damageBoardTab===next;
     tab.classList.toggle('is-active', isActive);
     tab.setAttribute('aria-selected', String(isActive));
+    tab.tabIndex=isActive ? 0 : -1;
   });
-  const jewelButton=$('damageBoardJewelButton');
-  if(jewelButton) jewelButton.hidden=next!=='unit';
   qsa('[data-damage-board-panel]').forEach(panel=>{
     const isActive=panel.dataset.damageBoardPanel===next;
     panel.classList.toggle('is-active', isActive);
     panel.hidden=!isActive;
   });
+  if(next==='table') renderDpsTablePanelContent();
   if(changed) renderTraitRecommendations();
 }
 function bindDamageBoardTabEvents(){
-  document.addEventListener('click', e=>{
+  document.addEventListener('click',e=>{
     const tab=e.target?.closest?.('[data-damage-board-tab]');
     if(!tab || tab.disabled) return;
     e.preventDefault();
-    setDamageBoardTab(tab.dataset.damageBoardTab);
-  }, true);
+    if(tab.dataset.damageBoardTab==='table') openDpsTable();
+    else setDamageBoardTab(tab.dataset.damageBoardTab);
+  },true);
+  document.addEventListener('keydown',event=>{
+    const tab=event.target.closest?.('[data-damage-board-tab]');
+    if(!tab || !['ArrowLeft','ArrowRight','Home','End'].includes(event.key)) return;
+    const tabs=[...tab.parentElement.querySelectorAll('[data-damage-board-tab]')];
+    const current=tabs.indexOf(tab);
+    const next=event.key==='Home'?0:event.key==='End'?tabs.length-1:(current+(event.key==='ArrowRight'?1:-1)+tabs.length)%tabs.length;
+    event.preventDefault();
+    if(tabs[next].dataset.damageBoardTab==='table') openDpsTable();
+    else setDamageBoardTab(tabs[next].dataset.damageBoardTab);
+    tabs[next].focus({preventScroll:true});
+  });
 }
 function bindDamageBoardSwitchEvents(){
   document.addEventListener('click', e=>{
@@ -3222,7 +3385,7 @@ function zeroScoreHonorSelectHtml(className, label){
   return `<select class="${className}" aria-label="${escapeHtml(label)}">${options.map(([value,name])=>`<option value="${value}">${name}</option>`).join('')}</select>`;
 }
 function zeroScoreStarButtonHtml(){
-  return '<button class="ui-toggle-btn zero-star-toggle" data-action="zeroScoreStar" type="button" aria-pressed="false" aria-label="24스타 미적용">24스타</button>';
+  return '<button class="ui-toggle-btn zero-star-toggle" data-action="zeroScoreStar" type="button" aria-pressed="false" aria-label="24스타 미적용">미적용</button>';
 }
 function buildZeroScoreCalcRow(config){
   const name=escapeHtml(config.name);
@@ -3231,19 +3394,26 @@ function buildZeroScoreCalcRow(config){
   const generalTarget=penance ? zeroScorePenanceSelectHtml('zero-calc-target',`${config.name} 일반 목표`) : zeroScoreInputHtml('zero-calc-target',{label:`${config.name} 일반 목표`});
   const honorCurrent=penance ? zeroScoreHonorSelectHtml(config.currentHonorClass,`${config.name} 명예 현재`) : zeroScoreInputHtml(config.currentHonorClass,{...config.honorOptions,label:`${config.name} 명예 현재`});
   const honorTarget=penance ? zeroScoreHonorSelectHtml(config.targetHonorClass,`${config.name} 명예 목표`) : zeroScoreInputHtml(config.targetHonorClass,{...config.honorOptions,label:`${config.name} 명예 목표`});
-  const group=(label,note,cssClass,current,target)=>`<section class="zero-calc-group ${cssClass}"><div class="zero-calc-group-head"><strong>${label}</strong><small>${note}</small></div><div class="zero-calc-pair"><label class="zero-calc-field"><span>현재</span>${current}</label><span class="zero-calc-arrow" aria-hidden="true">→</span><label class="zero-calc-field"><span>목표</span>${target}</label></div></section>`;
+  const field=(label,control)=>`<label class="zero-calc-field"><span>${label}</span>${control}</label>`;
+  const generalLabel=penance?'일반 고행':'도전의탑';
+  const honorLabel=penance?'명예':'명예의탑';
+  const starControl=config.star===false
+    ? '<span class="zero-calc-unavailable" aria-label="24스타 해당 없음">해당 없음</span>'
+    : zeroScoreStarButtonHtml();
   return `<article class="zero-calc-row" data-row-type="${config.type}">
     <div class="zero-calc-row-bar">
       <button class="zero-calc-row-head" type="button" aria-expanded="false" aria-label="${name} 승단 점수 입력 펼치기">
         <span class="zero-calc-name"><span class="zero-calc-row-symbol" aria-hidden="true">${String(config.number).padStart(2,'0')}</span><strong>${name}</strong></span>
       </button>
-      ${config.star !== false ? zeroScoreStarButtonHtml() : ''}
-      <span class="zero-calc-score"><span>추가점수</span><b class="zero-row-score">0</b></span>
     </div>
     <div class="zero-calc-details" hidden>
       <div class="zero-calc-fields">
-        ${group(penance?'일반 고행':'도전의탑','현재 → 목표','zero-calc-general',generalCurrent,generalTarget)}
-        ${group(penance?'명예':'명예의탑','현재 → 목표','zero-calc-honor',honorCurrent,honorTarget)}
+        ${field(`현재 ${generalLabel}`,generalCurrent)}
+        ${field(`목표 ${generalLabel}`,generalTarget)}
+        ${field(`현재 ${honorLabel}`,honorCurrent)}
+        ${field(`목표 ${honorLabel}`,honorTarget)}
+        <div class="zero-calc-metric"><span>24스타</span>${starControl}</div>
+        <div class="zero-calc-metric zero-calc-score"><span>추가점수</span><b class="zero-row-score">0</b></div>
       </div>
     </div>
   </article>`;
@@ -3261,19 +3431,9 @@ function renderZeroScoreCalculatorRows(){
   rows.dataset.rendered='1';
 }
 
-const ZERO_RANK_FALLBACK_TABLE=[
-  {name:'입문',score:0},{name:'견습',score:100},{name:'숙련',score:150},{name:'전문',score:200},
-  {name:'장인',score:250},{name:'명장',score:300},{name:'명장+',score:350},{name:'도인',score:400},
-  {name:'도인+',score:450},{name:'지존',score:500},{name:'지존+',score:550},{name:'패왕',score:600},
-  {name:'패왕+',score:650},{name:'제왕',score:700},{name:'제왕+',score:750},{name:'신황',score:800},{name:'신황+',score:850}
-];
+const ZERO_RANK_FALLBACK_TABLE=[{"name":"입문","score":0,"benefits":["룬 강화 성공 보정 +10% 버프 부여","쥬얼 9개 사용 가능"]},{"name":"견습","score":100,"benefits":["룬 강화 성공 보정 +30% 버프 부여","쥬얼 10개 사용 가능","인챈트북 점수 +20%"]},{"name":"숙련","score":150,"benefits":["전설 쥬얼 기본 드랍률 보정 +10%","룬 강화 성공 보정 +50% 버프 부여","쥬얼 11개 사용 가능","인챈트북 점수 +30%","300라운드 도달 시 각성석 1개 추가 지급"]},{"name":"전문","score":200,"benefits":["전설 쥬얼 기본 드랍률 보정 +20%","룬 강화 성공 보정 +75% 버프 부여","쥬얼 12개 사용 가능","총 데미지 +2%","인챈트북 점수 +40%","300라운드 도달 시 각성석 1개 추가 지급","일일쿠폰 등록 시 인챈트북 1개 추가 지급"]},{"name":"장인","score":250,"benefits":["전설 쥬얼 기본 드랍률 보정 +30%","룬 강화 성공 보정 +100% 버프 부여","쥬얼 13개 사용 가능","총 데미지 +4%","인챈트북 점수 +50%","300라운드 도달 시 각성석 1개 추가 지급","일일쿠폰 등록 시 인챈트북 1개 추가 지급"]},{"name":"명장","score":300,"benefits":["전설 쥬얼 기본 드랍률 보정 +40%","룬 강화 성공 보정 +125% 버프 부여","쥬얼 14개 사용 가능","라운드 한계 경험치 +1","총 데미지 +6%","인챈트북 점수 +60%","300라운드 도달 시 각성석 2개 추가 지급","일일쿠폰 등록 시 인챈트북 1개 추가 지급","고철 획득시 50% 확률로 1개 추가획득"]},{"name":"명장+","score":350,"benefits":["전설 쥬얼 기본 드랍률 보정 +45%","룬 강화 성공 보정 +125% 버프 부여","쥬얼 15개 사용 가능","라운드 한계 경험치 +1","총 데미지 +6%","인챈트북 점수 +70%","XP5 +1","300라운드 도달 시 각성석 2개 추가 지급","일일쿠폰 등록 시 인챈트북 1개 추가 지급","고철 획득시 50% 확률로 1개 추가획득"]},{"name":"도인","score":400,"benefits":["전설 쥬얼 기본 드랍률 보정 +50%","룬 강화 성공 보정 +150% 버프 부여","쥬얼 16개 사용 가능","라운드 한계 경험치 +2","총 데미지 +8%","인챈트북 점수 +80%","XP5 +1","300라운드에 각성석 2개 추가 지급","일일 쿠폰 등록 시 인챈트북 2개 추가 지급","고철 획득시 50% 확률로 1개 추가획득","카오스 · 코스모스 룬 옵션 최소치 추가 보정"]},{"name":"도인+","score":450,"benefits":["전설 쥬얼 기본 드랍률 보정 +55%","룬 강화 성공 보정 +150% 버프 부여","쥬얼 17개 사용 가능","라운드 한계 경험치 +2","총 데미지 +8%","인챈트북 점수 +90%","XP5 +2","300라운드에 각성석 2개 추가 지급","일일 쿠폰 등록 시 인챈트북 2개 추가 지급","고철 획득시 50% 확률로 1개 추가획득","카오스 · 코스모스 룬 옵션 최소치 추가 보정"]},{"name":"지존","score":500,"benefits":["전설 쥬얼 기본 드랍률 보정 +60%","룬 강화 성공 보정 +200% 버프 부여","쥬얼 18개 사용 가능","라운드 한계 경험치 +3","총 데미지 +10%","인챈트북 점수 +100%","XP5 +2","300라운드에 각성석 2개 추가 지급","일일 쿠폰 등록 시 인챈트북 2개 추가 지급","고철 획득시 50% 확률로 1개 추가획득","카오스 · 코스모스 룬 옵션 최소치 추가 보정","고유룬 6개 장착 가능"]},{"name":"지존+","score":550,"benefits":["전설 쥬얼 기본 드랍률 보정 +65%","룬 강화 성공 보정 +200% 버프 부여","쥬얼 19개 사용 가능","라운드 한계 경험치 +3","총 데미지 +10%","인챈트북 점수 +110%","XP5 +3","300라운드에 각성석 2개 추가 지급","일일 쿠폰 등록 시 인챈트북 2개 추가 지급","고철 획득시 50% 확률로 1개 추가획득","카오스 · 코스모스 룬 옵션 최소치 추가 보정","고유룬 6개 장착 가능"]},{"name":"패왕","score":600,"benefits":["전설 쥬얼 기본 드랍률 보정 +70%","룬 강화 성공 보정 +250% 버프 부여","쥬얼 20개 사용 가능","라운드 한계 경험치 +4","총 데미지 +12%","인챈트북 점수 +120%","XP5 +3","300라운드에 각성석 3개 추가 지급","일일 쿠폰 등록 시 인챈트북 2개 추가 지급","고철 획득시 100% 확률로 1개 추가획득","카오스 · 코스모스 룬 옵션 최소치 추가 보정","고유룬 6개 장착 가능","고철 상점의 부적 효과 1.5배 증폭"]},{"name":"패왕+","score":650,"benefits":["전설 쥬얼 기본 드랍률 보정 +80%","룬 강화 성공 보정 +250% 버프 부여","쥬얼 21개 사용 가능","라운드 한계 경험치 +4","총 데미지 +13%","인챈트북 점수 +130%","XP5 +4","300라운드에 각성석 3개 추가 지급","일일 쿠폰 등록 시 인챈트북 2개 추가 지급","고철 획득시 100% 확률로 1개 추가획득","카오스 · 코스모스 룬 옵션 최소치 추가 보정","고유룬 6개 장착 가능","고철 상점의 부적 효과 1.5배 증폭"]},{"name":"제왕","score":700,"benefits":["전설 쥬얼 기본 드랍률 보정 +100%","룬 강화 성공 보정 +300% 버프 부여","쥬얼 22개 사용 가능","라운드 한계 경험치 +5","총 데미지 +14%","인챈트북 점수 +140%","XP5 +4","300라운드에 각성석 3개 추가 지급","일일 쿠폰 등록 시 인챈트북 3개 추가 지급","고철 획득시 100% 확률로 1개 추가획득","카오스 · 코스모스 룬 옵션 최소치 추가 보정","고유룬 6개 장착 가능","고철 상점의 부적 효과 1.5배 증폭","카오스 · 코스모스 룬 최종 드랍 확률 2배"]},{"name":"제왕+","score":750,"benefits":["전설 쥬얼 기본 드랍률 보정 +120%","룬 강화 성공 보정 +300% 버프 부여","쥬얼 23개 사용 가능","라운드 한계 경험치 +5","총 데미지 +15%","인챈트북 점수 +150%","XP5 +5","300라운드에 각성석 3개 추가 지급","일일 쿠폰 등록 시 인챈트북 3개 추가 지급","고철 획득시 100% 확률로 1개 추가획득","카오스 · 코스모스 룬 옵션 최소치 추가 보정","고유룬 6개 장착 가능","고철 상점의 부적 효과 1.5배 증폭","카오스 · 코스모스 룬 최종 드랍 확률 2배"]},{"name":"신황","score":800,"benefits":["전설 쥬얼 기본 드랍률 보정 +140%","룬 강화 성공 보정 +350% 버프 부여","쥬얼 25개 사용 가능","라운드 한계 경험치 +6","총 데미지 +16%","인챈트북 점수 +160%","XP5 +5","300라운드에 각성석 3개 추가 지급","일일 쿠폰 등록 시 인챈트북 4개 추가 지급","고철 획득시 100% 확률로 1개 추가획득","카오스 · 코스모스 룬 옵션 최소치 추가 보정","고유룬 7개 장착 가능","고철 상점의 부적 효과 1.5배 증폭","카오스 · 코스모스 룬 최종 드랍 확률 2배"]},{"name":"신황+","score":850,"benefits":["전설 쥬얼 기본 드랍률 보정 +160%","룬 강화 성공 보정 +350% 버프 부여","쥬얼 26개 사용 가능","라운드 한계 경험치 +6","총 데미지 +17%","인챈트북 점수 +170%","XP5 +6","300라운드에 각성석 3개 추가 지급","일일 쿠폰 등록 시 인챈트북 4개 추가 지급","고철 획득시 100% 확률로 1개 추가획득","카오스 · 코스모스 룬 옵션 최소치 추가 보정","고유룬 7개 장착 가능","고철 상점의 부적 효과 1.5배 증폭","카오스 · 코스모스 룬 최종 드랍 확률 2배"]}];
 function getZeroRankTable(){
-  const rows=[...qsa('.zero-rank-entry')].map(row=>{
-    const name=dataText(row.dataset.rankName);
-    const score=dataNumber(row.dataset.rankScore);
-    return name && score!==null ? {name,score,row} : null;
-  }).filter(Boolean);
-  return rows.length ? rows : ZERO_RANK_FALLBACK_TABLE;
+  return ZERO_RANK_FALLBACK_TABLE;
 }
 function zeroRankEntry(score){
   const value=Number(score)||0;
@@ -3286,17 +3446,57 @@ function zeroRankName(score){
 function updateZeroRankHighlights(currentRank, targetRank){
   const current=dataText(currentRank);
   const target=dataText(targetRank);
-  qsa('.zero-rank-entry').forEach(row=>{
-    const name=dataText(row.dataset.rankName);
-    row.classList.toggle('zero-rank-current', !!current && name===current);
-    row.classList.toggle('zero-rank-target', !!target && name===target);
-    row.classList.toggle('zero-rank-same', !!current && current===target && name===current);
-  });
   const card=qs('.zero-rank-result-card');
   if(card){
     card.classList.toggle('zero-rank-same', !!current && current===target);
     card.classList.toggle('zero-rank-upgrade', !!current && !!target && current!==target);
   }
+}
+// 혜택 미리보기는 조회 상태만 별도로 보관합니다. 승단 점수와 프리셋은 변경하지 않습니다.
+let zeroBenefitActualIndex=0;
+let zeroBenefitViewIndex=null;
+function renderZeroBenefitsPreview(){
+  const table=getZeroRankTable();
+  if(!table.length) return;
+  const current=Math.max(0,Math.min(table.length-1,zeroBenefitActualIndex));
+  const index=Math.max(0,Math.min(table.length-1,zeroBenefitViewIndex ?? current));
+  const entry=table[index];
+  const title=$('zeroCurrentBenefitsTitle');
+  const items=$('zeroCurrentBenefitsItems');
+  const label=$('zeroBenefitsViewLabel');
+  const position=$('zeroBenefitsPosition');
+  const prev=$('zeroBenefitsPrev');
+  const next=$('zeroBenefitsNext');
+  if(title) title.textContent=`더제로 ${entry.name} 혜택`;
+  if(label) label.textContent=index===current?'현재 타이틀':'단계 미리보기';
+  if(position) position.textContent=`${index+1} / ${table.length}`;
+  if(prev) prev.disabled=index===0;
+  if(next) next.disabled=index===table.length-1;
+  if(items){
+    const benefits=entry.benefits||[];
+    // Column-major reading order: for 10 benefits, left 1~6 and right 7~10.
+    // Longer tiers distribute the overflow to avoid unnecessarily tall columns.
+    const rows=benefits.length<=6 ? Math.ceil(benefits.length/2) : Math.max(6,Math.ceil(benefits.length/2));
+    items.style.setProperty('--benefits-rows',String(Math.max(1,rows)));
+    items.replaceChildren(...benefits.map((text,index)=>{
+      const row=document.createElement('span');
+      const number=document.createElement('span');
+      number.className='zero-benefit-index';
+      number.textContent=String(index+1).padStart(2,'0');
+      number.setAttribute('aria-hidden','true');
+      const description=document.createElement('span');
+      description.className='zero-benefit-description';
+      description.textContent=text;
+      row.append(number,description);
+      return row;
+    }));
+  }
+}
+function stepZeroBenefitsPreview(direction){
+  const table=getZeroRankTable();
+  const current=zeroBenefitViewIndex ?? zeroBenefitActualIndex;
+  zeroBenefitViewIndex=Math.max(0,Math.min(table.length-1,current+direction));
+  renderZeroBenefitsPreview();
 }
 function updateZeroScoreCalculator(){
   const calc=qs('.zero-score-calc');
@@ -3325,6 +3525,8 @@ function updateZeroScoreCalculator(){
     if(element) element.textContent=String(value);
   });
   updateZeroRankHighlights(currentRank,targetRank);
+  zeroBenefitActualIndex=getZeroRankTable().indexOf(zeroRankEntry(currentTotal));
+  renderZeroBenefitsPreview();
 }
 const ZERO_SCORE_DOM_FIELDS=Object.freeze({
   current:{selector:'.zero-calc-current',fallback:'0'},
@@ -3376,7 +3578,7 @@ function collectZeroScoreState(){
   };
 }
 function setZeroScoreStarButton(starBtn,active){
-  setTogglePressed(starBtn, active, {activeText:'24스타 ✓', inactiveText:'24스타'});
+  setTogglePressed(starBtn, active, {activeText:'적용 ✓', inactiveText:'미적용'});
   if(starBtn) starBtn.setAttribute('aria-label',active?'24스타 적용중':'24스타 미적용');
 }
 function applyZeroScoreState(zeroScore){
@@ -3422,6 +3624,61 @@ function bindZeroScoreCalculator(){
   if(document.documentElement.dataset.zeroScoreCalcBound==='1') return;
   document.documentElement.dataset.zeroScoreCalcBound='1';
   const rows=$('zeroScoreRows');
+  const scoreHelp=$('zeroRankScorePopover');
+  scoreHelp?.addEventListener('click',event=>{
+    const tab=event.target.closest('.unit-achievement-help-tabs [role="tab"]');
+    if(tab){event.preventDefault();switchDpsBaseUnitAchievementHelpTab(tab);}
+  });
+  scoreHelp?.addEventListener('keydown',event=>{
+    const tab=event.target.closest('.unit-achievement-help-tabs [role="tab"]');
+    if(!tab || !['ArrowLeft','ArrowRight','Home','End'].includes(event.key)) return;
+    const tabs=[...tab.parentElement.querySelectorAll('[role="tab"]')];
+    const index=tabs.indexOf(tab);
+    const next=event.key==='Home'?0:event.key==='End'?tabs.length-1:(index+(event.key==='ArrowRight'?1:-1)+tabs.length)%tabs.length;
+    event.preventDefault();
+    switchDpsBaseUnitAchievementHelpTab(tabs[next]);
+    tabs[next].focus();
+  });
+  const benefitsHelp=$('zeroTitleBenefitsPopover');
+  benefitsHelp?.addEventListener('click',event=>{
+    const control=event.target.closest('[data-zero-benefits-step]');
+    if(!control || control.disabled) return;
+    event.preventDefault();
+    stepZeroBenefitsPreview(Number(control.dataset.zeroBenefitsStep));
+  });
+  const rankPopovers=[
+    [document.querySelector('[data-zero-score-help]'),$('zeroRankScorePopover')],
+    [document.querySelector('[data-zero-benefits-help]'),$('zeroTitleBenefitsPopover')]
+  ];
+  const closeRankPopovers=()=>rankPopovers.forEach(([trigger,popup])=>{
+    if(popup) popup.hidden=true;
+    trigger?.setAttribute('aria-expanded','false');
+  });
+  rankPopovers.forEach(([trigger,popup])=>trigger?.addEventListener('click',event=>{
+    event.preventDefault();
+    if(!popup) return;
+    const shouldOpen=popup.hidden;
+    closeRankPopovers();
+    if(shouldOpen){
+      if(popup===benefitsHelp){
+        zeroBenefitViewIndex=null; // 팝업을 새로 열 때 실제 현재 승단부터 표시
+        renderZeroBenefitsPreview();
+      }
+      popup.hidden=false;
+      trigger.setAttribute('aria-expanded','true');
+      positionDpsBaseUnitAchievementHelp(trigger,popup);
+    }
+  }));
+  document.addEventListener('click',event=>{
+    if(rankPopovers.some(([trigger,popup])=>popup && !popup.hidden &&
+       !popup.contains(event.target) && !trigger?.contains(event.target))) closeRankPopovers();
+  });
+  document.addEventListener('keydown',event=>{if(event.key==='Escape') closeRankPopovers();});
+  const repositionRankPopovers=()=>rankPopovers.forEach(([trigger,popup])=>{
+    if(popup && !popup.hidden) positionDpsBaseUnitAchievementHelp(trigger,popup);
+  });
+  window.addEventListener('resize',repositionRankPopovers);
+  window.addEventListener('scroll',repositionRankPopovers,true);
   rows?.addEventListener('click',event=>{
     const header=event.target.closest('.zero-calc-row-head');
     if(!header || !rows.contains(header)) return;
@@ -3465,9 +3722,6 @@ const ACTION_HANDLERS={
   backupTraitPresets:(...args)=>window.DpsPreset.openBackup(...args),
   importTraitPresets:(...args)=>window.DpsPreset.openImport(...args),
   openDpsTable,
-  openSanctuarySkillModal:()=>window.DpsModal.openBoardModal('sanctuarySkillModal'),
-  openBusPassengerModal:()=>window.DpsModal.openBoardModal('busPassengerModal'),
-  openZeroRankInfoModal:()=>window.DpsModal.openBoardModal('zeroRankInfoModal'),
   zeroScoreStar:(trigger)=>toggleZeroScoreStar(trigger),
   decreaseFont:()=>changeFontScale(-DPS_CONFIG.ui.fontScaleStep),
   increaseFont:()=>changeFontScale(DPS_CONFIG.ui.fontScaleStep),
@@ -3594,16 +3848,16 @@ function bindAppEvents(){
   appEventsBound=true;
   [
     bindFontScaleViewportGuard, bindActionEvents, bindTraitHoldEvents, bindTraitInputEvents,
-    ()=>window.DpsModal.bindEvents(), ()=>window.DpsPreset.bindEvents(), bindJewelImageEvents,
+    bindIntegratedTabEvents, ()=>window.DpsPreset.bindEvents(), bindJewelImageEvents,
     bindZeroScoreCalculator, bindTraitLimitDisplayEvents, bindTraitLimitChoiceEvents, bindDpsBaseUnitControlEvents, bindReactiveInputs,
-    bindButtonPressFeedback, bindDamageBoardTabEvents, bindDamageBoardSwitchEvents, bindAppTitleVersion
+    bindButtonPressFeedback, bindDamageBoardTabEvents, bindDpsTableEvents, bindDamageBoardSwitchEvents, bindAppTitleVersion
   ].forEach(fn=>fn());
 }
 // 일반 select는 계산·저장 이벤트의 원본으로 유지하고, 표시와 조작만 앱 내부 목록으로 대체합니다.
 function initAppSelectDropdowns(){
   if(window.__dpsAppSelectDropdownsReady) return;
   window.__dpsAppSelectDropdownsReady=true;
-  const nativeSelector='select:not(#traitPresetSelect):not(.hidden-field):not(.trait-limit-source):not(.trait-preset-native-select):not([hidden]):not([aria-hidden="true"])';
+  const nativeSelector='select:not([data-preview-board]):not(#traitPresetSelect):not(.hidden-field):not(.trait-limit-source):not(.trait-preset-native-select):not([hidden]):not([aria-hidden="true"])';
   const triggerClass='app-select-trigger';
   const menu=document.createElement('div');
   menu.className='app-select-menu';
