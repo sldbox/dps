@@ -1860,15 +1860,14 @@ body .trait-optimizer-panel .optimizer-head,body .trait-limit-section>.optimizer
 body .trait-optimizer-panel .optimizer-head-title::before,body .trait-limit-heading-copy::before{content:"✦";display:grid;place-items:center;box-sizing:border-box;flex:0 0 32px;width:32px;height:28px;min-width:32px;padding:0;border:1px solid var(--ui-header-mark-border);border-radius:9px;background:var(--ui-header-mark-bg);color:var(--ui-header-mark-color);font-size:17.25px;font-weight:800;line-height:1;box-shadow:none;}
 
 
-.btn.subtle.header-reference-btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;height:35px;min-height:35px;min-width:105px;padding:0 13px;border:1px solid #385371;border-radius:10px;background:#0e1a2a;color:#e3f4ff;box-shadow:inset 0 1px rgba(255,255,255,.06);font-size:calc(11.75px * var(--app-font-scale));font-weight:900;text-decoration:none;transition:transform .17s,filter .17s,box-shadow .17s;}
-.btn.subtle.header-reference-btn.header-nexus-link{background:#0e1a2a;border-color:#385371;}
-.btn.subtle.header-reference-btn:hover:not(:disabled){text-decoration:none;}
-.btn.subtle.header-reference-btn:active:not(:disabled){transform:translateY(1px);box-shadow:inset 0 2px 5px rgba(0,0,0,.32);}
+/* 글로벌 헤더 넥서스 이동: 링크 동작은 유지하고 N 아이콘 하나로 공간을 절약한다. */
+.btn.subtle.header-nexus-link{display:inline-grid;place-items:center;flex:0 0 35px;box-sizing:border-box;width:35px;min-width:35px;height:35px;min-height:35px;padding:0;border:1px solid #385371;border-radius:10px;background:linear-gradient(145deg,#17283f,#0b1829);color:#d5f4ff;box-shadow:inset 0 1px rgba(255,255,255,.06);text-decoration:none;transition:transform .17s,filter .17s,box-shadow .17s,border-color .17s;}
+.btn.subtle.header-nexus-link:hover{border-color:#77b3ef;text-decoration:none;}
+.btn.subtle.header-nexus-link:focus-visible{outline:2px solid #8bc9ff;outline-offset:2px;}
+.btn.subtle.header-nexus-link:active{transform:translateY(1px);box-shadow:inset 0 2px 5px rgba(0,0,0,.32);}
+.header-nexus-mark{display:block;width:23px;height:23px;filter:drop-shadow(0 0 3px rgba(109,195,255,.24));}
 .header-convenience{display:flex;align-items:center;position:relative;min-width:0;}
 .header-reference-actions{display:flex;align-items:center;justify-content:flex-end;gap:6px;min-width:0;}
-.header-reference-actions .header-reference-btn{flex:0 0 auto;}
-.header-nexus-link{min-width:78px;}
-.header-nexus-link .header-action-star{margin-left:0;color:#9ccafa;font-size:14px;font-weight:850;line-height:1;}
 /* PC 가로 3분할 전용: 분석 보드 분리 버튼. */
 body .right-workspace-head .right-workspace-pip-toggle{display:none;place-items:center;flex:0 0 30px;width:30px;height:30px;min-width:30px;margin-left:auto;padding:0;border:1px solid #416080;border-radius:8px;background:#13263e;color:#dcecff;box-shadow:none;font-size:18px;line-height:1;cursor:pointer;}
 body .right-workspace-head .right-workspace-pip-toggle:hover,body .right-workspace-head .right-workspace-pip-toggle:focus-visible,body .right-workspace-head .right-workspace-pip-toggle[aria-pressed="true"]{background:#1c3858;border-color:#81b8f5;outline:2px solid rgba(129,184,245,.4);outline-offset:1px;}
@@ -1885,13 +1884,10 @@ body.dps-pip-body .dps-reference-workspace{max-width:100%;}
   body.is-pc-landscape:not(.is-tabbed) .right-workspace-head .right-workspace-pip-toggle{display:grid;}
 }
 
-.header-convenience-link span{display:inline-flex;align-items:center;justify-content:center;margin-left:3px;font-size:.9em;line-height:1;}
 body.is-tablet .font-scale-ctrl,body.is-mobile .font-scale-ctrl{display:none;}
 body.is-mobile .header-reference-actions{gap:4px;}
-body.is-mobile .btn.subtle.header-reference-btn{height:29px;min-height:29px;min-width:72px;padding:0 8px;gap:4px;font-size:calc(10.75px * var(--app-font-scale));}
-body.is-mobile .header-nexus-link{min-width:75px;}
-body.is-narrow-mobile .btn.subtle.header-reference-btn{min-width:64px;padding:0 5px;font-size:calc(9.75px * var(--app-font-scale));}
-body.is-narrow-mobile .header-nexus-link{min-width:64px;}
+body.is-mobile .btn.subtle.header-nexus-link{flex-basis:30px;width:30px;min-width:30px;height:30px;min-height:30px;border-radius:8px;}
+body.is-mobile .header-nexus-mark{width:21px;height:21px;}
 
 /* 프리셋 미저장 변경: 관리 패널에 도착하기 전까지 지속되는 전역 안내 */
 body .trait-preset-change-notice{position:fixed;right:max(16px,env(safe-area-inset-right));bottom:max(18px,calc(env(safe-area-inset-bottom) + 14px));z-index:9000;display:flex;align-items:center;gap:10px;width:max-content;max-width:min(330px,calc(100vw - 32px));padding:11px 14px;border:1px solid #c49a61;border-radius:13px;background:linear-gradient(130deg,#0f1013,#0d0e11);color:#ffebc9;box-shadow:0 12px 32px rgba(0,0,0,.42),inset 0 1px rgba(255,255,255,.09);font-size:calc(12px * var(--app-font-scale));line-height:1.35;pointer-events:none;}
