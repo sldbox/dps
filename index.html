@@ -4,7 +4,7 @@
 <meta charset="UTF-8"/>
 <meta name="google-site-verification" content="RTuDWbMdnKgbpRpl05eXh9epFwWRSxju4NOl8OtjMsI" />
 <script>
-window.DPS_BUILD_VERSION = "dps-2610210017";
+window.DPS_BUILD_VERSION = "dps-2610210018";
 window.APP_VERSION = window.DPS_BUILD_VERSION;
 window.DPS_ASSET_VERSIONS = {
   "app.js": window.DPS_BUILD_VERSION,
@@ -197,14 +197,14 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 <meta content="https://sldbox.github.io/dps/" property="og:url"/>
 <meta content="개복디 특성 게산기" property="og:title"/>
 <meta content="특성 투자, 재화 사용량, 표기 스탯, 총데미지, DPS를 한 번에 계산할 수 있는 개복디 전용 계산기입니다." property="og:description"/>
-<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2610210017" property="og:image"/>
-<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2610210017" property="og:image:secure_url"/>
+<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2610210018" property="og:image"/>
+<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2610210018" property="og:image:secure_url"/>
 <meta content="image/png" property="og:image:type"/>
 <meta content="개복디 특성 게산기 로고" property="og:image:alt"/>
 <meta content="summary_large_image" name="twitter:card"/>
 <meta content="개복디 특성 게산기" name="twitter:title"/>
 <meta content="특성 투자, 재화 사용량, 표기 스탯, 총데미지, DPS를 한 번에 계산할 수 있는 개복디 전용 계산기입니다." name="twitter:description"/>
-<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2610210017" name="twitter:image"/>
+<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2610210018" name="twitter:image"/>
 <meta content="개복디 특성 게산기 로고" name="twitter:image:alt"/>
 <link href="https://cdn.jsdelivr.net" rel="preconnect"/>
 <link crossorigin="" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" rel="stylesheet"/>
@@ -248,6 +248,10 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 <div class="trait-preset-change-notice" id="traitPresetChangeNotice" role="status" aria-live="polite" aria-atomic="true" hidden>
   <span class="trait-preset-change-notice-icon" aria-hidden="true">!</span>
   <span class="trait-preset-change-notice-text">프리셋 변경값이 감지됐어요.<small>프리셋 관리에서 확인해 주세요.</small></span>
+</div>
+<div id="analysisPipMenu" class="right-workspace-pip-menu" role="menu" aria-label="분석 보드 창 열기" hidden>
+<button type="button" id="analysisPipMenuPip" role="menuitem" data-analysis-window-action="pip">PiP 열기</button>
+<button type="button" role="menuitem" data-analysis-window-action="independent">독립 창 열기</button>
 </div>
 <div class="wrap">
 <div class="hdr app-header">
@@ -779,7 +783,7 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 <div class="col-right">
 <!-- 스펙·유닛 보드: 전환 버튼·결과 -->
 <div class="data-card stat-dps-card right-analytics-workspace">
-<div class="right-workspace-navigation"><header class="right-workspace-head"><span class="right-workspace-mark" aria-hidden="true">✦</span><span class="right-workspace-copy"><strong>DPS 분석 보드</strong><small>SPEC &amp; UNIT ANALYTICS</small></span><button type="button" id="analysisPipToggle" class="ui-action-btn right-workspace-pip-toggle" aria-label="DPS 분석 보드 PiP 창 열기" aria-pressed="false"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="3.5" width="19" height="17" rx="2.5"/><rect x="11" y="12" width="8" height="5.5" rx="1"/></svg></button></header>
+<div class="right-workspace-navigation"><header class="right-workspace-head"><span class="right-workspace-mark" aria-hidden="true">✦</span><span class="right-workspace-copy"><strong>DPS 분석 보드</strong><small>SPEC &amp; UNIT ANALYTICS</small></span><button type="button" id="analysisPipToggle" class="ui-action-btn right-workspace-pip-toggle" aria-label="DPS 분석 보드 창 메뉴 열기" aria-haspopup="menu" aria-controls="analysisPipMenu" aria-expanded="false" data-pip-open="false"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="3.5" width="19" height="17" rx="2.5"/><rect x="11" y="12" width="8" height="5.5" rx="1"/></svg></button></header>
 <div class="damage-board-tabs" role="tablist" aria-label="보드 선택" data-damage-board-tabs>
 <button class="damage-board-tab is-active" id="damageBoardSpecTab" type="button" role="tab" aria-selected="true" aria-controls="damageBoardSpecPanel" data-damage-board-tab="spec">스펙 보드</button>
 <button class="damage-board-tab" id="damageBoardUnitTab" type="button" role="tab" aria-selected="false" aria-controls="damageBoardUnitPanel" data-damage-board-tab="unit">유닛 보드</button>

@@ -2749,24 +2749,46 @@ function setDamageBoardTab(active){
   if(next==='table') renderDpsTablePanelContent();
   if(changed) renderTraitRecommendations();
 }
-/* 분석 보드 전용 Document PiP: 원본 DOM과 이벤트/계산을 원래 문서에 유지한다. */
+/* 분석 보드 미러 창: 기존 Document PiP와 복수 독립 창이 원본 DOM/계산을 공유한다. */
 let analysisPipWindow=null;
-let analysisPipObserver=null;
+const analysisWindowRecords=new Map();
+let analysisWindowObserver=null;
 let analysisPipLayoutObserver=null;
-let analysisPipRenderFrame=0;
+let analysisWindowRenderFrame=0;
+let analysisPipOpening=false;
 function analysisPipAllowed(){
   return document.body.classList.contains('is-pc-landscape')
     && !document.body.classList.contains('is-tabbed')
     && window.matchMedia('(orientation:landscape) and (hover:hover) and (pointer:fine)').matches;
 }
-function closeAnalysisPip(){
-  analysisPipWindow?.close();
-}
 function setAnalysisPipButtonState(open){
   const button=$('analysisPipToggle');
-  if(!button) return;
-  button.setAttribute('aria-pressed',String(open));
-  button.setAttribute('aria-label',open?'DPS 분석 보드 PiP 창 닫기':'DPS 분석 보드 PiP 창 열기');
+  if(button) button.dataset.pipOpen=String(open);
+  const action=$('analysisPipMenuPip');
+  if(action) action.textContent=open?'PiP 닫기':'PiP 열기';
+}
+function setAnalysisPipMenuOpen(open,restoreFocus=false){
+  const menu=$('analysisPipMenu');
+  const button=$('analysisPipToggle');
+  if(!menu || !button) return;
+  const next=!!open && analysisPipAllowed();
+  menu.hidden=!next;
+  button.setAttribute('aria-expanded',String(next));
+  button.setAttribute('aria-label',next?'DPS 분석 보드 창 메뉴 닫기':'DPS 분석 보드 창 메뉴 열기');
+  if(next){
+    const rect=button.getBoundingClientRect();
+    const width=menu.offsetWidth;
+    const height=menu.offsetHeight;
+    menu.style.left=Math.max(8,Math.min(rect.right-width,window.innerWidth-width-8))+'px';
+    menu.style.top=Math.max(8,rect.bottom+5+height<=window.innerHeight ? rect.bottom+5 : rect.top-height-5)+'px';
+    menu.querySelector('button')?.focus();
+  }else if(restoreFocus) button.focus();
+}
+function closeAnalysisPip(){
+  const pip=analysisPipWindow;
+  if(!pip) return;
+  cleanupAnalysisWindow(pip);
+  if(!pip.closed) pip.close();
 }
 function analysisPipSourcePath(source,root){
   const indices=[];
@@ -2780,17 +2802,16 @@ function analysisPipSourceAtPath(path,root){
   if(path==null || path==='') return null;
   return path.split('.').reduce((node,index)=>node?.children[Number(index)],root);
 }
-function renderAnalysisPip(){
-  const pip=analysisPipWindow;
-  if(!pip || pip.closed) return;
+function renderAnalysisWindow(win){
+  if(win.closed) return;
   const original=qs('.right-analytics-workspace');
-  const host=pip.document.getElementById('dpsPipView');
+  const host=win.document.getElementById('dpsPipView');
   if(!original || !host) return;
   const previous=host.querySelector('.right-analytics-workspace');
-  const active=pip.document.activeElement?.closest?.('[data-pip-source-path]');
+  const active=win.document.activeElement?.closest?.('[data-pip-source-path]');
   const focusPath=active?.dataset.pipSourcePath;
   const selection=active && 'selectionStart' in active ? {start:active.selectionStart,end:active.selectionEnd}:null;
-  const scrollTop=pip.document.scrollingElement?.scrollTop || 0;
+  const scrollTop=win.document.scrollingElement?.scrollTop || 0;
   const innerScrolls=new Map();
   previous?.querySelectorAll('[data-pip-scroll]').forEach(element=>innerScrolls.set(element.dataset.pipScroll,[element.scrollTop,element.scrollLeft]));
   const clone=original.cloneNode(true);
@@ -2810,14 +2831,24 @@ function renderAnalysisPip(){
     if(control.type==='checkbox'||control.type==='radio') control.checked=source.checked;
     else control.value=source.value;
   });
+  const closeButton=clone.querySelector('#analysisPipToggle');
+  if(closeButton){
+    closeButton.textContent='×';
+    closeButton.setAttribute('aria-label','이 분석 보드 창 닫기');
+    closeButton.removeAttribute('aria-haspopup');
+    closeButton.removeAttribute('aria-controls');
+    closeButton.removeAttribute('aria-expanded');
+    delete closeButton.dataset.pipOpen;
+    closeButton.dataset.analysisWindowClose='true';
+  }
   clone.querySelectorAll('.dps-overview,.dps-base-unit-slot-stack,.dps-jewel-config-grid').forEach((element,index)=>{element.dataset.pipScroll=String(index);});
   host.replaceChildren(clone);
   clone.querySelectorAll('[data-pip-scroll]').forEach(element=>{
     const scroll=innerScrolls.get(element.dataset.pipScroll);
     if(scroll){element.scrollTop=scroll[0];element.scrollLeft=scroll[1];}
   });
-  pip.document.documentElement.style.setProperty('--app-font-scale',getComputedStyle(document.documentElement).getPropertyValue('--app-font-scale'));
-  if(pip.document.scrollingElement) pip.document.scrollingElement.scrollTop=scrollTop;
+  win.document.documentElement.style.setProperty('--app-font-scale',getComputedStyle(document.documentElement).getPropertyValue('--app-font-scale'));
+  if(win.document.scrollingElement) win.document.scrollingElement.scrollTop=scrollTop;
   if(focusPath){
     const current=[...clone.querySelectorAll('[data-pip-source-path]')].find(element=>element.dataset.pipSourcePath===focusPath);
     current?.focus({preventScroll:true});
@@ -2826,95 +2857,156 @@ function renderAnalysisPip(){
     }
   }
 }
-function scheduleAnalysisPipRender(){
-  if(!analysisPipWindow || analysisPipRenderFrame) return;
-  analysisPipRenderFrame=requestAnimationFrame(()=>{
-    analysisPipRenderFrame=0;
-    renderAnalysisPip();
+function scheduleAnalysisWindowRender(){
+  if(!analysisWindowRecords.size || analysisWindowRenderFrame) return;
+  analysisWindowRenderFrame=requestAnimationFrame(()=>{
+    analysisWindowRenderFrame=0;
+    for(const win of analysisWindowRecords.keys()){
+      if(win.closed) cleanupAnalysisWindow(win);
+      else renderAnalysisWindow(win);
+    }
   });
 }
-function cleanupAnalysisPip(pip){
-  if(analysisPipWindow!==pip) return;
-  analysisPipObserver?.disconnect();
-  analysisPipObserver=null;
-  analysisPipLayoutObserver?.disconnect();
-  analysisPipLayoutObserver=null;
-  if(analysisPipRenderFrame) cancelAnimationFrame(analysisPipRenderFrame);
-  analysisPipRenderFrame=0;
-  analysisPipWindow=null;
-  setAnalysisPipButtonState(false);
+function cleanupAnalysisWindow(win){
+  if(!analysisWindowRecords.delete(win) && analysisPipWindow!==win) return;
+  if(analysisPipWindow===win){
+    analysisPipWindow=null;
+    analysisPipLayoutObserver?.disconnect();
+    analysisPipLayoutObserver=null;
+    setAnalysisPipButtonState(false);
+  }
+  if(!analysisWindowRecords.size){
+    analysisWindowObserver?.disconnect();
+    analysisWindowObserver=null;
+    if(analysisWindowRenderFrame) cancelAnimationFrame(analysisWindowRenderFrame);
+    analysisWindowRenderFrame=0;
+  }
+}
+function initializeAnalysisWindow(win,kind){
+  const source=qs('.right-analytics-workspace');
+  if(!source) throw new Error('DPS 분석 보드를 찾을 수 없습니다.');
+  win.document.title=kind==='pip'?'DPS 분석 보드 · PiP':'DPS 분석 보드 · 독립 창';
+  win.document.documentElement.lang='ko';
+  win.document.body.className='dps-pip-body';
+  document.head.querySelectorAll('style,link[rel="stylesheet"]').forEach(sheet=>{
+    const copy=sheet.cloneNode(true);
+    if(copy.tagName==='LINK') copy.href=sheet.href;
+    win.document.head.appendChild(copy);
+  });
+  const host=win.document.createElement('main');
+  host.id='dpsPipView';
+  host.className='dps-pip-view col-right';
+  win.document.body.appendChild(host);
+  win.document.addEventListener('click',event=>{
+    const control=event.target.closest('button,[role="button"]');
+    if(!control) return;
+    event.preventDefault();
+    if(control.dataset.analysisWindowClose==='true'){
+      win.close();
+      return;
+    }
+    const original=analysisPipSourceAtPath(control.dataset.pipSourcePath,source);
+    if(original && !original.disabled){
+      original.click();
+      if($('dpsUnitSlotModal') && !$('dpsUnitSlotModal').hidden) window.focus();
+    }
+    scheduleAnalysisWindowRender();
+  });
+  win.document.addEventListener('change',event=>{
+    const control=event.target.closest('select,input,textarea');
+    const original=analysisPipSourceAtPath(control?.dataset.pipSourcePath,source);
+    if(!original || original.disabled) return;
+    if(control.type==='checkbox'||control.type==='radio') original.checked=control.checked;
+    else original.value=control.value;
+    original.dispatchEvent(new Event('change',{bubbles:true}));
+    scheduleAnalysisWindowRender();
+  });
+  win.document.addEventListener('input',event=>{
+    const control=event.target.closest('input,textarea');
+    const original=analysisPipSourceAtPath(control?.dataset.pipSourcePath,source);
+    if(!original || original.disabled) return;
+    original.value=control.value;
+    original.dispatchEvent(new Event('input',{bubbles:true}));
+    scheduleAnalysisWindowRender();
+  });
+  win.addEventListener('pagehide',()=>cleanupAnalysisWindow(win),{once:true});
+  analysisWindowRecords.set(win,kind);
+  if(!analysisWindowObserver){
+    analysisWindowObserver=new MutationObserver(scheduleAnalysisWindowRender);
+    analysisWindowObserver.observe(source,{subtree:true,childList:true,characterData:true,attributes:true});
+  }
+  renderAnalysisWindow(win);
 }
 async function toggleAnalysisPip(){
   if(analysisPipWindow && !analysisPipWindow.closed){closeAnalysisPip();return;}
-  if(!analysisPipAllowed()) return;
+  if(!analysisPipAllowed() || analysisPipOpening) return;
   if(!window.isSecureContext || !window.documentPictureInPicture?.requestWindow){
     showToast('PiP는 HTTPS 환경의 지원 브라우저(Chrome·Edge)에서 사용할 수 있습니다.','warn');
     return;
   }
+  analysisPipOpening=true;
   try{
-    // 사용자 클릭 이벤트의 활성화가 사라지기 전에 창부터 연다.
+    // 사용자 클릭 활성화가 유효할 때 Document PiP 창부터 생성한다.
     const pip=await window.documentPictureInPicture.requestWindow({width:760,height:690});
     analysisPipWindow=pip;
-    pip.document.title='DPS 분석 보드';
-    pip.document.documentElement.lang='ko';
-    pip.document.body.className='dps-pip-body';
-    document.head.querySelectorAll('style,link[rel="stylesheet"]').forEach(sheet=>{
-      const copy=sheet.cloneNode(true);
-      if(copy.tagName==='LINK') copy.href=sheet.href;
-      pip.document.head.appendChild(copy);
-    });
-    const host=pip.document.createElement('main');
-    host.id='dpsPipView';
-    host.className='dps-pip-view col-right';
-    pip.document.body.appendChild(host);
-    const source=qs('.right-analytics-workspace');
-    if(!source) throw new Error('DPS 분석 보드를 찾을 수 없습니다.');
-    pip.document.addEventListener('click',event=>{
-      const control=event.target.closest('button,[role="button"]');
-      if(!control) return;
-      event.preventDefault();
-      const original=analysisPipSourceAtPath(control.dataset.pipSourcePath,source);
-      if(original && !original.disabled){
-        original.click();
-        if($('dpsUnitSlotModal') && !$('dpsUnitSlotModal').hidden) window.focus();
-      }
-      scheduleAnalysisPipRender();
-    });
-    pip.document.addEventListener('change',event=>{
-      const control=event.target.closest('select,input,textarea');
-      const original=analysisPipSourceAtPath(control?.dataset.pipSourcePath,source);
-      if(!original || original.disabled) return;
-      if(control.type==='checkbox'||control.type==='radio') original.checked=control.checked;
-      else original.value=control.value;
-      original.dispatchEvent(new Event('change',{bubbles:true}));
-      scheduleAnalysisPipRender();
-    });
-    pip.document.addEventListener('input',event=>{
-      const control=event.target.closest('input,textarea');
-      const original=analysisPipSourceAtPath(control?.dataset.pipSourcePath,source);
-      if(!original || original.disabled) return;
-      original.value=control.value;
-      original.dispatchEvent(new Event('input',{bubbles:true}));
-      scheduleAnalysisPipRender();
-    });
-    pip.addEventListener('pagehide',()=>cleanupAnalysisPip(pip),{once:true});
-    analysisPipObserver=new MutationObserver(scheduleAnalysisPipRender);
-    analysisPipObserver.observe(source,{subtree:true,childList:true,characterData:true,attributes:true});
+    initializeAnalysisWindow(pip,'pip');
     analysisPipLayoutObserver=new MutationObserver(()=>{
       if(!analysisPipAllowed()) closeAnalysisPip();
     });
     analysisPipLayoutObserver.observe(document.body,{attributes:true,attributeFilter:['class']});
     if(!analysisPipAllowed()){closeAnalysisPip();return;}
-    renderAnalysisPip();
     setAnalysisPipButtonState(true);
   }catch(error){
-    if(analysisPipWindow){const pip=analysisPipWindow;cleanupAnalysisPip(pip);pip.close();}
+    if(analysisPipWindow) closeAnalysisPip();
     rememberAppIssue('warn','분석 보드 PiP 열기',error);
     showToast('PiP 창을 열지 못했습니다. 브라우저 지원 및 팝업 권한을 확인해 주세요.','warn');
+  }finally{
+    analysisPipOpening=false;
+  }
+}
+function openIndependentAnalysisWindow(){
+  if(!analysisPipAllowed()) return;
+  const win=window.open('','_blank','popup=yes,width=820,height=740,resizable=yes,scrollbars=yes');
+  if(!win){
+    showToast('독립 창을 열지 못했습니다. 브라우저 팝업 차단 설정을 확인해 주세요.','warn');
+    return;
+  }
+  try{
+    initializeAnalysisWindow(win,'independent');
+  }catch(error){
+    cleanupAnalysisWindow(win);
+    win.close();
+    rememberAppIssue('warn','분석 보드 독립 창 열기',error);
+    showToast('독립 창을 열지 못했습니다. 브라우저 설정을 확인해 주세요.','warn');
   }
 }
 function bindAnalysisPipButton(){
-  $('analysisPipToggle')?.addEventListener('click',toggleAnalysisPip);
+  $('analysisPipToggle')?.addEventListener('click',()=>setAnalysisPipMenuOpen($('analysisPipMenu')?.hidden));
+  $('analysisPipMenu')?.addEventListener('click',event=>{
+    const action=event.target.closest('[data-analysis-window-action]');
+    if(!action) return;
+    setAnalysisPipMenuOpen(false);
+    if(action.dataset.analysisWindowAction==='pip') toggleAnalysisPip();
+    else if(action.dataset.analysisWindowAction==='independent') openIndependentAnalysisWindow();
+  });
+  document.addEventListener('click',event=>{
+    if($('analysisPipMenu')?.hidden!==false) return;
+    if(event.target.closest('#analysisPipMenu,#analysisPipToggle')) return;
+    setAnalysisPipMenuOpen(false);
+  });
+  document.addEventListener('keydown',event=>{
+    if(event.key!=='Escape' || $('analysisPipMenu')?.hidden!==false) return;
+    event.preventDefault();
+    setAnalysisPipMenuOpen(false,true);
+  });
+  window.addEventListener('resize',()=>setAnalysisPipMenuOpen(false));
+  window.addEventListener('scroll',()=>setAnalysisPipMenuOpen(false),true);
+  window.addEventListener('pagehide',()=>{
+    for(const win of analysisWindowRecords.keys()){
+      cleanupAnalysisWindow(win);
+      if(!win.closed) win.close();
+    }
+  });
 }
 function bindDamageBoardTabEvents(){
   document.addEventListener('click',e=>{

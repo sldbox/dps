@@ -1868,10 +1868,14 @@ body .trait-optimizer-panel .optimizer-head-title::before,body .trait-limit-head
 .header-nexus-mark{display:block;width:23px;height:23px;filter:drop-shadow(0 0 3px rgba(109,195,255,.24));}
 .header-convenience{display:flex;align-items:center;position:relative;min-width:0;}
 .header-reference-actions{display:flex;align-items:center;justify-content:flex-end;gap:6px;min-width:0;}
-/* PC 가로 3분할 전용: 분석 보드 분리 버튼. */
+/* PC 가로 3분할 전용: 분석 보드 창 선택 메뉴 및 분리 버튼. */
 body .right-workspace-head .right-workspace-pip-toggle{display:none;place-items:center;flex:0 0 30px;width:30px;height:30px;min-width:30px;margin-left:auto;padding:0;border:1px solid #416080;border-radius:8px;background:#13263e;color:#dcecff;box-shadow:none;font-size:18px;line-height:1;cursor:pointer;}
-body .right-workspace-head .right-workspace-pip-toggle:hover,body .right-workspace-head .right-workspace-pip-toggle:focus-visible,body .right-workspace-head .right-workspace-pip-toggle[aria-pressed="true"]{background:#1c3858;border-color:#81b8f5;outline:2px solid rgba(129,184,245,.4);outline-offset:1px;}
-/* Document PiP 전용: 원본 보드는 유지하고 표시·이벤트만 동기화한다. */
+body .right-workspace-head .right-workspace-pip-toggle:hover,body .right-workspace-head .right-workspace-pip-toggle:focus-visible,body .right-workspace-head .right-workspace-pip-toggle[data-pip-open="true"],body .right-workspace-head .right-workspace-pip-toggle[aria-expanded="true"]{background:#1c3858;border-color:#81b8f5;outline:2px solid rgba(129,184,245,.4);outline-offset:1px;}
+body .right-workspace-pip-menu{position:fixed;z-index:9500;display:grid;gap:3px;box-sizing:border-box;width:158px;padding:5px;border:1px solid #49698c;border-radius:10px;background:#102038;box-shadow:0 12px 32px rgba(0,0,0,.48);}
+body .right-workspace-pip-menu[hidden]{display:none;}
+body .right-workspace-pip-menu button{display:flex;align-items:center;box-sizing:border-box;width:100%;min-height:35px;padding:8px 11px;border:0;border-radius:6px;background:transparent;color:#e2efff;font:inherit;font-size:12px;font-weight:750;text-align:left;cursor:pointer;}
+body .right-workspace-pip-menu button:hover,body .right-workspace-pip-menu button:focus-visible{background:#254364;color:#fff;outline:2px solid #83b5ff;outline-offset:-2px;}
+/* PiP 및 독립 창 공통: 원본 보드의 표시·입력 이벤트를 동기화한다. */
 body.dps-pip-body{display:block;min-width:0;width:100%;height:auto;min-height:100vh;margin:0;padding:8px;background:#080b10;color:#e6edf7;overflow:auto;box-sizing:border-box;}
 body.dps-pip-body .dps-pip-view{display:block;width:100%;min-width:0;max-width:none;margin:0;padding:0;}
 body.dps-pip-body .col-right{display:block;width:100%;min-width:0;margin:0;padding:0;}
