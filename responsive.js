@@ -103,7 +103,6 @@
     if (!button) return;
     button.setAttribute('aria-pressed', String(active));
     button.setAttribute('aria-label', active ? '분석 보드 3분할 복귀' : '분석 보드 확장 하기');
-    button.title = active ? '기본 3분할 레이아웃으로 복귀' : '중앙 영역을 숨기고 분석 보드를 확장';
     const label = button.querySelector('.header-layout-toggle-label');
     if (label) label.textContent = active ? '3분할 복귀' : '확장 하기';
   }

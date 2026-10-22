@@ -4,7 +4,7 @@
 <meta charset="UTF-8"/>
 <meta name="google-site-verification" content="RTuDWbMdnKgbpRpl05eXh9epFwWRSxju4NOl8OtjMsI" />
 <script>
-window.DPS_BUILD_VERSION = "dps-2610210002";
+window.DPS_BUILD_VERSION = "dps-2610210013";
 window.APP_VERSION = window.DPS_BUILD_VERSION;
 window.DPS_ASSET_VERSIONS = {
   "app.js": window.DPS_BUILD_VERSION,
@@ -197,14 +197,14 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 <meta content="https://sldbox.github.io/dps/" property="og:url"/>
 <meta content="개복디 특성 게산기" property="og:title"/>
 <meta content="특성 투자, 재화 사용량, 표기 스탯, 총데미지, DPS를 한 번에 계산할 수 있는 개복디 전용 계산기입니다." property="og:description"/>
-<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2610210004" property="og:image"/>
-<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2610210004" property="og:image:secure_url"/>
+<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2610210013" property="og:image"/>
+<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2610210013" property="og:image:secure_url"/>
 <meta content="image/png" property="og:image:type"/>
 <meta content="개복디 특성 게산기 로고" property="og:image:alt"/>
 <meta content="summary_large_image" name="twitter:card"/>
 <meta content="개복디 특성 게산기" name="twitter:title"/>
 <meta content="특성 투자, 재화 사용량, 표기 스탯, 총데미지, DPS를 한 번에 계산할 수 있는 개복디 전용 계산기입니다." name="twitter:description"/>
-<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2610210004" name="twitter:image"/>
+<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2610210013" name="twitter:image"/>
 <meta content="개복디 특성 게산기 로고" name="twitter:image:alt"/>
 <link href="https://cdn.jsdelivr.net" rel="preconnect"/>
 <link crossorigin="" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" rel="stylesheet"/>
@@ -278,9 +278,16 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 </div>
 </div>
 <div aria-label="글씨 크기 조절" class="font-scale-ctrl">
-<button class="ui-toolbar-btn font-scale-btn" data-action="decreaseFont" type="button">A-</button>
+<button class="ui-toolbar-btn font-scale-trigger" data-action="toggleFontScalePopover" type="button" aria-label="글씨 크기 조절 열기" aria-haspopup="dialog" aria-controls="fontScalePopover" aria-expanded="false"><span aria-hidden="true">A<small>a</small></span></button>
+<div class="font-scale-popover" id="fontScalePopover" role="dialog" aria-labelledby="fontScalePopoverTitle" hidden>
+<div class="font-scale-popover-title" id="fontScalePopoverTitle">글씨 크기</div>
+<div class="font-scale-popover-controls">
+<button class="ui-toolbar-btn font-scale-btn" data-action="decreaseFont" type="button" aria-label="글씨 크기 줄이기">−</button>
 <button class="ui-toolbar-btn font-scale-value" data-action="resetFont" id="fontScaleLabel" type="button">100%</button>
-<button class="ui-toolbar-btn font-scale-btn" data-action="increaseFont" type="button">A+</button>
+<button class="ui-toolbar-btn font-scale-btn" data-action="increaseFont" type="button" aria-label="글씨 크기 늘리기">+</button>
+</div>
+<div class="font-scale-popover-hint">배율을 누르면 100%로 초기화</div>
+</div>
 </div>
 </div>
 </div>
@@ -772,7 +779,7 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 <div class="col-right">
 <!-- 스펙·유닛 보드: 전환 버튼·결과 -->
 <div class="data-card stat-dps-card right-analytics-workspace">
-<div class="right-workspace-navigation"><header class="right-workspace-head"><span class="right-workspace-mark" aria-hidden="true">✦</span><span class="right-workspace-copy"><strong>DPS 분석 보드</strong><small>SPEC &amp; UNIT ANALYTICS</small></span><button type="button" id="analysisLayoutToggle" class="btn subtle ui-action-btn right-workspace-layout-toggle" aria-pressed="false" aria-label="분석 보드 확장 하기" title="중앙 영역을 숨기고 분석 보드를 확장"><span class="header-action-star" aria-hidden="true">✦</span><span class="header-layout-toggle-label">확장 하기</span></button></header>
+<div class="right-workspace-navigation"><header class="right-workspace-head"><span class="right-workspace-mark" aria-hidden="true">✦</span><span class="right-workspace-copy"><strong>DPS 분석 보드</strong><small>SPEC &amp; UNIT ANALYTICS</small></span><button type="button" id="analysisLayoutToggle" class="btn subtle ui-action-btn right-workspace-layout-toggle" aria-pressed="false" aria-label="분석 보드 확장 하기"><span class="header-action-star" aria-hidden="true">✦</span><span class="header-layout-toggle-label">확장 하기</span></button></header>
 <div class="damage-board-tabs" role="tablist" aria-label="보드 선택" data-damage-board-tabs>
 <button class="damage-board-tab is-active" id="damageBoardSpecTab" type="button" role="tab" aria-selected="true" aria-controls="damageBoardSpecPanel" data-damage-board-tab="spec">스펙 보드</button>
 <button class="damage-board-tab" id="damageBoardUnitTab" type="button" role="tab" aria-selected="false" aria-controls="damageBoardUnitPanel" data-damage-board-tab="unit">유닛 보드</button>
@@ -898,10 +905,10 @@ loadScriptSequence(['data.js','calc.js','app.js','preset.js','responsive.js'],fu
     <header class="unit-slot-modal-header">
       <span class="unit-slot-modal-icon" aria-hidden="true">✦</span>
       <span class="unit-slot-modal-heading"><strong id="dpsUnitSlotDetailTitle">슬롯 1 상세 설정</strong><small id="unitSlotModalDescription">유닛·마리수·강화·한계 돌파·쥬얼을 한곳에서 관리</small></span>
-      <button class="unit-detail-close" type="button" id="unitSlotModalClose" data-unit-detail-close aria-label="슬롯 설정 닫기">×</button>
+      <button class="unit-detail-close" type="button" id="unitSlotModalClose" data-unit-detail-remove aria-label="유닛 설정 제거">×</button>
     </header>
     <div class="unit-slot-modal-scroll"><div class="unit-detail-panel" id="dpsUnitSlotDetail"></div></div>
-    <footer class="unit-slot-modal-footer"><span>설정값은 기존 계산과 프리셋에 자동 반영됩니다.</span><button type="button" class="unit-slot-modal-done" data-unit-detail-confirm>설정 완료</button></footer>
+    <footer class="unit-slot-modal-footer"><span class="unit-slot-modal-expansion" data-unit-detail-expansion></span><button type="button" class="unit-slot-modal-done" data-unit-detail-confirm>설정 완료</button></footer>
   </section>
 </div>
 <!-- 앱 자체 슬롯 삭제 확인: 브라우저의 window.confirm 팝업 사용하지 않음 -->

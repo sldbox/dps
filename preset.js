@@ -387,7 +387,6 @@ function normalizeTraitPresetUnitBoardState(value){
   units.sort((a,b)=>a.slot-b.slot);
   const unitMap=new Map(units.map(item=>[item.unitId,item]));
   units.forEach(item=>{ if(item.unitId==='prodNarud') item.voidPower='OFF'; });
-  if(!unitMap.has('prodNarud')) units.forEach(item=>{ item.voidPower='OFF'; });
   const slotExpansions=normalizeDpsBaseUnitSlotExpansions(source.slotExpansions || source.expandedSlots || [])
     .filter(unitId=>unitMap.has(unitId));
   const rawExtras=source.additionalUnitSettings || source.extraUnitSettings || source.extraSettings || {};
@@ -460,6 +459,8 @@ function writeTraitPresetUnitBoardStoreValues(unit,values={}){
 }
 function applyTraitPresetUnitBoardState(value,options={}){
   const state=normalizeTraitPresetUnitBoardState(value);
+  // 저장된 프리셋에는 자동 생성 직후의 임시 UI 안내를 넘기지 않는다.
+  if(typeof dpsUnitAutoNarudReviewSlot!=='undefined') dpsUnitAutoNarudReviewSlot=-1;
   ensureDpsBaseUnitStore();
   const extraStore=$('dpsBaseUnitExtraSettings');
   const expansionStore=$('dpsBaseUnitSlotExpansions');

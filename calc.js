@@ -569,13 +569,6 @@ function enemyRoundData(round, diffName=vs('diff')){
   if(r<=0) return {round:0,fruitKey:'watermelon',fruitLabel:'수박',enemyType:'거대',armorBase:0,armor:0,damageMultiplier:1,unitRound:0,count:0,hp:0,shield:0};
   return enemyDataFromTables(mode, r, {includeUnitRound:true});
 }
-function enemyRoundCountTotal(round, diffName=vs('diff')){
-  const mode=battleDataModeForDifficulty(diffName);
-  if(mode.totalMode==='current') return enemyRoundData(round, diffName).count;
-  const r=normalizedBattleRound(round, mode, 0, 0);
-  if(r<=0) return 0;
-  return mode.unitTable.reduce((total,row)=>total+(row[0]<=r ? (+row[1]||0) : 0),0);
-}
 function enemyRoundDisplayCount(round, diffName=vs('diff')){
   return enemyRoundData(round, diffName).count * battleEnemyCountMultiplier(diffName);
 }
