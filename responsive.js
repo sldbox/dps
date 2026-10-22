@@ -62,6 +62,8 @@
     };
   }
   function getMode() {
+    // 독립 분석 창에서는 숨겨진 본문과 분리해 한 개의 보드 레이아웃을 유지한다.
+    if(document.documentElement.classList.contains('dps-independent-window')) return 'is-pc-landscape';
     const { w, h } = getViewportSize();
     const shortSide = Math.min(w, h);
     const longSide = Math.max(w, h);

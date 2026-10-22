@@ -2749,13 +2749,14 @@ function setDamageBoardTab(active){
   if(next==='table') renderDpsTablePanelContent();
   if(changed) renderTraitRecommendations();
 }
-/* 분석 보드 미러 창: 기존 Document PiP와 복수 독립 창이 원본 DOM/계산을 공유한다. */
+/* 분석 보드: Document PiP는 원본을 미러링하고, 독립 창은 앱을 자체 실행한다. */
 let analysisPipWindow=null;
-const analysisWindowRecords=new Map();
+const analysisWindowRecords=new Set();
 let analysisWindowObserver=null;
 let analysisPipLayoutObserver=null;
 let analysisWindowRenderFrame=0;
 let analysisPipOpening=false;
+let analysisIndependentOpened=false;
 function analysisPipAllowed(){
   return document.body.classList.contains('is-pc-landscape')
     && !document.body.classList.contains('is-tabbed')
@@ -2861,7 +2862,7 @@ function scheduleAnalysisWindowRender(){
   if(!analysisWindowRecords.size || analysisWindowRenderFrame) return;
   analysisWindowRenderFrame=requestAnimationFrame(()=>{
     analysisWindowRenderFrame=0;
-    for(const win of analysisWindowRecords.keys()){
+    for(const win of analysisWindowRecords){
       if(win.closed) cleanupAnalysisWindow(win);
       else renderAnalysisWindow(win);
     }
@@ -2882,10 +2883,10 @@ function cleanupAnalysisWindow(win){
     analysisWindowRenderFrame=0;
   }
 }
-function initializeAnalysisWindow(win,kind){
+function initializeAnalysisWindow(win){
   const source=qs('.right-analytics-workspace');
   if(!source) throw new Error('DPS 분석 보드를 찾을 수 없습니다.');
-  win.document.title=kind==='pip'?'DPS 분석 보드 · PiP':'DPS 분석 보드 · 독립 창';
+  win.document.title='DPS 분석 보드 · PiP';
   win.document.documentElement.lang='ko';
   win.document.body.className='dps-pip-body';
   document.head.querySelectorAll('style,link[rel="stylesheet"]').forEach(sheet=>{
@@ -2930,7 +2931,7 @@ function initializeAnalysisWindow(win,kind){
     scheduleAnalysisWindowRender();
   });
   win.addEventListener('pagehide',()=>cleanupAnalysisWindow(win),{once:true});
-  analysisWindowRecords.set(win,kind);
+  analysisWindowRecords.add(win);
   if(!analysisWindowObserver){
     analysisWindowObserver=new MutationObserver(scheduleAnalysisWindowRender);
     analysisWindowObserver.observe(source,{subtree:true,childList:true,characterData:true,attributes:true});
@@ -2949,7 +2950,7 @@ async function toggleAnalysisPip(){
     // 사용자 클릭 활성화가 유효할 때 Document PiP 창부터 생성한다.
     const pip=await window.documentPictureInPicture.requestWindow({width:760,height:690});
     analysisPipWindow=pip;
-    initializeAnalysisWindow(pip,'pip');
+    initializeAnalysisWindow(pip);
     analysisPipLayoutObserver=new MutationObserver(()=>{
       if(!analysisPipAllowed()) closeAnalysisPip();
     });
@@ -2966,22 +2967,30 @@ async function toggleAnalysisPip(){
 }
 function openIndependentAnalysisWindow(){
   if(!analysisPipAllowed()) return;
-  const win=window.open('','_blank','popup=yes,width=820,height=740,resizable=yes,scrollbars=yes');
-  if(!win){
-    showToast('독립 창을 열지 못했습니다. 브라우저 팝업 차단 설정을 확인해 주세요.','warn');
-    return;
-  }
-  try{
-    initializeAnalysisWindow(win,'independent');
-  }catch(error){
-    cleanupAnalysisWindow(win);
-    win.close();
-    rememberAppIssue('warn','분석 보드 독립 창 열기',error);
-    showToast('독립 창을 열지 못했습니다. 브라우저 설정을 확인해 주세요.','warn');
-  }
+  analysisIndependentOpened=true;
+  // 기존 입력값을 먼저 저장해, 완전히 별도로 실행되는 새 창도 같은 상태로 시작한다.
+  saveState({silent:true});
+  const url=new URL(window.location.href);
+  url.searchParams.set('dpsWindow','independent');
+  url.searchParams.delete('fresh');
+  url.searchParams.delete('__dps_check');
+  // noopener는 원본 창이 닫혀도 창이 유지되도록 연결 관계를 끊는다.
+  // 브라우저 표준에 따라 noopener를 쓰면 window.open은 창을 열어도 null을 반환한다.
+  window.open(url.href,'_blank','noopener,popup=yes,width=820,height=740,resizable=yes,scrollbars=yes');
 }
 function bindAnalysisPipButton(){
-  $('analysisPipToggle')?.addEventListener('click',()=>setAnalysisPipMenuOpen($('analysisPipMenu')?.hidden));
+  const button=$('analysisPipToggle');
+  if(window.DPS_INDEPENDENT_WINDOW && button){
+    document.title='DPS 분석 보드 · 독립 창';
+    button.textContent='×';
+    button.setAttribute('aria-label','독립 창 닫기');
+    button.removeAttribute('aria-haspopup');
+    button.removeAttribute('aria-controls');
+    button.removeAttribute('aria-expanded');
+    button.addEventListener('click',()=>window.close());
+  }else{
+    button?.addEventListener('click',()=>setAnalysisPipMenuOpen($('analysisPipMenu')?.hidden));
+  }
   $('analysisPipMenu')?.addEventListener('click',event=>{
     const action=event.target.closest('[data-analysis-window-action]');
     if(!action) return;
@@ -3001,8 +3010,25 @@ function bindAnalysisPipButton(){
   });
   window.addEventListener('resize',()=>setAnalysisPipMenuOpen(false));
   window.addEventListener('scroll',()=>setAnalysisPipMenuOpen(false),true);
+  // 서로 다른 독립 창은 localStorage를 통해 상태를 공유한다. 수신 시 재저장은 하지 않는다.
+  window.addEventListener('storage',event=>{
+    if((!window.DPS_INDEPENDENT_WINDOW && !analysisIndependentOpened) || event.key!==STORAGE_KEY || !event.newValue || !window.__dpsAppReady) return;
+    try{
+      const state=normalizeSavedState(safeJsonParse(event.newValue));
+      if(!state) return;
+      cancelScheduledAutoSave();
+      if(appUpdateTimer) clearTimeout(appUpdateTimer);
+      appUpdateTimer=0;
+      pendingAppUpdateSave=false;
+      applyStateObject(state,{save:false});
+      syncSelectButtons();
+      syncBuffChoiceButtons();
+    }catch(error){
+      rememberAppIssue('warn','독립 창 상태 동기화',error);
+    }
+  });
   window.addEventListener('pagehide',()=>{
-    for(const win of analysisWindowRecords.keys()){
+    for(const win of analysisWindowRecords){
       cleanupAnalysisWindow(win);
       if(!win.closed) win.close();
     }

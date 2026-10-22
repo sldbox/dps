@@ -1884,6 +1884,17 @@ body.dps-pip-body .right-workspace-head .right-workspace-pip-toggle{display:grid
 body.dps-pip-body .right-workspace-navigation{width:100%;}
 body.dps-pip-body .right-dps-hero{min-width:0;}
 body.dps-pip-body .dps-reference-workspace{max-width:100%;}
+/* 독립 창은 자체 계산기가 로드된 일반 페이지이며, 보드만 화면에 노출한다. */
+html.dps-independent-window body{display:block;min-width:0;width:100%;height:auto;min-height:100vh;margin:0;padding:0;background:#080b10;overflow:auto;}
+html.dps-independent-window body .wrap{display:block;width:100%;height:auto;min-height:100vh;max-width:none;margin:0;overflow:visible;background:#080b10;}
+html.dps-independent-window body .wrap>.hdr{display:none;}
+html.dps-independent-window body .col-work{display:block;width:100%;height:auto;max-width:none;min-height:0;margin:0;padding:8px;overflow:visible;box-sizing:border-box;}
+html.dps-independent-window body .col-work>.col-left,html.dps-independent-window body .col-work>.col-mid{display:none;}
+html.dps-independent-window body .col-work>.col-right{display:block;width:100%;max-width:none;min-width:0;height:auto;min-height:0;margin:0;padding:0;overflow:visible;}
+html.dps-independent-window body .right-analytics-workspace{width:100%;max-width:none;margin:0;}
+html.dps-independent-window body .right-workspace-head .right-workspace-pip-toggle{display:grid;margin-left:auto;}
+html.dps-independent-window body .right-dps-hero{min-width:0;}
+html.dps-independent-window body .dps-reference-workspace{max-width:100%;}
 @media (orientation:landscape) and (hover:hover) and (pointer:fine){
   body.is-pc-landscape:not(.is-tabbed) .right-workspace-head .right-workspace-pip-toggle{display:grid;}
 }
