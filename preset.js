@@ -601,7 +601,7 @@ function applyStateObject(data, options={}){
       INV[r]=Math.max(0, Math.min(TMAX[r]||999, Math.round(+val||0)));
     });
     if(116 in INV) INV[116]=0;
-    enforceBudgets();
+    // 프리셋에는 보유 재화보다 큰 투자값도 그대로 보존한다. 잔여량은 음수로 표시한다.
     restoreTraitRecommendationSaveState(data.recommendations);
     if(hasOwn(sanitizedValues,'runeChoiceType') || hasOwn(sanitizedValues,'runeChoiceValue')) syncRuneChoice();
     else hydrateRuneChoiceFromHidden();
@@ -1395,7 +1395,7 @@ function applyTraitPresetState(preset,options={}){
   applyStateObject(state,{recalculate:false});
   applyTraitPresetJewelSettings(options.jewelSettings);
   applyTraitPresetUnitBoardState(options.unitBoardIncluded ? options.unitBoardState : null,{recalculate:false});
-  recalc({save:false});
+  if(recalc({save:false})===false) throw new Error('계산 오류로 프리셋을 적용할 수 없습니다.');
   if(options.persist!==false){
     const saved=saveState({silent:true});
     if(saved===false) throw new Error('프리셋은 적용했지만 브라우저 저장에 실패했습니다.');
@@ -2145,48 +2145,18 @@ function normalizeTraitPresetImportData(parsed){
     unitBoard:normalizeTraitPresetUnitBoardStore(parsed.unitBoard,presets.map(preset=>preset.id))
   };
 }
-function mergeTraitPresetImport(imported,options={}){
-  let store=loadTraitPresetStore();
-  let added=0, replaced=0, firstImportedPresetId='';
-  const importedIds=[];
-  const preserveExistingUnitBoardOnReplace=options.preserveExistingUnitBoardOnReplace===true;
-  const importedUnitBoard=normalizeTraitPresetUnitBoardStore(imported?.unitBoard,(imported?.presets || []).map(preset=>preset.id));
-  const importedJewelSettings=normalizeTraitPresetJewelSettings(imported?.jewelSettings);
-  if(importedJewelSettings) store.jewelSettings=importedJewelSettings;
-  (imported.presets || []).forEach((preset,index)=>{
-    const sourceId=preset.id;
-    // 같은 ID를 가진 프리셋을 이름만 바꿔 재가져와도 중복 생성하지 않는다.
-    const byId=store.presets.findIndex(item=>item.id===preset.id);
-    const existingIndex=byId>=0 ? byId : store.presets.findIndex(item=>item.name===preset.name);
-    if(byId>=0 && store.presets.some((item,index)=>index!==byId && item.name===preset.name)){
-      throw new Error(`프리셋 이름 충돌로 가져오기를 취소했습니다: ${preset.name}`);
-    }
-    let targetId;
-    if(existingIndex>=0){
-      targetId=store.presets[existingIndex].id;
-      store.presets[existingIndex]={...preset,id:targetId,createdAt:store.presets[existingIndex].createdAt || preset.createdAt,updatedAt:Date.now()};
-      replaced++;
-    }else{
-      targetId=store.presets.some(item=>item.id===preset.id) ? makeTraitPresetId() : preset.id;
-      store.presets.push({...preset,id:targetId,createdAt:preset.createdAt || Date.now(),updatedAt:Date.now()});
-      added++;
-    }
-    if(hasOwn(importedUnitBoard.presets,sourceId)){
-      const preserveExisting=existingIndex>=0 && preserveExistingUnitBoardOnReplace && traitPresetHasUnitBoard(store,targetId);
-      if(!preserveExisting) setTraitPresetUnitBoardState(store,targetId,importedUnitBoard.presets[sourceId]);
-    }else if(existingIndex>=0 && !preserveExistingUnitBoardOnReplace){
-      deleteTraitPresetUnitBoardState(store,targetId);
-    }
-    importedIds.push(targetId);
-    if(index===0) firstImportedPresetId=targetId;
-  });
-  store=saveTraitPresetStore(store,{source:'import'});
-  // 동일 프리셋의 과거 임시값이 새로 가져온 JSON 데이터를 다시 덮지 못하게 한다.
-  const drafts=loadTraitPresetDrafts();
-  importedIds.forEach(id=>{ delete drafts[id]; });
-  saveTraitPresetDrafts(drafts);
+function replaceTraitPresetImport(imported){
+  // 유효성을 통과한 파일만 전체 교체한다. 기존 ID/드래프트/유닛 보드가 섞이지 않게 보존하지 않는다.
+  const ids=(imported.presets || []).map(preset=>preset.id);
+  const store=saveTraitPresetStore({
+    ...emptyTraitPresetStore(),
+    presets:imported.presets,
+    jewelSettings:imported.jewelSettings,
+    unitBoard:normalizeTraitPresetUnitBoardStore(imported.unitBoard,ids)
+  },{source:'import'});
+  clearTraitPresetDrafts();
   clearTraitPresetUpdatedStatus('import');
-  return {store,added,replaced,firstImportedPresetId};
+  return {store,count:store.presets.length,firstImportedPresetId:store.presets[0]?.id || ''};
 }
 function isTraitPresetTextFile(file){
   // 내보내기 기본 확장자는 .txt이며 같은 JSON 형식의 .json 파일도 허용한다.
@@ -2236,8 +2206,10 @@ async function importTraitPresetFile(file){
     const parsed=safeJsonParse(raw);
     const compatibility=inspectTraitPresetImportCompatibility(parsed);
     const imported=normalizeTraitPresetImportData(parsed);
+    if(loadTraitPresetStore().presets.length &&
+      !await confirmAppAction(`기존 프리셋 전체를 제거하고 가져온 ${imported.presets.length}개 프리셋으로 교체할까요?\n기존 프리셋을 보존하려면 먼저 백업하세요.`)) return false;
     snapshot=captureTraitPresetMutationSnapshot();
-    const result=mergeTraitPresetImport(imported);
+    const result=replaceTraitPresetImport(imported);
     const loadId=result.firstImportedPresetId || '';
     if(!loadId || !loadTraitPresetById(loadId,{
       notifySuccess:false,preserveSharedValues:false,useDraft:false,discardDraft:false
@@ -2247,7 +2219,7 @@ async function importTraitPresetFile(file){
       
     }
     
-    notifyStorageAction(`프리셋 가져오기 및 로드 완료 · 추가 ${result.added} / 갱신 ${result.replaced}`,'ok',{statusAction:'import'});
+    notifyStorageAction(`프리셋 가져오기 및 로드 완료 · ${result.count}개로 전체 교체`,'ok',{statusAction:'import'});
     return true;
   }catch(e){
     if(snapshot){

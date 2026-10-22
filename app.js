@@ -82,7 +82,27 @@ function rememberAppIssue(kind,label,error){
   window.DPS_LAST_ISSUE={kind,label,error,time:Date.now()};
 }
 function alertApp(message){
-  alert(message);
+  showToast(String(message ?? ''),'err',5600);
+}
+function confirmAppAction(message){
+  const dialog=$('appConfirmDialog');
+  const description=$('appConfirmDescription');
+  if(!dialog || !description || typeof dialog.showModal!=='function'){
+    showToast('확인 창을 열 수 없어 변경을 취소했습니다.','err',5200);
+    return Promise.resolve(false);
+  }
+  if(dialog.open) return Promise.resolve(false);
+  description.textContent=String(message ?? '');
+  dialog.returnValue='';
+  const focused=document.activeElement;
+  return new Promise(resolve=>{
+    dialog.addEventListener('close',()=>{
+      if(focused?.isConnected) focused.focus({preventScroll:true});
+      resolve(dialog.returnValue==='confirm');
+    },{once:true});
+    dialog.showModal();
+    dialog.querySelector('.app-confirm-cancel')?.focus({preventScroll:true});
+  });
 }
 function alertAppError(prefix, error){
   alertApp(prefix+(error?.message || error));
@@ -602,7 +622,12 @@ function recalc(options={}){
       renderCalculatedViews(stats);
     });
     if(options.save!==false) saveState({silent:true});
-  }catch(e){rememberAppIssue('error','recalc',e);}
+  }catch(e){
+    rememberAppIssue('error','recalc',e);
+    try{updateTraits();}catch(traitError){rememberAppIssue('error','특성 표시',traitError);}
+    return false;
+  }
+  return true;
 }
 function requestAppUpdate(options={}){
   invalidateAppCalculations();
@@ -936,7 +961,6 @@ function buildDpsFloorCards(mode){
   }
   const currentEnemy=rows.find(row=>row.current)?.enemyItems||[];
   return `<section class="dps-floor-column" data-dps-floor-board="${mode}" aria-label="${tower?'도전의탑':'행성탐사'} DPS">
-    <header class="dps-floor-heading"><h3>${tower?'도전의탑':'행성탐사'}</h3></header>
     ${renderDpsTableSummary(current,'층',currentFloorDps,currentEnemy,mode,dpsTableContextHtml(diff,false,teamCount,true))}
     ${renderDpsStatTable(rows,'층',diff+' 층별 DPS 및 적 정보')}
   </section>`;
@@ -2613,6 +2637,31 @@ function bindDpsBaseUnitControlEvents(){
   }, true);
 }
 
+/* 인증 빌드 사례: 카테고리별 기록을 추가하면 목록에 자동 반영됩니다. */
+const CERTIFIED_BUILDS=[
+  {id:'first-rain-107',category:'coop',player:'첫비',achievement:'107%',mode:'스피드 · 협동전 · 클래식 · 3인 · The Final',penance:'0 고행',round:'300 라운드',units:[
+    {grade:'슈퍼히든',names:['불새 케리건','나루드']},
+    {grade:'히든',names:['아우구스트그라드의 자랑 ×8']},
+    {grade:'유물',names:['유물']}
+  ]}
+];
+function renderCertifiedBuilds(){
+  const categories=['solo','coop','floor'];
+  categories.forEach(category=>{
+    const list=qs(`[data-certified-build-list="${category}"]`);
+    if(!list) return;
+    const records=CERTIFIED_BUILDS.filter(build=>category==='floor' ? (build.category==='tower'||build.category==='planet') : build.category===category);
+    list.innerHTML=records.length ? records.map(build=>`
+      <details class="certified-build-card" data-certified-build-id="${escapeHtml(build.id)}">
+        <summary><span class="certified-build-summary-copy"><small>플레이어</small><strong>${escapeHtml(build.player)}</strong></span><span class="certified-build-achievement">달성률 ${escapeHtml(build.achievement)}</span><span class="certified-build-chevron" aria-hidden="true">⌄</span></summary>
+        <div class="certified-build-details">
+          <dl class="certified-build-info"><div><dt>모드 / 난이도</dt><dd>${escapeHtml(build.mode)}</dd></div><div><dt>현재 고행 / 라운드</dt><dd>${escapeHtml(build.penance)} · ${escapeHtml(build.round)}</dd></div></dl>
+          <div class="certified-build-units">${build.units.map(group=>`<div class="certified-build-unit-row"><strong>${escapeHtml(group.grade)}</strong><span>${group.names.map(escapeHtml).join(' · ')}</span></div>`).join('')}</div>
+        </div>
+      </details>`).join('') : '<p class="certified-build-empty">등록된 인증 빌드가 없습니다.</p>';
+  });
+}
+
 /* 통합 헤더 하위 탭: 원래 DOM을 유지하여 계산·저장 필드 재생성을 방지 */
 function activateIntegratedTab(group,index){
   const tabs=[...qsa(`[data-integrated-tab="${group}"]`)];
@@ -2749,290 +2798,58 @@ function setDamageBoardTab(active){
   if(next==='table') renderDpsTablePanelContent();
   if(changed) renderTraitRecommendations();
 }
-/* 분석 보드: Document PiP는 원본을 미러링하고, 독립 창은 앱을 자체 실행한다. */
-let analysisPipWindow=null;
-const analysisWindowRecords=new Set();
-let analysisWindowObserver=null;
-let analysisPipLayoutObserver=null;
-let analysisWindowRenderFrame=0;
-let analysisPipOpening=false;
-let analysisIndependentOpened=false;
-function analysisPipAllowed(){
-  return document.body.classList.contains('is-pc-landscape')
-    && !document.body.classList.contains('is-tabbed')
-    && window.matchMedia('(orientation:landscape) and (hover:hover) and (pointer:fine)').matches;
-}
-function setAnalysisPipButtonState(open){
-  const button=$('analysisPipToggle');
-  if(button) button.dataset.pipOpen=String(open);
-  const action=$('analysisPipMenuPip');
-  if(action) action.textContent=open?'PiP 닫기':'PiP 열기';
-}
-function setAnalysisPipMenuOpen(open,restoreFocus=false){
-  const menu=$('analysisPipMenu');
-  const button=$('analysisPipToggle');
+/* 글로벌 헤더: 원본과 별도로 실행되는 독립 창 세 가지 보기. */
+function setIndependentWindowMenuOpen(open,restoreFocus=false){
+  const menu=$('independentWindowMenu');
+  const button=$('independentWindowToggle');
   if(!menu || !button) return;
-  const next=!!open && analysisPipAllowed();
+  const next=!!open && !window.DPS_STANDALONE_VIEW;
   menu.hidden=!next;
   button.setAttribute('aria-expanded',String(next));
-  button.setAttribute('aria-label',next?'DPS 분석 보드 창 메뉴 닫기':'DPS 분석 보드 창 메뉴 열기');
+  button.setAttribute('aria-label',next?'독립 창 메뉴 닫기':'독립 창 보기 선택');
   if(next){
     const rect=button.getBoundingClientRect();
     const width=menu.offsetWidth;
     const height=menu.offsetHeight;
     menu.style.left=Math.max(8,Math.min(rect.right-width,window.innerWidth-width-8))+'px';
     menu.style.top=Math.max(8,rect.bottom+5+height<=window.innerHeight ? rect.bottom+5 : rect.top-height-5)+'px';
-    menu.querySelector('button')?.focus();
+    menu.querySelector('button')?.focus({preventScroll:true});
   }else if(restoreFocus) button.focus();
 }
-function closeAnalysisPip(){
-  const pip=analysisPipWindow;
-  if(!pip) return;
-  cleanupAnalysisWindow(pip);
-  if(!pip.closed) pip.close();
-}
-function analysisPipSourcePath(source,root){
-  const indices=[];
-  for(let node=source;node && node!==root;node=node.parentElement){
-    if(!node.parentElement) return '';
-    indices.unshift([...node.parentElement.children].indexOf(node));
-  }
-  return indices.join('.');
-}
-function analysisPipSourceAtPath(path,root){
-  if(path==null || path==='') return null;
-  return path.split('.').reduce((node,index)=>node?.children[Number(index)],root);
-}
-function renderAnalysisWindow(win){
-  if(win.closed) return;
-  const original=qs('.right-analytics-workspace');
-  const host=win.document.getElementById('dpsPipView');
-  if(!original || !host) return;
-  const previous=host.querySelector('.right-analytics-workspace');
-  const active=win.document.activeElement?.closest?.('[data-pip-source-path]');
-  const focusPath=active?.dataset.pipSourcePath;
-  const selection=active && 'selectionStart' in active ? {start:active.selectionStart,end:active.selectionEnd}:null;
-  const scrollTop=win.document.scrollingElement?.scrollTop || 0;
-  const innerScrolls=new Map();
-  previous?.querySelectorAll('[data-pip-scroll]').forEach(element=>innerScrolls.set(element.dataset.pipScroll,[element.scrollTop,element.scrollLeft]));
-  const clone=original.cloneNode(true);
-  clone.querySelectorAll('button,input,select,textarea,[role="button"]').forEach(element=>{
-    const path=analysisPipSourcePath(element,clone);
-    if(path) element.dataset.pipSourcePath=path;
-  });
-  clone.querySelectorAll('button.app-select-trigger').forEach(button=>button.remove());
-  clone.querySelectorAll('select.app-select-native-source').forEach(select=>{
-    select.classList.remove('app-select-native-source');
-    select.removeAttribute('aria-hidden');
-    select.removeAttribute('tabindex');
-  });
-  clone.querySelectorAll('select,input,textarea').forEach(control=>{
-    const source=analysisPipSourceAtPath(control.dataset.pipSourcePath,original);
-    if(!source) return;
-    if(control.type==='checkbox'||control.type==='radio') control.checked=source.checked;
-    else control.value=source.value;
-  });
-  const closeButton=clone.querySelector('#analysisPipToggle');
-  if(closeButton){
-    closeButton.textContent='×';
-    closeButton.setAttribute('aria-label','이 분석 보드 창 닫기');
-    closeButton.removeAttribute('aria-haspopup');
-    closeButton.removeAttribute('aria-controls');
-    closeButton.removeAttribute('aria-expanded');
-    delete closeButton.dataset.pipOpen;
-    closeButton.dataset.analysisWindowClose='true';
-  }
-  clone.querySelectorAll('.dps-overview,.dps-base-unit-slot-stack,.dps-jewel-config-grid').forEach((element,index)=>{element.dataset.pipScroll=String(index);});
-  host.replaceChildren(clone);
-  clone.querySelectorAll('[data-pip-scroll]').forEach(element=>{
-    const scroll=innerScrolls.get(element.dataset.pipScroll);
-    if(scroll){element.scrollTop=scroll[0];element.scrollLeft=scroll[1];}
-  });
-  win.document.documentElement.style.setProperty('--app-font-scale',getComputedStyle(document.documentElement).getPropertyValue('--app-font-scale'));
-  if(win.document.scrollingElement) win.document.scrollingElement.scrollTop=scrollTop;
-  if(focusPath){
-    const current=[...clone.querySelectorAll('[data-pip-source-path]')].find(element=>element.dataset.pipSourcePath===focusPath);
-    current?.focus({preventScroll:true});
-    if(current && selection && typeof current.setSelectionRange==='function'){
-      try{current.setSelectionRange(selection.start,selection.end);}catch{}
-    }
-  }
-}
-function scheduleAnalysisWindowRender(){
-  if(!analysisWindowRecords.size || analysisWindowRenderFrame) return;
-  analysisWindowRenderFrame=requestAnimationFrame(()=>{
-    analysisWindowRenderFrame=0;
-    for(const win of analysisWindowRecords){
-      if(win.closed) cleanupAnalysisWindow(win);
-      else renderAnalysisWindow(win);
-    }
-  });
-}
-function cleanupAnalysisWindow(win){
-  if(!analysisWindowRecords.delete(win) && analysisPipWindow!==win) return;
-  if(analysisPipWindow===win){
-    analysisPipWindow=null;
-    analysisPipLayoutObserver?.disconnect();
-    analysisPipLayoutObserver=null;
-    setAnalysisPipButtonState(false);
-  }
-  if(!analysisWindowRecords.size){
-    analysisWindowObserver?.disconnect();
-    analysisWindowObserver=null;
-    if(analysisWindowRenderFrame) cancelAnimationFrame(analysisWindowRenderFrame);
-    analysisWindowRenderFrame=0;
-  }
-}
-function initializeAnalysisWindow(win){
-  const source=qs('.right-analytics-workspace');
-  if(!source) throw new Error('DPS 분석 보드를 찾을 수 없습니다.');
-  win.document.title='DPS 분석 보드 · PiP';
-  win.document.documentElement.lang='ko';
-  win.document.body.className='dps-pip-body';
-  document.head.querySelectorAll('style,link[rel="stylesheet"]').forEach(sheet=>{
-    const copy=sheet.cloneNode(true);
-    if(copy.tagName==='LINK') copy.href=sheet.href;
-    win.document.head.appendChild(copy);
-  });
-  const host=win.document.createElement('main');
-  host.id='dpsPipView';
-  host.className='dps-pip-view col-right';
-  win.document.body.appendChild(host);
-  win.document.addEventListener('click',event=>{
-    const control=event.target.closest('button,[role="button"]');
-    if(!control) return;
-    event.preventDefault();
-    if(control.dataset.analysisWindowClose==='true'){
-      win.close();
-      return;
-    }
-    const original=analysisPipSourceAtPath(control.dataset.pipSourcePath,source);
-    if(original && !original.disabled){
-      original.click();
-      if($('dpsUnitSlotModal') && !$('dpsUnitSlotModal').hidden) window.focus();
-    }
-    scheduleAnalysisWindowRender();
-  });
-  win.document.addEventListener('change',event=>{
-    const control=event.target.closest('select,input,textarea');
-    const original=analysisPipSourceAtPath(control?.dataset.pipSourcePath,source);
-    if(!original || original.disabled) return;
-    if(control.type==='checkbox'||control.type==='radio') original.checked=control.checked;
-    else original.value=control.value;
-    original.dispatchEvent(new Event('change',{bubbles:true}));
-    scheduleAnalysisWindowRender();
-  });
-  win.document.addEventListener('input',event=>{
-    const control=event.target.closest('input,textarea');
-    const original=analysisPipSourceAtPath(control?.dataset.pipSourcePath,source);
-    if(!original || original.disabled) return;
-    original.value=control.value;
-    original.dispatchEvent(new Event('input',{bubbles:true}));
-    scheduleAnalysisWindowRender();
-  });
-  win.addEventListener('pagehide',()=>cleanupAnalysisWindow(win),{once:true});
-  analysisWindowRecords.add(win);
-  if(!analysisWindowObserver){
-    analysisWindowObserver=new MutationObserver(scheduleAnalysisWindowRender);
-    analysisWindowObserver.observe(source,{subtree:true,childList:true,characterData:true,attributes:true});
-  }
-  renderAnalysisWindow(win);
-}
-async function toggleAnalysisPip(){
-  if(analysisPipWindow && !analysisPipWindow.closed){closeAnalysisPip();return;}
-  if(!analysisPipAllowed() || analysisPipOpening) return;
-  if(!window.isSecureContext || !window.documentPictureInPicture?.requestWindow){
-    showToast('PiP는 HTTPS 환경의 지원 브라우저(Chrome·Edge)에서 사용할 수 있습니다.','warn');
-    return;
-  }
-  analysisPipOpening=true;
-  try{
-    // 사용자 클릭 활성화가 유효할 때 Document PiP 창부터 생성한다.
-    const pip=await window.documentPictureInPicture.requestWindow({width:760,height:690});
-    analysisPipWindow=pip;
-    initializeAnalysisWindow(pip);
-    analysisPipLayoutObserver=new MutationObserver(()=>{
-      if(!analysisPipAllowed()) closeAnalysisPip();
-    });
-    analysisPipLayoutObserver.observe(document.body,{attributes:true,attributeFilter:['class']});
-    if(!analysisPipAllowed()){closeAnalysisPip();return;}
-    setAnalysisPipButtonState(true);
-  }catch(error){
-    if(analysisPipWindow) closeAnalysisPip();
-    rememberAppIssue('warn','분석 보드 PiP 열기',error);
-    showToast('PiP 창을 열지 못했습니다. 브라우저 지원 및 팝업 권한을 확인해 주세요.','warn');
-  }finally{
-    analysisPipOpening=false;
-  }
-}
-function openIndependentAnalysisWindow(){
-  if(!analysisPipAllowed()) return;
-  analysisIndependentOpened=true;
-  // 기존 입력값을 먼저 저장해, 완전히 별도로 실행되는 새 창도 같은 상태로 시작한다.
+function openIndependentAnalysisWindow(view='board'){
+  if(window.DPS_STANDALONE_VIEW || !['board','utility','both'].includes(view)) return;
   saveState({silent:true});
+  // 페이지 자체를 새 창에서 실행해 원본 탭 종료에 종속되지 않도록 한다.
   const url=new URL(window.location.href);
-  url.searchParams.set('dpsWindow','independent');
+  url.searchParams.set('dpsWindow',view);
   url.searchParams.delete('fresh');
   url.searchParams.delete('__dps_check');
-  // noopener는 원본 창이 닫혀도 창이 유지되도록 연결 관계를 끊는다.
-  // 브라우저 표준에 따라 noopener를 쓰면 window.open은 창을 열어도 null을 반환한다.
-  window.open(url.href,'_blank','noopener,popup=yes,width=820,height=740,resizable=yes,scrollbars=yes');
+  const sizes=view==='utility' ? {width:480,height:690} : view==='both' ? {width:820,height:740} : {width:620,height:690};
+  const features=`popup=yes,width=${sizes.width},height=${sizes.height},resizable=yes,scrollbars=yes`;
+  const win=window.open(url.href,'_blank',features);
+  if(!win){showToast('독립 창이 차단되었습니다. 팝업 허용 설정을 확인해 주세요.','warn');return;}
+  try{win.opener=null;win.focus();}catch{}
 }
-function bindAnalysisPipButton(){
-  const button=$('analysisPipToggle');
-  if(window.DPS_INDEPENDENT_WINDOW && button){
-    document.title='DPS 분석 보드 · 독립 창';
-    button.textContent='×';
-    button.setAttribute('aria-label','독립 창 닫기');
-    button.removeAttribute('aria-haspopup');
-    button.removeAttribute('aria-controls');
-    button.removeAttribute('aria-expanded');
-    button.addEventListener('click',()=>window.close());
-  }else{
-    button?.addEventListener('click',()=>setAnalysisPipMenuOpen($('analysisPipMenu')?.hidden));
-  }
-  $('analysisPipMenu')?.addEventListener('click',event=>{
-    const action=event.target.closest('[data-analysis-window-action]');
+function bindIndependentWindowButton(){
+  if(window.DPS_STANDALONE_VIEW) return;
+  $('independentWindowToggle')?.addEventListener('click',()=>setIndependentWindowMenuOpen($('independentWindowMenu')?.hidden));
+  $('independentWindowMenu')?.addEventListener('click',event=>{
+    const action=event.target.closest('[data-independent-view]');
     if(!action) return;
-    setAnalysisPipMenuOpen(false);
-    if(action.dataset.analysisWindowAction==='pip') toggleAnalysisPip();
-    else if(action.dataset.analysisWindowAction==='independent') openIndependentAnalysisWindow();
+    setIndependentWindowMenuOpen(false);
+    openIndependentAnalysisWindow(action.dataset.independentView);
   });
   document.addEventListener('click',event=>{
-    if($('analysisPipMenu')?.hidden!==false) return;
-    if(event.target.closest('#analysisPipMenu,#analysisPipToggle')) return;
-    setAnalysisPipMenuOpen(false);
+    if($('independentWindowMenu')?.hidden!==false) return;
+    if(event.target.closest('#independentWindowMenu,#independentWindowToggle')) return;
+    setIndependentWindowMenuOpen(false);
   });
   document.addEventListener('keydown',event=>{
-    if(event.key!=='Escape' || $('analysisPipMenu')?.hidden!==false) return;
+    if(event.key!=='Escape' || $('independentWindowMenu')?.hidden!==false) return;
     event.preventDefault();
-    setAnalysisPipMenuOpen(false,true);
+    setIndependentWindowMenuOpen(false,true);
   });
-  window.addEventListener('resize',()=>setAnalysisPipMenuOpen(false));
-  window.addEventListener('scroll',()=>setAnalysisPipMenuOpen(false),true);
-  // 서로 다른 독립 창은 localStorage를 통해 상태를 공유한다. 수신 시 재저장은 하지 않는다.
-  window.addEventListener('storage',event=>{
-    if((!window.DPS_INDEPENDENT_WINDOW && !analysisIndependentOpened) || event.key!==STORAGE_KEY || !event.newValue || !window.__dpsAppReady) return;
-    try{
-      const state=normalizeSavedState(safeJsonParse(event.newValue));
-      if(!state) return;
-      cancelScheduledAutoSave();
-      if(appUpdateTimer) clearTimeout(appUpdateTimer);
-      appUpdateTimer=0;
-      pendingAppUpdateSave=false;
-      applyStateObject(state,{save:false});
-      syncSelectButtons();
-      syncBuffChoiceButtons();
-    }catch(error){
-      rememberAppIssue('warn','독립 창 상태 동기화',error);
-    }
-  });
-  window.addEventListener('pagehide',()=>{
-    for(const win of analysisWindowRecords){
-      cleanupAnalysisWindow(win);
-      if(!win.closed) win.close();
-    }
-  });
+  window.addEventListener('resize',()=>setIndependentWindowMenuOpen(false));
 }
 function bindDamageBoardTabEvents(){
   document.addEventListener('click',e=>{
@@ -3109,6 +2926,17 @@ function setTraitTierExpanded(tier,expanded){
   if(toggle) toggle.setAttribute('aria-expanded',String(expanded));
   setAccordionContentExpanded(list,expanded);
 }
+let traitQuickInvestEnabled=false;
+function toggleTraitQuickInvest(){
+  traitQuickInvestEnabled=!traitQuickInvestEnabled;
+  const button=$('traitQuickInvestToggle');
+  if(button){
+    button.setAttribute('aria-pressed',String(traitQuickInvestEnabled));
+    button.setAttribute('aria-label',traitQuickInvestEnabled?'텐키리스 빠른 투자 버튼 숨기기':'텐키리스 빠른 투자 버튼 표시');
+    button.title=traitQuickInvestEnabled?'빠른 투자 숨기기':'빠른 투자 +10 / +50 표시';
+  }
+  updateTraits();
+}
 function updateTraits(){
   const body=$('traitBody');
   if(!body) return;
@@ -3137,6 +2965,7 @@ function updateTraits(){
           </div>
           <button type="button" class="ui-step-btn" data-action="traitAdjust" data-row="${row}" data-delta="1" ${isMax?'disabled':''} aria-label="${escapeHtml(name)} 1 투자">+</button>
           <button type="button" class="ui-action-btn trait-master-btn" data-action="traitMax" data-row="${row}" ${isMax?'disabled':''}>마스터</button>
+          ${traitQuickInvestEnabled && mx>=50 ? `<div class="trait-quick-actions"><button type="button" data-action="traitQuickAdjust" data-row="${row}" data-step="10" ${isMax?'disabled':''} aria-label="${escapeHtml(name)} 10회 추가 투자">+10</button><button type="button" data-action="traitQuickAdjust" data-row="${row}" data-step="50" ${isMax?'disabled':''} aria-label="${escapeHtml(name)} 50회 추가 투자">+50</button></div>` : ''}
         </div>
       </article>`;
     }).join('');
@@ -4146,6 +3975,8 @@ const ACTION_HANDLERS={
     return adjustTraitBy(+trigger.dataset.row,+trigger.dataset.delta,1);
   },
   traitMax:(trigger)=>adjMax(+trigger.dataset.row),
+  toggleTraitQuickInvest,
+  traitQuickAdjust:(trigger)=>adjustTraitBy(+trigger.dataset.row,1,+trigger.dataset.step),
   toggleTraitTier:(trigger)=>{ const tier=trigger.dataset.tier||''; setTraitTierExpanded(tier,!expandedTraitTiers.has(tier)); },
   masterTier:(trigger)=>masterTier(trigger.dataset.tier||''),
   resetTier:(trigger)=>{ const tier=trigger.dataset.tier||''; return requestConfirmAction(`resetTier:${tier}`, `한 번 더 누르면 ${tier} 초기화`, ()=>resetTier(tier)); }
@@ -4263,7 +4094,7 @@ function bindAppEvents(){
     bindFontScaleViewportGuard, bindFontScalePopover, bindActionEvents, bindTraitHoldEvents, bindTraitInputEvents,
     bindIntegratedTabEvents, ()=>window.DpsPreset.bindEvents(), bindJewelImageEvents,
     bindZeroScoreCalculator, bindTraitLimitDisplayEvents, bindTraitLimitChoiceEvents, bindDpsBaseUnitControlEvents, bindReactiveInputs,
-    bindButtonPressFeedback, bindAnalysisPipButton, bindDamageBoardTabEvents, bindDpsTableEvents, bindDamageBoardSwitchEvents, bindAppTitleVersion
+    bindButtonPressFeedback, bindIndependentWindowButton, bindDamageBoardTabEvents, bindDpsTableEvents, bindDamageBoardSwitchEvents, bindAppTitleVersion
   ].forEach(fn=>fn());
 }
 // 일반 select는 계산·저장 이벤트의 원본으로 유지하고, 표시와 조작만 앱 내부 목록으로 대체합니다.
@@ -4523,6 +4354,7 @@ function initAppSelectDropdowns(){
 function initApp(){
   loadFontScale();
   renderZeroScoreCalculatorRows();
+  renderCertifiedBuilds();
   bindAppEvents();
   syncEnchantCodeFromInputs(true);
   syncSelectButtons();

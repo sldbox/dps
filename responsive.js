@@ -4,6 +4,22 @@
  */
 (() => {
   'use strict';
+  // 독립 창은 자체 페이지이므로 원본 모바일 탭 재배치를 적용하지 않는다.
+  if(window.DPS_STANDALONE_VIEW){
+    const modes=['is-pc-landscape','is-pc-portrait','is-tablet','is-mobile','is-portrait-view','is-mobile-device','is-tablet-device','is-narrow-mobile','is-tabbed'];
+    const init=()=>{
+      for(const el of [document.body,document.documentElement]){
+        el.classList.remove(...modes);
+        el.classList.add('is-pc-landscape');
+      }
+      window.__dpsResponsiveLayoutReady=true;
+      window.dpsMarkResponsiveLayoutReady?.();
+    };
+    window.dpsSyncResponsiveLayout=init;
+    if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',init,{once:true});
+    else init();
+    return;
+  }
 
   /* 반응형 상태·측정 헬퍼 */
   const MODES = ['is-pc-landscape', 'is-pc-portrait', 'is-tablet', 'is-mobile', 'is-portrait-view', 'is-mobile-device', 'is-tablet-device', 'is-narrow-mobile', 'is-tabbed'];
@@ -62,8 +78,6 @@
     };
   }
   function getMode() {
-    // 독립 분석 창에서는 숨겨진 본문과 분리해 한 개의 보드 레이아웃을 유지한다.
-    if(document.documentElement.classList.contains('dps-independent-window')) return 'is-pc-landscape';
     const { w, h } = getViewportSize();
     const shortSide = Math.min(w, h);
     const longSide = Math.max(w, h);
