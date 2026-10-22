@@ -2749,6 +2749,173 @@ function setDamageBoardTab(active){
   if(next==='table') renderDpsTablePanelContent();
   if(changed) renderTraitRecommendations();
 }
+/* 분석 보드 전용 Document PiP: 원본 DOM과 이벤트/계산을 원래 문서에 유지한다. */
+let analysisPipWindow=null;
+let analysisPipObserver=null;
+let analysisPipLayoutObserver=null;
+let analysisPipRenderFrame=0;
+function analysisPipAllowed(){
+  return document.body.classList.contains('is-pc-landscape')
+    && !document.body.classList.contains('is-tabbed')
+    && window.matchMedia('(orientation:landscape) and (hover:hover) and (pointer:fine)').matches;
+}
+function closeAnalysisPip(){
+  analysisPipWindow?.close();
+}
+function setAnalysisPipButtonState(open){
+  const button=$('analysisPipToggle');
+  if(!button) return;
+  button.setAttribute('aria-pressed',String(open));
+  button.setAttribute('aria-label',open?'DPS 분석 보드 PiP 창 닫기':'DPS 분석 보드 PiP 창 열기');
+}
+function analysisPipSourcePath(source,root){
+  const indices=[];
+  for(let node=source;node && node!==root;node=node.parentElement){
+    if(!node.parentElement) return '';
+    indices.unshift([...node.parentElement.children].indexOf(node));
+  }
+  return indices.join('.');
+}
+function analysisPipSourceAtPath(path,root){
+  if(path==null || path==='') return null;
+  return path.split('.').reduce((node,index)=>node?.children[Number(index)],root);
+}
+function renderAnalysisPip(){
+  const pip=analysisPipWindow;
+  if(!pip || pip.closed) return;
+  const original=qs('.right-analytics-workspace');
+  const host=pip.document.getElementById('dpsPipView');
+  if(!original || !host) return;
+  const previous=host.querySelector('.right-analytics-workspace');
+  const active=pip.document.activeElement?.closest?.('[data-pip-source-path]');
+  const focusPath=active?.dataset.pipSourcePath;
+  const selection=active && 'selectionStart' in active ? {start:active.selectionStart,end:active.selectionEnd}:null;
+  const scrollTop=pip.document.scrollingElement?.scrollTop || 0;
+  const innerScrolls=new Map();
+  previous?.querySelectorAll('[data-pip-scroll]').forEach(element=>innerScrolls.set(element.dataset.pipScroll,[element.scrollTop,element.scrollLeft]));
+  const clone=original.cloneNode(true);
+  clone.querySelectorAll('button,input,select,textarea,[role="button"]').forEach(element=>{
+    const path=analysisPipSourcePath(element,clone);
+    if(path) element.dataset.pipSourcePath=path;
+  });
+  clone.querySelectorAll('button.app-select-trigger').forEach(button=>button.remove());
+  clone.querySelectorAll('select.app-select-native-source').forEach(select=>{
+    select.classList.remove('app-select-native-source');
+    select.removeAttribute('aria-hidden');
+    select.removeAttribute('tabindex');
+  });
+  clone.querySelectorAll('select,input,textarea').forEach(control=>{
+    const source=analysisPipSourceAtPath(control.dataset.pipSourcePath,original);
+    if(!source) return;
+    if(control.type==='checkbox'||control.type==='radio') control.checked=source.checked;
+    else control.value=source.value;
+  });
+  clone.querySelectorAll('.dps-overview,.dps-base-unit-slot-stack,.dps-jewel-config-grid').forEach((element,index)=>{element.dataset.pipScroll=String(index);});
+  host.replaceChildren(clone);
+  clone.querySelectorAll('[data-pip-scroll]').forEach(element=>{
+    const scroll=innerScrolls.get(element.dataset.pipScroll);
+    if(scroll){element.scrollTop=scroll[0];element.scrollLeft=scroll[1];}
+  });
+  pip.document.documentElement.style.setProperty('--app-font-scale',getComputedStyle(document.documentElement).getPropertyValue('--app-font-scale'));
+  if(pip.document.scrollingElement) pip.document.scrollingElement.scrollTop=scrollTop;
+  if(focusPath){
+    const current=[...clone.querySelectorAll('[data-pip-source-path]')].find(element=>element.dataset.pipSourcePath===focusPath);
+    current?.focus({preventScroll:true});
+    if(current && selection && typeof current.setSelectionRange==='function'){
+      try{current.setSelectionRange(selection.start,selection.end);}catch{}
+    }
+  }
+}
+function scheduleAnalysisPipRender(){
+  if(!analysisPipWindow || analysisPipRenderFrame) return;
+  analysisPipRenderFrame=requestAnimationFrame(()=>{
+    analysisPipRenderFrame=0;
+    renderAnalysisPip();
+  });
+}
+function cleanupAnalysisPip(pip){
+  if(analysisPipWindow!==pip) return;
+  analysisPipObserver?.disconnect();
+  analysisPipObserver=null;
+  analysisPipLayoutObserver?.disconnect();
+  analysisPipLayoutObserver=null;
+  if(analysisPipRenderFrame) cancelAnimationFrame(analysisPipRenderFrame);
+  analysisPipRenderFrame=0;
+  analysisPipWindow=null;
+  setAnalysisPipButtonState(false);
+}
+async function toggleAnalysisPip(){
+  if(analysisPipWindow && !analysisPipWindow.closed){closeAnalysisPip();return;}
+  if(!analysisPipAllowed()) return;
+  if(!window.isSecureContext || !window.documentPictureInPicture?.requestWindow){
+    showToast('PiP는 HTTPS 환경의 지원 브라우저(Chrome·Edge)에서 사용할 수 있습니다.','warn');
+    return;
+  }
+  try{
+    // 사용자 클릭 이벤트의 활성화가 사라지기 전에 창부터 연다.
+    const pip=await window.documentPictureInPicture.requestWindow({width:760,height:690});
+    analysisPipWindow=pip;
+    pip.document.title='DPS 분석 보드';
+    pip.document.documentElement.lang='ko';
+    pip.document.body.className='dps-pip-body';
+    document.head.querySelectorAll('style,link[rel="stylesheet"]').forEach(sheet=>{
+      const copy=sheet.cloneNode(true);
+      if(copy.tagName==='LINK') copy.href=sheet.href;
+      pip.document.head.appendChild(copy);
+    });
+    const host=pip.document.createElement('main');
+    host.id='dpsPipView';
+    host.className='dps-pip-view col-right';
+    pip.document.body.appendChild(host);
+    const source=qs('.right-analytics-workspace');
+    if(!source) throw new Error('DPS 분석 보드를 찾을 수 없습니다.');
+    pip.document.addEventListener('click',event=>{
+      const control=event.target.closest('button,[role="button"]');
+      if(!control) return;
+      event.preventDefault();
+      const original=analysisPipSourceAtPath(control.dataset.pipSourcePath,source);
+      if(original && !original.disabled){
+        original.click();
+        if($('dpsUnitSlotModal') && !$('dpsUnitSlotModal').hidden) window.focus();
+      }
+      scheduleAnalysisPipRender();
+    });
+    pip.document.addEventListener('change',event=>{
+      const control=event.target.closest('select,input,textarea');
+      const original=analysisPipSourceAtPath(control?.dataset.pipSourcePath,source);
+      if(!original || original.disabled) return;
+      if(control.type==='checkbox'||control.type==='radio') original.checked=control.checked;
+      else original.value=control.value;
+      original.dispatchEvent(new Event('change',{bubbles:true}));
+      scheduleAnalysisPipRender();
+    });
+    pip.document.addEventListener('input',event=>{
+      const control=event.target.closest('input,textarea');
+      const original=analysisPipSourceAtPath(control?.dataset.pipSourcePath,source);
+      if(!original || original.disabled) return;
+      original.value=control.value;
+      original.dispatchEvent(new Event('input',{bubbles:true}));
+      scheduleAnalysisPipRender();
+    });
+    pip.addEventListener('pagehide',()=>cleanupAnalysisPip(pip),{once:true});
+    analysisPipObserver=new MutationObserver(scheduleAnalysisPipRender);
+    analysisPipObserver.observe(source,{subtree:true,childList:true,characterData:true,attributes:true});
+    analysisPipLayoutObserver=new MutationObserver(()=>{
+      if(!analysisPipAllowed()) closeAnalysisPip();
+    });
+    analysisPipLayoutObserver.observe(document.body,{attributes:true,attributeFilter:['class']});
+    if(!analysisPipAllowed()){closeAnalysisPip();return;}
+    renderAnalysisPip();
+    setAnalysisPipButtonState(true);
+  }catch(error){
+    if(analysisPipWindow){const pip=analysisPipWindow;cleanupAnalysisPip(pip);pip.close();}
+    rememberAppIssue('warn','분석 보드 PiP 열기',error);
+    showToast('PiP 창을 열지 못했습니다. 브라우저 지원 및 팝업 권한을 확인해 주세요.','warn');
+  }
+}
+function bindAnalysisPipButton(){
+  $('analysisPipToggle')?.addEventListener('click',toggleAnalysisPip);
+}
 function bindDamageBoardTabEvents(){
   document.addEventListener('click',e=>{
     const tab=e.target?.closest?.('[data-damage-board-tab]');
@@ -3978,7 +4145,7 @@ function bindAppEvents(){
     bindFontScaleViewportGuard, bindFontScalePopover, bindActionEvents, bindTraitHoldEvents, bindTraitInputEvents,
     bindIntegratedTabEvents, ()=>window.DpsPreset.bindEvents(), bindJewelImageEvents,
     bindZeroScoreCalculator, bindTraitLimitDisplayEvents, bindTraitLimitChoiceEvents, bindDpsBaseUnitControlEvents, bindReactiveInputs,
-    bindButtonPressFeedback, bindDamageBoardTabEvents, bindDpsTableEvents, bindDamageBoardSwitchEvents, bindAppTitleVersion
+    bindButtonPressFeedback, bindAnalysisPipButton, bindDamageBoardTabEvents, bindDpsTableEvents, bindDamageBoardSwitchEvents, bindAppTitleVersion
   ].forEach(fn=>fn());
 }
 // 일반 select는 계산·저장 이벤트의 원본으로 유지하고, 표시와 조작만 앱 내부 목록으로 대체합니다.
