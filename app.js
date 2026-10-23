@@ -2678,7 +2678,7 @@ function renderCertifiedBuilds(){
       ];
       const chipsMarkup=`<div class="certified-build-meta-chips">${infoItems.map(([label,value,extra])=>`<span class="certified-build-meta-chip ${extra||''}"><small>${escapeHtml(label)}</small><strong>${escapeHtml(value)}</strong></span>`).join('')}</div>`;
       const optionRows=(rows)=>rows.map(([label,value])=>`<div class="certified-build-stat-row"><dt>${escapeHtml(label)}</dt><dd>${escapeHtml(value)}</dd></div>`).join('');
-      const configMarkup=`<section class="certified-build-config-card"><div class="certified-build-config-grid"><div class="certified-build-config-section"><h4>룬 옵션 설정</h4><dl class="certified-build-stat-list">${optionRows(build.runeOptions||[])}</dl></div><div class="certified-build-config-section"><h4>인첸트 레벨</h4><dl class="certified-build-stat-list">${optionRows(build.enchantLevels||[])}</dl></div></div></section>`;
+      const configMarkup=`<section class="certified-build-config-card"><div class="certified-build-config-grid"><div class="certified-build-config-section"><h4>룬 옵션 설정</h4><dl class="certified-build-stat-list">${optionRows(build.runeOptions||[])}</dl></div><div class="certified-build-config-section"><h4>인챈트 레벨</h4><dl class="certified-build-stat-list">${optionRows(build.enchantLevels||[])}</dl></div></div></section>`;
       const unitsMarkup=`<section class="certified-build-units-card"><h4>유닛 정보</h4><div class="certified-build-units">${build.units.map(group=>`<div class="certified-build-unit-row"><strong>${escapeHtml(group.grade)}</strong><span>${group.names.map(escapeHtml).join(' · ')}</span></div>`).join('')}</div></section>`;
       return `
       <details class="certified-build-card${featuredClass}" data-certified-build-id="${escapeHtml(build.id)}">
