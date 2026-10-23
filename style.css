@@ -1906,6 +1906,8 @@ body .right-workspace-window-menu{position:fixed;z-index:9500;display:grid;gap:3
 body .right-workspace-window-menu[hidden]{display:none;}
 body .right-workspace-window-menu button{display:flex;align-items:center;box-sizing:border-box;width:100%;min-height:36px;padding:8px 11px;border:0;border-radius:6px;background:transparent;color:#e2efff;font:inherit;font-size:12px;font-weight:750;text-align:left;cursor:pointer;}
 body .right-workspace-window-menu button:hover,body .right-workspace-window-menu button:focus-visible{background:#254364;color:#fff;outline:2px solid #83b5ff;outline-offset:-2px;}
+/* 모바일·태블릿 화면에서는 헤더의 독립 창 메뉴를 표시하지 않는다. */
+body:is(.is-mobile,.is-tablet) .hdr-meta .right-workspace-window-toggle,body:is(.is-mobile,.is-tablet) .right-workspace-window-menu{display:none;}
 /* 독립 창: 스크립트를 자체 실행하고 화면에 해당 패널만 표시한다. 원본 탭 종료와 무관하다. */
 html[data-dps-standalone-view] body{min-width:0!important;width:100%;height:auto!important;min-height:100vh;overflow:auto!important;background:#080b10;}
 html[data-dps-standalone-view] .hdr,html[data-dps-standalone-view] .mobile-section-tabs,html[data-dps-standalone-view] .trait-preset-change-notice{display:none!important;}
