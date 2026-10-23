@@ -4,7 +4,7 @@
 <meta charset="UTF-8"/>
 <meta name="google-site-verification" content="RTuDWbMdnKgbpRpl05eXh9epFwWRSxju4NOl8OtjMsI" />
 <script>
-window.DPS_BUILD_VERSION = "dps-2610230018";
+window.DPS_BUILD_VERSION = "dps-2610230019";
 window.DPS_STANDALONE_VIEW = (function(){
   var requested=new URLSearchParams(window.location.search).get('dpsWindow');
   var value=['board','utility','both'].includes(requested) ? requested : '';
@@ -140,6 +140,7 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
   }
   window.dpsShowBootError=function(code, err){
     window.__dpsBootError=true;
+    if(window.nexusCancelIntro) window.nexusCancelIntro();
     try{window.DPS_LAST_BOOT_ERROR={code:code,error:err||'unknown',time:Date.now()};}catch(e){ window.__dpsBootErrorRecordFailed=e; }
     try{
       document.documentElement.classList.add('dps-booting','dps-boot-error');
@@ -166,6 +167,7 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
   }
   function dpsReleaseBootScreen(){
     if(window.__dpsBootError) return;
+    if(window.nexusFinishIntro && !window.__nexusIntroReleased){window.nexusFinishIntro(dpsReleaseBootScreen);return;}
     window.__dpsAppReadyPendingForResponsive=false;
     try{document.documentElement.classList.remove('dps-booting','dps-boot-error');}catch(e){ window.__dpsBootReleaseClassError=e; }
     try{
@@ -203,14 +205,14 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 <meta content="https://sldbox.github.io/dps/" property="og:url"/>
 <meta content="개복디 특성 게산기" property="og:title"/>
 <meta content="특성 투자, 재화 사용량, 표기 스탯, 총데미지, DPS를 한 번에 계산할 수 있는 개복디 전용 계산기입니다." property="og:description"/>
-<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2610230018" property="og:image"/>
-<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2610230018" property="og:image:secure_url"/>
+<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2610230019" property="og:image"/>
+<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2610230019" property="og:image:secure_url"/>
 <meta content="image/png" property="og:image:type"/>
 <meta content="개복디 특성 게산기 로고" property="og:image:alt"/>
 <meta content="summary_large_image" name="twitter:card"/>
 <meta content="개복디 특성 게산기" name="twitter:title"/>
 <meta content="특성 투자, 재화 사용량, 표기 스탯, 총데미지, DPS를 한 번에 계산할 수 있는 개복디 전용 계산기입니다." name="twitter:description"/>
-<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2610230018" name="twitter:image"/>
+<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2610230019" name="twitter:image"/>
 <meta content="개복디 특성 게산기 로고" name="twitter:image:alt"/>
 <link href="https://cdn.jsdelivr.net" rel="preconnect"/>
 <link crossorigin="" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" rel="stylesheet"/>
@@ -226,6 +228,241 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
   }
   appendLink({href:icon, rel:'icon', type:'image/png'});
   appendLink({rel:'stylesheet', href:assetUrl('./style.css', 'style.css')});
+})();
+</script>
+<script id="standaloneExperience">
+(function(){
+'use strict';
+var isDps=true;
+var release={version:window.DPS_BUILD_VERSION,intro:{enabled:true,durationMs:3000}};
+function sharedAssetUrl(){return window.dpsAssetUrl('./icon.png','icon.png');}
+  // 인트로는 세션/빌드당 한 번, 실제 앱 준비 완료 후에만 종료됩니다.
+  var introState={active:false,ready:false,released:false,started:0,done:null,timer:0,frame:0,boot:null,skip:false};
+  var introPreview=new URLSearchParams(window.location.search).get('intro')==='preview';
+  var introSeenKey='dps:intro:'+release.version;
+  function introAlreadySeen(){try{return sessionStorage.getItem(introSeenKey)==='1';}catch(error){return false;}}
+  window.nexusCancelIntro=function(){
+    clearTimeout(introState.timer);
+    cancelAnimationFrame(introState.frame);
+    introState.active=false;
+    introState.released=true;
+    window.__nexusIntroReleased=true;
+    if(introState.boot) introState.boot.classList.remove('nexus-cinematic','is-ready','is-leaving','is-static');
+    window.removeEventListener('resize',resizeIntroStars);
+    document.removeEventListener('keydown',handleIntroKey,true);
+  };
+  function endIntro(){
+    if(window.__nexusBootError || window.__dpsBootError){window.nexusCancelIntro();return;}
+    if(!introState.ready || introState.released) return;
+    introState.released=true;
+    introState.active=false;
+    window.__nexusIntroReleased=true;
+    clearTimeout(introState.timer);
+    cancelAnimationFrame(introState.frame);
+    try{sessionStorage.setItem(introSeenKey,'1');}catch(error){}
+    var boot=introState.boot;
+    if(boot) boot.classList.add('is-leaving');
+    if(introState.done) introState.done();
+    setTimeout(function(){if(boot) boot.classList.remove('is-leaving');},700);
+    window.removeEventListener('resize',resizeIntroStars);
+    document.removeEventListener('keydown',handleIntroKey,true);
+  }
+  function skipIntro(){
+    introState.skip=true;
+    if(introState.ready) endIntro();
+    else if(introState.boot){
+      var status=introState.boot.querySelector('.nexus-cinema-status');
+      if(status) status.textContent='화면을 준비하고 있습니다.';
+    }
+  }
+  function handleIntroKey(event){
+    if(event.key==='Escape' && introState.active){event.preventDefault();event.stopImmediatePropagation();skipIntro();}
+  }
+  function resizeIntroStars(){
+    var canvas=introState.boot && introState.boot.querySelector('canvas');
+    if(!canvas) return;
+    var ratio=Math.min(window.devicePixelRatio || 1,1.5);
+    canvas.width=Math.round(window.innerWidth*ratio);
+    canvas.height=Math.round(window.innerHeight*ratio);
+    canvas.dataset.ratio=ratio;
+  }
+  function startIntroStars(canvas){
+    var context=canvas.getContext('2d');
+    if(!context) return;
+    var stars=[];
+    var seed=47;
+    function random(){seed=(seed*16807)%2147483647;return (seed-1)/2147483646;}
+    var count=window.innerWidth<600?90:210;
+    for(var i=0;i<count;i++) stars.push({x:random(),y:random(),size:.25+random()*.9,light:.12+random()*.6,phase:random()*6.28});
+    resizeIntroStars();
+    function draw(time){
+      if(!introState.active || !canvas.isConnected || window.__nexusBootError || window.__dpsBootError) return;
+      var ratio=Number(canvas.dataset.ratio || 1);
+      var width=canvas.width/ratio,height=canvas.height/ratio;
+      context.setTransform(ratio,0,0,ratio,0,0);
+      context.clearRect(0,0,width,height);
+      var elapsed=(time-introState.started)/1000;
+      stars.forEach(function(star){
+        var x=star.x*width+(star.x-.5)*elapsed*2;
+        var y=star.y*height+(star.y-.5)*elapsed*1.2;
+        var alpha=star.light*(.75+.25*Math.sin(time*.0006+star.phase));
+        context.fillStyle='rgba(175,216,242,'+alpha+')';
+        context.beginPath();context.arc(x,y,star.size,0,Math.PI*2);context.fill();
+      });
+      introState.frame=requestAnimationFrame(draw);
+    }
+    introState.frame=requestAnimationFrame(draw);
+  }
+  function mountIntro(){
+    if(introState.active || introState.released || window.NEXUS_REDIRECTING || window.DPS_STANDALONE_VIEW || new URLSearchParams(window.location.search).get('nexusStandalone')==='build') return;
+    if(window.__nexusBootError || window.__dpsBootError) return;
+    if(release.intro && release.intro.enabled===false) return;
+    var staticIntro=(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) || (!introPreview && introAlreadySeen());
+    var boot=document.getElementById(isDps?'dpsBootScreen':'nexusBootScreen');
+    if(!boot) return;
+    introState.boot=boot;
+    introState.active=true;
+    introState.skip=Boolean(staticIntro);
+    introState.started=performance.now();
+    boot.classList.add('nexus-cinematic','trait-intro');
+    if(staticIntro) boot.classList.add('is-static');
+    boot.innerHTML='<canvas class="nexus-cinema-stars" aria-hidden="true"></canvas><div class="nexus-cinema-horizon" aria-hidden="true"></div><div class="nexus-cinema-grain" aria-hidden="true"></div><div class="nexus-cinema-top"><span class="nexus-cinema-brand">개복디 특성 계산기</span></div><button type="button" class="nexus-cinema-skip">건너뛰기 <span aria-hidden="true">↓</span></button><div class="nexus-cinema-content"><div class="nexus-cinema-emblem" aria-hidden="true"><div class="nexus-cinema-aura"></div><div class="nexus-cinema-guides"></div><div class="trait-circuit"><svg viewBox="0 0 500 360" fill="none"><path d="M70 180H138L190 128M430 112H355L304 163M250 318V268L284 235" stroke="currentColor" stroke-width="1"/><circle cx="70" cy="180" r="5"/><circle cx="430" cy="112" r="5"/><circle cx="250" cy="318" r="5"/></svg><span class="trait-node trait-node-a"><small>01 / TRAIT</small><b>특성</b></span><span class="trait-node trait-node-b"><small>02 / POWER</small><b>스탯</b></span><span class="trait-node trait-node-c"><small>03 / DAMAGE</small><b>DPS</b></span></div><div class="trait-scan"></div><div class="nexus-cinema-orbit"></div><div class="nexus-cinema-orbit second"></div><img class="nexus-cinema-mark" src="'+sharedAssetUrl('assets/brand/icon.png')+'" width="512" height="512" alt=""/><div class="nexus-cinema-flare"></div></div><h1 class="nexus-cinema-heading">TRAIT</h1><p class="nexus-cinema-name">개복디 특성 계산기</p><p class="nexus-cinema-tagline">특성에서 데미지까지, 최적의 한 수.</p></div><div class="nexus-cinema-foot"><div class="nexus-cinema-track" aria-hidden="true"></div><p class="nexus-cinema-status" role="status">화면을 준비하고 있습니다.</p></div><span class="nexus-cinema-edge" aria-hidden="true">DPS / BUILD STUDIO</span><span class="nexus-cinema-version"></span>';
+    boot.querySelector('.nexus-cinema-version').textContent=release.version;
+    boot.querySelector('.nexus-cinema-skip').addEventListener('click',skipIntro);
+    document.addEventListener('keydown',handleIntroKey,true);
+    window.addEventListener('resize',resizeIntroStars,{passive:true});
+    if(!staticIntro) startIntroStars(boot.querySelector('canvas'));
+  }
+  window.nexusFinishIntro=function(done){
+    if(introState.released){done();return;}
+    mountIntro();
+    if(!introState.active){window.__nexusIntroReleased=true;done();return;}
+    introState.done=done;
+    introState.ready=true;
+    introState.boot.classList.add('is-ready');
+    introState.boot.querySelector('.nexus-cinema-status').textContent='준비가 완료되었습니다.';
+    if(introState.skip){endIntro();return;}
+    var duration=Math.max(0,Math.min(6000,Number(release.intro && release.intro.durationMs) || 3000));
+    clearTimeout(introState.timer);
+    function countdown(){
+      if(introState.released) return;
+      var remaining=Math.max(0,duration-(performance.now()-introState.started));
+      if(remaining===0){endIntro();return;}
+      introState.boot.querySelector('.nexus-cinema-status').textContent=Math.ceil(remaining/1000)+'초 후 자동 입장';
+      introState.timer=setTimeout(countdown,Math.min(1000,remaining));
+    }
+    countdown();
+  };
+
+  function syncHeaderControlLayout(){
+    var header=document.getElementById('globalHeader');
+    if(!header) return;
+    var rect=header.getBoundingClientRect();
+    header.dataset.nexusLayout=window.innerWidth<768?'mobile':(rect.width<400 && rect.height>window.innerHeight*.7?'rail':'bar');
+  }
+  function mountControlLabels(){
+    var definitions=[
+      ['[data-nexus-view="dps"]','특성 계산기 이동',window.innerWidth<768?32:34],
+      ['#btnFontSizePopup','글씨 크기 조절',window.innerWidth<768?32:34],
+      ['.font-scale-trigger','글씨 크기 조절',30],
+      ['.header-nexus-link','히든조합 계산기 이동',window.innerWidth<600?30:35],
+      ['#dpsCompareOpen','전체 DPS 비교표',35],
+      ['#independentWindowToggle','독립 창 선택',35],
+      
+
+    ];
+    definitions.forEach(function(definition){
+      document.querySelectorAll(definition[0]).forEach(function(control){
+        var base=definition[2];
+        control.style.setProperty('--nexus-control-base',base+'px');
+        if(control.classList.contains('nexus-labelled-control')) return;
+        control.classList.add('nexus-labelled-control');
+        control.dataset.nexusControlName=definition[1];
+        control.removeAttribute('title');
+        var icon=document.createElement('span');
+        icon.className='nexus-control-icon';
+        icon.setAttribute('aria-hidden','true');
+        while(control.firstChild) icon.appendChild(control.firstChild);
+        control.appendChild(icon);
+        var label=document.createElement('span');
+        label.className='nexus-action-label';
+        label.setAttribute('aria-hidden','true');
+        var text=document.createElement('span');
+        text.textContent=definition[1];
+        label.appendChild(text);
+        control.appendChild(label);
+      });
+    });
+    if(window.__nexusControlLabelsBound) return;
+    window.__nexusControlLabelsBound=true;
+    var current=null,timer=0,touchTarget=null,armed=null,armedUntil=0;
+    function findControl(target){return target && target.closest ? target.closest('.nexus-labelled-control') : null;}
+    function hide(){
+      clearTimeout(timer);
+      if(current) current.classList.remove('is-label-visible','is-label-touch');
+      current=null;armed=null;armedUntil=0;
+    }
+    function show(control,touch){
+      if(!control || control.disabled) return;
+      if(current && current!==control) hide();
+      current=control;
+      clearTimeout(timer);
+      control.classList.add('is-label-visible');
+      control.classList.toggle('is-label-touch',!!touch);
+      var label=control.querySelector('.nexus-action-label');
+      var width=Math.ceil(label.scrollWidth);
+      var base=parseFloat(control.style.getPropertyValue('--nexus-control-base')) || 34;
+      control.style.setProperty('--nexus-label-width',width+'px');
+      control.style.setProperty('--nexus-control-expanded',(base+width+12)+'px');
+      timer=setTimeout(hide,touch?3000:2000);
+    }
+    document.addEventListener('pointerover',function(event){
+      if(event.pointerType==='touch' || event.pointerType==='pen') return;
+      var control=findControl(event.target);
+      if(control && control!==findControl(event.relatedTarget)) show(control,false);
+    },true);
+    document.addEventListener('pointerout',function(event){
+      if(event.pointerType==='touch' || event.pointerType==='pen') return;
+      if(current && findControl(event.target)===current && findControl(event.relatedTarget)!==current) hide();
+    },true);
+    document.addEventListener('focusin',function(event){
+      var control=findControl(event.target);
+      if(control && control!==touchTarget) show(control,false);
+    });
+    document.addEventListener('focusout',function(event){
+      if(!touchTarget && current && findControl(event.relatedTarget)!==current) hide();
+    });
+    document.addEventListener('pointerdown',function(event){
+      var control=findControl(event.target);
+      var touch=event.pointerType==='touch' || event.pointerType==='pen';
+      touchTarget=touch?control:null;
+      if(touch && control) show(control,true);
+      else if(!control) hide();
+    },true);
+    document.addEventListener('pointercancel',function(){touchTarget=null;hide();},true);
+    document.addEventListener('click',function(event){
+      var control=findControl(event.target);
+      if(!control) return;
+      // 마우스/키보드는 한 번 클릭, 터치는 이름 확인 후 두 번째 탭에서 실행합니다.
+      if(control!==touchTarget || event.detail===0){touchTarget=null;hide();return;}
+      if(armed===control && Date.now()<armedUntil){touchTarget=null;hide();return;}
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      show(control,true);
+      armed=control;
+      armedUntil=Date.now()+3000;
+    },true);
+    document.addEventListener('keydown',function(event){
+      if(event.key==='Escape'){touchTarget=null;hide();}
+      if(event.key==='Enter' || event.key===' '){touchTarget=null;hide();}
+    },true);
+    window.addEventListener('resize',function(){hide();mountControlLabels();syncHeaderControlLayout();},{passive:true});
+    window.addEventListener('blur',function(){touchTarget=null;hide();});
+  }
+
+
+function init(){mountIntro();mountControlLabels();syncHeaderControlLayout();}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
 })();
 </script>
 </head>
@@ -250,7 +487,7 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
   root.style.setProperty('--mobile-tabs-h', (mode==='is-mobile'||mode==='is-tablet'||mode==='is-pc-portrait') ? '52px' : '0px');
 })();
 </script>
-<div id="dpsBootScreen" aria-live="polite"><div class="boot-card"><div class="boot-title">특성 계산기 적용 중</div><div class="boot-desc">최신 빌드와 스타일을 불러오는 중입니다.</div></div></div>
+<div id="dpsBootScreen" aria-live="polite" aria-label="로딩"></div>
 <div class="trait-preset-change-notice" id="traitPresetChangeNotice" role="status" aria-live="polite" aria-atomic="true" hidden>
   <span class="trait-preset-change-notice-icon" aria-hidden="true">!</span>
   <span class="trait-preset-change-notice-text">프리셋 변경값이 감지됐어요.<small>프리셋 관리에서 확인해 주세요.</small></span>
@@ -289,7 +526,7 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 <div class="header-convenience" aria-label="빠른 이동">
 <div class="header-reference-actions">
 
-<a class="btn subtle ui-action-btn header-nexus-link" href="https://sldbox.github.io/site/" aria-label="넥서스 바로가기" title="넥서스 바로가기"><svg class="header-nexus-mark" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false"><defs><linearGradient id="headerNexusGradient" x1="7" y1="8" x2="25" y2="24" gradientUnits="userSpaceOnUse"><stop stop-color="#e7fbff"/><stop offset=".55" stop-color="#8edbff"/><stop offset="1" stop-color="#6b9dff"/></linearGradient></defs><path d="M7 24V8h4.4L21 18.9V8h4v16h-4.3L11 13.2V24H7Z" fill="url(#headerNexusGradient)"/><path d="M11 13.2 20.7 24" stroke="#edfbff" stroke-width=".8" stroke-opacity=".65"/></svg></a>
+<a class="btn subtle ui-action-btn header-nexus-link" href="https://sldbox.github.io/site/" aria-label="히든조합 계산기 이동" title="히든조합 계산기 이동"><svg class="header-nexus-mark" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false"><defs><linearGradient id="headerNexusGradient" x1="7" y1="8" x2="25" y2="24" gradientUnits="userSpaceOnUse"><stop stop-color="#e7fbff"/><stop offset=".55" stop-color="#8edbff"/><stop offset="1" stop-color="#6b9dff"/></linearGradient></defs><path d="M7 24V8h4.4L21 18.9V8h4v16h-4.3L11 13.2V24H7Z" fill="url(#headerNexusGradient)"/><path d="M11 13.2 20.7 24" stroke="#edfbff" stroke-width=".8" stroke-opacity=".65"/></svg></a>
 </div>
 </div>
 <div aria-label="글씨 크기 조절" class="font-scale-ctrl">
