@@ -1085,17 +1085,9 @@ function switchDpsCompareMode(mode){
   activeDpsCompareMode=mode;
   renderDpsCompareContent();
 }
-function dpsCompareAvailableOnPc(){
-  if(window.DPS_STANDALONE_VIEW) return true;
-  const w=document.documentElement.clientWidth || window.innerWidth || 0;
-  const h=document.documentElement.clientHeight || window.innerHeight || 0;
-  const shortSide=Math.min(w,h);
-  const longSide=Math.max(w,h);
-  return shortSide>600 && !(shortSide<=1024 && longSide<=1366);
-}
 function openDpsCompareModal(trigger){
   const overlay=$('dpsCompareModalOverlay');
-  if(!overlay || !overlay.hidden || !dpsCompareAvailableOnPc()) return;
+  if(!overlay || !overlay.hidden) return;
   dpsCompareReturnFocus=trigger||document.activeElement;
   activeDpsCompareMode=['tower','planet'].includes(activeDpsTableMode)?'floor':activeDpsTableMode;
   overlay.hidden=false;
@@ -1117,11 +1109,6 @@ function bindDpsCompareEvents(){
   const open=$('dpsCompareOpen');
   if(!overlay || !open) return;
   open.addEventListener('click',()=>openDpsCompareModal(open));
-  window.addEventListener('resize',()=>{
-    window.requestAnimationFrame(()=>{
-      if(!dpsCompareAvailableOnPc()) closeDpsCompareModal();
-    });
-  });
   overlay.addEventListener('click',event=>{
     const tab=event.target.closest('[data-dps-compare-tab]');
     if(tab){switchDpsCompareMode(tab.dataset.dpsCompareTab);return;}
