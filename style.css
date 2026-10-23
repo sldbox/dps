@@ -2130,56 +2130,7 @@ body .trait-preset-panel .trait-preset-brand{display:flex;align-items:center;gap
 body .trait-preset-panel .trait-preset-brand-copy{display:flex;align-items:center;min-width:0;}
 @media(max-width:520px){body .trait-preset-panel .trait-preset-brand-mark{flex-basis:30px;width:30px;min-width:30px;height:28px;border-radius:9px;}body .trait-preset-panel .trait-preset-brand{gap:7px;}}
 
-/* 이 독립 버전 전용 인트로 및 헤더 버튼 */
-#nexusBootScreen.nexus-cinematic,#dpsBootScreen.nexus-cinematic{display:grid;place-items:center;isolation:isolate;overflow:hidden;background:#02050a;color:#eaf5ff;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;opacity:1;transition:opacity .65s ease,filter .65s ease;}
-#nexusBootScreen.nexus-cinematic.is-leaving,#dpsBootScreen.nexus-cinematic.is-leaving{display:grid!important;opacity:0;filter:blur(8px);pointer-events:none;}
-.nexus-cinematic::before{content:"";position:absolute;inset:0;z-index:-1;background:radial-gradient(ellipse at 50% 43%,#0a264650,transparent 47%),radial-gradient(ellipse at 50% 110%,#123f6555,transparent 48%),linear-gradient(180deg,#020408,#030811 60%,#02050a);}
-.nexus-cinematic::after{content:"";position:absolute;inset:0;pointer-events:none;box-shadow:inset 0 0 160px 45px #0008;background:linear-gradient(0deg,#0008,transparent 25%,transparent 80%,#0005);}
-.nexus-cinema-stars{position:absolute;inset:0;width:100%;height:100%;opacity:.8;}
-.nexus-cinema-horizon{position:absolute;left:-30%;right:-30%;bottom:-68%;height:88%;border-radius:50%;border-top:1px solid #74c5fb55;background:radial-gradient(ellipse at 50% 0%,#2072a21a,transparent 38%);box-shadow:0 -10px 90px #2c9ddd16;transform:rotate(-9deg);animation:nexusHorizon 4s ease-out both;}
-.nexus-cinema-grain{position:absolute;inset:0;pointer-events:none;opacity:.12;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' opacity='.24' filter='url(%23n)'/%3E%3C/svg%3E");}
-.nexus-cinema-top{position:absolute;top:34px;left:42px;right:42px;display:flex;align-items:center;justify-content:space-between;gap:20px;z-index:2;}
-.nexus-cinema-brand{display:flex;align-items:center;gap:12px;color:#a9bfd0;font-size:11px;letter-spacing:.15em;}
-.nexus-cinema-brand::before{content:"";width:5px;height:5px;background:#91d8ff;box-shadow:0 0 12px #5cc6ff;transform:rotate(45deg);}
-.nexus-cinema-content{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;text-align:center;transform:translateY(-15px);}
-.nexus-cinema-emblem{position:relative;width:clamp(300px,44vw,540px);height:clamp(280px,36vw,410px);display:grid;place-items:center;perspective:800px;}
-.nexus-cinema-aura{position:absolute;width:70%;aspect-ratio:1;border-radius:50%;background:radial-gradient(circle,#2f8bc519,transparent 65%);filter:blur(18px);animation:nexusAura 3.2s ease-out both;}
-.nexus-cinema-orbit{position:absolute;width:84%;aspect-ratio:1;border:1px solid #8ac7ed26;border-radius:50%;box-shadow:0 0 22px #59bdf30b,inset 0 0 30px #59bdf307;transform:rotateX(66deg) rotateZ(-28deg);animation:nexusOrbitEnter 2.8s cubic-bezier(.16,1,.3,1) both;}
-.nexus-cinema-orbit::before,.nexus-cinema-orbit::after{content:"";position:absolute;inset:-4px;border:1px solid transparent;border-top-color:#b3e7ff91;border-left-color:#4a93b63d;border-radius:50%;animation:nexusOrbitSpin 14s linear infinite;}
-.nexus-cinema-orbit::after{inset:14px;border-top-color:#9fdfff38;border-left-color:transparent;animation-direction:reverse;animation-duration:22s;}
-.nexus-cinema-orbit.second{width:100%;opacity:.48;transform:rotateX(68deg) rotateY(35deg) rotateZ(42deg);animation-delay:.15s;}
-.nexus-cinema-orbit.second::before{border-top-color:#d7efff66;animation-duration:24s;}
-.nexus-cinema-guides{position:absolute;inset:3% 12%;border-radius:50%;border:1px dashed #acd6ef10;transform:scale(.85);opacity:.6;animation:nexusGuideEnter 2.4s ease both;}
-.nexus-cinema-guides::before,.nexus-cinema-guides::after{content:"";position:absolute;width:4px;height:4px;top:50%;background:#81cef6;border-radius:50%;box-shadow:0 0 14px #54b8f0;}
-.nexus-cinema-guides::before{left:0}.nexus-cinema-guides::after{right:0}
-.nexus-cinema-mark{position:relative;width:clamp(185px,25vw,292px);height:auto;aspect-ratio:1;object-fit:contain;mask-image:radial-gradient(circle,#000 52%,transparent 74%);filter:saturate(.55) contrast(1.12) drop-shadow(0 0 28px #3ca6e51a);animation:nexusMarkEnter 2.5s cubic-bezier(.16,1,.3,1) both;}
-.nexus-cinema-flare{position:absolute;left:5%;right:5%;top:50%;height:1px;background:linear-gradient(90deg,transparent,#8cd8ff44,transparent);opacity:.5;box-shadow:0 0 20px #50bcff55;animation:nexusFlare 3s ease-out both;pointer-events:none;}
-.nexus-cinema-heading{margin:-7px 0 0;padding-left:.42em;color:#e1ecf3;font-family:"Arial",system-ui,sans-serif;font-size:clamp(40px,5vw,65px);font-weight:400;line-height:1.2;letter-spacing:.42em;text-shadow:0 0 30px #8abede30;animation:nexusTypeEnter 2.4s .55s cubic-bezier(.16,1,.3,1) both;}
-.nexus-cinema-name{margin:21px 0 0;color:#b9cedc;font-size:14px;font-weight:500;letter-spacing:.28em;animation:nexusTextEnter 1.5s 1.1s ease both;}
-.nexus-cinema-tagline{margin:12px 0 0;color:#6f8c9f;font-size:11px;letter-spacing:.14em;animation:nexusTextEnter 1.5s 1.35s ease both;}
-.nexus-cinema-foot{position:absolute;bottom:calc(88px + env(safe-area-inset-bottom,0px));left:50%;width:210px;transform:translateX(-50%);text-align:center;z-index:2;animation:nexusTextEnter 1.4s .8s ease both;}
-.nexus-cinema-track{height:1px;overflow:hidden;background:#9ed7fa1a;margin-bottom:14px;}
-.nexus-cinema-track::after{content:"";display:block;width:44%;height:100%;background:linear-gradient(90deg,transparent,#8bcff2,transparent);animation:nexusLoading 2s ease-in-out infinite;}
-.nexus-cinema-status{margin:0;color:#718c9d;font-size:10px;letter-spacing:.1em;}
-.nexus-cinematic.is-static *,.nexus-cinematic.is-static *::before,.nexus-cinematic.is-static *::after{animation:none!important;transition:none!important}
-.nexus-cinematic.is-static .nexus-cinema-stars{display:none}
-.nexus-cinematic.is-ready .nexus-cinema-track::after{width:100%;animation:none;background:#98cfe973;}
-.nexus-cinema-version{position:absolute;right:42px;bottom:28px;z-index:2;color:#496373;font:10px/1.4 ui-monospace,monospace;letter-spacing:.07em;}
-.nexus-cinema-edge{position:absolute;left:42px;bottom:29px;z-index:2;display:flex;align-items:center;gap:8px;color:#47606f;font-size:9px;letter-spacing:.18em;}
-.nexus-cinema-edge::before{content:"";width:24px;height:1px;background:#83b7d548;}
-@keyframes nexusMarkEnter{0%{opacity:0;transform:scale(.82) translateZ(-100px);filter:brightness(.15) saturate(.2) blur(12px)}35%{opacity:1}70%{filter:brightness(1.12) saturate(.55) blur(0)}100%{opacity:1;transform:scale(1);filter:saturate(.55) contrast(1.12)}}
-@keyframes nexusOrbitEnter{0%{opacity:0;scale:.7;filter:blur(7px)}100%{opacity:1;scale:1;filter:blur(0)}}
-@keyframes nexusOrbitSpin{to{rotate:360deg}}
-@keyframes nexusGuideEnter{from{opacity:0;rotate:-25deg;scale:.8}to{opacity:.6;rotate:0deg;scale:1}}
-@keyframes nexusTypeEnter{from{opacity:0;letter-spacing:.7em;filter:blur(8px);translate:0 12px}to{opacity:1;letter-spacing:.42em;filter:blur(0);translate:0 0}}
-@keyframes nexusTextEnter{from{opacity:0;translate:0 8px}to{opacity:1;translate:0 0}}
-@keyframes nexusAura{from{opacity:0;scale:.5}to{opacity:1;scale:1}}
-@keyframes nexusFlare{0%,18%{opacity:0;scale:.2 1}42%{opacity:.8;scale:1.3 1}100%{opacity:.25;scale:1 1}}
-@keyframes nexusHorizon{from{opacity:0;translate:0 40px}to{opacity:1;translate:0 0}}
-@keyframes nexusLoading{from{translate:-110% 0}to{translate:340% 0}}
-@media(max-width:600px){.nexus-cinema-top{top:22px;left:22px;right:22px}.nexus-cinema-brand{font-size:9px}.nexus-cinema-content{transform:translateY(-18px)}.nexus-cinema-emblem{width:330px;height:290px}.nexus-cinema-heading{font-size:42px}.nexus-cinema-name{font-size:12px}.nexus-cinema-tagline{font-size:9px}.nexus-cinema-version{right:22px;bottom:calc(68px + env(safe-area-inset-bottom,0px))}.nexus-cinema-edge{left:22px;bottom:calc(68px + env(safe-area-inset-bottom,0px))}.nexus-cinematic::after{box-shadow:inset 0 0 80px 15px #0007}}
-@media(max-height:600px){.nexus-cinema-emblem{height:210px;width:310px}.nexus-cinema-mark{width:170px}.nexus-cinema-heading{font-size:34px}.nexus-cinema-name{margin-top:10px}.nexus-cinema-tagline{margin-top:7px}.nexus-cinema-content{transform:translateY(-18px)}}
-@media(prefers-reduced-motion:reduce){.nexus-cinematic *,.nexus-cinematic *::before,.nexus-cinematic *::after{animation:none!important;transition:none!important}.nexus-cinema-stars{display:none}}
+/* 헤더 버튼 표시 및 레이아웃 */
 body .nexus-labelled-control{position:relative!important;display:inline-flex!important;align-items:center!important;justify-content:flex-start!important;flex:0 0 auto!important;width:var(--nexus-control-base,34px)!important;min-width:var(--nexus-control-base,34px)!important;max-width:100%;gap:0!important;padding:0!important;overflow:hidden!important;white-space:nowrap;transition:width .18s ease,background .15s ease,border-color .15s ease!important;}
 body .nexus-labelled-control > .nexus-control-icon{display:flex!important;align-items:center!important;justify-content:center!important;flex:0 0 calc(var(--nexus-control-base,34px) - 2px)!important;width:calc(var(--nexus-control-base,34px) - 2px)!important;min-width:0;height:100%;margin:0!important;line-height:1;}
 body .nexus-labelled-control > .nexus-action-label{position:static!important;display:block!important;flex:0 0 auto;max-width:0;overflow:hidden;margin:0!important;padding:0!important;opacity:0;font:600 11px/1.3 system-ui,-apple-system,sans-serif!important;letter-spacing:0!important;white-space:nowrap;color:inherit;pointer-events:none;transition:opacity .12s ease,max-width .18s ease;}
@@ -2197,28 +2148,5 @@ body .nexus-labelled-control.is-label-visible > .nexus-action-label{max-width:va
 @media(max-width:767px){.global-header .gh-left{padding-right:120px;}.global-header:has(.gh-right .is-label-visible) .gh-left{padding-right:240px;}}
 @media(prefers-reduced-motion:reduce){body .nexus-labelled-control,body .nexus-labelled-control > .nexus-action-label{transition:none!important;}}
     
-/* 특성 계산기 전용 D+ / Trait Engine 시네마틱 */
-.trait-intro::before{background:radial-gradient(ellipse at 50% 40%,#07394866,transparent 52%),radial-gradient(ellipse at 50% 110%,#123a6055,transparent 60%),linear-gradient(180deg,#02070d,#040c15);}
-.trait-intro .nexus-cinema-emblem{width:clamp(320px,45vw,550px);height:clamp(280px,32vw,360px);}
-.trait-intro .nexus-cinema-mark{width:clamp(160px,20vw,245px);filter:saturate(.8) contrast(1.1) drop-shadow(0 0 30px #45dcff30);}
-.trait-intro .nexus-cinema-orbit{width:66%;border-radius:25%;border-color:#5fcbd743;transform:rotateZ(45deg);box-shadow:0 0 38px #40cef016,inset 0 0 30px #40cef00e;}
-.trait-intro .nexus-cinema-orbit.second{width:88%;border-radius:50%;transform:rotateZ(0deg);border-style:dashed;}
-.trait-intro .nexus-cinema-heading{font-size:clamp(36px,5vw,58px);letter-spacing:.34em;padding-left:.34em;color:#d8f7ff;}
-.trait-intro .nexus-cinema-name{margin-top:18px;font-size:16px;letter-spacing:.15em;}
-.trait-intro .nexus-cinema-tagline{color:#82a7b6;}
-.trait-circuit{position:absolute;inset:0;z-index:2;pointer-events:none;color:#55bfd08c;animation:nexusTextEnter 1.1s .5s ease both;}
-.trait-circuit svg{width:100%;height:100%;overflow:visible;}
-.trait-circuit circle{fill:#99f1ff;stroke:#54d9ee;stroke-width:2;filter:drop-shadow(0 0 5px #45e3ff);}
-.trait-node{position:absolute;display:flex;flex-direction:column;gap:5px;padding:8px 12px;border:1px solid #5bdbe138;border-radius:6px;background:#061820d9;box-shadow:0 0 22px #2af1ff0c;color:#d4f6ff;text-align:left;}
-.trait-node small{font:8px/1.2 ui-monospace,monospace;letter-spacing:.08em;color:#71b5c2;}
-.trait-node b{font:600 13px/1.2 system-ui,sans-serif;letter-spacing:.04em;}
-.trait-node-a{left:1%;top:43%;}.trait-node-b{right:0;top:18%;}.trait-node-c{left:50%;bottom:1%;transform:translateX(-50%);}
-.trait-scan{position:absolute;z-index:1;inset:15% 20%;border-radius:24%;background:linear-gradient(transparent 40%,#57e9ef12 49%,#9bfaff60 50%,transparent 52%);background-size:100% 200%;animation:traitScan 2.8s ease-in-out both;pointer-events:none;mix-blend-mode:screen;}
-@keyframes traitScan{from{background-position:0 160%;opacity:0}35%{opacity:1}to{background-position:0 -70%;opacity:0}}
-@media(max-width:600px){.trait-intro .nexus-cinema-name{font-size:14px}.trait-node{padding:6px 8px}.trait-node small{font-size:6px}.trait-node b{font-size:11px}.trait-intro .nexus-cinema-tagline{font-size:10px;letter-spacing:.03em}}
-@media(max-height:600px){.trait-intro .nexus-cinema-emblem{height:230px;width:330px}.trait-intro .nexus-cinema-mark{width:150px}.trait-intro .nexus-cinema-heading{font-size:30px}.trait-intro .nexus-cinema-tagline{display:none}}
-
-.trait-intro .nexus-cinema-mark{animation-duration:1.2s}.trait-intro .nexus-cinema-heading{animation-duration:1s;animation-delay:.2s}.trait-intro .nexus-cinema-name{animation-duration:.8s;animation-delay:.5s}.trait-intro .nexus-cinema-tagline{animation-duration:.7s;animation-delay:.7s}
-
 body .nexus-labelled-control[hidden]{display:none!important}
 body:is(.is-mobile,.is-tablet) .hdr-meta .right-workspace-window-toggle.nexus-labelled-control{display:none!important}

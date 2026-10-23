@@ -4,7 +4,7 @@
 <meta charset="UTF-8"/>
 <meta name="google-site-verification" content="RTuDWbMdnKgbpRpl05eXh9epFwWRSxju4NOl8OtjMsI" />
 <script>
-window.DPS_BUILD_VERSION = "dps-2610240000";
+window.DPS_BUILD_VERSION = "dps-2610240002";
 window.DPS_STANDALONE_VIEW = (function(){
   var requested=new URLSearchParams(window.location.search).get('dpsWindow');
   var value=['board','utility','both'].includes(requested) ? requested : '';
@@ -140,8 +140,7 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
   }
   window.dpsShowBootError=function(code, err){
     window.__dpsBootError=true;
-    if(window.nexusCancelIntro) window.nexusCancelIntro();
-    try{window.DPS_LAST_BOOT_ERROR={code:code,error:err||'unknown',time:Date.now()};}catch(e){ window.__dpsBootErrorRecordFailed=e; }
+        try{window.DPS_LAST_BOOT_ERROR={code:code,error:err||'unknown',time:Date.now()};}catch(e){ window.__dpsBootErrorRecordFailed=e; }
     if(document.readyState==='loading' && !document.getElementById('dpsBootScreen')){
       document.addEventListener('DOMContentLoaded',function(){window.dpsShowBootError(code,err);},{once:true});
       return;
@@ -217,7 +216,6 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
     window.__dpsBootReleaseStarted=true;
     waitForEssentialResources().then(function(){
       if(window.__dpsBootError) return;
-      if(window.nexusFinishIntro && !window.__nexusIntroReleased){window.nexusFinishIntro(finishRelease);return;}
       finishRelease();
     }).catch(function(error){window.dpsShowBootError('D1004',error);});
   }
@@ -242,14 +240,14 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 <meta content="https://sldbox.github.io/dps/" property="og:url"/>
 <meta content="개복디 특성 게산기" property="og:title"/>
 <meta content="특성 투자, 재화 사용량, 표기 스탯, 총데미지, DPS를 한 번에 계산할 수 있는 개복디 전용 계산기입니다." property="og:description"/>
-<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2610240000" property="og:image"/>
-<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2610240000" property="og:image:secure_url"/>
+<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2610240002" property="og:image"/>
+<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2610240002" property="og:image:secure_url"/>
 <meta content="image/png" property="og:image:type"/>
 <meta content="개복디 특성 게산기 로고" property="og:image:alt"/>
 <meta content="summary_large_image" name="twitter:card"/>
 <meta content="개복디 특성 게산기" name="twitter:title"/>
 <meta content="특성 투자, 재화 사용량, 표기 스탯, 총데미지, DPS를 한 번에 계산할 수 있는 개복디 전용 계산기입니다." name="twitter:description"/>
-<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2610240000" name="twitter:image"/>
+<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2610240002" name="twitter:image"/>
 <meta content="개복디 특성 게산기 로고" name="twitter:image:alt"/>
 <link href="https://cdn.jsdelivr.net" rel="preconnect"/>
 <link crossorigin="" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" rel="stylesheet"/>
@@ -278,100 +276,6 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 <script id="standaloneExperience">
 (function(){
 'use strict';
-var isDps=true;
-var release={version:window.DPS_BUILD_VERSION,intro:{enabled:true}};
-function sharedAssetUrl(){return window.dpsAssetUrl('./icon.png','icon.png');}
-  // 필수 파일과 첫 화면 준비가 완료될 때까지 인트로를 유지합니다.
-  var introState={active:false,ready:false,released:false,started:0,done:null,frame:0,boot:null};
-  window.nexusCancelIntro=function(){
-    cancelAnimationFrame(introState.frame);
-    introState.active=false;
-    introState.released=true;
-    window.__nexusIntroReleased=true;
-    if(introState.boot) introState.boot.classList.remove('nexus-cinematic','trait-intro','is-ready','is-leaving','is-static');
-    window.removeEventListener('resize',resizeIntroStars);
-  };
-  function endIntro(){
-    if(window.__nexusBootError || window.__dpsBootError){window.nexusCancelIntro();return;}
-    if(!introState.ready || introState.released) return;
-    introState.released=true;
-    introState.active=false;
-    window.__nexusIntroReleased=true;
-    cancelAnimationFrame(introState.frame);
-    var boot=introState.boot;
-    if(boot) boot.classList.add('is-leaving');
-    // 시네마틱이 사라진 후 준비된 메인 화면을 노출합니다.
-    setTimeout(function(){
-      if(window.__nexusBootError || window.__dpsBootError) return;
-      if(introState.done) introState.done();
-      if(boot) boot.classList.remove('is-leaving');
-    },650);
-    window.removeEventListener('resize',resizeIntroStars);
-  }
-  function resizeIntroStars(){
-    var canvas=introState.boot && introState.boot.querySelector('canvas');
-    if(!canvas) return;
-    var ratio=Math.min(window.devicePixelRatio || 1,1.5);
-    canvas.width=Math.round(window.innerWidth*ratio);
-    canvas.height=Math.round(window.innerHeight*ratio);
-    canvas.dataset.ratio=ratio;
-  }
-  function startIntroStars(canvas){
-    var context=canvas.getContext('2d');
-    if(!context) return;
-    var stars=[];
-    var seed=47;
-    function random(){seed=(seed*16807)%2147483647;return (seed-1)/2147483646;}
-    var count=window.innerWidth<600?90:210;
-    for(var i=0;i<count;i++) stars.push({x:random(),y:random(),size:.25+random()*.9,light:.12+random()*.6,phase:random()*6.28});
-    resizeIntroStars();
-    function draw(time){
-      if(!introState.active || !canvas.isConnected || window.__nexusBootError || window.__dpsBootError) return;
-      var ratio=Number(canvas.dataset.ratio || 1);
-      var width=canvas.width/ratio,height=canvas.height/ratio;
-      context.setTransform(ratio,0,0,ratio,0,0);
-      context.clearRect(0,0,width,height);
-      var elapsed=(time-introState.started)/1000;
-      stars.forEach(function(star){
-        var x=star.x*width+(star.x-.5)*elapsed*2;
-        var y=star.y*height+(star.y-.5)*elapsed*1.2;
-        var alpha=star.light*(.75+.25*Math.sin(time*.0006+star.phase));
-        context.fillStyle='rgba(175,216,242,'+alpha+')';
-        context.beginPath();context.arc(x,y,star.size,0,Math.PI*2);context.fill();
-      });
-      introState.frame=requestAnimationFrame(draw);
-    }
-    introState.frame=requestAnimationFrame(draw);
-  }
-  function mountIntro(){
-    if(introState.active || introState.released || window.NEXUS_REDIRECTING || window.DPS_STANDALONE_VIEW || new URLSearchParams(window.location.search).get('nexusStandalone')==='build') return;
-    if(window.__nexusBootError || window.__dpsBootError) return;
-    if(release.intro && release.intro.enabled===false) return;
-    var staticIntro=window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    var boot=document.getElementById(isDps?'dpsBootScreen':'nexusBootScreen');
-    if(!boot) return;
-    introState.boot=boot;
-    introState.active=true;
-    introState.started=performance.now();
-    boot.classList.add('nexus-cinematic','trait-intro');
-    if(staticIntro) boot.classList.add('is-static');
-    boot.innerHTML='<canvas class="nexus-cinema-stars" aria-hidden="true"></canvas><div class="nexus-cinema-horizon" aria-hidden="true"></div><div class="nexus-cinema-grain" aria-hidden="true"></div><div class="nexus-cinema-top"><span class="nexus-cinema-brand">개복디 특성 계산기</span></div><div class="nexus-cinema-content"><div class="nexus-cinema-emblem" aria-hidden="true"><div class="nexus-cinema-aura"></div><div class="nexus-cinema-guides"></div><div class="trait-circuit"><svg viewBox="0 0 500 360" fill="none"><path d="M70 180H138L190 128M430 112H355L304 163M250 318V268L284 235" stroke="currentColor" stroke-width="1"/><circle cx="70" cy="180" r="5"/><circle cx="430" cy="112" r="5"/><circle cx="250" cy="318" r="5"/></svg><span class="trait-node trait-node-a"><small>01 / TRAIT</small><b>특성</b></span><span class="trait-node trait-node-b"><small>02 / POWER</small><b>스탯</b></span><span class="trait-node trait-node-c"><small>03 / DAMAGE</small><b>DPS</b></span></div><div class="trait-scan"></div><div class="nexus-cinema-orbit"></div><div class="nexus-cinema-orbit second"></div><img class="nexus-cinema-mark" src="'+sharedAssetUrl('assets/brand/icon.png')+'" width="512" height="512" alt=""/><div class="nexus-cinema-flare"></div></div><h1 class="nexus-cinema-heading">TRAIT</h1><p class="nexus-cinema-name">개복디 특성 계산기</p><p class="nexus-cinema-tagline">특성에서 데미지까지, 최적의 한 수.</p></div><div class="nexus-cinema-foot"><div class="nexus-cinema-track" aria-hidden="true"></div><p class="nexus-cinema-status" role="status">화면을 준비하고 있습니다.</p></div><span class="nexus-cinema-edge" aria-hidden="true">DPS / BUILD STUDIO</span><span class="nexus-cinema-version"></span>';
-    boot.querySelector('.nexus-cinema-version').textContent=release.version;
-    window.addEventListener('resize',resizeIntroStars,{passive:true});
-    if(!staticIntro) startIntroStars(boot.querySelector('canvas'));
-  }
-  window.nexusStartIntro=mountIntro;
-  window.nexusFinishIntro=function(done){
-    if(introState.released){done();return;}
-    mountIntro();
-    if(!introState.active){window.__nexusIntroReleased=true;done();return;}
-    introState.done=done;
-    introState.ready=true;
-    introState.boot.classList.add('is-ready');
-    introState.boot.querySelector('.nexus-cinema-status').textContent='준비가 완료되었습니다.';
-    endIntro();
-  };
-
   function syncHeaderControlLayout(){
     var header=document.getElementById('globalHeader');
     if(!header) return;
@@ -479,7 +383,7 @@ function sharedAssetUrl(){return window.dpsAssetUrl('./icon.png','icon.png');}
   }
 
 
-function init(){mountIntro();mountControlLabels();syncHeaderControlLayout();}
+function init(){mountControlLabels();syncHeaderControlLayout();}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
 })();
 </script>
@@ -505,8 +409,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
   root.style.setProperty('--mobile-tabs-h', (mode==='is-mobile'||mode==='is-tablet'||mode==='is-pc-portrait') ? '52px' : '0px');
 })();
 </script>
-<div id="dpsBootScreen" aria-live="polite" aria-label="로딩"></div>
-<script>window.nexusStartIntro();</script>
+<div id="dpsBootScreen" aria-live="polite"><div class="boot-card"><div class="boot-title">특성 계산기 적용 중</div><div class="boot-desc">최신 빌드와 스타일을 불러오는 중입니다.</div></div></div>
 <div class="trait-preset-change-notice" id="traitPresetChangeNotice" role="status" aria-live="polite" aria-atomic="true" hidden>
   <span class="trait-preset-change-notice-icon" aria-hidden="true">!</span>
   <span class="trait-preset-change-notice-text">프리셋 변경값이 감지됐어요.<small>프리셋 관리에서 확인해 주세요.</small></span>
