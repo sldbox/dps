@@ -1072,7 +1072,7 @@ function finishTraitPresetSelection(id, options={}){
 const TRAIT_PRESET_SELECT_GROUPS=[
   {key:'solo', label:'개인전'},
   {key:'coop', label:'협동전'},
-  {key:'tower', label:'도전의탑'},
+  {key:'tower', label:'도전의 탑'},
   {key:'planet', label:'행성탐사'}
 ];
 const TRAIT_PRESET_DIFFICULTY_ORDER=[...DPS_CONFIG.dpsTable.difficulties, TOWER_DIFFICULTY_NAME];
@@ -1147,7 +1147,7 @@ function traitPresetOptionName(preset, categoryKey){
   let name=normalizeTraitPresetName(preset?.name || '');
   name=name.replace(/^(개인전|개인|솔로|협동전|협동|버스)\s*[-–—:·]\s*/,'').trim();
   if(categoryKey==='tower'){
-    name=name.replace(/^(도전의\s*탑|도전의탑)\s*[-–—:·]?\s*/,'').trim();
+    name=name.replace(/^도전의\s*탑\s*[-–—:·]?\s*/,'').trim();
     if(/^\d+$/.test(name)) name=`${name}층`;
     if(!name){
       const floor=normalizedTowerFloorString(values.challengeTowerFloor || meta.challengeTowerFloor || '');

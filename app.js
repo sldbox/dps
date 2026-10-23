@@ -898,14 +898,13 @@ function dpsTableContextText(diff,coop=false,teamCount=1){
   const display=(isTowerDifficulty(diff)||isPlanetExplorationDifficulty(diff))?'클래식':enemyDisplayModeLabel(diff);
   return `${speed} · ${battle} · ${display}`;
 }
-function dpsTableContextHtml(diff,coop=false,teamCount=1,showDifficulty=false,options=''){
+function dpsTableContextHtml(diff,coop=false,teamCount=1,options=''){
   const summary=escapeHtml(dpsTableContextText(diff,coop,teamCount));
-  const detail=showDifficulty?`<strong class="dps-overview-difficulty">${escapeHtml(diff)}</strong>`:options;
-  return `<div class="dps-overview-condition"><span>모드 / 난이도</span><strong class="dps-overview-mode">${summary}</strong>${detail}</div>`;
+  return `<div class="dps-overview-condition"><span>모드 / 난이도</span><strong class="dps-overview-mode">${summary}</strong>${options}</div>`;
 }
 function renderDpsTableSummary(current,label,dps,enemyItems,mode='',context='',round=null){
   const number=`<span>${mode?'현재 선택 층':'현재 고행 / 라운드'}</span><strong>${current}<small>${label}</small></strong>${round===null?'':`<span class="dps-current-round">${round} 라운드</span>`}`;
-  const condition=mode?`<button type="button" class="dps-current-condition dps-current-jump" data-dps-current-row aria-label="${mode==='tower'?'도전의탑':'행성탐사'} 현재 ${current}층으로 이동">${number}<i>층 위치 보기 <span aria-hidden="true">↓</span></i></button>`:`<div class="dps-current-condition">${number}</div>`;
+  const condition=mode?`<button type="button" class="dps-current-condition dps-current-jump" data-dps-current-row aria-label="${mode==='tower'?'도전의 탑':'행성탐사'} 현재 ${current}층으로 이동">${number}<i>층 위치 보기 <span aria-hidden="true">↓</span></i></button>`:`<div class="dps-current-condition">${number}</div>`;
   return `<div class="dps-table-summary" aria-label="현재 ${current}${label} DPS 및 적 정보"><div class="dps-table-metrics${context?' is-comparison':''}">${context}${condition}<div class="dps-table-score"><span>${mode?'해당 층 DPS':'현재 DPS'}</span><strong>${formatDpsTableValue(dps)}</strong></div></div><dl class="dps-table-enemies">${enemyItems.map(([name,value])=>`<div><dt>${escapeHtml(name)}</dt><dd>${escapeHtml(String(value))}</dd></div>`).join('')}</dl></div>`;
 }
 function buildDpsVisualComparison(round,mode){
@@ -931,7 +930,7 @@ function buildDpsVisualComparison(round,mode){
   ];
   const diffOptions=(coop?COOP_DPS_TABLE_DIFFICULTIES:DPS_TABLE_DIFFICULTIES).map(item=>`<option value="${escapeHtml(item)}"${item===difficulty?' selected':''}>${escapeHtml(item)}</option>`).join('');
   const rows=values.map(({pen,dps})=>({stage:pen,dps,enemyItems,current:pen===current}));
-  const context=dpsTableContextHtml(difficulty,coop,teamCount,false,`<label class="dps-overview-select"><select id="dpsVisualDifficulty" data-dps-view-diff aria-label="비교할 난이도 선택">${diffOptions}</select></label>`);
+  const context=dpsTableContextHtml(difficulty,coop,teamCount,`<label class="dps-overview-select"><select id="dpsVisualDifficulty" data-dps-view-diff aria-label="비교할 난이도 선택">${diffOptions}</select></label>`);
   return `<div class="dps-overview">
     ${renderDpsTableSummary(current,'고행',currentValue,enemyItems,'',context,round)}
     ${renderDpsStatTable(rows,'고행',difficulty+' 고행별 DPS 및 적 정보')}
@@ -960,8 +959,11 @@ function buildDpsFloorCards(mode){
     rows.push({stage:floor,dps:value,enemyItems,current:floor===current});
   }
   const currentEnemy=rows.find(row=>row.current)?.enemyItems||[];
-  return `<section class="dps-floor-column" data-dps-floor-board="${mode}" aria-label="${tower?'도전의탑':'행성탐사'} DPS">
-    ${renderDpsTableSummary(current,'층',currentFloorDps,currentEnemy,mode,dpsTableContextHtml(diff,false,teamCount,true))}
+  const floorDiffOptions=[{value:'tower',label:'도전의 탑'},{value:'planet',label:'행성탐사'}]
+    .map(item=>`<option value="${item.value}"${item.value===mode?' selected':''}>${item.label}</option>`).join('');
+  const context=dpsTableContextHtml(diff,false,teamCount,`<label class="dps-overview-select"><select id="dpsFloorDifficulty" data-dps-floor-diff aria-label="도탑 / 행성 난이도 선택">${floorDiffOptions}</select></label>`);
+  return `<section class="dps-floor-column" data-dps-floor-board="${mode}" aria-label="${tower?'도전의 탑':'행성탐사'} DPS">
+    ${renderDpsTableSummary(current,'층',currentFloorDps,currentEnemy,mode,context)}
     ${renderDpsStatTable(rows,'층',diff+' 층별 DPS 및 적 정보')}
   </section>`;
 }
@@ -979,7 +981,7 @@ function renderDpsTableTabs(){
 function dpsTablePanelInnerHtml(){
   const round=normalizedRoundNumber(targetRoundStoredValue());
   const mode=activeDpsTableMode;
-  return `<section class="dps-table-panel">${mode==='tower'||mode==='planet'?`<div class="dps-floor-tabs integrated-tabs" role="tablist" aria-label="도탑·행성 전환"><button type="button" role="tab" class="dps-floor-tab integrated-tab${mode==='tower'?' is-active':''}" aria-selected="${mode==='tower'}" data-dps-floor-mode="tower">도전의탑</button><button type="button" role="tab" class="dps-floor-tab integrated-tab${mode==='planet'?' is-active':''}" aria-selected="${mode==='planet'}" data-dps-floor-mode="planet">행성탐사</button></div>${buildDpsFloorCards(mode)}`:buildDpsVisualComparison(round,mode)}</section>`;
+  return `<section class="dps-table-panel">${mode==='tower'||mode==='planet'?buildDpsFloorCards(mode):buildDpsVisualComparison(round,mode)}</section>`;
 }
 function renderDpsTablePanelContent(){
   const focused=document.activeElement;
@@ -1017,20 +1019,148 @@ function openDpsTable(mode='auto'){
   }
   setDamageBoardTab('table');
 }
+// 전체 DPS 비교 모달: 기존 입력값과 DPS 미리보기 캐시를 그대로 활용합니다.
+let activeDpsCompareMode='solo';
+let dpsCompareReturnFocus=null;
+function formatDpsCompareValue(value){
+  if(!Number.isFinite(value)) return '—';
+  return value.toLocaleString('ko-KR',{minimumFractionDigits:1,maximumFractionDigits:1});
+}
+function dpsCompareMatrixHtml(coop){
+  const round=normalizedRoundNumber(targetRoundStoredValue());
+  const teamCount=selectedDpsTableTeamCount(coop);
+  const difficulties=coop?COOP_DPS_TABLE_DIFFICULTIES:DPS_TABLE_DIFFICULTIES;
+  const min=coop?COOP_DPS_TABLE_PENANCE_MIN:DPS_TABLE_PENANCE_MIN;
+  const max=coop?COOP_DPS_TABLE_PENANCE_MAX:DPS_TABLE_PENANCE_MAX;
+  const currentDiff=vs('diff');
+  const currentPenance=Number(penanceStoredValue());
+  const head=difficulties.map(diff=>`<th scope="col"${diff===currentDiff?' class="is-current"':''}>${escapeHtml(diff)}</th>`).join('');
+  const rows=Array.from({length:max-min+1},(_,index)=>{
+    const pen=min+index;
+    const values=difficulties.map(diff=>{
+      const value=dpsTablePreviewValue(diff,pen,round,{battleMode:coop?'coop':'solo',teamCount});
+      const current=diff===currentDiff && pen===currentPenance;
+      return `<td${current?' class="is-current" aria-current="true"':''} aria-label="${escapeHtml(formatDpsCompareValue(value))}">${formatDpsCompareValue(value)}</td>`;
+    }).join('');
+    return `<tr><th scope="row"${pen===currentPenance?' class="is-current"':''}>${pen}고행</th>${values}</tr>`;
+  }).join('');
+  return `<div class="dps-compare-scroll"><table class="dps-compare-matrix${coop?' is-coop':' is-solo'}" aria-label="${coop?'협동전':'개인전'} 고행별 전체 난이도 DPS"><thead><tr><th scope="col">고행</th>${head}</tr></thead><tbody>${rows}</tbody></table></div>`;
+}
+function dpsCompareFloorsHtml(){
+  const teamCount=selectedDpsTableTeamCount();
+  const tables=[
+    {title:'도전의 탑',diff:'도전의 탑',config:DPS_CONFIG.dpsTable.tower,current:normalizedTowerFloorNumber(challengeTowerFloorStoredValue())},
+    {title:'행성탐사',diff:isPlanetExplorationDifficulty()?vs('diff'):'행성탐사-코랄',config:DPS_CONFIG.dpsTable.planet,current:normalizedPlanetExplorationFloorNumber(planetExplorationFloorStoredValue())}
+  ].map(item=>{
+    const min=Math.max(1,Math.round(item.config.minFloor||1));
+    const max=Math.max(min,Math.round(item.config.maxFloor||1));
+    const mid=Math.floor((min+max)/2);
+    const halves=[{start:min,end:mid},{start:mid+1,end:max}].map(range=>{
+      const rows=[];
+      for(let floor=range.start;floor<=range.end;floor++){
+        const dps=dpsTablePreviewValue(item.diff,0,floor,{battleMode:'solo',teamCount});
+        const current=floor===item.current;
+        rows.push(`<tr${current?' class="is-current" aria-current="true"':''}><th scope="row">${floor}층</th><td>${formatDpsCompareValue(dps)}</td></tr>`);
+      }
+      return `<div class="dps-compare-floor-half"><table class="dps-compare-floor-table" aria-label="${item.title} ${range.start}~${range.end}층 DPS"><thead><tr><th class="dps-compare-floor-range" colspan="2" scope="colgroup">${range.start}~${range.end}층</th></tr><tr><th scope="col">층</th><th scope="col">DPS</th></tr></thead><tbody>${rows.join('')}</tbody></table></div>`;
+    });
+    return `<section class="dps-compare-floor" aria-label="${item.title} 전체 층 DPS"><h3>${item.title}</h3><div class="dps-compare-floor-halves">${halves.join('')}</div></section>`;
+  });
+  return `<div class="dps-compare-scroll"><div class="dps-compare-floor-grid">${tables.join('')}</div></div>`;
+}
+function renderDpsCompareContent(){
+  const content=$('dpsCompareContent');
+  if(!content) return;
+  qsa('[data-dps-compare-tab]').forEach(tab=>{
+    const active=tab.dataset.dpsCompareTab===activeDpsCompareMode;
+    tab.classList.toggle('is-active',active);
+    tab.setAttribute('aria-selected',String(active));
+    tab.tabIndex=active?0:-1;
+  });
+  content.setAttribute('aria-labelledby',`dpsCompareTab-${activeDpsCompareMode}`);
+  content.innerHTML=activeDpsCompareMode==='floor'?dpsCompareFloorsHtml():dpsCompareMatrixHtml(activeDpsCompareMode==='coop');
+}
+function switchDpsCompareMode(mode){
+  if(!['solo','coop','floor'].includes(mode) || mode===activeDpsCompareMode) return;
+  activeDpsCompareMode=mode;
+  renderDpsCompareContent();
+}
+function dpsCompareAvailableOnPc(){
+  if(window.DPS_STANDALONE_VIEW) return true;
+  const w=document.documentElement.clientWidth || window.innerWidth || 0;
+  const h=document.documentElement.clientHeight || window.innerHeight || 0;
+  const shortSide=Math.min(w,h);
+  const longSide=Math.max(w,h);
+  return shortSide>600 && !(shortSide<=1024 && longSide<=1366);
+}
+function openDpsCompareModal(trigger){
+  const overlay=$('dpsCompareModalOverlay');
+  if(!overlay || !overlay.hidden || !dpsCompareAvailableOnPc()) return;
+  dpsCompareReturnFocus=trigger||document.activeElement;
+  activeDpsCompareMode=['tower','planet'].includes(activeDpsTableMode)?'floor':activeDpsTableMode;
+  overlay.hidden=false;
+  document.body.classList.add('dps-compare-modal-open');
+  renderDpsCompareContent();
+  $('dpsCompareModal')?.focus({preventScroll:true});
+}
+function closeDpsCompareModal(){
+  const overlay=$('dpsCompareModalOverlay');
+  if(!overlay || overlay.hidden) return;
+  overlay.hidden=true;
+  document.body.classList.remove('dps-compare-modal-open');
+  const focus=dpsCompareReturnFocus;
+  dpsCompareReturnFocus=null;
+  if(focus?.isConnected) focus.focus({preventScroll:true});
+}
+function bindDpsCompareEvents(){
+  const overlay=$('dpsCompareModalOverlay');
+  const open=$('dpsCompareOpen');
+  if(!overlay || !open) return;
+  open.addEventListener('click',()=>openDpsCompareModal(open));
+  window.addEventListener('resize',()=>{
+    window.requestAnimationFrame(()=>{
+      if(!dpsCompareAvailableOnPc()) closeDpsCompareModal();
+    });
+  });
+  overlay.addEventListener('click',event=>{
+    const tab=event.target.closest('[data-dps-compare-tab]');
+    if(tab){switchDpsCompareMode(tab.dataset.dpsCompareTab);return;}
+    if(event.target===overlay || event.target.closest('[data-dps-compare-close]')) closeDpsCompareModal();
+  });
+  overlay.addEventListener('keydown',event=>{
+    const tab=event.target.closest('[data-dps-compare-tab]');
+    if(tab && ['ArrowLeft','ArrowRight','Home','End'].includes(event.key)){
+      const tabs=[...overlay.querySelectorAll('[data-dps-compare-tab]')];
+      const index=tabs.indexOf(tab);
+      const next=event.key==='Home'?0:event.key==='End'?tabs.length-1:(index+(event.key==='ArrowRight'?1:-1)+tabs.length)%tabs.length;
+      switchDpsCompareMode(tabs[next].dataset.dpsCompareTab);
+      tabs[next].focus({preventScroll:true});
+      event.preventDefault();
+      return;
+    }
+    if(event.key==='Escape'){closeDpsCompareModal();event.preventDefault();return;}
+    if(event.key!=='Tab') return;
+    const dialog=$('dpsCompareModal');
+    const focusable=[...dialog.querySelectorAll('button:not([disabled]),[tabindex]:not([tabindex="-1"])')].filter(el=>el.getClientRects().length);
+    if(!focusable.length){dialog.focus();event.preventDefault();return;}
+    const first=focusable[0],last=focusable[focusable.length-1];
+    if(event.shiftKey && (document.activeElement===first||document.activeElement===dialog)){last.focus();event.preventDefault();}
+    else if(!event.shiftKey && document.activeElement===last){first.focus();event.preventDefault();}
+  });
+}
 function bindDpsTableEvents(){
   const workspace=$('workspace-dps');
   if(!workspace) return;
   workspace.addEventListener('click',event=>{
     const mode=event.target.closest('[data-dps-table-mode]');
     if(mode) switchDpsTableMode(mode.dataset.dpsTableMode);
-    const floorMode=event.target.closest('[data-dps-floor-mode]');
-    if(floorMode) switchDpsTableMode(floorMode.dataset.dpsFloorMode);
     if(event.target.closest('[data-dps-current-row]')){
       event.target.closest('.dps-floor-column')?.querySelector('.dps-stat-row.is-current')?.scrollIntoView({block:'center',behavior:'instant'});
     }
   });
   workspace.addEventListener('change',event=>{
     if(event.target.matches('[data-dps-view-diff]')) changeDpsVisualDifficulty(event.target.value);
+    if(event.target.matches('[data-dps-floor-diff]') && isDpsTableOpen()) switchDpsTableMode(event.target.value);
   });
   workspace.addEventListener('keydown',event=>{
     const tab=event.target.closest('[data-dps-table-mode]');
@@ -1056,7 +1186,7 @@ const FIELD_REGISTRY={
   xerusShard:{kind:'목표설정',name:'제루스의 파편',save:true},
   diff:{kind:'목표설정',name:'난이도',save:true},
   round:{kind:'목표설정',name:'목표 라운드',save:true},
-  challengeTowerFloor:{kind:'목표설정',name:'도전의탑 층',save:true},
+  challengeTowerFloor:{kind:'목표설정',name:'도전의 탑 층',save:true},
   planetExplorationFloor:{kind:'목표설정',name:'행성탐사 층',save:true},
   soloMode:{kind:'목표설정',name:'개인전',save:true},
   coopMode:{kind:'목표설정',name:'협동전',save:true},
@@ -2653,7 +2783,6 @@ function activateIntegratedTab(group,index){
     panel.classList.toggle('is-active',active);
     panel.hidden=!active;
   });
-  if(group==='unitDetails' && index===1) renderDpsJewelConfigGrids();
 }
 function bindIntegratedTabEvents(){
   let basicModalReturnFocus=null;
@@ -2756,21 +2885,42 @@ function bindIntegratedTabEvents(){
 /* 스펙·유닛 보드 전환 및 상태 이벤트 */
 let activeDamageBoardMode='spec';
 function setDamageBoardTab(active){
-  const next=['unit','table'].includes(active) ? active : 'spec';
-  const changed=next!=='table' && activeDamageBoardMode!==next;
-  if(next!=='table') activeDamageBoardMode=next;
+  const isTable=active==='table';
+  const next=isTable ? 'table' : (['spec','unit','jewel'].includes(active) ? active : activeDamageBoardMode);
+  const changed=!isTable && activeDamageBoardMode!==next;
+  if(!isTable) activeDamageBoardMode=next;
   qsa('[data-damage-board-tab]').forEach(tab=>{
-    const isActive=tab.dataset.damageBoardTab===next;
-    tab.classList.toggle('is-active', isActive);
-    tab.setAttribute('aria-selected', String(isActive));
-    tab.tabIndex=isActive ? 0 : -1;
+    const isActive=tab.dataset.damageBoardTab===(isTable?'table':'analysis');
+    tab.classList.toggle('is-active',isActive);
+    tab.setAttribute('aria-selected',String(isActive));
+    tab.tabIndex=isActive?0:-1;
   });
+  const analysisPanel=$('damageBoardAnalysisPanel');
+  const tableShell=$('damageBoardTableShell');
+  if(analysisPanel) analysisPanel.hidden=isTable;
+  if(tableShell) tableShell.hidden=!isTable;
+  qsa('[data-damage-board-subtab]').forEach(tab=>{
+    const isActive=tab.dataset.damageBoardSubtab===activeDamageBoardMode;
+    const isDisabled=tab.dataset.damageBoardSubtab==='jewel' && activeDamageBoardMode==='spec';
+    tab.disabled=isDisabled;
+    tab.setAttribute('aria-disabled',String(isDisabled));
+    tab.classList.toggle('is-active',isActive);
+    tab.setAttribute('aria-selected',String(isActive));
+    tab.tabIndex=isActive?0:-1;
+  });
+  const panelMode=isTable?'table':(next==='spec'?'spec':'unit');
   qsa('[data-damage-board-panel]').forEach(panel=>{
-    const isActive=panel.dataset.damageBoardPanel===next;
-    panel.classList.toggle('is-active', isActive);
+    const isActive=panel.dataset.damageBoardPanel===panelMode;
+    panel.classList.toggle('is-active',isActive);
     panel.hidden=!isActive;
   });
-  if(next==='table') renderDpsTablePanelContent();
+  qsa('[data-damage-board-unit-panel]').forEach(panel=>{
+    const isActive=panel.dataset.damageBoardUnitPanel===(next==='jewel'?'jewel':'unit');
+    panel.classList.toggle('is-active',isActive);
+    panel.hidden=!isActive;
+  });
+  if(next==='jewel') renderDpsJewelConfigGrids();
+  if(isTable) renderDpsTablePanelContent();
   if(changed) renderTraitRecommendations();
 }
 /* 글로벌 헤더: 원본과 별도로 실행되는 독립 창 세 가지 보기. */
@@ -2827,22 +2977,28 @@ function bindIndependentWindowButton(){
   window.addEventListener('resize',()=>setIndependentWindowMenuOpen(false));
 }
 function bindDamageBoardTabEvents(){
+  function selectTab(tab){
+    if(tab.disabled) return;
+    const mode=tab.dataset.damageBoardSubtab || tab.dataset.damageBoardTab;
+    if(mode==='table') openDpsTable();
+    else setDamageBoardTab(mode);
+  }
   document.addEventListener('click',e=>{
-    const tab=e.target?.closest?.('[data-damage-board-tab]');
+    const tab=e.target?.closest?.('[data-damage-board-tab],[data-damage-board-subtab]');
     if(!tab || tab.disabled) return;
     e.preventDefault();
-    if(tab.dataset.damageBoardTab==='table') openDpsTable();
-    else setDamageBoardTab(tab.dataset.damageBoardTab);
+    selectTab(tab);
   },true);
   document.addEventListener('keydown',event=>{
-    const tab=event.target.closest?.('[data-damage-board-tab]');
+    const tab=event.target.closest?.('[data-damage-board-tab],[data-damage-board-subtab]');
     if(!tab || !['ArrowLeft','ArrowRight','Home','End'].includes(event.key)) return;
-    const tabs=[...tab.parentElement.querySelectorAll('[data-damage-board-tab]')];
+    const selector=tab.matches('[data-damage-board-subtab]')?'[data-damage-board-subtab]':'[data-damage-board-tab]';
+    const tabs=[...tab.parentElement.querySelectorAll(selector)].filter(button=>!button.disabled);
     const current=tabs.indexOf(tab);
+    if(current<0 || !tabs.length) return;
     const next=event.key==='Home'?0:event.key==='End'?tabs.length-1:(current+(event.key==='ArrowRight'?1:-1)+tabs.length)%tabs.length;
     event.preventDefault();
-    if(tabs[next].dataset.damageBoardTab==='table') openDpsTable();
-    else setDamageBoardTab(tabs[next].dataset.damageBoardTab);
+    selectTab(tabs[next]);
     tabs[next].focus({preventScroll:true});
   });
 }
@@ -2989,7 +3145,7 @@ function scheduleTraitRecommendationCalculation(step){
   traitRecommendationTimer=setTimeout(step,0);
 }
 function isUnitBoardRecommendationMode(){
-  return $('damageBoardUnitTab')?.getAttribute('aria-selected')==='true';
+  return $('damageBoardAnalysisTab')?.getAttribute('aria-selected')==='true' && ['unit','jewel'].includes(activeDamageBoardMode);
 }
 function traitRecommendationNumberText(value,decimals=0){
   return Math.abs(Number(value))>=10000
@@ -3571,7 +3727,7 @@ function buildZeroScoreCalcRow(config){
   const honorCurrent=penance ? zeroScoreHonorSelectHtml(config.currentHonorClass,`${config.name} 명예 현재`) : zeroScoreInputHtml(config.currentHonorClass,{...config.honorOptions,label:`${config.name} 명예 현재`});
   const honorTarget=penance ? zeroScoreHonorSelectHtml(config.targetHonorClass,`${config.name} 명예 목표`) : zeroScoreInputHtml(config.targetHonorClass,{...config.honorOptions,label:`${config.name} 명예 목표`});
   const field=(label,control)=>`<label class="zero-calc-field"><span>${label}</span>${control}</label>`;
-  const generalLabel=penance?'일반 고행':'도전의탑';
+  const generalLabel=penance?'일반 고행':'도전의 탑';
   const honorLabel=penance?'명예':'명예의탑';
   const starControl=config.star===false
     ? '<span class="zero-calc-unavailable" aria-label="24스타 해당 없음">해당 없음</span>'
@@ -3598,7 +3754,7 @@ function buildZeroPenanceCalcRow(name,number){
   return buildZeroScoreCalcRow({type:'penance',name,number,currentHonorClass:'zero-current-honor zero-honor-input',targetHonorClass:'zero-target-honor zero-honor-input',honorOptions:{inputmode:'latin',maxlength:2,placeholder:'B'}});
 }
 function buildZeroTowerCalcRow(){
-  return buildZeroScoreCalcRow({type:'towerCombo',name:'도전의탑',number:ZERO_PENANCE_ROWS.length+1,star:false,currentHonorClass:'zero-tower-honor-current',targetHonorClass:'zero-tower-honor-target'});
+  return buildZeroScoreCalcRow({type:'towerCombo',name:'도전의 탑',number:ZERO_PENANCE_ROWS.length+1,star:false,currentHonorClass:'zero-tower-honor-current',targetHonorClass:'zero-tower-honor-target'});
 }
 function renderZeroScoreCalculatorRows(){
   const rows=$('zeroScoreRows');
@@ -4069,7 +4225,7 @@ function bindAppEvents(){
     bindFontScaleViewportGuard, bindFontScalePopover, bindActionEvents, bindTraitHoldEvents, bindTraitInputEvents,
     bindIntegratedTabEvents, ()=>window.DpsPreset.bindEvents(), bindJewelImageEvents,
     bindZeroScoreCalculator, bindTraitLimitDisplayEvents, bindTraitLimitChoiceEvents, bindDpsBaseUnitControlEvents, bindReactiveInputs,
-    bindButtonPressFeedback, bindIndependentWindowButton, bindDamageBoardTabEvents, bindDpsTableEvents, bindDamageBoardSwitchEvents, bindAppTitleVersion
+    bindButtonPressFeedback, bindIndependentWindowButton, bindDamageBoardTabEvents, bindDpsTableEvents, bindDpsCompareEvents, bindDamageBoardSwitchEvents, bindAppTitleVersion
   ].forEach(fn=>fn());
 }
 // 일반 select는 계산·저장 이벤트의 원본으로 유지하고, 표시와 조작만 앱 내부 목록으로 대체합니다.

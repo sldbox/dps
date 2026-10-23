@@ -1,6 +1,6 @@
 /* 계산 엔진
  * - 공통 유틸·입력 정규화
- * - 난이도/적 데이터: 일반·도전의탑·행성탐사 데이터 선택
+ * - 난이도/적 데이터: 일반·도전의 탑·행성탐사 데이터 선택
  * - 부담 배율: 물량·체력·실드·라운드 시간 기반 표시 DPS 보정
  * - 룬/강화/상위옵션: 표기 스탯과 개인 버프 산출
  * - 스펙 보드/유닛 보드: 표시 DPS, 클리어 기준, 클리어 기대값 산출
@@ -633,7 +633,7 @@ function planetDpsDisplayMultiplier(floor, diffName, displayHR, displaySR){
   const current=planetBurdenScore(r, diffName, displayHR, displaySR);
   return burdenMultiplier(base, current);
 }
-/* 행성탐사 표시 DPS/유닛 보드 기대값은 도전의탑과 같은 부담 배율 흐름을 쓰되,
+/* 행성탐사 표시 DPS/유닛 보드 기대값은 도전의 탑과 같은 부담 배율 흐름을 쓰되,
  * 기준 구간과 적 데이터는 행성탐사 고유값만 사용한다.
  */
 function contentDpsDisplayMultiplier(diffName, round, displayHR, displaySR){
