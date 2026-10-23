@@ -4,7 +4,7 @@
 <meta charset="UTF-8"/>
 <meta name="google-site-verification" content="RTuDWbMdnKgbpRpl05eXh9epFwWRSxju4NOl8OtjMsI" />
 <script>
-window.DPS_BUILD_VERSION = "dps-2610230006";
+window.DPS_BUILD_VERSION = "dps-2610230007";
 window.DPS_STANDALONE_VIEW = (function(){
   var requested=new URLSearchParams(window.location.search).get('dpsWindow');
   var value=['board','utility','both'].includes(requested) ? requested : '';
@@ -203,14 +203,14 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 <meta content="https://sldbox.github.io/dps/" property="og:url"/>
 <meta content="개복디 특성 게산기" property="og:title"/>
 <meta content="특성 투자, 재화 사용량, 표기 스탯, 총데미지, DPS를 한 번에 계산할 수 있는 개복디 전용 계산기입니다." property="og:description"/>
-<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2610230006" property="og:image"/>
-<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2610230006" property="og:image:secure_url"/>
+<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2610230007" property="og:image"/>
+<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2610230007" property="og:image:secure_url"/>
 <meta content="image/png" property="og:image:type"/>
 <meta content="개복디 특성 게산기 로고" property="og:image:alt"/>
 <meta content="summary_large_image" name="twitter:card"/>
 <meta content="개복디 특성 게산기" name="twitter:title"/>
 <meta content="특성 투자, 재화 사용량, 표기 스탯, 총데미지, DPS를 한 번에 계산할 수 있는 개복디 전용 계산기입니다." name="twitter:description"/>
-<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2610230006" name="twitter:image"/>
+<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2610230007" name="twitter:image"/>
 <meta content="개복디 특성 게산기 로고" name="twitter:image:alt"/>
 <link href="https://cdn.jsdelivr.net" rel="preconnect"/>
 <link crossorigin="" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" rel="stylesheet"/>
@@ -837,7 +837,7 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 </div>
 </section>
 <section class="damage-board-panel" id="damageBoardUnitPanel" role="tabpanel" aria-labelledby="damageBoardUnitTab" data-damage-board-panel="unit" hidden>
-<div class="integrated-tabs" role="tablist" aria-label="unitDetails" data-integrated-tabs="unitDetails"><button type="button" class="integrated-tab is-active" role="tab" id="unitDetailsTab0" aria-controls="unitDetailsPanel0" aria-selected="true" data-integrated-tab="unitDetails" data-integrated-index="0" tabindex="0">유닛 슬롯</button><button type="button" class="integrated-tab" role="tab" id="unitDetailsTab1" aria-controls="unitDetailsPanel1" aria-selected="false" data-integrated-tab="unitDetails" data-integrated-index="1" tabindex="-1">쥬얼 설정</button><button type="button" class="integrated-tab" role="tab" id="unitDetailsTab2" aria-controls="unitDetailsPanel2" aria-selected="false" data-integrated-tab="unitDetails" data-integrated-index="2" tabindex="-1">인증 빌드</button></div>
+<div class="integrated-tabs" role="tablist" aria-label="unitDetails" data-integrated-tabs="unitDetails"><button type="button" class="integrated-tab is-active" role="tab" id="unitDetailsTab0" aria-controls="unitDetailsPanel0" aria-selected="true" data-integrated-tab="unitDetails" data-integrated-index="0" tabindex="0">유닛 슬롯</button><button type="button" class="integrated-tab" role="tab" id="unitDetailsTab1" aria-controls="unitDetailsPanel1" aria-selected="false" data-integrated-tab="unitDetails" data-integrated-index="1" tabindex="-1">쥬얼 설정</button></div>
 <div id="unitDetailsPanel0" class="integrated-content is-active" role="tabpanel" aria-labelledby="unitDetailsTab0" data-integrated-panel="unitDetails" data-integrated-index="0">
 <div class="dps-base-unit-panel" data-dps-base-unit-control>
 <section class="analytics-group analytics-unit-summary-group" aria-label="쥬얼 설정 및 유닛 클리어 정보">
@@ -861,18 +861,6 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 </div>
 <div id="unitDetailsPanel1" class="integrated-content" role="tabpanel" aria-labelledby="unitDetailsTab1" data-integrated-panel="unitDetails" data-integrated-index="1" hidden><section class="trait-preset-unit-jewel-panel trait-preset-unit-jewel-settings-panel" data-trait-preset-unit-jewel-panel="jewel"><div class="dps-jewel-settings-body trait-preset-unit-jewel-settings-body" data-dps-jewel-config><div class="dps-jewel-config-grid" id="dpsJewelConfigGrid"></div></div></section></div>
 
-<div id="unitDetailsPanel2" class="integrated-content certified-build-panel" role="tabpanel" aria-labelledby="unitDetailsTab2" data-integrated-panel="unitDetails" data-integrated-index="2" hidden>
-  <div class="integrated-tabs certified-build-category-tabs" role="tablist" aria-label="인증 빌드 구분" data-integrated-tabs="certifiedBuilds">
-    <button type="button" class="integrated-tab" id="certifiedBuildTab0" role="tab" aria-controls="certifiedBuildPanel0" aria-selected="false" data-integrated-tab="certifiedBuilds" data-integrated-index="0" tabindex="-1">개인전</button>
-    <button type="button" class="integrated-tab is-active" id="certifiedBuildTab1" role="tab" aria-controls="certifiedBuildPanel1" aria-selected="true" data-integrated-tab="certifiedBuilds" data-integrated-index="1" tabindex="0">협동전</button>
-    <button type="button" class="integrated-tab" id="certifiedBuildTab2" role="tab" aria-controls="certifiedBuildPanel2" aria-selected="false" data-integrated-tab="certifiedBuilds" data-integrated-index="2" tabindex="-1">도탑 / 행성</button>
-  </div>
-  <div class="certified-build-content">
-    <section id="certifiedBuildPanel0" class="integrated-content" role="tabpanel" aria-labelledby="certifiedBuildTab0" data-integrated-panel="certifiedBuilds" data-integrated-index="0" hidden><div data-certified-build-list="solo"></div></section>
-    <section id="certifiedBuildPanel1" class="integrated-content is-active" role="tabpanel" aria-labelledby="certifiedBuildTab1" data-integrated-panel="certifiedBuilds" data-integrated-index="1"><div data-certified-build-list="coop"></div></section>
-    <section id="certifiedBuildPanel2" class="integrated-content" role="tabpanel" aria-labelledby="certifiedBuildTab2" data-integrated-panel="certifiedBuilds" data-integrated-index="2" hidden><div data-certified-build-list="floor"></div></section>
-  </div>
-</div>
 
 </section>
 <section id="workspace-dps" class="damage-board-panel dps-reference-workspace" data-damage-board-panel="table" role="tabpanel" aria-labelledby="damageBoardTableTab" hidden>
