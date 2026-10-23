@@ -2639,11 +2639,27 @@ function bindDpsBaseUnitControlEvents(){
 
 /* 인증 빌드 사례: 카테고리별 기록을 추가하면 목록에 자동 반영됩니다. */
 const CERTIFIED_BUILDS=[
-  {id:'first-rain-107',category:'coop',player:'첫비',achievement:'107%',mode:'스피드 · 협동전 · 클래식 · 3인 · The Final',penance:'0 고행',round:'300 라운드',units:[
-    {grade:'슈퍼히든',names:['불새 케리건','나루드']},
-    {grade:'히든',names:['아우구스트그라드의 자랑 ×8']},
-    {grade:'유물',names:['유물']}
-  ]}
+  {id:'first-rain-107',category:'coop',player:'첫비',achievement:'107%',mode:'스피드 · 협동전 · 클래식 · 3인 · The Final',penance:'0 고행',round:'300 라운드',titleInfo:'더제로 장인',sp:'25,000,000',rp:'47개',featured:true,
+    runeOptions:[
+      ['룬 각성','g'],
+      ['종족업','테란 바이오닉'],
+      ['룬 10강 옵션','슈퍼쉴드 면역'],
+      ['룬 15강 옵션','유닛 가속 +15%'],
+      ['룬 초월 옵션','적 방어력 감소 25%']
+    ],
+    enchantLevels:[
+      ['공격력','5'],
+      ['크리티컬 확률','5'],
+      ['유닛 가속','6'],
+      ['총 데미지','5'],
+      ['실드 감소','3'],
+      ['체력 감소','3']
+    ],
+    units:[
+      {grade:'슈퍼히든',names:['불새 케리건','나루드']},
+      {grade:'히든',names:['아우구스트그라드의 자랑 ×8']},
+      {grade:'유물',names:['유물']}
+    ]}
 ];
 function renderCertifiedBuilds(){
   const categories=['solo','coop','floor'];
@@ -2651,14 +2667,35 @@ function renderCertifiedBuilds(){
     const list=qs(`[data-certified-build-list="${category}"]`);
     if(!list) return;
     const records=CERTIFIED_BUILDS.filter(build=>category==='floor' ? (build.category==='tower'||build.category==='planet') : build.category===category);
-    list.innerHTML=records.length ? records.map(build=>`
-      <details class="certified-build-card" data-certified-build-id="${escapeHtml(build.id)}">
-        <summary><span class="certified-build-summary-copy"><small>플레이어</small><strong>${escapeHtml(build.player)}</strong></span><span class="certified-build-achievement">달성률 ${escapeHtml(build.achievement)}</span><span class="certified-build-chevron" aria-hidden="true">⌄</span></summary>
+    list.innerHTML=records.length ? records.map(build=>{
+      const featuredClass=build.featured ? ' is-featured' : '';
+      const infoItems=[
+        ['모드 / 난이도',build.mode,'is-wide'],
+        ['현재 고행 / 라운드',`${build.penance} · ${build.round}`,''],
+        ...(build.titleInfo ? [['타이틀 정보',build.titleInfo,'']] : []),
+        ...(build.sp ? [['SP',build.sp,'']] : []),
+        ...(build.rp ? [['RP',build.rp,'']] : [])
+      ];
+      const chipsMarkup=`<div class="certified-build-meta-chips">${infoItems.map(([label,value,extra])=>`<span class="certified-build-meta-chip ${extra||''}"><small>${escapeHtml(label)}</small><strong>${escapeHtml(value)}</strong></span>`).join('')}</div>`;
+      const optionRows=(rows)=>rows.map(([label,value])=>`<div class="certified-build-stat-row"><dt>${escapeHtml(label)}</dt><dd>${escapeHtml(value)}</dd></div>`).join('');
+      const configMarkup=`<section class="certified-build-config-card"><div class="certified-build-config-grid"><div class="certified-build-config-section"><h4>룬 옵션 설정</h4><dl class="certified-build-stat-list">${optionRows(build.runeOptions||[])}</dl></div><div class="certified-build-config-section"><h4>인첸트 레벨</h4><dl class="certified-build-stat-list">${optionRows(build.enchantLevels||[])}</dl></div></div></section>`;
+      const unitsMarkup=`<section class="certified-build-units-card"><h4>유닛 정보</h4><div class="certified-build-units">${build.units.map(group=>`<div class="certified-build-unit-row"><strong>${escapeHtml(group.grade)}</strong><span>${group.names.map(escapeHtml).join(' · ')}</span></div>`).join('')}</div></section>`;
+      return `
+      <details class="certified-build-card${featuredClass}" data-certified-build-id="${escapeHtml(build.id)}">
+        <summary>
+          <span class="certified-build-summary-copy"><small>플레이어</small><strong>${escapeHtml(build.player)}</strong></span>
+          <span class="certified-build-achievement"><small>달성률</small><strong>${escapeHtml(build.achievement)}</strong></span>
+          <span class="certified-build-chevron" aria-hidden="true">⌄</span>
+        </summary>
         <div class="certified-build-details">
-          <dl class="certified-build-info"><div><dt>모드 / 난이도</dt><dd>${escapeHtml(build.mode)}</dd></div><div><dt>현재 고행 / 라운드</dt><dd>${escapeHtml(build.penance)} · ${escapeHtml(build.round)}</dd></div></dl>
-          <div class="certified-build-units">${build.units.map(group=>`<div class="certified-build-unit-row"><strong>${escapeHtml(group.grade)}</strong><span>${group.names.map(escapeHtml).join(' · ')}</span></div>`).join('')}</div>
+          ${chipsMarkup}
+          <div class="certified-build-lower-grid">
+            ${configMarkup}
+            ${unitsMarkup}
+          </div>
         </div>
-      </details>`).join('') : '<p class="certified-build-empty">등록된 인증 빌드가 없습니다.</p>';
+      </details>`;
+    }).join('') : '<p class="certified-build-empty">등록된 인증 빌드가 없습니다.</p>';
   });
 }
 
