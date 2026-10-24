@@ -2946,7 +2946,7 @@ function updateTraits(){
           <button type="button" class="ui-step-btn" data-action="traitAdjust" data-row="${row}" data-delta="1" ${!investable||isMax?'disabled':''} aria-label="${escapeHtml(name)} 1 투자">+</button>
           <button type="button" class="ui-action-btn trait-master-btn" data-action="traitMax" data-row="${row}" ${!investable||isMax?'disabled':''}>마스터</button>
           ${showJanRune || (traitQuickInvestEnabled && mx>=50) ? `<div class="trait-quick-actions${showJanRune?' has-jan-rune':''}${traitQuickInvestEnabled && mx>=50?' has-quick-invest':''}">
-            ${showJanRune ? `<div class="trait-jan-rune" aria-label="1월룬 무료 투자 ${janFree}회, 실적용 ${n+janFree}회"><span>1월룬 +${janFree}</span><strong>실적용 ${n+janFree}</strong></div>` : ''}
+            ${showJanRune ? `<div class="trait-jan-rune" aria-label="${isMax?'1월룬 미적용 · 최대치 도달':`1월룬 무료 투자 ${janFree}회, 실적용 ${n+janFree}회`}">${isMax?'<span>1월룬 미적용 · 최대치 도달</span>':`<span>1월룬 +${janFree}</span><strong>실적용 ${n+janFree}</strong>`}</div>` : ''}
             ${traitQuickInvestEnabled && mx>=50 ? [10,50,100].map(step=>`<button type="button" data-action="traitQuickAdjust" data-row="${row}" data-step="${step}" ${!investable||mx-n<step?'disabled':''} aria-label="${escapeHtml(name)} ${step}회 추가 투자">+${step}</button>`).join('') : ''}
           </div>` : ''}
         </div>
