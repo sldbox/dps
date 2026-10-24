@@ -24,7 +24,7 @@
   /* 반응형 상태·측정 헬퍼 */
   const MODES = ['is-pc-landscape', 'is-pc-portrait', 'is-tablet', 'is-mobile', 'is-portrait-view', 'is-mobile-device', 'is-tablet-device', 'is-narrow-mobile', 'is-tabbed'];
   const TABBED_PAGES = [
-    { key: 'basic', label: '기본 정보', selectors: ['.trait-preset-panel', '.col-left'] },
+    { key: 'basic', label: '기본 정보', selectors: ['.col-left'] },
     { key: 'trait', label: '특성 관리', selectors: ['.trait-board-panel'] },
     { key: 'specUnit', label: '분석 보드', selectors: ['.stat-dps-card'] }
   ];

@@ -200,28 +200,6 @@ function calculateSkillDamageRows({ap=535,doubleSpace=1,round=1,mode='normal'}={
     items:data.map(([name,base,add,tick])=>({name,total:(base + add*skillAp*doubleValue) * tick * (1-penalty) * 100}))
   };
 }
-function towerEnemySummaryItems(floor){
-  const r=Math.max(1, Math.min(90, Math.round(+floor||1)));
-  const armorRow=lookupFloor(TOWER_ARMOR_TABLE, r);
-  const unitRow=lookupFloor(TOWER_UNIT_TABLE, r);
-  return [
-    ['체력', fullNumber(unitRow ? unitRow[2] : 0)],
-    ['실드', fullNumber(unitRow ? unitRow[3] : 0)],
-    ['방어력', fullNumber(armorRow && armorRow[0]<=r ? armorRow[1] : 0)],
-    ['물량', fullNumber(unitRow ? unitRow[1] : 0)]
-  ];
-}
-function planetEnemySummaryItems(floor){
-  const r=Math.max(1, Math.min(100, Math.round(+floor||1)));
-  const armorRow=lookupFloor(PLANET_ARMOR_TABLE, r);
-  const unitRow=lookupFloor(PLANET_UNIT_TABLE, r);
-  return [
-    ['체력', fullNumber(unitRow ? unitRow[2] : 0)],
-    ['실드', fullNumber(unitRow ? unitRow[3] : 0)],
-    ['방어력', fullNumber(armorRow && armorRow[0]<=r ? armorRow[1] : 0)],
-    ['물량', fullNumber(unitRow ? unitRow[1] : 0)]
-  ];
-}
 
 /* 인첸트 */
 function currentEnchantStats(syncInputs=true){
@@ -2138,23 +2116,6 @@ function effectiveSP(){
   return Math.max(0, v('sp') + effectiveSpBankBonus() - donationBuffSpCost());
 }
 function rpPierceBonus(){return Math.max(0, Math.min(20, INV[130]||0));}
-function enforceBudgets(){
-  const budgets=[['SP',SP_ROWS,effectiveSP()],['EP',EP_ROWS,v('ep')],['RP',RP_ROWS,v('rp')],['SOUL',SOUL_ROWS,v('soul')]];
-  budgets.forEach(([kind,set,own])=>{
-    let used=resourceUsed(kind);
-    if(used<=own) return;
-    for(let i=TRAITS.length-1;i>=0;i--){
-      const row=TRAITS[i][0];
-      const current=INV[row]||0;
-      if(!set.has(row) || row===116 || current<=0) continue;
-      const otherCost=used-resourceCostAtInvestment(kind,row,current);
-      const next=maximumAffordableInvestment(kind,row,current,Math.max(0,own-otherCost));
-      INV[row]=next;
-      used=otherCost+resourceCostAtInvestment(kind,row,next);
-      if(used<=own) break;
-    }
-  });
-}
 let allowedRowsByTierCacheTarget='';
 let allowedRowsByTierCache=new Set();
 function allowedRowsByTier(){

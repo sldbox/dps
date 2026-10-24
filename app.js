@@ -640,12 +640,11 @@ function bindTraitLimitChoiceEvents(){
     syncTraitLimitControlPresentation();
     field.dispatchEvent(new Event('change',{bubbles:true}));
   });
-  document.addEventListener('input',event=>{
-    if(TRAIT_LIMIT_STATUS_FIELDS.includes(event.target?.id)) syncTraitLimitControlPresentation();
-  },true);
-  document.addEventListener('change',event=>{
-    if(TRAIT_LIMIT_STATUS_FIELDS.includes(event.target?.id)) syncTraitLimitControlPresentation();
-  },true);
+  ['input','change'].forEach(type=>{
+    document.addEventListener(type,event=>{
+      if(TRAIT_LIMIT_STATUS_FIELDS.includes(event.target?.id)) syncTraitLimitControlPresentation();
+    },true);
+  });
 }
 /* 계산 실행·예약 */
 let appCalculationRevision=0;
@@ -1242,23 +1241,20 @@ function dpsBaseUnitResultHasMaxAttackSpeed(result){
 function dpsBaseUnitDisplayLabel(unit){
   return dpsBaseUnitLabel(unit);
 }
-function dpsBaseUnitPlanetSelectionRestricted(){
-  return typeof isPlanetExplorationDifficulty==='function' && isPlanetExplorationDifficulty();
-}
 function dpsBaseUnitAllowedForCurrentPlanet(unitOrId){
   const unit=dpsBaseUnitById(unitOrId);
-  if(!unit || !dpsBaseUnitPlanetSelectionRestricted()) return true;
+  if(!unit || !planetExplorationRestrictionsActive()) return true;
   if(typeof dpsBaseUnitPlanetCritDamageMultiplier!=='function') return true;
   return dpsBaseUnitPlanetCritDamageMultiplier(unit, vs('diff'))>0.1;
 }
 function filterDpsBaseUnitSlotsForCurrentPlanet(slots){
   const normalized=normalizeDpsBaseUnitSlotValues(slots);
-  if(!dpsBaseUnitPlanetSelectionRestricted()) return normalized;
+  if(!planetExplorationRestrictionsActive()) return normalized;
   return normalized.map(id=>id && dpsBaseUnitAllowedForCurrentPlanet(id) ? id : '');
 }
 function filterDpsBaseUnitIdsForCurrentPlanet(ids){
   const normalized=dpsBaseUnitSelectionIds(ids);
-  if(!dpsBaseUnitPlanetSelectionRestricted()) return normalized;
+  if(!planetExplorationRestrictionsActive()) return normalized;
   return normalized.filter(id=>dpsBaseUnitAllowedForCurrentPlanet(id));
 }
 function dpsBaseUnitCooldownText(value){
@@ -1891,7 +1887,7 @@ function dpsBaseUnitSettingsHtml(unit,slotIndex){
 
 function dpsBaseUnitSelectOptionsHtml(selectedId, selectedIds){
   const selectedSet=new Set(selectedIds.filter(Boolean));
-  const planetRestricted=dpsBaseUnitPlanetSelectionRestricted();
+  const planetRestricted=planetExplorationRestrictionsActive();
   const groups=new Map();
   sortedDpsBaseUnits().forEach(unit=>{
     const grade=unit.grade || '기타';

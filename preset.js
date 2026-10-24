@@ -37,9 +37,9 @@ function isTraitPresetFileType(type){
 function currentWebDpsVersion(){
   return String(window.DPS_BUILD_VERSION || window.APP_VERSION || STORAGE_VERSION || 'dev');
 }
+function padTraitPresetDatePart(value){return String(value).padStart(2,'0');}
 function formatTraitPresetExportedAt(date=new Date()){
-  const pad=n=>String(n).padStart(2,'0');
-  return `${pad(date.getFullYear()%100)}${pad(date.getMonth()+1)}${pad(date.getDate())}_${pad(date.getHours())}${pad(date.getMinutes())}${pad(date.getSeconds())}`;
+  return `${padTraitPresetDatePart(date.getFullYear()%100)}${padTraitPresetDatePart(date.getMonth()+1)}${padTraitPresetDatePart(date.getDate())}_${padTraitPresetDatePart(date.getHours())}${padTraitPresetDatePart(date.getMinutes())}${padTraitPresetDatePart(date.getSeconds())}`;
 }
 const INTERNAL_VALUE_IDS=new Set([
   'dt','ep','rAP','rTD','rUA','rHarmony'
@@ -741,7 +741,7 @@ function renderTraitPresetChangeNotice(update){
   if(notice) notice.hidden=!traitPresetChangeNoticePending || traitPresetChangeNoticeSeen;
 }
 function observeTraitPresetManager(){
-  const heading=document.querySelector('.trait-preset-panel > .trait-preset-title');
+  const heading=document.querySelector('.trait-preset-panel .trait-preset-intro');
   if(!heading || typeof IntersectionObserver!=='function') return;
   const observer=new IntersectionObserver(entries=>{
     const entry=entries[0];
@@ -1771,8 +1771,8 @@ function requestTraitPresetFullReset(trigger){
 function makeTraitPresetFileName(customName=''){
   const cleaned=cleanTraitPresetFileBaseName(customName);
   if(cleaned) return `${cleaned}.txt`;
-  const now=new Date(), pad=n=>String(n).padStart(2,'0');
-  const date=String(now.getFullYear()).slice(2)+pad(now.getMonth()+1)+pad(now.getDate());
+  const now=new Date();
+  const date=String(now.getFullYear()).slice(2)+padTraitPresetDatePart(now.getMonth()+1)+padTraitPresetDatePart(now.getDate());
   return `특성프리셋-${date}.txt`;
 }
 const TRAIT_PRESET_CHANGE_LABEL_OVERRIDES=Object.freeze({
