@@ -73,6 +73,50 @@ function escapeHtml(value){
 
 const INV={};
 TRAITS.forEach(t=>{INV[t[0]]=0;});
+/* 1월 룬: 프리셋에는 룬 선택만 저장하며 무료 투자 추첨은 메모리에만 보관한다. */
+const JAN_RUNE_J1_ROWS=Object.freeze([108,109,110,111,115]);
+const JAN_RUNE_J2_ROWS=Object.freeze([108,109,110,111,112,113,114,115]);
+const JAN_RUNE_INV=Object.create(null);
+let janRuneDrawSignature='';
+function janRuneSetting(){
+  const scope=vs('janRuneScope')==='J2'?'J2':'J1';
+  const normal=Math.max(0,Math.min(6,Math.round(v('janRuneNormal')||0)));
+  const plus=Math.max(0,Math.min(6,Math.round(v('janRunePlus')||0)));
+  const diff=vs('diff');
+  const limit=diff==='도전의 탑'?85:(typeof isPlanetExplorationDifficulty==='function' && isPlanetExplorationDifficulty(diff)?95:295);
+  const current=typeof effectiveTargetRound==='function'?effectiveTargetRound():0;
+  const ticks=Math.floor(Math.min(limit,Math.max(0,current))/5);
+  return {scope,normal,plus,ticks,diff};
+}
+function redrawJanRuneInvestment(force=false){
+  const setting=janRuneSetting();
+  const targets=setting.scope==='J2'?JAN_RUNE_J2_ROWS:JAN_RUNE_J1_ROWS;
+  // 수동 투자량이 변하면 유효한 랜덤 후보도 달라지므로 그때만 다시 추첨한다.
+  const signature=[setting.scope,setting.normal,setting.plus,setting.ticks,setting.diff,
+    ...targets.map(row=>INV[row]||0)].join(':');
+  if(!force && signature===janRuneDrawSignature) return false;
+  janRuneDrawSignature=signature;
+  JAN_RUNE_J2_ROWS.forEach(row=>{JAN_RUNE_INV[row]=0;});
+  if(!setting.normal || !setting.ticks) return true;
+  for(let tick=0;tick<setting.ticks;tick++){
+    for(let rune=1;rune<=setting.normal;rune++){
+      // 이미 최대 투자된 특성은 추첨 전에 제외한다. 회차마다 무료 투자도 포함해 확인한다.
+      const available=targets.filter(row=>(INV[row]||0)+(JAN_RUNE_INV[row]||0)<(TMAX[row]||999));
+      if(!available.length) return true;
+      const row=available[Math.floor(Math.random()*available.length)];
+      JAN_RUNE_INV[row]++;
+      // 강화는 같은 특성에 한 번 더 투자하며, 남은 한도를 넘기지 않는다.
+      if(rune<=setting.plus && Math.random()<0.33 &&
+        (INV[row]||0)+(JAN_RUNE_INV[row]||0)<(TMAX[row]||999)) JAN_RUNE_INV[row]++;
+    }
+  }
+  return true;
+}
+function janRuneInvestmentForRow(row){
+  if(!JAN_RUNE_J2_ROWS.includes(row)) return 0;
+  return Math.min(JAN_RUNE_INV[row]||0,Math.max(0,(TMAX[row]||999)-(INV[row]||0)));
+}
+function appliedTraitInvestment(row){return (INV[row]||0)+janRuneInvestmentForRow(row);}
 const AUTO_INVEST_EXCLUDED_ROWS=new Set([45,87]);
 const ENCHANT_INPUT_IDS=['enchAD','enchCRI','enchUA','enchTD','enchSR','enchHR'];
 const ENCHANT_INPUT_ID_SET=new Set(ENCHANT_INPUT_IDS);
@@ -266,6 +310,7 @@ function setSelectButton(id,value){
   const el=$(id);
   if(!el) return;
   el.value=value;
+  if(['janRuneScope','janRuneNormal','janRunePlus'].includes(id)) redrawJanRuneInvestment(true);
   syncSelectButtons();
   commitAppUpdate();
 }
@@ -465,14 +510,12 @@ function renderDpsSummary(s){
   if(shouldHideDpsForRound()){
     setText('dpsVal', '—');
     renderDpsBaseUnitSummary(s,true);
-    if(isDpsTableOpen()) renderDpsTablePanelContent();
     return;
   }
   const artifactResult=artifactView ? currentArtifactDpsResult() : null;
   const displayDps=artifactView ? artifactResult.dps : s.M19;
   setText('dpsVal', Number.isFinite(displayDps) ? displayDps.toFixed(2) : '—');
   renderDpsBaseUnitSummary(s,false);
-  if(isDpsTableOpen()) renderDpsTablePanelContent();
 }
 const STAT_COMPARE_ROWS=[
   ['AD', s=>fmt(s.displayAD,0), s=>fmt(s.M4,0)],
@@ -571,7 +614,6 @@ function renderCalculatedViews(s){
   syncSpecDpsSpeedSwitch();
   syncArtifactDpsViewSwitch();
   syncPlanetExplorationRestrictedControls();
-  syncDpsTableLabels();
   renderEnhanceSummary(s.enhanceStats);
   renderResourceSummary(s);
   updateTraits();
@@ -615,6 +657,7 @@ function invalidateAppCalculations(){
 function recalc(options={}){
   try{
     syncPreCalculationViews();
+    redrawJanRuneInvestment();
     syncTraitLimitControlPresentation();
     withArtifactDpsViewBuffApplied(()=>{
       const stats=computeStatsRaw();
@@ -818,17 +861,6 @@ const COOP_DPS_TABLE_PENANCE_MIN=0;
 const COOP_DPS_TABLE_PENANCE_MAX=COOP_PENANCE_MAX;
 const DPS_TABLE_PENANCE_MIN=Math.max(0,DPS_CONFIG.dpsTable.penanceMin ?? 0);
 const DPS_TABLE_PENANCE_MAX=DPS_CONFIG.dpsTable.penanceMax ?? 20;
-const DPS_TABLE_DECIMALS=DPS_CONFIG.dpsTable.decimals ?? 1;
-const DPS_TABLE_MODES=['solo','coop','tower','planet'];
-let activeDpsTableMode='solo';
-function isDpsTableOpen(){
-  return $('damageBoardTableTab')?.getAttribute('aria-selected')==='true' && !$('workspace-dps')?.hidden;
-}
-function formatDpsTableValue(value){
-  if(!Number.isFinite(value)) return '—';
-  return value.toLocaleString('ko-KR',{minimumFractionDigits:DPS_TABLE_DECIMALS, maximumFractionDigits:DPS_TABLE_DECIMALS});
-}
-
 let dpsPreviewCacheRevision=-1;
 const dpsPreviewValueCache=new Map();
 const dpsPreviewCoreCache=new Map();
@@ -860,164 +892,9 @@ function dpsTablePreviewValue(diff, penance, round, options={}){
   dpsPreviewValueCache.set(cacheKey,value);
   return value;
 }
-function dpsTableDisplayTitle(){
-  return isArtifactDpsViewEnabled() ? '유물 DPS표' : 'DPS표';
-}
-function syncDpsTableLabels(){
-  const label=dpsTableDisplayTitle();
-  const tabLabel=$('damageBoardTableLabel');
-  if(tabLabel) tabLabel.textContent=label;
-}
-
-// DPS표는 보기 전용 선택값으로 비교하며 기본 설정을 변경하지 않습니다.
-let dpsVisualDifficulty='';
-function selectedDpsVisualDifficulty(mode){
-  const options=mode==='coop'?COOP_DPS_TABLE_DIFFICULTIES:DPS_TABLE_DIFFICULTIES;
-  return options.includes(dpsVisualDifficulty)
-    ? dpsVisualDifficulty
-    : (options.includes(vs('diff'))?vs('diff'):options[0]);
-}
 function selectedDpsTableTeamCount(coop=false){
   const teamCount=Number(normalizeTeamCountValue(vs('team'),coop?2:1));
   return coop ? Math.max(2,teamCount) : teamCount;
-}
-function renderDpsStatHead(label){
-  return `<thead><tr>${[label,'DPS','체력','실드','방어력','물량'].map(text=>`<th scope="col">${escapeHtml(text)}</th>`).join('')}</tr></thead>`;
-}
-function renderDpsStatTable(rows,label,context){
-  const range=`${rows[0].stage}–${rows[rows.length-1].stage} ${label}`;
-  return `<table class="dps-stat-table" aria-label="${escapeHtml(context+' · '+range)}"><colgroup><col class="dps-col-stage"><col class="dps-col-value"><col><col><col><col></colgroup>${renderDpsStatHead(label)}<tbody>${rows.map(row=>`<tr class="dps-stat-row${row.current?' is-current':''}" data-dps-${label==='층'?'floor':'penance'}="${row.stage}"${row.current?' aria-current="true"':''}>
-      <th scope="row" class="dps-stat-stage">${row.stage}<small>${label}</small></th>
-      <td class="dps-stat-dps">${formatDpsTableValue(row.dps)}</td>
-      ${row.enemyItems.map(([name,value])=>`<td class="dps-stat-enemy" aria-label="${escapeHtml(name)}">${escapeHtml(String(value))}</td>`).join('')}
-    </tr>`).join('')}</tbody></table>`;
-}
-function dpsTableContextText(diff,coop=false,teamCount=1){
-  const speed=specDpsSpeedModeEnabled(diff)?'스피드':'일반';
-  const battle=coop?`협동전 · ${teamCount}인`:'개인전';
-  const display=(isTowerDifficulty(diff)||isPlanetExplorationDifficulty(diff))?'클래식':enemyDisplayModeLabel(diff);
-  return `${speed} · ${battle} · ${display}`;
-}
-function dpsTableContextHtml(diff,coop=false,teamCount=1,options=''){
-  const summary=escapeHtml(dpsTableContextText(diff,coop,teamCount));
-  return `<div class="dps-overview-condition"><span>모드 / 난이도</span><strong class="dps-overview-mode">${summary}</strong>${options}</div>`;
-}
-function renderDpsTableSummary(current,label,dps,enemyItems,mode='',context='',round=null){
-  const number=`<span>${mode?'현재 선택 층':'현재 고행 / 라운드'}</span><strong>${current}<small>${label}</small></strong>${round===null?'':`<span class="dps-current-round">${round} 라운드</span>`}`;
-  const condition=mode?`<button type="button" class="dps-current-condition dps-current-jump" data-dps-current-row aria-label="${mode==='tower'?'도전의 탑':'행성탐사'} 현재 ${current}층으로 이동">${number}<i>층 위치 보기 <span aria-hidden="true">↓</span></i></button>`:`<div class="dps-current-condition">${number}</div>`;
-  return `<div class="dps-table-summary" aria-label="현재 ${current}${label} DPS 및 적 정보"><div class="dps-table-metrics${context?' is-comparison':''}">${context}${condition}<div class="dps-table-score"><span>${mode?'해당 층 DPS':'현재 DPS'}</span><strong>${formatDpsTableValue(dps)}</strong></div></div><dl class="dps-table-enemies">${enemyItems.map(([name,value])=>`<div><dt>${escapeHtml(name)}</dt><dd>${escapeHtml(String(value))}</dd></div>`).join('')}</dl></div>`;
-}
-function buildDpsVisualComparison(round,mode){
-  const coop=mode==='coop';
-  const difficulty=selectedDpsVisualDifficulty(mode);
-  const teamCount=selectedDpsTableTeamCount(coop);
-  const penanceMin=coop?COOP_DPS_TABLE_PENANCE_MIN:DPS_TABLE_PENANCE_MIN;
-  const penanceMax=coop?COOP_DPS_TABLE_PENANCE_MAX:DPS_TABLE_PENANCE_MAX;
-  const current=Math.max(penanceMin,Math.min(penanceMax,Math.round(v('penance'))));
-  const values=[];
-  for(let pen=penanceMin;pen<=penanceMax;pen++){
-    const dps=dpsTablePreviewValue(difficulty,pen,round,{battleMode:coop?'coop':'solo',teamCount});
-    values.push({pen,dps});
-  }
-  const currentValue=values.find(item=>item.pen===current)?.dps;
-  const enemy=enemyRoundData(round,difficulty);
-  const enemyFactor=coop?teamCount:1;
-  const enemyItems=[
-    ['체력',fullNumber(enemy.hp)],
-    ['실드',fullNumber(enemy.shield)],
-    ['방어력',fullNumber(enemy.armor)],
-    ['물량',fullNumber((Number(enemy.count)||0)*enemyFactor)]
-  ];
-  const diffOptions=(coop?COOP_DPS_TABLE_DIFFICULTIES:DPS_TABLE_DIFFICULTIES).map(item=>`<option value="${escapeHtml(item)}"${item===difficulty?' selected':''}>${escapeHtml(item)}</option>`).join('');
-  const rows=values.map(({pen,dps})=>({stage:pen,dps,enemyItems,current:pen===current}));
-  const context=dpsTableContextHtml(difficulty,coop,teamCount,`<label class="dps-overview-select"><select id="dpsVisualDifficulty" data-dps-view-diff aria-label="비교할 난이도 선택">${diffOptions}</select></label>`);
-  return `<div class="dps-overview">
-    ${renderDpsTableSummary(current,'고행',currentValue,enemyItems,'',context,round)}
-    ${renderDpsStatTable(rows,'고행',difficulty+' 고행별 DPS 및 적 정보')}
-  </div>`;
-}
-function changeDpsVisualDifficulty(value){
-  const choices=activeDpsTableMode==='coop'?COOP_DPS_TABLE_DIFFICULTIES:DPS_TABLE_DIFFICULTIES;
-  if(!choices.includes(value)||!isDpsTableOpen()) return;
-  dpsVisualDifficulty=value;
-  renderDpsTablePanelContent();
-}
-function buildDpsFloorCards(mode){
-  const tower=mode==='tower';
-  const config=(tower?DPS_CONFIG.dpsTable.tower:DPS_CONFIG.dpsTable.planet)||{};
-  const current=tower?normalizedTowerFloorNumber(challengeTowerFloorStoredValue()):normalizedPlanetExplorationFloorNumber(planetExplorationFloorStoredValue());
-  const min=Math.max(1,Math.round(config.minFloor||1));
-  const max=Math.max(min,Math.round(config.maxFloor||(tower?90:100)));
-  const diff=tower?'도전의 탑':(isPlanetExplorationDifficulty()?vs('diff'):'행성탐사-코랄');
-  const teamCount=selectedDpsTableTeamCount();
-  const rows=[];
-  let currentFloorDps=NaN;
-  for(let floor=min;floor<=max;floor++){
-    const value=dpsTablePreviewValue(diff,0,floor,{battleMode:'solo',teamCount});
-    const enemyItems=tower?towerEnemySummaryItems(floor):planetEnemySummaryItems(floor);
-    if(floor===current) currentFloorDps=value;
-    rows.push({stage:floor,dps:value,enemyItems,current:floor===current});
-  }
-  const currentEnemy=rows.find(row=>row.current)?.enemyItems||[];
-  const floorDiffOptions=[{value:'tower',label:'도전의 탑'},{value:'planet',label:'행성탐사'}]
-    .map(item=>`<option value="${item.value}"${item.value===mode?' selected':''}>${item.label}</option>`).join('');
-  const context=dpsTableContextHtml(diff,false,teamCount,`<label class="dps-overview-select"><select id="dpsFloorDifficulty" data-dps-floor-diff aria-label="도탑 / 행성 난이도 선택">${floorDiffOptions}</select></label>`);
-  return `<section class="dps-floor-column" data-dps-floor-board="${mode}" aria-label="${tower?'도전의 탑':'행성탐사'} DPS">
-    ${renderDpsTableSummary(current,'층',currentFloorDps,currentEnemy,mode,context)}
-    ${renderDpsStatTable(rows,'층',diff+' 층별 DPS 및 적 정보')}
-  </section>`;
-}
-function renderDpsTableTabs(){
-  const current=['tower','planet'].includes(activeDpsTableMode)?'floor':activeDpsTableMode;
-  return [
-    {key:'solo',label:'개인전'},
-    {key:'coop',label:'협동전'},
-    {key:'floor',label:'도탑 / 행성'}
-  ].map(tab=>{
-    const active=current===tab.key;
-    return `<button id="dpsTableTab-${tab.key}" type="button" class="dps-table-tab integrated-tab${active?' is-active':''}" data-dps-table-mode="${tab.key}" role="tab" aria-controls="dpsTableContent" aria-selected="${active?'true':'false'}" tabindex="${active?'0':'-1'}"><b>${tab.label}</b></button>`;
-  }).join('');
-}
-function dpsTablePanelInnerHtml(){
-  const round=normalizedRoundNumber(targetRoundStoredValue());
-  const mode=activeDpsTableMode;
-  return `<section class="dps-table-panel">${mode==='tower'||mode==='planet'?buildDpsFloorCards(mode):buildDpsVisualComparison(round,mode)}</section>`;
-}
-function renderDpsTablePanelContent(){
-  const focused=document.activeElement;
-  const focusId=focused?.closest('#workspace-dps')?focused.id:'';
-  syncDpsTableLabels();
-  qsa('[data-dps-table-tabs-mount]').forEach(tabs=>{
-    tabs.innerHTML=renderDpsTableTabs();
-  });
-  const inner=dpsTablePanelInnerHtml();
-  qsa('[data-dps-table-mount]').forEach(mount=>{
-    mount.innerHTML=inner;
-  });
-  const content=$('dpsTableContent');
-  if(content){
-    const tab=['tower','planet'].includes(activeDpsTableMode)?'floor':activeDpsTableMode;
-    content.setAttribute('aria-labelledby',`dpsTableTab-${tab}`);
-  }
-  if(focusId) $(focusId)?.focus({preventScroll:true});
-}
-function switchDpsTableMode(mode){
-  const next=mode==='floor'?(['tower','planet'].includes(activeDpsTableMode)?activeDpsTableMode:'tower'):mode;
-  if(!DPS_TABLE_MODES.includes(next) || activeDpsTableMode===next) return;
-  activeDpsTableMode=next;
-  renderDpsTablePanelContent();
-}
-function openDpsTable(mode='auto'){
-  const fallbackMode=isTowerDifficulty() ? 'tower' : (isPlanetExplorationDifficulty() ? 'planet' : (isCoopActive() ? 'coop' : 'solo'));
-  const normalizedMode=mode==='round' ? 'solo' : (mode==='auto' ? fallbackMode : mode);
-  activeDpsTableMode=DPS_TABLE_MODES.includes(normalizedMode) ? normalizedMode : fallbackMode;
-  dpsVisualDifficulty='';
-  // 모바일·태블릿에서는 분석 보드 페이지도 함께 엽니다.
-  if(document.body.classList.contains('is-tabbed')){
-    const analysisTab=$('mobileTab-specUnit');
-    if(analysisTab && analysisTab.getAttribute('aria-selected')!=='true') analysisTab.click();
-  }
-  setDamageBoardTab('table');
 }
 // 전체 DPS 비교 모달: 기존 입력값과 DPS 미리보기 캐시를 그대로 활용합니다.
 let activeDpsCompareMode='solo';
@@ -1089,7 +966,7 @@ function openDpsCompareModal(trigger){
   const overlay=$('dpsCompareModalOverlay');
   if(!overlay || !overlay.hidden) return;
   dpsCompareReturnFocus=trigger||document.activeElement;
-  activeDpsCompareMode=['tower','planet'].includes(activeDpsTableMode)?'floor':activeDpsTableMode;
+  activeDpsCompareMode=isTowerDifficulty() || isPlanetExplorationDifficulty() ? 'floor' : (isCoopActive() ? 'coop' : 'solo');
   overlay.hidden=false;
   document.body.classList.add('dps-compare-modal-open');
   renderDpsCompareContent();
@@ -1135,32 +1012,6 @@ function bindDpsCompareEvents(){
     else if(!event.shiftKey && document.activeElement===last){first.focus();event.preventDefault();}
   });
 }
-function bindDpsTableEvents(){
-  const workspace=$('workspace-dps');
-  if(!workspace) return;
-  workspace.addEventListener('click',event=>{
-    const mode=event.target.closest('[data-dps-table-mode]');
-    if(mode) switchDpsTableMode(mode.dataset.dpsTableMode);
-    if(event.target.closest('[data-dps-current-row]')){
-      event.target.closest('.dps-floor-column')?.querySelector('.dps-stat-row.is-current')?.scrollIntoView({block:'center',behavior:'instant'});
-    }
-  });
-  workspace.addEventListener('change',event=>{
-    if(event.target.matches('[data-dps-view-diff]')) changeDpsVisualDifficulty(event.target.value);
-    if(event.target.matches('[data-dps-floor-diff]') && isDpsTableOpen()) switchDpsTableMode(event.target.value);
-  });
-  workspace.addEventListener('keydown',event=>{
-    const tab=event.target.closest('[data-dps-table-mode]');
-    if(!tab || !['ArrowLeft','ArrowRight','Home','End'].includes(event.key)) return;
-    const tabs=[...workspace.querySelectorAll('[data-dps-table-mode]')];
-    const index=tabs.indexOf(tab);
-    const next=event.key==='Home'?0:event.key==='End'?tabs.length-1:(index+(event.key==='ArrowRight'?1:-1)+tabs.length)%tabs.length;
-    const mode=tabs[next].dataset.dpsTableMode;
-    switchDpsTableMode(mode);
-    workspace.querySelector(`[data-dps-table-mode="${mode}"]`)?.focus({preventScroll:true});
-    event.preventDefault();
-  });
-}
 /* 기본 정보·유닛 저장 필드 레지스트리 */
 const FIELD_REGISTRY={
   sp:{kind:'기본 정보',name:'시작 SP',save:true},
@@ -1194,6 +1045,9 @@ const FIELD_REGISTRY={
   dpsBaseUnitSpeedMode:{kind:'유닛 보드',name:'스피드 모드',save:true},
   erosionStack:{kind:'목표설정',name:'어비스 침색 스텍',save:true},
   jewelErosionRes:{kind:'목표설정',name:'어비스 심연 내성',save:true},
+  janRuneScope:{kind:'룬효과 버프',name:'1월 적용 범위',save:true},
+  janRuneNormal:{kind:'룬효과 버프',name:'1월 일반',save:true},
+  janRunePlus:{kind:'룬효과 버프',name:'1월 강화(+)',save:true},
   aprRuneNormal:{kind:'룬효과 버프',name:'4월 일반',save:true},
   aprRunePlus:{kind:'룬효과 버프',name:'4월 강화(+)',save:true},
   sepRuneNormal:{kind:'룬효과 버프',name:'9월 일반',save:true},
@@ -2872,30 +2726,19 @@ function bindIntegratedTabEvents(){
 /* 스펙·유닛 보드 전환 및 상태 이벤트 */
 let activeDamageBoardMode='spec';
 function setDamageBoardTab(active){
-  const isTable=active==='table';
-  const next=isTable ? 'table' : (['spec','unit','jewel'].includes(active) ? active : activeDamageBoardMode);
-  const changed=!isTable && activeDamageBoardMode!==next;
-  if(!isTable) activeDamageBoardMode=next;
-  qsa('[data-damage-board-tab]').forEach(tab=>{
-    const isActive=tab.dataset.damageBoardTab===(isTable?'table':'analysis');
-    tab.classList.toggle('is-active',isActive);
-    tab.setAttribute('aria-selected',String(isActive));
-    tab.tabIndex=isActive?0:-1;
-  });
-  const analysisPanel=$('damageBoardAnalysisPanel');
-  const tableShell=$('damageBoardTableShell');
-  if(analysisPanel) analysisPanel.hidden=isTable;
-  if(tableShell) tableShell.hidden=!isTable;
+  const next=['spec','unit','jewel'].includes(active) ? active : activeDamageBoardMode;
+  const changed=activeDamageBoardMode!==next;
+  activeDamageBoardMode=next;
   qsa('[data-damage-board-subtab]').forEach(tab=>{
-    const isActive=tab.dataset.damageBoardSubtab===activeDamageBoardMode;
-    const isDisabled=tab.dataset.damageBoardSubtab==='jewel' && activeDamageBoardMode==='spec';
+    const isActive=tab.dataset.damageBoardSubtab===next;
+    const isDisabled=tab.dataset.damageBoardSubtab==='jewel' && next==='spec';
     tab.disabled=isDisabled;
     tab.setAttribute('aria-disabled',String(isDisabled));
     tab.classList.toggle('is-active',isActive);
     tab.setAttribute('aria-selected',String(isActive));
     tab.tabIndex=isActive?0:-1;
   });
-  const panelMode=isTable?'table':(next==='spec'?'spec':'unit');
+  const panelMode=next==='spec'?'spec':'unit';
   qsa('[data-damage-board-panel]').forEach(panel=>{
     const isActive=panel.dataset.damageBoardPanel===panelMode;
     panel.classList.toggle('is-active',isActive);
@@ -2907,8 +2750,19 @@ function setDamageBoardTab(active){
     panel.hidden=!isActive;
   });
   if(next==='jewel') renderDpsJewelConfigGrids();
-  if(isTable) renderDpsTablePanelContent();
   if(changed) renderTraitRecommendations();
+}
+/* 고정 글로벌 헤더의 실제 높이를 본문과 모바일 탭의 상단 여백에 반영한다. */
+function initAppHeaderLayout(){
+  const header=qs('.hdr.app-header');
+  if(!header || window.DPS_STANDALONE_VIEW) return;
+  function syncHeaderHeight(){
+    const height=Math.ceil(header.getBoundingClientRect().height);
+    if(height>0) document.documentElement.style.setProperty('--app-header-h',height+'px');
+  }
+  syncHeaderHeight();
+  if(typeof ResizeObserver!=='undefined') new ResizeObserver(syncHeaderHeight).observe(header);
+  window.addEventListener('resize',syncHeaderHeight,{passive:true});
 }
 /* 글로벌 헤더: 원본과 별도로 실행되는 독립 창 세 가지 보기. */
 function setIndependentWindowMenuOpen(open,restoreFocus=false){
@@ -2964,28 +2818,21 @@ function bindIndependentWindowButton(){
   window.addEventListener('resize',()=>setIndependentWindowMenuOpen(false));
 }
 function bindDamageBoardTabEvents(){
-  function selectTab(tab){
-    if(tab.disabled) return;
-    const mode=tab.dataset.damageBoardSubtab || tab.dataset.damageBoardTab;
-    if(mode==='table') openDpsTable();
-    else setDamageBoardTab(mode);
-  }
-  document.addEventListener('click',e=>{
-    const tab=e.target?.closest?.('[data-damage-board-tab],[data-damage-board-subtab]');
+  document.addEventListener('click',event=>{
+    const tab=event.target?.closest?.('[data-damage-board-subtab]');
     if(!tab || tab.disabled) return;
-    e.preventDefault();
-    selectTab(tab);
+    event.preventDefault();
+    setDamageBoardTab(tab.dataset.damageBoardSubtab);
   },true);
   document.addEventListener('keydown',event=>{
-    const tab=event.target.closest?.('[data-damage-board-tab],[data-damage-board-subtab]');
+    const tab=event.target?.closest?.('[data-damage-board-subtab]');
     if(!tab || !['ArrowLeft','ArrowRight','Home','End'].includes(event.key)) return;
-    const selector=tab.matches('[data-damage-board-subtab]')?'[data-damage-board-subtab]':'[data-damage-board-tab]';
-    const tabs=[...tab.parentElement.querySelectorAll(selector)].filter(button=>!button.disabled);
+    const tabs=[...tab.parentElement.querySelectorAll('[data-damage-board-subtab]')].filter(button=>!button.disabled);
     const current=tabs.indexOf(tab);
     if(current<0 || !tabs.length) return;
     const next=event.key==='Home'?0:event.key==='End'?tabs.length-1:(current+(event.key==='ArrowRight'?1:-1)+tabs.length)%tabs.length;
     event.preventDefault();
-    selectTab(tabs[next]);
+    setDamageBoardTab(tabs[next].dataset.damageBoardSubtab);
     tabs[next].focus({preventScroll:true});
   });
 }
@@ -3009,6 +2856,17 @@ function bindDamageBoardSwitchEvents(){
 const INFINITE_TRAIT_TIER='무한∞';
 const TIERS=['루키','비기너','아마추어','프로','엑스퍼트','마스터','디바인','더원1','더원2',INFINITE_TRAIT_TIER,'EP특성','RP특성','심연특성'];
 const OPTIMIZATION_TIERS=TIERS;
+// 화면/수동 투자/일괄 투자/초기화가 같은 활성 조건을 사용한다. 저장된 INV에는 손대지 않는다.
+function isTraitCurrentlyInvestable(row){
+  if(row===45 || row===87) return isCoopActive();
+  if(row===131 || row===132) return isAbyssDifficulty();
+  return true;
+}
+function traitUnavailableReason(row){
+  if(row===45 || row===87) return '개인전 미적용';
+  if(row===131 || row===132) return '어비스 전용';
+  return '';
+}
 // 펼침 여부는 화면 상태로만 관리하며 프리셋 데이터에는 저장하지 않는다.
 const expandedTraitTiers=new Set();
 // 입력 요소를 DOM에 그대로 둔 채 높이만 애니메이션으로 전환한다.
@@ -3048,48 +2906,59 @@ let traitQuickInvestEnabled=false;
 function toggleTraitQuickInvest(){
   traitQuickInvestEnabled=!traitQuickInvestEnabled;
   const button=$('traitQuickInvestToggle');
-  if(button){
-    button.setAttribute('aria-pressed',String(traitQuickInvestEnabled));
-    button.setAttribute('aria-label',traitQuickInvestEnabled?'텐키리스 빠른 투자 버튼 숨기기':'텐키리스 빠른 투자 버튼 표시');
-    button.title=traitQuickInvestEnabled?'빠른 투자 숨기기':'빠른 투자 +10 / +50 표시';
-  }
+  if(button) button.setAttribute('aria-pressed',String(traitQuickInvestEnabled));
   updateTraits();
 }
 function updateTraits(){
   const body=$('traitBody');
   if(!body) return;
+  const janRuneTargets=janRuneSetting().scope==='J2'?JAN_RUNE_J2_ROWS:JAN_RUNE_J1_ROWS;
   body.innerHTML=TIERS.map((tier,tierIndex)=>{
     const tierTraits=TRAITS.filter(t=>t[2]===tier && t[0]!==116);
+    const eligibleTierTraits=tierTraits.filter(t=>isTraitCurrentlyInvestable(t[0]));
+    const tierInvested=eligibleTierTraits.reduce((sum,t)=>sum+(INV[t[0]]||0),0);
+    const tierMaximum=eligibleTierTraits.reduce((sum,t)=>sum+(TMAX[t[0]]||999),0);
+    const tierMastered=eligibleTierTraits.length>0 && eligibleTierTraits.every(t=>(INV[t[0]]||0)>=(TMAX[t[0]]||999));
+    const tierSummary=tierInvested>0
+      ? `<span class="collapsed-summary trait-tier-summary${tierMastered?' is-mastered':''}">${tierMastered?'✓ 전체 마스터':`투자 ${fullNumber(tierInvested)} / ${fullNumber(tierMaximum)}`}</span>`
+      : '';
     const rows=tierTraits.map((t,index)=>{
       const [row,name,,type,rate]=t;
       const n=INV[row]||0, mx=TMAX[row]||999;
+      const investable=isTraitCurrentlyInvestable(row);
+      const unavailableReason=investable?'':traitUnavailableReason(row);
+      const janFree=janRuneInvestmentForRow(row);
+      const showJanRune=janRuneTargets.includes(row);
       const isMax=n>=mx;
       const cost=nextCost(row);
       // 어비스 난이도의 특성별 계수는 기존 DPS 계산과 동일하게 표시한다.
       const currentRate=isAbyssDifficulty() ? ({133:15,134:7.5,135:1.5,136:3}[row] ?? rate) : rate;
       const rStr=row===58?'강화수 +1':row===96?'2단 강화 +0.5':traitEffectText(row,type,currentRate);
-      return `<article class="tr trait-invest-card${isMax?' is-mastered':''}" data-trait-id="${row}">
+      return `<article class="tr trait-invest-card${isMax?' is-mastered':''}${investable?'':' is-unavailable'}" data-trait-id="${row}"${investable?'':` aria-label="${escapeHtml(name)} · ${unavailableReason}"`}>
         <div class="trait-invest-main">
           <span class="trait-invest-index" aria-hidden="true">${String(index+1).padStart(2,'0')}</span>
           <div class="trait-row-detail">
-            <div class="trait-invest-topline"><div class="tr-name">${escapeHtml(name)}</div><div class="tr-type"><span class="trait-effect-text">${escapeHtml(rStr)}</span><span class="trait-cost-chip ${isMax?'is-complete':''}">${isMax?'✓ 마스터 완료':`다음 투자 · ${fullNumber(cost)}`}</span></div></div>
+            <div class="trait-invest-topline"><div class="tr-name">${escapeHtml(name)}</div><div class="tr-type"><span class="trait-effect-text">${escapeHtml(rStr)}</span><span class="trait-cost-chip ${!investable?'is-unavailable':isMax?'is-complete':''}">${!investable?unavailableReason:isMax?'✓ 마스터 완료':`다음 투자 · ${fullNumber(cost)}`}</span></div></div>
           </div>
         </div>
         <div class="tr-ctrl" aria-label="${escapeHtml(name)} 투자 조절">
-          <button type="button" class="ui-step-btn" data-action="traitAdjust" data-row="${row}" data-delta="-1" ${n<=0?'disabled':''} aria-label="${escapeHtml(name)} 1 환불">−</button>
+          <button type="button" class="ui-step-btn" data-action="traitAdjust" data-row="${row}" data-delta="-1" ${!investable||n<=0?'disabled':''} aria-label="${escapeHtml(name)} 1 환불">−</button>
           <div class="trait-value-pair">
-            <input class="tv-input" type="text" inputmode="numeric" value="${n}" data-row="${row}" aria-label="${escapeHtml(name)} 현재 투자">
+            <input class="tv-input" type="text" inputmode="numeric" value="${n}" data-row="${row}" ${investable?'':'disabled'} aria-label="${escapeHtml(name)} 현재 투자">
             <span class="trait-max-sep">/</span><span class="trait-max-val">${mx}</span>
           </div>
-          <button type="button" class="ui-step-btn" data-action="traitAdjust" data-row="${row}" data-delta="1" ${isMax?'disabled':''} aria-label="${escapeHtml(name)} 1 투자">+</button>
-          <button type="button" class="ui-action-btn trait-master-btn" data-action="traitMax" data-row="${row}" ${isMax?'disabled':''}>마스터</button>
-          ${traitQuickInvestEnabled && mx>=50 ? `<div class="trait-quick-actions"><button type="button" data-action="traitQuickAdjust" data-row="${row}" data-step="10" ${isMax?'disabled':''} aria-label="${escapeHtml(name)} 10회 추가 투자">+10</button><button type="button" data-action="traitQuickAdjust" data-row="${row}" data-step="50" ${isMax?'disabled':''} aria-label="${escapeHtml(name)} 50회 추가 투자">+50</button></div>` : ''}
+          <button type="button" class="ui-step-btn" data-action="traitAdjust" data-row="${row}" data-delta="1" ${!investable||isMax?'disabled':''} aria-label="${escapeHtml(name)} 1 투자">+</button>
+          <button type="button" class="ui-action-btn trait-master-btn" data-action="traitMax" data-row="${row}" ${!investable||isMax?'disabled':''}>마스터</button>
+          ${showJanRune || (traitQuickInvestEnabled && mx>=50) ? `<div class="trait-quick-actions${showJanRune?' has-jan-rune':''}${traitQuickInvestEnabled && mx>=50?' has-quick-invest':''}">
+            ${showJanRune ? `<div class="trait-jan-rune" aria-label="1월룬 무료 투자 ${janFree}회, 실적용 ${n+janFree}회"><span>1월룬 +${janFree}</span><strong>실적용 ${n+janFree}</strong></div>` : ''}
+            ${traitQuickInvestEnabled && mx>=50 ? [10,50,100].map(step=>`<button type="button" data-action="traitQuickAdjust" data-row="${row}" data-step="${step}" ${!investable||mx-n<step?'disabled':''} aria-label="${escapeHtml(name)} ${step}회 추가 투자">+${step}</button>`).join('') : ''}
+          </div>` : ''}
         </div>
       </article>`;
     }).join('');
     const isExpanded=expandedTraitTiers.has(tier);
     return `<section class="trait-group trait-tier-panel${isExpanded?' is-expanded':''}" data-tier-index="${tierIndex+1}" data-tier="${tier}">
-      <h4><button type="button" class="trait-tier-toggle" data-action="toggleTraitTier" data-tier="${tier}" aria-expanded="${isExpanded}" aria-controls="traitTierContent${tierIndex+1}"><span class="trait-title"><span class="trait-tier-index" aria-hidden="true">${String(tierIndex+1).padStart(2,'0')}</span><span class="trait-tier-name">${tier}</span></span></button><span class="trait-tools"><button type="button" class="ui-action-btn mini-btn master" data-action="masterTier" data-tier="${tier}">구간 마스터</button><button type="button" class="ui-action-btn mini-btn reset danger" data-action="resetTier" data-tier="${tier}">초기화</button></span></h4>
+      <h4><button type="button" class="trait-tier-toggle" data-action="toggleTraitTier" data-tier="${tier}" aria-expanded="${isExpanded}" aria-controls="traitTierContent${tierIndex+1}"><span class="trait-title"><span class="trait-tier-index" aria-hidden="true">${String(tierIndex+1).padStart(2,'0')}</span><span class="trait-tier-name">${tier}</span></span>${tierSummary}</button><span class="trait-tools"><button type="button" class="ui-action-btn mini-btn master" data-action="masterTier" data-tier="${tier}">구간 마스터</button><button type="button" class="ui-action-btn mini-btn reset danger" data-action="resetTier" data-tier="${tier}">초기화</button></span></h4>
       <div class="trait-invest-list" id="traitTierContent${tierIndex+1}" ${isExpanded?'':'hidden'}>${rows}</div>
     </section>`;
   }).join('');
@@ -3132,7 +3001,7 @@ function scheduleTraitRecommendationCalculation(step){
   traitRecommendationTimer=setTimeout(step,0);
 }
 function isUnitBoardRecommendationMode(){
-  return $('damageBoardAnalysisTab')?.getAttribute('aria-selected')==='true' && ['unit','jewel'].includes(activeDamageBoardMode);
+  return ['unit','jewel'].includes(activeDamageBoardMode);
 }
 function traitRecommendationNumberText(value,decimals=0){
   return Math.abs(Number(value))>=10000
@@ -3283,14 +3152,14 @@ function renderTraitRecommendations(){
 let traitKeyNavGuardUntil=0;
 function commitTraitInput(el){
   const row=+(el && el.dataset ? el.dataset.row : NaN);
-  if(!Number.isFinite(row)) return;
+  if(!Number.isFinite(row) || !isTraitCurrentlyInvestable(row) || el.disabled) return;
   setInv(row,+el.value);
 }
 function getTraitScrollHost(){
   return qs('.mobile-page-trait.active') || qs('.col-mid') || document.scrollingElement || document.documentElement;
 }
 function getNextTraitInputRow(el,dir){
-  const inputs=Array.from(qsa('.tv-input[data-row]'));
+  const inputs=Array.from(qsa('.tv-input[data-row]:not(:disabled)'));
   const idx=inputs.indexOf(el);
   const nextIndex=Math.max(0,Math.min(inputs.length-1,idx+dir));
   return +(inputs[nextIndex]?.dataset?.row ?? el?.dataset?.row);
@@ -3347,7 +3216,7 @@ function adjustTraitBy(row,d,step=1){
   row=+row;
   d=+d;
   step=Math.max(1,Math.round(+step||1));
-  if(row===116 || !Number.isFinite(row) || !Number.isFinite(d) || d===0) return false;
+  if(row===116 || !isTraitCurrentlyInvestable(row) || !Number.isFinite(row) || !Number.isFinite(d) || d===0) return false;
   const before=INV[row]||0;
   let applied=0;
   if(d>0){
@@ -3378,7 +3247,7 @@ function startTraitAdjustHold(trigger,e){
   if(!trigger || trigger.disabled) return;
   const row=+trigger.dataset.row;
   const delta=+trigger.dataset.delta;
-  if(!Number.isFinite(row) || !Number.isFinite(delta) || delta===0) return;
+  if(!Number.isFinite(row) || !isTraitCurrentlyInvestable(row) || !Number.isFinite(delta) || delta===0) return;
   if(e){ e.preventDefault(); e.stopPropagation(); }
   stopTraitAdjustHold();
   let count=0;
@@ -3409,7 +3278,7 @@ function bindTraitHoldEvents(){
   });
 }
 function setInv(row,val){
-  if(row===116) return;
+  if(row===116 || !isTraitCurrentlyInvestable(row)) return;
   if(isNaN(val)||val<0) val=0;
   const wanted=Math.round(val);
   const applied=setRowToAffordableValue(row,wanted);
@@ -3418,7 +3287,7 @@ function setInv(row,val){
 }
 function adjMax(row){
   try{
-    if(row===116) return false;
+    if(row===116 || !isTraitCurrentlyInvestable(row)) return false;
     const before=INV[row]||0;
     fillRowToBudget(row);
     commitTraitInvestmentChange();
@@ -3429,20 +3298,19 @@ function adjMax(row){
     return false;
   }
 }
-function forEachTraitInTier(tier, options={}, callback=()=>{}){
+function forEachTraitInTier(tier, callback){
   TRAITS.forEach(t=>{
     const row=t[0];
-    if(t[2]!==tier || row===116) return;
-    if(options.excludeAutoInvest && AUTO_INVEST_EXCLUDED_ROWS.has(row)) return;
+    if(t[2]!==tier || row===116 || !isTraitCurrentlyInvestable(row)) return;
     callback(t,row);
   });
 }
 function masterTier(tier){
-  forEachTraitInTier(tier,{excludeAutoInvest:true},(_,row)=>fillRowToBudget(row));
+  forEachTraitInTier(tier,(_,row)=>fillRowToBudget(row));
   commitTraitInvestmentChange();
 }
 function resetTier(tier){
-  forEachTraitInTier(tier,{},(_,row)=>{ INV[row]=0; });
+  forEachTraitInTier(tier,(_,row)=>{ INV[row]=0; });
   if(116 in INV) INV[116]=0;
   commitTraitInvestmentChange();
 }
@@ -3452,8 +3320,7 @@ const UTILITY_OPT_TIERS=OPTIMIZATION_TIERS;
 function isUtilityOptimizationTrait(t, maxTierIndex=null){
   if(!Array.isArray(t)) return false;
   const row=t[0], tier=t[2], type=t[3];
-  if(row===116 || row===112) return false;
-  if((row===131 || row===132) && !isAbyssDifficulty()) return false;
+  if(row===116 || row===112 || !isTraitCurrentlyInvestable(row)) return false;
   const tierIdx=UTILITY_OPT_TIERS.indexOf(tier);
   if(tierIdx<0) return false;
   if(maxTierIndex!==null && tierIdx>maxTierIndex) return false;
@@ -3493,6 +3360,7 @@ function clearTraitInvestmentsBy(predicate){
   TRAITS.forEach(t=>{
     if(!predicate(t)) return;
     const row=+t[0];
+    if(!isTraitCurrentlyInvestable(row)) return;
     if((INV[row]||0)>0){
       INV[row]=0;
       changed++;
@@ -3723,6 +3591,7 @@ function buildZeroScoreCalcRow(config){
     <div class="zero-calc-row-bar">
       <button class="zero-calc-row-head" type="button" aria-expanded="false" aria-label="${name} 승단 점수 입력 펼치기">
         <span class="zero-calc-name"><span class="zero-calc-row-symbol" aria-hidden="true">${String(config.number).padStart(2,'0')}</span><strong>${name}</strong></span>
+        <span class="collapsed-summary zero-calc-head-score" hidden></span>
       </button>
     </div>
     <div class="zero-calc-details" hidden>
@@ -3828,6 +3697,11 @@ function updateZeroScoreCalculator(){
     total+=result.score;
     const out=row.querySelector('.zero-row-score');
     if(out) out.textContent=String(result.score);
+    const headScore=row.querySelector('.zero-calc-head-score');
+    if(headScore){
+      headScore.hidden=result.score<1;
+      headScore.textContent=result.score>=1?`추가점수 +${fullNumber(result.score)}`:'';
+    }
   });
   const targetScore=currentTotal+total;
   const currentRank=zeroRankName(currentTotal);
@@ -4080,7 +3954,6 @@ const ACTION_HANDLERS={
   resetAllTraitPresetState:(...args)=>window.DpsPreset.resetAll(...args),
   backupTraitPresets:(...args)=>window.DpsPreset.openBackup(...args),
   importTraitPresets:(...args)=>window.DpsPreset.openImport(...args),
-  openDpsTable,
   zeroScoreStar:(trigger)=>toggleZeroScoreStar(trigger),
   toggleFontScalePopover,
   decreaseFont:()=>changeFontScale(-DPS_CONFIG.ui.fontScaleStep),
@@ -4212,7 +4085,7 @@ function bindAppEvents(){
     bindFontScaleViewportGuard, bindFontScalePopover, bindActionEvents, bindTraitHoldEvents, bindTraitInputEvents,
     bindIntegratedTabEvents, ()=>window.DpsPreset.bindEvents(), bindJewelImageEvents,
     bindZeroScoreCalculator, bindTraitLimitDisplayEvents, bindTraitLimitChoiceEvents, bindDpsBaseUnitControlEvents, bindReactiveInputs,
-    bindButtonPressFeedback, bindIndependentWindowButton, bindDamageBoardTabEvents, bindDpsTableEvents, bindDpsCompareEvents, bindDamageBoardSwitchEvents, bindAppTitleVersion
+    bindButtonPressFeedback, bindIndependentWindowButton, bindDamageBoardTabEvents, bindDpsCompareEvents, bindDamageBoardSwitchEvents, bindAppTitleVersion
   ].forEach(fn=>fn());
 }
 // 일반 select는 계산·저장 이벤트의 원본으로 유지하고, 표시와 조작만 앱 내부 목록으로 대체합니다.
@@ -4473,6 +4346,7 @@ function initApp(){
   loadFontScale();
   renderZeroScoreCalculatorRows();
   bindAppEvents();
+  initAppHeaderLayout();
   syncEnchantCodeFromInputs(true);
   syncSelectButtons();
   syncDonationBuffControl();

@@ -351,7 +351,7 @@ function calculateTraitStatTotals(){
       else if(row===134) rate=7.5;
       else if(row===135) rate=1.5;
     }
-    let value=(INV[row]||0)*rate;
+    let value=appliedTraitInvestment(row)*rate;
     if(t[5]==='team') value*=teamMultiplier;
     if(row===70||row===103||row===110) value=Math.round(value*10)/10;
     totals[t[3]]=(totals[t[3]]||0)+value;
@@ -362,7 +362,7 @@ function uaProd(){
   const rates={99:0.24,111:0.08,136:(isAbyssDifficulty()?3:0.4)};
   let p=1;
   for(const [r,rate] of Object.entries(rates)){
-    const n=INV[+r]||0;
+    const n=appliedTraitInvestment(+r);
     if(n>0){
       let val=Math.pow(1+rate/100,n);
       if(+r===99||+r===111) val=Math.round(val*10000)/10000;

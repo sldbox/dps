@@ -4,7 +4,7 @@
 <meta charset="UTF-8"/>
 <meta name="google-site-verification" content="RTuDWbMdnKgbpRpl05eXh9epFwWRSxju4NOl8OtjMsI" />
 <script>
-window.DPS_BUILD_VERSION = "dps-2610240002";
+window.DPS_BUILD_VERSION = "dps-2610240012";
 window.DPS_STANDALONE_VIEW = (function(){
   var requested=new URLSearchParams(window.location.search).get('dpsWindow');
   var value=['board','utility','both'].includes(requested) ? requested : '';
@@ -240,14 +240,14 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 <meta content="https://sldbox.github.io/dps/" property="og:url"/>
 <meta content="개복디 특성 게산기" property="og:title"/>
 <meta content="특성 투자, 재화 사용량, 표기 스탯, 총데미지, DPS를 한 번에 계산할 수 있는 개복디 전용 계산기입니다." property="og:description"/>
-<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2610240002" property="og:image"/>
-<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2610240002" property="og:image:secure_url"/>
+<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2610240012" property="og:image"/>
+<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2610240012" property="og:image:secure_url"/>
 <meta content="image/png" property="og:image:type"/>
 <meta content="개복디 특성 게산기 로고" property="og:image:alt"/>
 <meta content="summary_large_image" name="twitter:card"/>
 <meta content="개복디 특성 게산기" name="twitter:title"/>
 <meta content="특성 투자, 재화 사용량, 표기 스탯, 총데미지, DPS를 한 번에 계산할 수 있는 개복디 전용 계산기입니다." name="twitter:description"/>
-<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2610240002" name="twitter:image"/>
+<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2610240012" name="twitter:image"/>
 <meta content="개복디 특성 게산기 로고" name="twitter:image:alt"/>
 <link href="https://cdn.jsdelivr.net" rel="preconnect"/>
 <link crossorigin="" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" rel="stylesheet"/>
@@ -288,10 +288,11 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
       ['#btnFontSizePopup','글씨 크기 조절',window.innerWidth<768?32:34],
       ['.font-scale-trigger','글씨 크기 조절',30],
       ['.header-nexus-link','히든조합 계산기 이동',window.innerWidth<600?30:35],
-      ['#dpsCompareOpen','전체 DPS 비교표',35],
       ['#independentWindowToggle','독립 창 선택',35],
-      
-
+      ['#dpsCompareOpen','전체 DPS표',35],
+      ['#traitQuickInvestToggle','투자 보조',35],
+      ['.basic-settings-modal-trigger','버스 성소',35],
+      ['#zeroRankGuideOpen','승단 점수',35],
     ];
     definitions.forEach(function(definition){
       document.querySelectorAll(definition[0]).forEach(function(control){
@@ -366,7 +367,12 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
       var control=findControl(event.target);
       if(!control) return;
       // 마우스/키보드는 한 번 클릭, 터치는 이름 확인 후 두 번째 탭에서 실행합니다.
-      if(control!==touchTarget || event.detail===0){touchTarget=null;hide();return;}
+      if(control!==touchTarget || event.detail===0){
+        touchTarget=null;
+        if(control.matches('#dpsCompareOpen,#traitQuickInvestToggle,.basic-settings-modal-trigger,#zeroRankGuideOpen')) show(control,false);
+        else hide();
+        return;
+      }
       if(armed===control && Date.now()<armedUntil){touchTarget=null;hide();return;}
       event.preventDefault();
       event.stopImmediatePropagation();
@@ -441,9 +447,6 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 </div>
 </div>
 <div class="hdr-meta">
-<button type="button" id="dpsCompareOpen" class="dps-compare-open" data-dps-compare-open aria-label="전체 DPS 비교표 열기" aria-haspopup="dialog" aria-controls="dpsCompareModal">
-      <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M9 4v16M15 10v10"/></svg>
-    </button>
 <button type="button" id="independentWindowToggle" class="ui-action-btn right-workspace-window-toggle" aria-label="독립 창 보기 선택" aria-haspopup="menu" aria-controls="independentWindowMenu" aria-expanded="false"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="3.5" width="19" height="17" rx="2.5"/><rect x="11" y="12" width="8" height="5.5" rx="1"/></svg></button>
 <div class="header-convenience" aria-label="빠른 이동">
 <div class="header-reference-actions">
@@ -537,7 +540,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 <div class="basic-goal-cards integrated-card">
 <div class="sg-title basic-info-title basic-goal-title">
 <div class="basic-goal-brand"><span class="basic-goal-brand-mark" aria-hidden="true">✦</span><span class="basic-goal-brand-copy"><strong>기본 설정</strong><small>CONFIGURATION CENTER</small></span></div><div class="basic-settings-modal-actions" aria-label="버스·성소 설정">
-<button type="button" class="basic-settings-modal-trigger" data-basic-modal-open="bus" aria-haspopup="dialog" aria-controls="basicSettingsModal"><span aria-hidden="true">✦</span>버스 성소</button>
+<button type="button" class="basic-settings-modal-trigger" data-basic-modal-open="bus" aria-label="버스 성소" aria-haspopup="dialog" aria-controls="basicSettingsModal"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 22h18M6 18v-7M10 18v-7M14 18v-7M18 18v-7M12 2 2 7h20L12 2Z"/></svg></button>
 </div>
 </div>
 <div class="integrated-tabs basic-settings-tabs" role="tablist" aria-label="기본 설정" data-integrated-tabs="basicSettings"><button type="button" class="integrated-tab is-active" role="tab" id="basicSettingsTab0" aria-controls="basicSettingsPanel0" aria-selected="true" data-integrated-tab="basicSettings" data-integrated-index="0" tabindex="0">기본 정보</button><button type="button" class="integrated-tab" role="tab" id="basicSettingsTab1" aria-controls="basicSettingsPanel1" aria-selected="false" data-integrated-tab="basicSettings" data-integrated-index="1" tabindex="-1">룬 정보</button><button type="button" class="integrated-tab" role="tab" id="basicSettingsTab2" aria-controls="basicSettingsPanel2" aria-selected="false" data-integrated-tab="basicSettings" data-integrated-index="2" tabindex="-1">효과 및 버프</button></div>
@@ -759,7 +762,10 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 </div>
 </section>
 <section class="buff-config-group is-season" aria-label="이달의 룬 효과">
-<div class="buff-config-heading"><div><strong>이달의 룬 효과</strong><small>4월·9월 일반 / 강화</small></div></div>
+<div class="buff-config-heading"><div><strong>이달의 룬 효과</strong><small>1월·4월·9월 일반 / 강화</small></div></div>
+<div class="mini-ir mini-ir-button-row unit-enhance-option-row month-rune-row"><label for="janRuneScope">1월 적용 범위</label><div class="seg-btns unit-enhance-button-grid month-rune-grid jan-scope-grid" data-target="janRuneScope"><button class="ui-choice-btn" data-action="selectButton" data-value="J1" type="button">공격 오펜 @J1</button><button class="ui-choice-btn" data-action="selectButton" data-value="J2" type="button">전체 투자 @J2</button></div><select class="hidden-field" id="janRuneScope" aria-label="1월 적용 범위"><option value="J1" selected>공격 오펜 @J1</option><option value="J2">전체 투자 @J2</option></select></div>
+<div class="mini-ir mini-ir-button-row unit-enhance-option-row month-rune-row"><label for="janRuneNormal">1월 일반</label><div class="seg-btns unit-enhance-button-grid month-rune-grid" data-target="janRuneNormal"><button class="ui-choice-btn" data-action="selectButton" data-value="0" type="button">선택 안함</button><button class="ui-choice-btn" data-action="selectButton" data-value="1" type="button">1</button><button class="ui-choice-btn" data-action="selectButton" data-value="2" type="button">2</button><button class="ui-choice-btn" data-action="selectButton" data-value="3" type="button">3</button><button class="ui-choice-btn" data-action="selectButton" data-value="4" type="button">4</button><button class="ui-choice-btn" data-action="selectButton" data-value="5" type="button">5</button><button class="ui-choice-btn" data-action="selectButton" data-value="6" type="button">6</button></div><select class="hidden-field" id="janRuneNormal" aria-label="1월 일반"><option value="0" selected>선택 안함</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option></select></div>
+<div class="mini-ir mini-ir-button-row unit-enhance-option-row month-rune-row"><label for="janRunePlus">1월 강화(+)</label><div class="seg-btns unit-enhance-button-grid month-rune-grid" data-target="janRunePlus"><button class="ui-choice-btn" data-action="selectButton" data-value="0" type="button">선택 안함</button><button class="ui-choice-btn" data-action="selectButton" data-value="1" type="button">1</button><button class="ui-choice-btn" data-action="selectButton" data-value="2" type="button">2</button><button class="ui-choice-btn" data-action="selectButton" data-value="3" type="button">3</button><button class="ui-choice-btn" data-action="selectButton" data-value="4" type="button">4</button><button class="ui-choice-btn" data-action="selectButton" data-value="5" type="button">5</button><button class="ui-choice-btn" data-action="selectButton" data-value="6" type="button">6</button></div><select class="hidden-field" id="janRunePlus" aria-label="1월 강화(+)"><option value="0" selected>선택 안함</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option></select></div>
 <div class="mini-ir mini-ir-button-row unit-enhance-option-row month-rune-row"><label>4월 일반</label><div class="seg-btns unit-enhance-button-grid month-rune-grid" data-target="aprRuneNormal"><button class="ui-choice-btn" data-action="selectButton" data-value="0" type="button">선택 안함</button><button class="ui-choice-btn" data-action="selectButton" data-value="1" type="button">1</button><button class="ui-choice-btn" data-action="selectButton" data-value="2" type="button">2</button><button class="ui-choice-btn" data-action="selectButton" data-value="3" type="button">3</button><button class="ui-choice-btn" data-action="selectButton" data-value="4" type="button">4</button><button class="ui-choice-btn" data-action="selectButton" data-value="5" type="button">5</button><button class="ui-choice-btn" data-action="selectButton" data-value="6" type="button">6</button></div><select class="hidden-field" id="aprRuneNormal"><option selected="" value="0">선택 안함</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option></select></div>
 <div class="mini-ir mini-ir-button-row unit-enhance-option-row month-rune-row"><label>4월 강화(+)</label><div class="seg-btns unit-enhance-button-grid month-rune-grid" data-target="aprRunePlus"><button class="ui-choice-btn" data-action="selectButton" data-value="0" type="button">선택 안함</button><button class="ui-choice-btn" data-action="selectButton" data-value="1" type="button">1</button><button class="ui-choice-btn" data-action="selectButton" data-value="2" type="button">2</button><button class="ui-choice-btn" data-action="selectButton" data-value="3" type="button">3</button><button class="ui-choice-btn" data-action="selectButton" data-value="4" type="button">4</button><button class="ui-choice-btn" data-action="selectButton" data-value="5" type="button">5</button><button class="ui-choice-btn" data-action="selectButton" data-value="6" type="button">6</button></div><select class="hidden-field" id="aprRunePlus"><option selected="" value="0">선택 안함</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option></select></div>
 <div class="mini-ir mini-ir-button-row unit-enhance-option-row month-rune-row"><label>9월 일반</label><div class="seg-btns unit-enhance-button-grid month-rune-grid" data-target="sepRuneNormal"><button class="ui-choice-btn" data-action="selectButton" data-value="0" type="button">선택 안함</button><button class="ui-choice-btn" data-action="selectButton" data-value="1" type="button">1</button><button class="ui-choice-btn" data-action="selectButton" data-value="2" type="button">2</button><button class="ui-choice-btn" data-action="selectButton" data-value="3" type="button">3</button><button class="ui-choice-btn" data-action="selectButton" data-value="4" type="button">4</button><button class="ui-choice-btn" data-action="selectButton" data-value="5" type="button">5</button><button class="ui-choice-btn" data-action="selectButton" data-value="6" type="button">6</button></div><select class="hidden-field" id="sepRuneNormal"><option selected="" value="0">선택 안함</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option></select></div>
@@ -859,7 +865,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 <!-- 효과 및 버프: 독립 카드 -->
 
 <!-- 더제로 승단정보 -->
-<div class="data-card zero-rank-card integrated-card"><h3 class="zero-rank-title"><span class="zero-rank-heading-copy"><span class="zero-rank-heading-icon" aria-hidden="true">✦</span><span>더제로 승단 정보</span></span><button type="button" id="zeroRankGuideOpen" class="zero-rank-guide-trigger" aria-haspopup="dialog" aria-controls="zeroRankGuideModal" aria-expanded="false"><span aria-hidden="true">✦</span>승단 점수</button></h3>
+<div class="data-card zero-rank-card integrated-card"><h3 class="zero-rank-title"><span class="zero-rank-heading-copy"><span class="zero-rank-heading-icon" aria-hidden="true">✦</span><span>더제로 승단 정보</span></span><button type="button" id="zeroRankGuideOpen" class="zero-rank-guide-trigger" aria-label="승단 점수" aria-haspopup="dialog" aria-controls="zeroRankGuideModal" aria-expanded="false"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 21h8M12 17v4M7 4h10v8a5 5 0 0 1-10 0V4ZM7 6H4v2a4 4 0 0 0 4 4M17 6h3v2a4 4 0 0 1-4 4"/></svg></button></h3>
 <div class="zero-rank-content">
 <section class="zero-rank-panel zero-rank-calc-panel">
 <div class="zero-score-calc">
@@ -945,7 +951,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 <!-- 특성 추천: 제한 다음, 특성 투자 전 -->
 
 <section class="trait-standalone-panel trait-utility-panel" aria-labelledby="traitUtilityListHeading">
-  <header class="trait-utility-section-head"><span class="trait-utility-section-mark" aria-hidden="true">✦</span><span class="trait-utility-section-label"><strong id="traitUtilityListHeading">특성 유틸 목록</strong></span><button type="button" id="traitQuickInvestToggle" class="trait-quick-toggle" data-action="toggleTraitQuickInvest" aria-label="텐키리스 빠른 투자 버튼 표시" aria-pressed="false" title="빠른 투자 +10 / +50 표시"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M6 9h.01M10 9h.01M14 9h.01M18 9h.01M6 13h.01M10 13h.01M14 13h.01M18 13h.01M7 16h10"/></svg></button></header>
+  <header class="trait-utility-section-head"><span class="trait-utility-section-mark" aria-hidden="true">✦</span><span class="trait-utility-section-label"><strong id="traitUtilityListHeading">특성 유틸 목록</strong></span><button type="button" id="traitQuickInvestToggle" class="trait-quick-toggle" data-action="toggleTraitQuickInvest" aria-label="투자 보조" aria-pressed="false"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M6 9h.01M10 9h.01M14 9h.01M18 9h.01M6 13h.01M10 13h.01M14 13h.01M18 13h.01M7 16h10"/></svg></button></header>
   <div class="tp-body" id="traitBody"></div>
 </section>
 </div>
@@ -953,12 +959,10 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 <div class="col-right">
 <!-- 스펙·유닛 보드: 전환 버튼·결과 -->
 <div class="data-card stat-dps-card right-analytics-workspace">
-<div class="right-workspace-navigation"><header class="right-workspace-head"><span class="right-workspace-mark" aria-hidden="true">✦</span><span class="right-workspace-copy"><strong>DPS 분석 보드</strong><small>SPEC &amp; UNIT ANALYTICS</small></span></header>
-<div class="damage-board-tabs" role="tablist" aria-label="DPS 분석 구분" data-damage-board-tabs>
-<button class="damage-board-tab is-active" id="damageBoardAnalysisTab" type="button" role="tab" aria-selected="true" aria-controls="damageBoardAnalysisPanel" data-damage-board-tab="analysis">분석 보드</button>
-<button class="damage-board-tab" id="damageBoardTableTab" type="button" role="tab" aria-selected="false" aria-controls="workspace-dps" data-damage-board-tab="table"><span id="damageBoardTableLabel">DPS표</span></button>
-</div>
-<section class="damage-board-analysis-view" id="damageBoardAnalysisPanel" role="tabpanel" aria-labelledby="damageBoardAnalysisTab">
+<div class="right-workspace-navigation"><header class="right-workspace-head"><span class="right-workspace-mark" aria-hidden="true">✦</span><span class="right-workspace-copy"><strong>DPS 분석 보드</strong><small>SPEC &amp; UNIT ANALYTICS</small></span><button type="button" id="dpsCompareOpen" class="dps-compare-open" title="전체 DPS표 열기" data-dps-compare-open aria-label="전체 DPS 비교표 열기" aria-haspopup="dialog" aria-controls="dpsCompareModal">
+      <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M9 4v16M15 10v10"/></svg>
+    </button></header>
+<section class="damage-board-analysis-view" id="damageBoardAnalysisPanel" aria-label="DPS 분석 내용">
 <div class="damage-board-subtabs integrated-tabs" role="tablist" aria-label="분석 보드 세부 선택" data-damage-board-subtabs>
 <button class="integrated-tab is-active" id="damageBoardSpecTab" type="button" role="tab" aria-selected="true" aria-controls="damageBoardSpecPanel" data-damage-board-subtab="spec" tabindex="0">스펙 보드</button>
 <button class="integrated-tab" id="damageBoardUnitTab" type="button" role="tab" aria-selected="false" aria-controls="damageBoardUnitPanel" data-damage-board-subtab="unit" tabindex="-1">유닛 보드</button>
@@ -1031,16 +1035,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 </section>
 </div>
 </section>
-<div class="damage-board-tab-shell" id="damageBoardTableShell" hidden>
-<section id="workspace-dps" class="damage-board-panel dps-reference-workspace" data-damage-board-panel="table" role="tabpanel" aria-labelledby="damageBoardTableTab" hidden>
-  <div class="dps-reference-toolbar">
-    <div class="dps-table-tabs integrated-tabs" data-dps-table-tabs-mount role="tablist" aria-label="DPS 기준 선택"></div>
-  </div>
-  <section id="dpsTableContent" role="tabpanel" aria-label="DPS 기준 비교">
-    <div id="dpsTableMount" data-dps-table-mount></div>
-  </section>
-</section>
-</div>
+
 </div>
 
 

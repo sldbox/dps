@@ -12,7 +12,7 @@ const STORAGE_KEY=DPS_CONFIG.storage.key;
 const CLIENT_KEY=DPS_CONFIG.storage.clientKey;
 const TRAIT_PRESET_STORAGE_KEY=DPS_CONFIG.storage.traitPresetKey || 'gbd_dps_calculator:trait_presets';
 const TRAIT_PRESET_FILE_TYPE='sld_dps_total_preset';
-const TRAIT_PRESET_MANAGEMENT_VERSION=1;
+const TRAIT_PRESET_MANAGEMENT_VERSION=2;
 const APP_STATE_SCHEMA_VERSION=2;
 const TRAIT_PRESET_EXCLUDED_VALUE_IDS=new Set([
   'dpsBaseUnits','dpsBaseUnitSlots','dpsJewelSettings','dpsBaseUnitExtraSettings','dpsBaseUnitSlotExpansions',
@@ -298,7 +298,19 @@ function sanitizeSavedValues(values){
   });
   normalizeShardStorageValues(out);
   normalizeMoneyStorageValues(out);
-  return out;
+  // V1 프리셋에 없는 1월 룬은 선택 안함; 기존 룬 필드와 수동 INV는 그대로 둔다.
+  const janScope=out.janRuneScope==='J2'?'J2':'J1';
+  const janCount=value=>String(Math.max(0,Math.min(6,Math.round(Number(value)||0))));
+  const janValues={janRuneScope:janScope,janRuneNormal:janCount(out.janRuneNormal),janRunePlus:janCount(out.janRunePlus)};
+  const ordered={};
+  let inserted=false;
+  for(const [id,value] of Object.entries(out)){
+    if(id==='janRuneScope'||id==='janRuneNormal'||id==='janRunePlus') continue;
+    if(id==='aprRuneNormal') {Object.assign(ordered,janValues);inserted=true;}
+    ordered[id]=value;
+  }
+  if(!inserted) Object.assign(ordered,janValues);
+  return ordered;
 }
 
 function makeNormalizedStateEnvelope(source,values,inv,{requireRawValues=false,requireContent=true}={}){
@@ -601,6 +613,7 @@ function applyStateObject(data, options={}){
       INV[r]=Math.max(0, Math.min(TMAX[r]||999, Math.round(+val||0)));
     });
     if(116 in INV) INV[116]=0;
+    redrawJanRuneInvestment(true);
     // 프리셋에는 보유 재화보다 큰 투자값도 그대로 보존한다. 잔여량은 음수로 표시한다.
     restoreTraitRecommendationSaveState(data.recommendations);
     if(hasOwn(sanitizedValues,'runeChoiceType') || hasOwn(sanitizedValues,'runeChoiceValue')) syncRuneChoice();
