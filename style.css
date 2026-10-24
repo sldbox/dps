@@ -1104,10 +1104,9 @@ body .trait-preset-body{display:grid;grid-template-columns:minmax(0,1fr);align-i
 .basic-settings-tabs .trait-preset-tab-alert{display:inline-grid;place-items:center;flex:none;width:15px;height:15px;margin-left:5px;border-radius:50%;background:#d99445;color:#171717;font-size:11px;font-weight:900;line-height:1;vertical-align:middle;}
 .basic-settings-tabs .trait-preset-tab-alert[hidden]{display:none;}
 .trait-preset-intro{display:none;align-items:center;gap:8px;min-width:0;margin:0 14px;padding:8px 0;border:0;background:transparent;}
-.trait-preset-panel.is-migration-pending .trait-preset-intro,.trait-preset-panel.is-compatibility-error .trait-preset-intro,.trait-preset-panel.is-backup-pending .trait-preset-intro{display:flex;}
+.trait-preset-panel.is-migration-pending .trait-preset-intro,.trait-preset-panel.is-compatibility-error .trait-preset-intro{display:flex;}
 .trait-preset-status-mark{display:inline-flex;align-items:center;justify-content:center;flex:none;width:16px;height:16px;border:0;background:transparent;color:#e9b568;font-size:14px;font-weight:900;}
 .trait-preset-status-copy{min-width:0;color:#e9bd81;font-size:calc(12px * var(--app-font-scale));font-weight:750;line-height:1.45;word-break:keep-all;}
-.trait-preset-panel.is-backup-pending .trait-preset-status-mark,.trait-preset-panel.is-backup-pending .trait-preset-status-copy{color:#9ee2c0;}
 .trait-preset-management{min-width:0;display:flex;flex-direction:column;position:relative;background:var(--ui-panel-body-bg);border-radius:0 0 calc(var(--ui-panel-radius) - 1px) calc(var(--ui-panel-radius) - 1px);}
 @media(max-width:600px){body .trait-preset-intro{margin:0 11px;padding:7px 0;}body .trait-preset-status-copy{font-size:calc(11px * var(--app-font-scale));}}
 

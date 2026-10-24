@@ -744,17 +744,12 @@ function renderTraitPresetRequiredNotice(status,store){
   const compatibility=storedTraitPresetCompatibility();
   const migration=compatibility.needsMigration;
   const incompatible=!!compatibility.error;
-  const backup=!migration && !incompatible && store.presets.length>0 && (status.backupNeeded || status.updatedPresetIds.length>0 || status.pendingUnitBoardPresetIds.length>0);
   const manager=document.querySelector('.trait-preset-panel');
   if(manager){
     manager.classList.toggle('is-migration-pending',migration);
     manager.classList.toggle('is-compatibility-error',incompatible);
-    manager.classList.toggle('is-backup-pending',backup);
-    manager.classList.toggle('has-backup-pending',backup);
     const message=manager.querySelector('.trait-preset-status-copy');
-    if(message) message.textContent=incompatible ? compatibility.error : migration ? '프리셋 데이터 업데이트가 필요합니다.' : backup ? '프리셋 백업이 필요합니다.' : '';
-    const mark=manager.querySelector('.trait-preset-status-mark');
-    if(mark) mark.textContent=backup ? '↓' : '!';
+    if(message) message.textContent=incompatible ? compatibility.error : migration ? '프리셋 데이터 업데이트가 필요합니다.' : '';
   }
   const indicator=$('basicSettingsTab0')?.querySelector('.trait-preset-tab-alert');
   if(indicator) indicator.hidden=!migration && !incompatible;
@@ -1631,7 +1626,7 @@ function updateTraitPreset(options={}){
     updateTraitPresetStatus({pendingJewelSettings:false},{persist:true});
     if(options.rememberSelection!==false) finishTraitPresetSelection(id,{refresh:options.refresh!==false});
     else if(options.refresh!==false) refreshTraitPresetControls(id);
-    if(options.silent!==true) notifyStorageAction(`프리셋 업데이트 완료: ${preset.name}`,'ok',{skipHeaderStatus:true});
+    if(options.silent!==true) notifyStorageAction(`프리셋 업데이트 완료: ${preset.name}`,'ok',{toast:true,skipHeaderStatus:true});
     return true;
   }catch(e){
     rememberAppIssue('error','[trait preset update failed]',e);
