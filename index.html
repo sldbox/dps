@@ -4,7 +4,7 @@
 <meta charset="UTF-8"/>
 <meta name="google-site-verification" content="RTuDWbMdnKgbpRpl05eXh9epFwWRSxju4NOl8OtjMsI" />
 <script>
-window.DPS_BUILD_VERSION = "dps-2610240019";
+window.DPS_BUILD_VERSION = "dps-2610240022";
 window.DPS_STANDALONE_VIEW = (function(){
   var requested=new URLSearchParams(window.location.search).get('dpsWindow');
   var value=['board','utility','both'].includes(requested) ? requested : '';
@@ -240,14 +240,14 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
 <meta content="https://sldbox.github.io/dps/" property="og:url"/>
 <meta content="개복디 특성 게산기" property="og:title"/>
 <meta content="특성 투자, 재화 사용량, 표기 스탯, 총데미지, DPS를 한 번에 계산할 수 있는 개복디 전용 계산기입니다." property="og:description"/>
-<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2610240019" property="og:image"/>
-<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2610240019" property="og:image:secure_url"/>
+<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2610240022" property="og:image"/>
+<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2610240022" property="og:image:secure_url"/>
 <meta content="image/png" property="og:image:type"/>
 <meta content="개복디 특성 게산기 로고" property="og:image:alt"/>
 <meta content="summary_large_image" name="twitter:card"/>
 <meta content="개복디 특성 게산기" name="twitter:title"/>
 <meta content="특성 투자, 재화 사용량, 표기 스탯, 총데미지, DPS를 한 번에 계산할 수 있는 개복디 전용 계산기입니다." name="twitter:description"/>
-<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2610240019" name="twitter:image"/>
+<meta content="https://sldbox.github.io/dps/logo.png?v=dps-2610240022" name="twitter:image"/>
 <meta content="개복디 특성 게산기 로고" name="twitter:image:alt"/>
 <link href="https://cdn.jsdelivr.net" rel="preconnect"/>
 <link crossorigin="" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" rel="stylesheet"/>
@@ -333,15 +333,6 @@ html:not(.dps-booting) #dpsBootScreen{display:none}
       control.style.setProperty('--nexus-control-expanded',(base+width+12)+'px');
       timer=setTimeout(hide,touch?3000:2000);
     }
-    document.addEventListener('pointerover',function(event){
-      if(event.pointerType==='touch' || event.pointerType==='pen') return;
-      var control=findControl(event.target);
-      if(control && control!==findControl(event.relatedTarget)) show(control,false);
-    },true);
-    document.addEventListener('pointerout',function(event){
-      if(event.pointerType==='touch' || event.pointerType==='pen') return;
-      if(current && findControl(event.target)===current && findControl(event.relatedTarget)!==current) hide();
-    },true);
     document.addEventListener('focusin',function(event){
       var control=findControl(event.target);
       if(control && control!==touchTarget) show(control,false);
@@ -410,10 +401,6 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 })();
 </script>
 <div id="dpsBootScreen" aria-live="polite"><div class="boot-card"><div class="boot-title">특성 계산기 적용 중</div><div class="boot-desc">최신 빌드와 스타일을 불러오는 중입니다.</div></div></div>
-<div class="trait-preset-change-notice" id="traitPresetChangeNotice" role="status" aria-live="polite" aria-atomic="true" hidden>
-  <span class="trait-preset-change-notice-icon" aria-hidden="true">!</span>
-  <span class="trait-preset-change-notice-text">프리셋 변경값이 감지됐어요.<small>프리셋 관리에서 확인해 주세요.</small></span>
-</div>
 <div id="independentWindowMenu" class="right-workspace-window-menu" role="menu" aria-label="독립 창 보기 선택" hidden>
 <button type="button" role="menuitem" data-independent-view="board">DPS 분석 보드 독립 창</button>
 <button type="button" role="menuitem" data-independent-view="utility">특성 유틸 목록 독립 창</button>
@@ -445,7 +432,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 <div class="header-convenience" aria-label="빠른 이동">
 <div class="header-reference-actions">
 
-<a class="btn subtle ui-action-btn header-nexus-link" href="https://sldbox.github.io/site/" aria-label="히든조합 계산기 이동" title="히든조합 계산기 이동"><svg class="header-nexus-mark" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false"><defs><linearGradient id="headerNexusGradient" x1="7" y1="8" x2="25" y2="24" gradientUnits="userSpaceOnUse"><stop stop-color="#e7fbff"/><stop offset=".55" stop-color="#8edbff"/><stop offset="1" stop-color="#6b9dff"/></linearGradient></defs><path d="M7 24V8h4.4L21 18.9V8h4v16h-4.3L11 13.2V24H7Z" fill="url(#headerNexusGradient)"/><path d="M11 13.2 20.7 24" stroke="#edfbff" stroke-width=".8" stroke-opacity=".65"/></svg></a>
+<a class="btn subtle ui-action-btn header-nexus-link" href="https://sldbox.github.io/site/" aria-label="히든조합 계산기 이동"><svg class="header-nexus-mark" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false"><defs><linearGradient id="headerNexusGradient" x1="7" y1="8" x2="25" y2="24" gradientUnits="userSpaceOnUse"><stop stop-color="#e7fbff"/><stop offset=".55" stop-color="#8edbff"/><stop offset="1" stop-color="#6b9dff"/></linearGradient></defs><path d="M7 24V8h4.4L21 18.9V8h4v16h-4.3L11 13.2V24H7Z" fill="url(#headerNexusGradient)"/><path d="M11 13.2 20.7 24" stroke="#edfbff" stroke-width=".8" stroke-opacity=".65"/></svg></a>
 </div>
 </div>
 <div aria-label="글씨 크기 조절" class="font-scale-ctrl">
@@ -470,40 +457,13 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 <button type="button" class="basic-settings-modal-trigger" data-basic-modal-open="bus" aria-label="버스 성소" aria-haspopup="dialog" aria-controls="basicSettingsModal"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 22h18M6 18v-7M10 18v-7M14 18v-7M18 18v-7M12 2 2 7h20L12 2Z"/></svg></button>
 </div>
 </div>
-<div class="integrated-tabs basic-settings-tabs" role="tablist" aria-label="기본 설정" data-integrated-tabs="basicSettings"><button type="button" class="integrated-tab is-active" role="tab" id="basicSettingsTab0" aria-controls="basicSettingsPanel0" aria-selected="true" data-integrated-tab="basicSettings" data-integrated-index="0" tabindex="0">프리셋 관리</button><button type="button" class="integrated-tab" role="tab" id="basicSettingsTab1" aria-controls="basicSettingsPanel1" aria-selected="false" data-integrated-tab="basicSettings" data-integrated-index="1" tabindex="-1">기본 정보</button><button type="button" class="integrated-tab" role="tab" id="basicSettingsTab2" aria-controls="basicSettingsPanel2" aria-selected="false" data-integrated-tab="basicSettings" data-integrated-index="2" tabindex="-1">룬 옵션 효과버프</button></div>
+<div class="integrated-tabs basic-settings-tabs" role="tablist" aria-label="기본 설정" data-integrated-tabs="basicSettings"><button type="button" class="integrated-tab is-active" role="tab" id="basicSettingsTab0" aria-controls="basicSettingsPanel0" aria-selected="true" data-integrated-tab="basicSettings" data-integrated-index="0" tabindex="0">프리셋 관리<span class="trait-preset-tab-alert" aria-hidden="true" hidden>!</span></button><button type="button" class="integrated-tab" role="tab" id="basicSettingsTab1" aria-controls="basicSettingsPanel1" aria-selected="false" data-integrated-tab="basicSettings" data-integrated-index="1" tabindex="-1">기본 정보</button><button type="button" class="integrated-tab" role="tab" id="basicSettingsTab2" aria-controls="basicSettingsPanel2" aria-selected="false" data-integrated-tab="basicSettings" data-integrated-index="2" tabindex="-1">룬과 버프</button></div>
 <div id="basicSettingsPanel0" class="integrated-content basic-settings-preset-panel is-active" role="tabpanel" aria-labelledby="basicSettingsTab0" data-integrated-panel="basicSettings" data-integrated-index="0">
 <div class="trait-preset-panel" aria-label="프리셋 관리">
 <div class="trait-preset-body trait-subgroup-body">
-<section class="trait-preset-intro" aria-label="빌드 라이브러리 소개 및 변경 안내">
-  <div class="trait-preset-intro-kicker"><span aria-hidden="true">✦</span> YOUR BUILD LIBRARY</div>
-  <h2>좋은 빌드는<br>다음에도 그대로.</h2>
-  <hr class="trait-preset-intro-divider" aria-hidden="true">
-  <p>완성한 설정을 저장하고,<br>필요한 순간 다시 불러오세요.</p>
-  <ol class="trait-preset-intro-steps">
-    <li><span>01</span>빌드에 이름 붙이기</li>
-    <li><span>02</span>설정과 유닛을 함께 저장</li>
-    <li><span>03</span>백업 파일로 안전하게 보관</li>
-  </ol>
-  <div class="trait-preset-change-content" role="status" aria-live="polite" aria-atomic="true">
-    <span class="trait-preset-change-kicker"><span aria-hidden="true">✦</span> BUILD CHANGED</span>
-    <h2>빌드가 변경되었어요.</h2>
-    <hr class="trait-preset-intro-divider" aria-hidden="true">
-    <p>저장된 빌드와 현재 설정이 다릅니다.<br>업데이트하거나 기존 설정을 불러오세요.</p>
-    <ol class="trait-preset-intro-steps trait-preset-change-guide" aria-label="변경사항 처리 안내">
-      <li><span>01</span><span><strong>프리셋 업데이트</strong><small>현재 변경값을 저장</small></span></li>
-      <li><span>02</span><span><strong>프리셋 로드</strong><small>저장된 설정으로 복원</small></span></li>
-    </ol>
-  </div>
-  <div class="trait-preset-backup-content" role="status" aria-live="polite" aria-atomic="true">
-    <span class="trait-preset-change-kicker"><span aria-hidden="true">✦</span> BACKUP NEEDED</span>
-    <h2>프리셋 업데이트 완료.</h2>
-    <hr class="trait-preset-intro-divider" aria-hidden="true">
-    <p>변경한 설정이 저장됐어요.<br>최신 빌드를 파일로 보관하려면<br>프리셋 백업을 진행하세요.</p>
-    <ol class="trait-preset-intro-steps trait-preset-change-guide" aria-label="백업 안내">
-      <li><span>01</span><span><strong>업데이트 완료</strong><small>현재 변경값 저장됨</small></span></li>
-      <li><span>02</span><span><strong>프리셋 백업</strong><small>우측 백업 버튼을 선택</small></span></li>
-    </ol>
-  </div>
+<section class="trait-preset-intro" aria-label="프리셋 데이터 상태" role="status" aria-live="polite" aria-atomic="true">
+  <span class="trait-preset-status-mark" aria-hidden="true">!</span>
+  <span class="trait-preset-status-copy"></span>
 </section>
 <div class="trait-preset-management">
 <div class="trait-preset-work-grid">
@@ -521,12 +481,11 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 </div>
 <button class="btn pri ui-action-btn trait-preset-form-action preset-command is-save-command" data-action="saveTraitPreset" aria-label="프리셋 저장" type="button"><svg aria-hidden="true" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" viewbox="0 0 24 24"><path d="M4 4h13l3 3v13H4zM8 4v6h8V4M8 20v-7h8v7"></path></svg><span class="trait-preset-button-copy"><strong>저장</strong></span></button></div>
 </div>
-<div class="trait-preset-actions" aria-label="프리셋 관리 메뉴"><div class="trait-preset-actions-label">프리셋 도구</div>
-<button class="btn subtle ui-action-btn preset-command is-import" data-action="importTraitPresets" data-state="idle" type="button"><svg aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" viewbox="0 0 24 24"><path d="M12 16V4m-4 4 4-4 4 4"></path><path d="M4 16v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"></path></svg><span class="preset-command-main"><strong>프리셋 가져오기</strong></span></button>
-<button class="btn subtle ui-action-btn preset-command is-reset" data-action="resetAllTraitPresetState" disabled="" id="traitPresetResetAllBtn" type="button"><svg aria-hidden="true" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" viewbox="0 0 24 24"><path d="M3 11a9 9 0 1 1 2.5 6.3M3 4v7h7m2-4v5l3 2"></path></svg><span class="preset-command-main"><strong>프리셋 초기화</strong></span></button>
-<button class="btn subtle ui-action-btn preset-command is-update" data-action="updateTraitPreset" type="button"><svg aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" viewbox="0 0 24 24"><path d="M20 11a8 8 0 0 0-14-5L4 8m0-5v5h5M4 13a8 8 0 0 0 14 5l2-2m0 5v-5h-5"></path></svg><span class="preset-command-main"><strong>프리셋 업데이트</strong></span></button>
-<button class="btn subtle ui-action-btn preset-command is-backup" data-action="backupTraitPresets" data-state="idle" type="button"><svg aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" viewbox="0 0 24 24"><path d="M12 4v12m-4-4 4 4 4-4"></path><path d="M4 16v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"></path></svg><span class="preset-command-main"><strong>프리셋 백업</strong></span></button>
-</div>
+<div class="trait-preset-actions" aria-label="프리셋 관리 메뉴">
+<button class="btn subtle ui-action-btn preset-command is-import" data-action="importTraitPresets" data-state="idle" aria-label="프리셋 가져오기" type="button"><svg aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" viewbox="0 0 24 24"><path d="M12 16V4m-4 4 4-4 4 4"></path><path d="M4 16v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"></path></svg><span class="preset-command-main"><strong>가져오기</strong></span></button>
+<button class="btn subtle ui-action-btn preset-command is-reset" data-action="resetAllTraitPresetState" disabled="" id="traitPresetResetAllBtn" aria-label="프리셋 초기화" type="button"><svg aria-hidden="true" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" viewbox="0 0 24 24"><path d="M3 11a9 9 0 1 1 2.5 6.3M3 4v7h7m2-4v5l3 2"></path></svg><span class="preset-command-main"><strong>초기화</strong></span></button>
+<button class="btn subtle ui-action-btn preset-command is-update" data-action="updateTraitPreset" aria-label="프리셋 업데이트" type="button"><svg aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" viewbox="0 0 24 24"><path d="M20 11a8 8 0 0 0-14-5L4 8m0-5v5h5M4 13a8 8 0 0 0 14 5l2-2m0 5v-5h-5"></path></svg><span class="preset-command-main"><strong>업데이트</strong></span></button>
+<button class="btn subtle ui-action-btn preset-command is-backup" data-action="backupTraitPresets" data-state="idle" aria-label="프리셋 백업" type="button"><svg aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" viewbox="0 0 24 24"><path d="M12 4v12m-4-4 4 4 4-4"></path><path d="M4 16v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"></path></svg><span class="preset-command-main"><strong>백업</strong></span></button></div>
 
 </div>
 <input id="traitPresetImportFile" class="hidden-field" type="file" accept=".txt,.json,text/plain,application/json"/>
@@ -949,7 +908,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 <div class="col-right">
 <!-- 스펙·유닛 보드: 전환 버튼·결과 -->
 <div class="data-card stat-dps-card right-analytics-workspace">
-<div class="right-workspace-navigation"><header class="right-workspace-head"><span class="right-workspace-mark" aria-hidden="true">✦</span><span class="right-workspace-copy"><strong>DPS 분석 보드</strong><small>SPEC &amp; UNIT ANALYTICS</small></span><button type="button" id="dpsCompareOpen" class="dps-compare-open" title="전체 DPS표 열기" data-dps-compare-open aria-label="전체 DPS 비교표 열기" aria-haspopup="dialog" aria-controls="dpsCompareModal">
+<div class="right-workspace-navigation"><header class="right-workspace-head"><span class="right-workspace-mark" aria-hidden="true">✦</span><span class="right-workspace-copy"><strong>DPS 분석 보드</strong><small>SPEC &amp; UNIT ANALYTICS</small></span><button type="button" id="dpsCompareOpen" class="dps-compare-open" data-dps-compare-open aria-label="전체 DPS 비교표 열기" aria-haspopup="dialog" aria-controls="dpsCompareModal">
       <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M9 4v16M15 10v10"/></svg>
     </button></header>
 <section class="damage-board-analysis-view" id="damageBoardAnalysisPanel" aria-label="DPS 분석 내용">

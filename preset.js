@@ -722,33 +722,45 @@ function currentTraitPresetStatusData(partial={}){
   status.pendingSingleChangeKeys=[...new Set(status.pendingSingleChangeKeys.map(key=>String(key || '').trim()).filter(Boolean))];
   return {status,store};
 }
-/* 현재 프리셋의 미저장 변경을 화면 밖에서도 알리고, 관리 제목이 보이면 확인 처리합니다. */
-let traitPresetChangeNoticePending=false;
-let traitPresetChangeNoticeSeen=false;
-let traitPresetManagerVisible=false;
-function renderTraitPresetChangeNotice(update){
-  if(update){
-    traitPresetChangeNoticePending=Boolean(update.needsUpdate);
-    if(!traitPresetChangeNoticePending) traitPresetChangeNoticeSeen=false;
+/* 데이터 스키마 변경만 필수 업데이트로 안내한다. 일반 수치 변경 비교는 로드 확인·수동 업데이트에만 사용한다. */
+function storedTraitPresetCompatibility(){
+  try{
+    const raw=localStorage.getItem(TRAIT_PRESET_STORAGE_KEY);
+    if(!raw) return {needsMigration:false,error:''};
+    const parsed=safeJsonParse(raw);
+    if(!parsed || typeof parsed!=='object' || Array.isArray(parsed) || !Array.isArray(parsed.presets)){
+      return {needsMigration:false,error:'프리셋 데이터 형식을 확인할 수 없습니다. 원본을 백업하고 데이터를 점검해 주세요.'};
+    }
+    if(parsed.type && !isTraitPresetFileType(parsed.type)){
+      return {needsMigration:false,error:'지원하지 않는 프리셋 파일 형식입니다. 기존 데이터를 안전하게 보존합니다.'};
+    }
+    const result=inspectTraitPresetImportCompatibility(parsed);
+    return {needsMigration:parsed.presets.length>0 && result.requiresUpdate,error:''};
+  }catch(error){
+    return {needsMigration:false,error:error?.message || '프리셋 데이터 호환성을 확인할 수 없습니다.'};
   }
-  if(traitPresetChangeNoticePending && traitPresetManagerVisible) traitPresetChangeNoticeSeen=true;
+}
+function renderTraitPresetRequiredNotice(status,store){
+  const compatibility=storedTraitPresetCompatibility();
+  const migration=compatibility.needsMigration;
+  const incompatible=!!compatibility.error;
+  const backup=!migration && !incompatible && store.presets.length>0 && (status.backupNeeded || status.updatedPresetIds.length>0 || status.pendingUnitBoardPresetIds.length>0);
   const manager=document.querySelector('.trait-preset-panel');
   if(manager){
-    manager.classList.toggle('is-change-pending',traitPresetChangeNoticePending);
-    manager.classList.toggle('is-backup-pending',!traitPresetChangeNoticePending && manager.classList.contains('has-backup-pending'));
+    manager.classList.toggle('is-migration-pending',migration);
+    manager.classList.toggle('is-compatibility-error',incompatible);
+    manager.classList.toggle('is-backup-pending',backup);
+    manager.classList.toggle('has-backup-pending',backup);
+    const message=manager.querySelector('.trait-preset-status-copy');
+    if(message) message.textContent=incompatible ? compatibility.error : migration ? '프리셋 데이터 업데이트가 필요합니다.' : backup ? '프리셋 백업이 필요합니다.' : '';
+    const mark=manager.querySelector('.trait-preset-status-mark');
+    if(mark) mark.textContent=backup ? '↓' : '!';
   }
-  const notice=$('traitPresetChangeNotice');
-  if(notice) notice.hidden=!traitPresetChangeNoticePending || traitPresetChangeNoticeSeen;
-}
-function observeTraitPresetManager(){
-  const heading=document.querySelector('.trait-preset-panel .trait-preset-intro');
-  if(!heading || typeof IntersectionObserver!=='function') return;
-  const observer=new IntersectionObserver(entries=>{
-    const entry=entries[0];
-    traitPresetManagerVisible=Boolean(entry?.isIntersecting && entry.intersectionRatio>=0.5);
-    renderTraitPresetChangeNotice();
-  },{threshold:[0,0.5]});
-  observer.observe(heading);
+  const indicator=$('basicSettingsTab0')?.querySelector('.trait-preset-tab-alert');
+  if(indicator) indicator.hidden=!migration && !incompatible;
+  const tab=$('basicSettingsTab0');
+  if(tab) tab.setAttribute('aria-label',incompatible ? '프리셋 관리: 호환되지 않는 데이터 형식' : migration ? '프리셋 관리: 필수 데이터 업데이트' : '프리셋 관리');
+  return compatibility;
 }
 function setTraitPresetActionDisplay(action,state){
   qsa(`[data-action="${action}"]`).forEach(btn=>{
@@ -757,16 +769,12 @@ function setTraitPresetActionDisplay(action,state){
 }
 function renderTraitPresetStatus(status,store){
   const backup=store.presets.length>0 && (status.backupNeeded || status.updatedPresetIds.length>0 || status.pendingUnitBoardPresetIds.length>0);
-  const manager=document.querySelector('.trait-preset-panel');
-  if(manager) manager.classList.toggle('has-backup-pending',backup);
+  renderTraitPresetRequiredNotice(status,store);
   qsa('[data-action="backupTraitPresets"]').forEach(btn=>{
     btn.classList.toggle('is-backup-needed',backup);
     btn.setAttribute('aria-label','프리셋 백업');
   });
   setTraitPresetActionDisplay('backupTraitPresets',store.presets.length ? (backup?'pending':'done'):'idle');
-  const update=traitPresetUpdateStatus(store);
-  
-  renderTraitPresetChangeNotice(update);
 }
 function updateTraitPresetStatus(partial={}, options={}){
   const {status,store}=currentTraitPresetStatusData(partial);
@@ -839,7 +847,6 @@ function cancelScheduledAutoSave(){
 }
 function scheduleAutoSave(){
   if(isStorageLocked() || (typeof dpsUnitSlotPending!=='undefined' && dpsUnitSlotPending)) return;
-  scheduleTraitPresetGuidanceRefresh();
   cancelScheduledAutoSave();
   autoSaveTimer=setTimeout(()=>{
     autoSaveTimer=0;
@@ -1022,6 +1029,8 @@ function loadTraitPresetStore(){
   }
 }
 function saveTraitPresetStore(store,options={}){
+  const compatibility=storedTraitPresetCompatibility();
+  if(compatibility.error && options.source!=='import') throw new Error(compatibility.error);
   const normalized=normalizeTraitPresetStore(store);
   localStorage.setItem(TRAIT_PRESET_STORAGE_KEY, JSON.stringify(normalized));
   if(options.dispatch!==false) dispatchTraitPresetStoreChanged({source:options.source || 'save'});
@@ -1238,7 +1247,7 @@ function appendTraitPresetCustomOption(menu, select, option){
     remove.className='trait-preset-custom-delete';
     remove.dataset.traitPresetCustomDelete=option.value;
     remove.setAttribute('aria-label',`${traitPresetOptionLabel(option)} 프리셋 삭제 (두 번 누르면 삭제)`);
-    remove.textContent='×';
+    remove.innerHTML='<span class="trait-preset-delete-confirm-text" aria-hidden="true">삭제 확인</span><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2m3 0-1 15H6L5 6m5 4v7m4-7v7"/></svg>';
     row.appendChild(remove);
     menu.appendChild(row);
   }else menu.appendChild(item);
@@ -1551,21 +1560,28 @@ function renderTraitPresetUpdateStatus(store=loadTraitPresetStore()){
   qsa('[data-action="updateTraitPreset"]').forEach(btn=>{
     btn.setAttribute('aria-label','프리셋 업데이트');
   });
-  renderTraitPresetChangeNotice(update);
   return update.needsUpdate;
 }
-let traitPresetGuidanceRefreshTimer=0;
-function scheduleTraitPresetGuidanceRefresh(){
-  if(traitPresetGuidanceRefreshTimer) clearTimeout(traitPresetGuidanceRefreshTimer);
-  traitPresetGuidanceRefreshTimer=setTimeout(()=>{
-    traitPresetGuidanceRefreshTimer=0;
-    try{
-      renderTraitPresetUpdateStatus();
-    }
-    catch(error){ rememberAppIssue('warn','프리셋 변경 상태 표시',error); }
-  },260);
-}
 function updateTraitPreset(options={}){
+  const compatibility=storedTraitPresetCompatibility();
+  if(compatibility.error){
+    if(options.silent!==true) notifyStorageAction(compatibility.error,'err');
+    return false;
+  }
+  if(compatibility.needsMigration){
+    try{
+      const store=loadTraitPresetStore();
+      if(!store.presets.length) throw new Error('업데이트할 프리셋이 없습니다.');
+      saveTraitPresetStore(store,{source:'migration'});
+      updateTraitPresetStatus({backupNeeded:true,lastAction:'migration'},{persist:true});
+      refreshTraitPresetControls(selectedTraitPresetId());
+      if(options.silent!==true) notifyStorageAction('프리셋 데이터 업데이트 완료 · 백업해 주세요.','ok',{toast:true,skipHeaderStatus:true});
+      return true;
+    }catch(error){
+      if(options.silent!==true) notifyStorageAction(error?.message || '프리셋 데이터 업데이트 실패','err');
+      return false;
+    }
+  }
   const id=options.id || selectedTraitPresetId();
   let store=loadTraitPresetStore();
   const selectedIndex=store.presets.findIndex(item=>item.id===id);
@@ -2135,7 +2151,7 @@ function inspectTraitPresetImportCompatibility(parsed){
       migrated.push(String(item.name || `프리셋 ${index+1}`));
     }
   });
-  return {migrated};
+  return {schema,migrated,requiresUpdate:schema<TRAIT_PRESET_MANAGEMENT_VERSION || migrated.length>0};
 }
 function normalizeTraitPresetImportData(parsed){
   if(!parsed || typeof parsed!=='object' || Array.isArray(parsed)) throw new Error('특성 프리셋 파일 형식이 아닙니다.');
@@ -2227,7 +2243,7 @@ async function importTraitPresetFile(file){
     if(!loadId || !loadTraitPresetById(loadId,{
       notifySuccess:false,preserveSharedValues:false,useDraft:false,discardDraft:false
     })) throw new Error('가져온 프리셋을 화면에 적용하지 못해 가져오기를 취소했습니다.');
-    if(compatibility.migrated.length){
+    if(compatibility.requiresUpdate){
       updateTraitPresetStatus({backupNeeded:true,lastAction:'migration'},{persist:true});
       
     }
@@ -2363,15 +2379,7 @@ function bindTraitPresetEvents(){
   document.addEventListener('change',handleTraitPresetChange);
   document.addEventListener('click',handleTraitPresetClick);
   document.addEventListener('keydown',handleTraitPresetKeydown);
-  document.addEventListener('input',e=>{
-    if(e.target?.closest?.('.trait-preset-panel,[aria-modal="true"]')) return;
-    scheduleTraitPresetGuidanceRefresh();
-  });
-  document.addEventListener('change',e=>{
-    if(e.target?.closest?.('[aria-modal="true"]')) return;
-    if(e.target?.id==='traitPresetSelect' || e.target?.id==='traitPresetImportFile') return;
-    scheduleTraitPresetGuidanceRefresh();
-  });
+
 }
 
 /* 공개 API */
@@ -2380,7 +2388,6 @@ window.DpsPreset=Object.freeze({
     try{localStorage.removeItem('gbd_dps_calculator:trait_preset_guide');}catch{}
     refreshTraitPresetControls();
     restoreTraitPresetStatus();
-    observeTraitPresetManager();
   },
   bindEvents:bindTraitPresetEvents,
   saveCurrent:saveTraitPreset,
