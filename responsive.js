@@ -136,6 +136,8 @@
     state.layoutWidth = w;
     state.layoutPortrait = h > w;
     syncTabbedLayout();
+    const basicTopTab = state.tabs?.querySelector('#mobileTab-basic .mobile-tab-label');
+    if (basicTopTab) basicTopTab.textContent = mode === 'is-mobile' || mode === 'is-tablet' ? '기본 설정' : '기본 정보';
     updateMobileOffsets();
   }
   /* 탭 레이아웃 */
